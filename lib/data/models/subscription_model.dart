@@ -1,133 +1,151 @@
-class Subscription {
-  final String id;
-  final String planId;
-  final String userId;
-  final SubscriptionPlan plan;
-  final SubscriptionStatus status;
-  final DateTime startDate;
-  final DateTime? endDate;
-  final double price;
-  final String currency;
-  final int billingCycleDays;
-  final bool autoRenew;
-  final int? usedMessages;
-  final int? usedFileSize;
+import 'package:equatable/equatable.dart';
 
-  Subscription({
-    required this.id,
-    required this.planId,
-    required this.userId,
-    required this.plan,
-    required this.status,
-    required this.startDate,
-    this.endDate,
-    required this.price,
-    required this.currency,
-    this.billingCycleDays = 30,
-    this.autoRenew = true,
-    this.usedMessages = 0,
-    this.usedFileSize = 0,
-  });
-
-  factory Subscription.fromJson(Map<String, dynamic> json) {
-    return Subscription(
-      id: json['id'] as String,
-      planId: json['planId'] as String,
-      userId: json['userId'] as String,
-      plan: SubscriptionPlan.fromJson(json['plan'] as Map<String, dynamic>),
-      status: SubscriptionStatus.values.byName(json['status'] as String),
-      startDate: DateTime.parse(json['startDate'] as String),
-      endDate: json['endDate'] != null ? DateTime.parse(json['endDate'] as String) : null,
-      price: (json['price'] as num).toDouble(),
-      currency: json['currency'] as String,
-      billingCycleDays: json['billingCycleDays'] as int? ?? 30,
-      autoRenew: json['autoRenew'] as bool? ?? true,
-      usedMessages: json['usedMessages'] as int? ?? 0,
-      usedFileSize: json['usedFileSize'] as int? ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'planId': planId,
-    'userId': userId,
-    'plan': plan.toJson(),
-    'status': status.name,
-    'startDate': startDate.toIso8601String(),
-    'endDate': endDate?.toIso8601String(),
-    'price': price,
-    'currency': currency,
-    'billingCycleDays': billingCycleDays,
-    'autoRenew': autoRenew,
-    'usedMessages': usedMessages,
-    'usedFileSize': usedFileSize,
-  };
-
-  bool get isActive => status == SubscriptionStatus.active;
-  bool get isExpired => endDate != null && endDate!.isBefore(DateTime.now());
+/// Represents the type of a subscription plan.
+enum SubscriptionPlanType {
+  free,
+  pro,
+  enterprise,
+  lifetime,
+  family,
+  team,
+  organization,
+  custom,
 }
 
+/// Represents the billing cycle of a subscription.
+enum SubscriptionBillingCycle {
+  monthly,
+  yearly,
+  trial,
+  oneTime,
+  custom,
+}
+
+/// Represents the current status of a user's subscription.
 enum SubscriptionStatus {
   active,
   canceled,
   expired,
   pending,
+  trialing,
+  paused,
 }
 
-class SubscriptionPlan {
+/// A production-ready, immutable model representing a user's subscription.
+///
+/// This model is designed to be highly extensible to support various plan types,
+/// billing cycles, and future subscription features.
+class SubscriptionModel extends Equatable {
   final String id;
-  final String name;
-  final String description;
+  final String userId;
+  final SubscriptionPlanType planType;
+  final SubscriptionBillingCycle billingCycle;
+  final SubscriptionStatus status;
+  final DateTime startDate;
+  final DateTime? endDate;
   final double price;
   final String currency;
-  final int billingCycleDays;
-  final int messagesPerDay;
-  final int maxFileSize;
-  final List<String> availableModels;
-  final List<String> features;
-  final bool isPremium;
+  final Map<String, dynamic> features;
+  final Map<String, dynamic> metadata;
 
-  SubscriptionPlan({
+  const SubscriptionModel({
     required this.id,
-    required this.name,
-    required this.description,
+    required this.userId,
+    required this.planType,
+    required this.billingCycle,
+    required this.status,
+    required this.startDate,
+    this.endDate,
     required this.price,
     required this.currency,
-    this.billingCycleDays = 30,
-    required this.messagesPerDay,
-    required this.maxFileSize,
-    required this.availableModels,
-    required this.features,
-    this.isPremium = false,
+    this.features = const {},
+    this.metadata = const {},
   });
 
-  factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
-    return SubscriptionPlan(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      price: (json['price'] as num).toDouble(),
-      currency: json['currency'] as String,
-      billingCycleDays: json['billingCycleDays'] as int? ?? 30,
-      messagesPerDay: json['messagesPerDay'] as int,
-      maxFileSize: json['maxFileSize'] as int,
-      availableModels: List<String>.from(json['availableModels'] as List? ?? []),
-      features: List<String>.from(json['features'] as List? ?? []),
-      isPremium: json['isPremium'] as bool? ?? false,
+  /// Creates a copy of this [SubscriptionModel] with the given fields replaced by the new values.
+  SubscriptionModel copyWith({
+    String? id,
+    String? userId,
+    SubscriptionPlanType? planType,
+    SubscriptionBillingCycle? billingCycle,
+    SubscriptionStatus? status,
+    DateTime? startDate,
+    DateTime? endDate,
+    double? price,
+    String? currency,
+    Map<String, dynamic>? features,
+    Map<String, dynamic>? metadata,
+  }) {
+    return SubscriptionModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      planType: planType ?? this.planType,
+      billingCycle: billingCycle ?? this.billingCycle,
+      status: status ?? this.status,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      features: features ?? this.features,
+      metadata: metadata ?? this.metadata,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'price': price,
-    'currency': currency,
-    'billingCycleDays': billingCycleDays,
-    'messagesPerDay': messagesPerDay,
-    'maxFileSize': maxFileSize,
-    'availableModels': availableModels,
-    'features': features,
-    'isPremium': isPremium,
-  };
+  /// Creates a [SubscriptionModel] instance from a JSON map.
+  factory SubscriptionModel.fromJson(Map<String, dynamic> json) {
+    return SubscriptionModel(
+      id: json["id"] as String,
+      userId: json["userId"] as String,
+      planType: SubscriptionPlanType.values.firstWhere(
+        (e) => e.name == json["planType"],
+        orElse: () => SubscriptionPlanType.custom,
+      ),
+      billingCycle: SubscriptionBillingCycle.values.firstWhere(
+        (e) => e.name == json["billingCycle"],
+        orElse: () => SubscriptionBillingCycle.custom,
+      ),
+      status: SubscriptionStatus.values.firstWhere(
+        (e) => e.name == json["status"],
+        orElse: () => SubscriptionStatus.pending,
+      ),
+      startDate: DateTime.parse(json["startDate"] as String),
+      endDate: json["endDate"] != null ? DateTime.parse(json["endDate"] as String) : null,
+      price: (json["price"] as num).toDouble(),
+      currency: json["currency"] as String,
+      features: json["features"] as Map<String, dynamic>? ?? {},
+      metadata: json["metadata"] as Map<String, dynamic>? ?? {},
+    );
+  }
+
+  /// Converts this [SubscriptionModel] instance to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "userId": userId,
+      "planType": planType.name,
+      "billingCycle": billingCycle.name,
+      "status": status.name,
+      "startDate": startDate.toIso8601String(),
+      "endDate": endDate?.toIso8601String(),
+      "price": price,
+      "currency": currency,
+      "features": features,
+      "metadata": metadata,
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+        id,
+        userId,
+        planType,
+        billingCycle,
+        status,
+        startDate,
+        endDate,
+        price,
+        currency,
+        features,
+        metadata,
+      ];
 }

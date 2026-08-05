@@ -1,95 +1,101 @@
-import 'message.dart';
+import 'package:equatable/equatable.dart';
 
-class Conversation {
+/// Represents the status of a conversation.
+enum ConversationStatus {
+  active,
+  archived,
+  deleted,
+  pinned,
+}
+
+/// A production-ready, immutable model representing a conversation.
+///
+/// This model focuses solely on conversation metadata and does not store
+/// individual messages, which are managed separately.
+class ConversationModel extends Equatable {
   final String id;
   final String title;
-  final String? description;
-  final String userId;
-  final String currentModelId;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final List<Message> messages;
-  final bool isPinned;
-  final bool isArchived;
-  final int messageCount;
-  final String? lastMessage;
+  final ConversationStatus status;
+  final String? lastMessageSnippet;
+  final String? aiModelId;
+  final Map<String, dynamic> metadata;
 
-  Conversation({
+  const ConversationModel({
     required this.id,
     required this.title,
-    this.description,
-    required this.userId,
-    required this.currentModelId,
     required this.createdAt,
     required this.updatedAt,
-    this.messages = const [],
-    this.isPinned = false,
-    this.isArchived = false,
-    this.messageCount = 0,
-    this.lastMessage,
+    this.status = ConversationStatus.active,
+    this.lastMessageSnippet,
+    this.aiModelId,
+    this.metadata = const {},
   });
 
-  factory Conversation.fromJson(Map<String, dynamic> json) {
-    return Conversation(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String?,
-      userId: json['userId'] as String,
-      currentModelId: json['currentModelId'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      messages: (json['messages'] as List?)
-          ?.map((e) => Message.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [],
-      isPinned: json['isPinned'] as bool? ?? false,
-      isArchived: json['isArchived'] as bool? ?? false,
-      messageCount: json['messageCount'] as int? ?? 0,
-      lastMessage: json['lastMessage'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'userId': userId,
-    'currentModelId': currentModelId,
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
-    'messages': messages.map((e) => e.toJson()).toList(),
-    'isPinned': isPinned,
-    'isArchived': isArchived,
-    'messageCount': messageCount,
-    'lastMessage': lastMessage,
-  };
-
-  Conversation copyWith({
+  /// Creates a copy of this [ConversationModel] with the given fields replaced by the new values.
+  ConversationModel copyWith({
     String? id,
     String? title,
-    String? description,
-    String? userId,
-    String? currentModelId,
     DateTime? createdAt,
     DateTime? updatedAt,
-    List<Message>? messages,
-    bool? isPinned,
-    bool? isArchived,
-    int? messageCount,
-    String? lastMessage,
+    ConversationStatus? status,
+    String? lastMessageSnippet,
+    String? aiModelId,
+    Map<String, dynamic>? metadata,
   }) {
-    return Conversation(
+    return ConversationModel(
       id: id ?? this.id,
       title: title ?? this.title,
-      description: description ?? this.description,
-      userId: userId ?? this.userId,
-      currentModelId: currentModelId ?? this.currentModelId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      messages: messages ?? this.messages,
-      isPinned: isPinned ?? this.isPinned,
-      isArchived: isArchived ?? this.isArchived,
-      messageCount: messageCount ?? this.messageCount,
-      lastMessage: lastMessage ?? this.lastMessage,
+      status: status ?? this.status,
+      lastMessageSnippet: lastMessageSnippet ?? this.lastMessageSnippet,
+      aiModelId: aiModelId ?? this.aiModelId,
+      metadata: metadata ?? this.metadata,
     );
   }
+
+  /// Creates a [ConversationModel] instance from a JSON map.
+  factory ConversationModel.fromJson(Map<String, dynamic> json) {
+    return ConversationModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      status: ConversationStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => ConversationStatus.active,
+      ),
+      lastMessageSnippet: json['lastMessageSnippet'] as String?,
+      aiModelId: json['aiModelId'] as String?,
+      metadata: json['metadata'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
+  /// Converts this [ConversationModel] instance to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'status': status.name,
+      'lastMessageSnippet': lastMessageSnippet,
+      'aiModelId': aiModelId,
+      'metadata': metadata,
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+        id,
+        title,
+        createdAt,
+        updatedAt,
+        status,
+        lastMessageSnippet,
+        aiModelId,
+        metadata,
+      ];
 }
