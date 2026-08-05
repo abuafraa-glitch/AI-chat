@@ -3,21 +3,22 @@ import 'package:ai_chat/data/models/conversation_model.dart';
 import 'package:ai_chat/data/models/message_model.dart';
 import 'package:ai_chat/data/models/subscription_model.dart';
 
-/// Abstract interface defining all remote server operations.
+/// Abstract interface defining all remote server operations for Hajeen AI.
 ///
-/// This data source is the single point of truth for network interactions.
-/// It supports REST, SSE, and future streaming protocols.
+/// This data source acts as a contract for network interactions, focusing on
+/// raw data retrieval and transmission. It follows Clean Architecture principles
+/// by remaining agnostic of implementation details (Dio, HTTP, etc.).
 abstract interface class RemoteDataSource {
   // ── Authentication ────────────────────────────────────────────────────────
 
-  /// Authenticates a user and returns a token pair.
-  Future<Map<String, dynamic>> login(String email, String password);
+  /// Authenticates a user and returns the raw response containing tokens.
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  });
 
   /// Invalidates the current session on the server.
   Future<void> logout();
-
-  /// Refreshes the access token using a refresh token.
-  Future<String> refreshToken(String refreshToken);
 
   /// Fetches the current authenticated user profile.
   Future<Map<String, dynamic>> getCurrentUser();
@@ -35,31 +36,37 @@ abstract interface class RemoteDataSource {
   /// Lists all conversations for the current user.
   Future<List<ConversationModel>> getConversations();
 
-  /// Creates a new conversation.
+  /// Creates a new conversation with the provided [data].
   Future<ConversationModel> createConversation(Map<String, dynamic> data);
 
   /// Updates an existing conversation's metadata.
-  Future<ConversationModel> updateConversation(
-    String id,
-    Map<String, dynamic> data,
-  );
+  Future<ConversationModel> updateConversation({
+    required String id,
+    required Map<String, dynamic> data,
+  });
 
   /// Deletes a conversation and all its messages.
   Future<void> deleteConversation(String id);
 
   // ── Messages ──────────────────────────────────────────────────────────────
 
-  /// Sends a message and receives a full response.
-  Future<MessageModel> sendMessage(String conversationId, Map<String, dynamic> data);
+  /// Sends a message to a specific conversation.
+  Future<MessageModel> sendMessage({
+    required String conversationId,
+    required Map<String, dynamic> data,
+  });
 
-  /// Streams message tokens in real-time via SSE or WebSockets.
-  Stream<String> streamMessage(String conversationId, Map<String, dynamic> data);
+  /// Streams message tokens in real-time via SSE.
+  Stream<String> streamMessage({
+    required String conversationId,
+    Map<String, dynamic>? data,
+  });
 
-  /// Retries a failed message.
-  Future<MessageModel> retryMessage(String messageId);
-
-  /// Triggers a new generation for an existing user message.
-  Future<MessageModel> regenerateMessage(String conversationId, String messageId);
+  /// Triggers a new model generation for an existing user message.
+  Future<MessageModel> regenerateMessage({
+    required String conversationId,
+    required String messageId,
+  });
 
   /// Fetches all messages for a specific conversation.
   Future<List<MessageModel>> getConversationMessages(String conversationId);
@@ -67,24 +74,22 @@ abstract interface class RemoteDataSource {
   // ── Files ─────────────────────────────────────────────────────────────────
 
   /// Uploads a file to the server.
-  Future<Map<String, dynamic>> uploadFile(String filePath, String purpose);
+  Future<Map<String, dynamic>> uploadFile({
+    required String filePath,
+    required String fileFieldName,
+    Map<String, String>? additionalFields,
+  });
 
   /// Deletes a previously uploaded file.
   Future<void> deleteFile(String fileId);
 
-  /// Generates a download URL for a file.
-  Future<String> downloadFile(String fileId);
-
   // ── Subscriptions ─────────────────────────────────────────────────────────
 
   /// Lists all available subscription plans.
-  Future<List<Map<String, dynamic>>> getPlans();
+  Future<List<Map<String, dynamic>>> getSubscriptionPlans();
 
   /// Fetches the user's active subscription.
   Future<SubscriptionModel> getSubscription();
-
-  /// Initiates a purchase for a plan.
-  Future<Map<String, dynamic>> purchase(String planId);
 
   /// Cancels an active subscription.
   Future<void> cancelSubscription(String subscriptionId);
@@ -93,9 +98,4 @@ abstract interface class RemoteDataSource {
 
   /// Searches within conversations for specific terms.
   Future<List<ConversationModel>> searchConversations(String query);
-
-  // ── Settings ──────────────────────────────────────────────────────────────
-
-  /// Synchronizes user settings with the server.
-  Future<void> syncSettings(Map<String, dynamic> settings);
 }

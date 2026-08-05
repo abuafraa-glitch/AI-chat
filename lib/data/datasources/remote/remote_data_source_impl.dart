@@ -1,28 +1,33 @@
-import 'dart:async';
-
-import 'package:ai_chat/core/network/api_client.dart';
+import 'package:ai_chat/core/errors/exceptions.dart';
+import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:ai_chat/core/network/endpoints.dart';
 import 'package:ai_chat/core/network/network_response.dart';
+import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:ai_chat/data/models/ai_model.dart';
 import 'package:ai_chat/data/models/conversation_model.dart';
 import 'package:ai_chat/data/models/message_model.dart';
 import 'package:ai_chat/data/models/subscription_model.dart';
-import 'remote_data_source.dart';
 
-/// Production-ready implementation of [RemoteDataSource].
+/// Official implementation of [RemoteDataSource] for the Hajeen AI project.
 ///
-/// This implementation relies on [ApiClient] for network requests and
-/// handles error mapping via the core network layer.
+/// This implementation uses [ApiConsumer] to perform network requests.
+/// It strictly adheres to the project's architecture by using [NetworkResponse]
+/// and mapping [NetworkException] to [AppException] to be handled by the
+/// repository layer.
 class RemoteDataSourceImpl implements RemoteDataSource {
-  final ApiClient _apiClient;
+  const RemoteDataSourceImpl({required ApiConsumer apiConsumer})
+      : _apiConsumer = apiConsumer;
 
-  RemoteDataSourceImpl({required ApiClient apiClient}) : _apiClient = apiClient;
+  final ApiConsumer _apiConsumer;
 
   // ── Authentication ────────────────────────────────────────────────────────
 
   @override
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _apiConsumer.post<Map<String, dynamic>>(
       path: Endpoints.login,
       data: {'email': email, 'password': password},
       fromJson: (json) => json as Map<String, dynamic>,
@@ -32,7 +37,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<void> logout() async {
-    final response = await _apiClient.post<void>(
+    final response = await _apiConsumer.post<void>(
       path: Endpoints.logout,
       fromJson: (_) {},
     );
@@ -40,19 +45,8 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   }
 
   @override
-  Future<String> refreshToken(String refreshToken) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      path: Endpoints.refresh,
-      data: {'refresh_token': refreshToken},
-      fromJson: (json) => json as Map<String, dynamic>,
-    );
-    final data = _handleResponse(response);
-    return data['access_token'] as String;
-  }
-
-  @override
   Future<Map<String, dynamic>> getCurrentUser() async {
-    final response = await _apiClient.get<Map<String, dynamic>>(
+    final response = await _apiConsumer.get<Map<String, dynamic>>(
       path: Endpoints.me,
       fromJson: (json) => json as Map<String, dynamic>,
     );
@@ -63,7 +57,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<List<AIModel>> getModels() async {
-    final response = await _apiClient.get<List<AIModel>>(
+    final response = await _apiConsumer.get<List<AIModel>>(
       path: Endpoints.models,
       fromJson: (json) => (json as List)
           .map((e) => AIModel.fromJson(e as Map<String, dynamic>))
@@ -74,7 +68,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<AIModel> getModelDetails(String modelId) async {
-    final response = await _apiClient.get<AIModel>(
+    final response = await _apiConsumer.get<AIModel>(
       path: Endpoints.model(modelId),
       fromJson: (json) => AIModel.fromJson(json as Map<String, dynamic>),
     );
@@ -85,7 +79,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<List<ConversationModel>> getConversations() async {
-    final response = await _apiClient.get<List<ConversationModel>>(
+    final response = await _apiConsumer.get<List<ConversationModel>>(
       path: Endpoints.conversations,
       fromJson: (json) => (json as List)
           .map((e) => ConversationModel.fromJson(e as Map<String, dynamic>))
@@ -96,30 +90,32 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<ConversationModel> createConversation(Map<String, dynamic> data) async {
-    final response = await _apiClient.post<ConversationModel>(
+    final response = await _apiConsumer.post<ConversationModel>(
       path: Endpoints.conversations,
       data: data,
-      fromJson: (json) => ConversationModel.fromJson(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          ConversationModel.fromJson(json as Map<String, dynamic>),
     );
     return _handleResponse(response);
   }
 
   @override
-  Future<ConversationModel> updateConversation(
-    String id,
-    Map<String, dynamic> data,
-  ) async {
-    final response = await _apiClient.patch<ConversationModel>(
+  Future<ConversationModel> updateConversation({
+    required String id,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await _apiConsumer.patch<ConversationModel>(
       path: Endpoints.conversation(id),
       data: data,
-      fromJson: (json) => ConversationModel.fromJson(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          ConversationModel.fromJson(json as Map<String, dynamic>),
     );
     return _handleResponse(response);
   }
 
   @override
   Future<void> deleteConversation(String id) async {
-    final response = await _apiClient.delete(
+    final response = await _apiConsumer.delete(
       path: Endpoints.conversation(id),
     );
     return _handleResponse(response);
@@ -128,11 +124,11 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   // ── Messages ──────────────────────────────────────────────────────────────
 
   @override
-  Future<MessageModel> sendMessage(
-    String conversationId,
-    Map<String, dynamic> data,
-  ) async {
-    final response = await _apiClient.post<MessageModel>(
+  Future<MessageModel> sendMessage({
+    required String conversationId,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await _apiConsumer.post<MessageModel>(
       path: Endpoints.conversationMessages(conversationId),
       data: data,
       fromJson: (json) => MessageModel.fromJson(json as Map<String, dynamic>),
@@ -141,32 +137,22 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   }
 
   @override
-  Stream<String> streamMessage(
-    String conversationId,
-    Map<String, dynamic> data,
-  ) {
-    return _apiClient.streamRequest(
+  Stream<String> streamMessage({
+    required String conversationId,
+    Map<String, dynamic>? data,
+  }) {
+    return _apiConsumer.streamRequest(
       path: Endpoints.streamMessage(conversationId),
       data: data,
     );
   }
 
   @override
-  Future<MessageModel> retryMessage(String messageId) async {
-    // Assuming retry logic is a POST to a specific message endpoint
-    final response = await _apiClient.post<MessageModel>(
-      path: '/messages/$messageId/retry',
-      fromJson: (json) => MessageModel.fromJson(json as Map<String, dynamic>),
-    );
-    return _handleResponse(response);
-  }
-
-  @override
-  Future<MessageModel> regenerateMessage(
-    String conversationId,
-    String messageId,
-  ) async {
-    final response = await _apiClient.post<MessageModel>(
+  Future<MessageModel> regenerateMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final response = await _apiConsumer.post<MessageModel>(
       path: Endpoints.regenerateMessage(conversationId, messageId),
       fromJson: (json) => MessageModel.fromJson(json as Map<String, dynamic>),
     );
@@ -174,8 +160,10 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   }
 
   @override
-  Future<List<MessageModel>> getConversationMessages(String conversationId) async {
-    final response = await _apiClient.get<List<MessageModel>>(
+  Future<List<MessageModel>> getConversationMessages(
+    String conversationId,
+  ) async {
+    final response = await _apiConsumer.get<List<MessageModel>>(
       path: Endpoints.conversationMessages(conversationId),
       fromJson: (json) => (json as List)
           .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
@@ -187,12 +175,16 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   // ── Files ─────────────────────────────────────────────────────────────────
 
   @override
-  Future<Map<String, dynamic>> uploadFile(String filePath, String purpose) async {
-    final response = await _apiClient.uploadFile<Map<String, dynamic>>(
+  Future<Map<String, dynamic>> uploadFile({
+    required String filePath,
+    required String fileFieldName,
+    Map<String, String>? additionalFields,
+  }) async {
+    final response = await _apiConsumer.uploadFile<Map<String, dynamic>>(
       path: Endpoints.files,
       filePath: filePath,
-      fileFieldName: 'file',
-      additionalFields: {'purpose': purpose},
+      fileFieldName: fileFieldName,
+      additionalFields: additionalFields,
       fromJson: (json) => json as Map<String, dynamic>,
     );
     return _handleResponse(response);
@@ -200,27 +192,17 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<void> deleteFile(String fileId) async {
-    final response = await _apiClient.delete(
+    final response = await _apiConsumer.delete(
       path: Endpoints.file(fileId),
     );
     return _handleResponse(response);
   }
 
-  @override
-  Future<String> downloadFile(String fileId) async {
-    final response = await _apiClient.get<Map<String, dynamic>>(
-      path: Endpoints.fileDownload(fileId),
-      fromJson: (json) => json as Map<String, dynamic>,
-    );
-    final data = _handleResponse(response);
-    return data['url'] as String;
-  }
-
   // ── Subscriptions ─────────────────────────────────────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> getPlans() async {
-    final response = await _apiClient.get<List<Map<String, dynamic>>>(
+  Future<List<Map<String, dynamic>>> getSubscriptionPlans() async {
+    final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
       path: Endpoints.subscriptionPlans,
       fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
     );
@@ -229,26 +211,17 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<SubscriptionModel> getSubscription() async {
-    final response = await _apiClient.get<SubscriptionModel>(
+    final response = await _apiConsumer.get<SubscriptionModel>(
       path: Endpoints.currentSubscription,
-      fromJson: (json) => SubscriptionModel.fromJson(json as Map<String, dynamic>),
-    );
-    return _handleResponse(response);
-  }
-
-  @override
-  Future<Map<String, dynamic>> purchase(String planId) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      path: Endpoints.paymentIntent,
-      data: {'plan_id': planId},
-      fromJson: (json) => json as Map<String, dynamic>,
+      fromJson: (json) =>
+          SubscriptionModel.fromJson(json as Map<String, dynamic>),
     );
     return _handleResponse(response);
   }
 
   @override
   Future<void> cancelSubscription(String subscriptionId) async {
-    final response = await _apiClient.post<void>(
+    final response = await _apiConsumer.post<void>(
       path: Endpoints.cancelSubscription(subscriptionId),
       fromJson: (_) {},
     );
@@ -259,7 +232,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<List<ConversationModel>> searchConversations(String query) async {
-    final response = await _apiClient.get<List<ConversationModel>>(
+    final response = await _apiConsumer.get<List<ConversationModel>>(
       path: Endpoints.searchConversations,
       queryParameters: {'q': query},
       fromJson: (json) => (json as List)
@@ -269,27 +242,34 @@ class RemoteDataSourceImpl implements RemoteDataSource {
     return _handleResponse(response);
   }
 
-  // ── Settings ──────────────────────────────────────────────────────────────
+  // ── Private Helpers ────────────────────────────────────────────────────
 
-  @override
-  Future<void> syncSettings(Map<String, dynamic> settings) async {
-    final response = await _apiClient.post<void>(
-      path: '/settings/sync',
-      data: settings,
-      fromJson: (_) {},
+  /// Unwraps [NetworkResponse] and maps [NetworkException] to [AppException].
+  T _handleResponse<T>(NetworkResponse<T> response) {
+    return response.fold(
+      onSuccess: (data) => data,
+      onError: (exception) => throw _mapToAppException(exception),
     );
-    return _handleResponse(response);
   }
 
-  // ── Private helpers ────────────────────────────────────────────────────
+  /// Maps [NetworkException] from the core network layer to [AppException]
+  /// for the domain/repository layer.
+  AppException _mapToAppException(NetworkException exception) {
+    final message = exception.message;
 
-  /// Unwraps [NetworkResponse] and throws the underlying exception on error.
-  T _handleResponse<T>(NetworkResponse<T> response) {
-    if (response is NetworkSuccess<T>) {
-      return response.data;
-    } else if (response is NetworkError<T>) {
-      throw response.exception;
-    }
-    throw Exception('Unknown NetworkResponse type');
+    return switch (exception) {
+      NoConnectionException() => NetworkException(message: message),
+      RequestTimeoutException() => TimeoutException(message: message),
+      UnauthorizedException() => UnauthorizedException(message: message),
+      ForbiddenException() => ForbiddenException(message: message),
+      NotFoundException() => NotFoundException(message: message),
+      UnprocessableEntityException() ||
+      BadRequestException() =>
+        ValidationException(message: message),
+      RateLimitException() => RateLimitException(message: message),
+      ServerException() => ServerException(message: message),
+      RequestCancelledException() => NetworkException(message: message),
+      _ => UnknownException(message: message),
+    };
   }
 }
