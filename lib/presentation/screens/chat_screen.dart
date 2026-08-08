@@ -1,40 +1,119 @@
+import 'package:ai_chat/core/di/injection.dart';
+import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/services/local_storage_service.dart';
+import 'package:ai_chat/core/widgets/app_scaffold.dart';
+import 'package:ai_chat/core/widgets/empty_state.dart';
+import 'package:ai_chat/core/widgets/error_view.dart';
+import 'package:ai_chat/core/widgets/loaders/loading_indicator.dart';
+import 'package:ai_chat/data/models/message_model.dart';
+import 'package:ai_chat/presentation/animations/fade_in_slide.dart';
+import 'package:ai_chat/presentation/blocs/chat_cubit.dart';
+import 'package:ai_chat/presentation/blocs/data_sources.dart';
+import 'package:ai_chat/presentation/blocs/localization_cubit.dart';
+import 'package:ai_chat/presentation/blocs/models_cubit.dart';
+import 'package:ai_chat/presentation/widgets/chat_input_field.dart';
+import 'package:ai_chat/presentation/widgets/localized_text.dart';
+import 'package:ai_chat/presentation/widgets/message_bubble.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animate_do/animate_do.dart';
-import '../../data/models/message.dart';
-import '../../providers/api_provider.dart';
-import '../../config/localization/app_localization.dart';
-import '../widgets/message_bubble.dart';
-import '../widgets/chat_input_field.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-class ChatScreen extends ConsumerStatefulWidget {
-  final String initialMessage;
-  final String modelId;
-  final String? conversationId;
-
-  const ChatScreen({
-    Key? key,
-    required this.initialMessage,
+/// Launch payload carried through the conversation route when a chat is
+/// started with an initial message.
+class ChatLaunchData {
+  /// Creates [ChatLaunchData] for a new conversation.
+  const ChatLaunchData({
+    required this.message,
     required this.modelId,
-    this.conversationId,
-  }) : super(key: key);
+  });
 
-  @override
-  ConsumerState<ChatScreen> createState() => _ChatScreenState();
+  /// Initial user message to send on arrival.
+  final String message;
+
+  /// Model that should answer the initial message.
+  final String modelId;
 }
 
-class _ChatScreenState extends ConsumerState<ChatScreen> {
+/// Renders a single conversation.
+///
+/// This screen is a self-contained route: it provides its own
+/// [ChatCubit], [LocalizationCubit] and [ModelsCubit] because it is
+/// pushed above the main shell and therefore cannot rely on the shell's
+/// provider tree. It observes [ChatState] and renders the four UI
+/// phases — loading, error, empty and streaming — without containing
+/// any business logic.
+class ChatScreen extends StatelessWidget {
+  /// Identifier of the conversation to display.
+  final String conversationId;
+
+  /// Creates a [ChatScreen] for [conversationId].
+  const ChatScreen({
+    super.key,
+    required this.conversationId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: <BlocProviderSingleChildWidget>[
+        BlocProvider<ChatCubit>(
+          create: (context) => ChatCubit(
+            remoteDataSource: buildRemoteDataSource(),
+            localDataSource: buildLocalDataSource(),
+          ),
+        ),
+        BlocProvider<LocalizationCubit>(
+          create: (context) =>
+              LocalizationCubit(storage: sl<LocalStorageService>()),
+        ),
+        BlocProvider<ModelsCubit>(
+          create: (context) => ModelsCubit(
+            remoteDataSource: buildRemoteDataSource(),
+            localDataSource: buildLocalDataSource(),
+          )..loadModels(),
+        ),
+      ],
+      child: _ChatView(conversationId: conversationId),
+    );
+  }
+}
+
+class _ChatView extends StatefulWidget {
+  const _ChatView({required this.conversationId});
+
+  final String conversationId;
+
+  @override
+  State<_ChatView> createState() => _ChatViewState();
+}
+
+class _ChatViewState extends State<_ChatView> {
   late final ScrollController _scrollController;
-  late final List<Message> _messages;
-  bool _isLoading = false;
-  String? _currentStreamingResponse;
+  ChatLaunchData? _launchData;
+  bool _didLaunch = false;
+  int _previousLength = 0;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _messages = [];
-    _sendInitialMessage();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didLaunch) {
+      return;
+    }
+    _didLaunch = true;
+    final extra = GoRouterState.of(context).extra;
+    if (extra is ChatLaunchData) {
+      _launchData = extra;
+      _send(extra.message, extra.modelId);
+    } else {
+      context.read<ChatCubit>().loadMessages(widget.conversationId);
+    }
   }
 
   @override
@@ -43,266 +122,138 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  void _sendInitialMessage() {
-    _addUserMessage(widget.initialMessage);
-    _sendMessage(widget.initialMessage);
-  }
-
-  void _addUserMessage(String content) {
-    final message = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      conversationId: widget.conversationId ?? 'new',
-      content: content,
-      role: MessageRole.user,
-      timestamp: DateTime.now(),
-      modelId: widget.modelId,
-    );
-    setState(() {
-      _messages.add(message);
-    });
-    _scrollToBottom();
-  }
-
-  Future<void> _sendMessage(String content) async {
-    setState(() {
-      _isLoading = true;
-      _currentStreamingResponse = '';
-    });
-
-    try {
-      final apiService = ref.read(apiServiceProvider);
-      
-      // Add a placeholder for the assistant message
-      final assistantMessage = Message(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        conversationId: widget.conversationId ?? 'new',
-        content: '',
-        role: MessageRole.assistant,
-        timestamp: DateTime.now(),
-        modelId: widget.modelId,
-        isStreaming: true,
-      );
-      
-      setState(() {
-        _messages.add(assistantMessage);
-      });
-      _scrollToBottom();
-
-      // Get the streaming response
-      final stream = await apiService.sendMessage(
-        conversationId: widget.conversationId ?? 'new',
-        content: content,
-        modelId: widget.modelId,
-      );
-
-      await for (final chunk in stream) {
-        if (mounted) {
-          setState(() {
-            _currentStreamingResponse = (_currentStreamingResponse ?? '') + chunk;
-            // Update the last message with the streamed content
-            if (_messages.isNotEmpty && _messages.last.role == MessageRole.assistant) {
-              _messages[_messages.length - 1] = _messages.last.copyWith(
-                content: _currentStreamingResponse ?? '',
-              );
-            }
-          });
-          _scrollToBottom();
-        }
-      }
-
-      // Mark streaming as complete
-      if (_messages.isNotEmpty && _messages.last.role == MessageRole.assistant) {
-        setState(() {
-          _messages[_messages.length - 1] = _messages.last.copyWith(
-            isStreaming: false,
-          );
-          _currentStreamingResponse = null;
-        });
-      }
-    } catch (e) {
-      _showErrorSnackbar('Failed to send message: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+  String? _modelId(BuildContext context) {
+    final launchModel = _launchData?.modelId;
+    if (launchModel != null && launchModel.isNotEmpty) {
+      return launchModel;
     }
+    return context.read<ModelsCubit>().state.selectedModelId;
+  }
+
+  void _send(String content, String modelId) {
+    context.read<ChatCubit>().sendMessage(
+          conversationId: widget.conversationId,
+          content: content,
+          modelId: modelId,
+        );
+  }
+
+  void _onSendPressed(String content) {
+    final state = context.read<ChatCubit>().state;
+    if (state.isLoading) {
+      context.showSnackBar(
+        localizedTextRead(context, 'Waiting for the response…', 'بانتظار الرد…'),
+      );
+      return;
+    }
+    final modelId = _modelId(context);
+    if (modelId == null) {
+      context.showSnackBar(
+        localizedTextRead(context, 'Please select a model first', 'الرجاء اختيار نموذج أولاً'),
+      );
+      return;
+    }
+    _send(content, modelId);
+  }
+
+  Future<void> _copyMessage(String content) async {
+    await Clipboard.setData(ClipboardData(text: content));
+    if (!mounted) {
+      return;
+    }
+    context.showSnackBar(
+      localizedTextRead(context, 'Copied to clipboard', 'تم النسخ إلى الحافظة'),
+    );
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+      if (!_scrollController.hasClients) {
+        return;
       }
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     });
-  }
-
-  void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hajeen AI Chat'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // Show options menu
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Messages List
-          Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Text(
-                      Strings.noData,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final message = _messages[index];
-                      return FadeInUp(
-                        child: MessageBubble(
-                          message: message,
-                          onCopy: () {
-                            _copyToClipboard(message.content);
-                          },
-                          onRegenerate: message.role == MessageRole.assistant
-                              ? () {
-                                  if (index > 0) {
-                                    final userMsg = _messages[index - 1];
-                                    _messages.removeAt(index);
-                                    setState(() {});
-                                    _sendMessage(userMsg.content);
-                                  }
-                                }
-                              : null,
-                          onLike: message.role == MessageRole.assistant
-                              ? () {
-                                  _rateMessage(message.id, true);
-                                }
-                              : null,
-                          onDislike: message.role == MessageRole.assistant
-                              ? () {
-                                  _rateMessage(message.id, false);
-                                }
-                              : null,
-                          onShare: () {
-                            _shareMessage(message.content);
-                          },
-                          onPin: () {
-                            _togglePin(index);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-          ),
-
-          // Thinking indicator
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: FadeIn(
-                child: Row(
-                  children: [
-                    const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${Strings.thinking}...',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
+    return BlocConsumer<ChatCubit, ChatState>(
+      listener: (context, state) {
+        final error = state.error;
+        if (error != null && error.isNotEmpty) {
+          context.showErrorSnackBar(
+            localizedTextRead(context, 'Something went wrong', 'حدث خطأ ما'),
+          );
+        }
+        if (state.messages.length != _previousLength) {
+          _previousLength = state.messages.length;
+          _scrollToBottom();
+        }
+      },
+      builder: (context, state) {
+        return AppScaffold(
+          appBar: AppBar(
+            title: Text(
+              localizedText(context, 'Hajeen AI Chat', 'محادثة هاجين'),
             ),
-
-          // Chat Input
-          ChatInputField(
-            onSendMessage: _isLoading
-                ? (_) {} // Disable input while loading
-                : (message) {
-                    _addUserMessage(message);
-                    _sendMessage(message);
-                  },
           ),
-        ],
-      ),
+          body: _buildBody(context, state),
+          bottomSheet: ChatInputField(
+            hintText: localizedText(context, 'Ask anything…', 'اسأل أي شيء…'),
+            onSendMessage: _onSendPressed,
+          ),
+        );
+      },
     );
   }
 
-  void _copyToClipboard(String text) {
-    // TODO: Implement copy to clipboard
-  }
+  Widget _buildBody(BuildContext context, ChatState state) {
+    if (state.isLoading && state.messages.isEmpty) {
+      return const Center(child: LoadingIndicator());
+    }
 
-  void _rateMessage(String messageId, bool isPositive) {
-    // TODO: Implement message rating
-  }
+    if (state.error != null && state.messages.isEmpty) {
+      return ErrorView(
+        description: state.error,
+        onRetry: () =>
+            context.read<ChatCubit>().loadMessages(widget.conversationId),
+      );
+    }
 
-  void _shareMessage(String content) {
-    // TODO: Implement share functionality
-  }
+    if (state.messages.isEmpty) {
+      return const EmptyState(
+        variant: EmptyStateVariant.noData,
+      );
+    }
 
-  void _togglePin(int index) {
-    // TODO: Implement pin functionality
-  }
-}
-
-extension on Message {
-  Message copyWith({
-    String? id,
-    String? conversationId,
-    String? content,
-    MessageRole? role,
-    DateTime? timestamp,
-    String? modelId,
-    List<MessageAttachment>? attachments,
-    int? likeCount,
-    int? dislikeCount,
-    bool? isLiked,
-    bool? isDisliked,
-    bool? isPinned,
-    bool? isStreaming,
-    double? streamingProgress,
-  }) {
-    return Message(
-      id: id ?? this.id,
-      conversationId: conversationId ?? this.conversationId,
-      content: content ?? this.content,
-      role: role ?? this.role,
-      timestamp: timestamp ?? this.timestamp,
-      modelId: modelId ?? this.modelId,
-      attachments: attachments ?? this.attachments,
-      likeCount: likeCount ?? this.likeCount,
-      dislikeCount: dislikeCount ?? this.dislikeCount,
-      isLiked: isLiked ?? this.isLiked,
-      isDisliked: isDisliked ?? this.isDisliked,
-      isPinned: isPinned ?? this.isPinned,
-      isStreaming: isStreaming ?? this.isStreaming,
-      streamingProgress: streamingProgress ?? this.streamingProgress,
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: state.messages.length,
+      itemBuilder: (context, index) {
+        final message = state.messages[index];
+        return FadeInSlide(
+          child: MessageBubble(
+            message: message,
+            onCopy: () => _copyMessage(message.content),
+          onRegenerate: message.role == MessageRole.assistant
+              ? () {
+                  final modelId = _modelId(context);
+                  if (modelId != null) {
+                    context.read<ChatCubit>().regenerate(
+                          conversationId: widget.conversationId,
+                          modelId: modelId,
+                        );
+                  }
+                }
+              : null,
+          ),
+        );
+      },
     );
   }
 }

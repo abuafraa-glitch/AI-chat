@@ -1,170 +1,125 @@
+import 'package:ai_chat/core/constants/app_strings.dart';
+import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/routes/route_names.dart';
+import 'package:ai_chat/core/theme/theme_cubit.dart';
+import 'package:ai_chat/core/widgets/app_scaffold.dart';
+import 'package:ai_chat/presentation/blocs/localization_cubit.dart';
+import 'package:ai_chat/presentation/blocs/models_cubit.dart';
+import 'package:ai_chat/presentation/screens/chat_screen.dart';
+import 'package:ai_chat/presentation/widgets/chat_input_field.dart';
+import 'package:ai_chat/presentation/widgets/localized_text.dart';
+import 'package:ai_chat/presentation/widgets/model_selector.dart';
+import 'package:ai_chat/presentation/widgets/suggestion_chips.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animate_do/animate_do.dart';
-import '../../config/localization/app_localization.dart';
-import '../../providers/localization_provider.dart';
-import '../../providers/api_provider.dart';
-import '../../providers/storage_provider.dart';
-import '../../providers/theme_provider.dart';
-import '../widgets/model_selector.dart';
-import '../widgets/suggestion_chips.dart';
-import '../widgets/chat_input_field.dart';
-import 'chat_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+/// Landing tab of the application.
+///
+/// Purely presentational: it observes [ThemeCubit], [LocalizationCubit]
+/// and [ModelsCubit] for rendering, and forwards user intents — theme
+/// toggle, locale toggle, model selection and message submission — to
+/// the cubits or to the router. Starting a chat navigates to the
+/// conversation route via go_router, carrying the launch payload.
+class HomeScreen extends StatelessWidget {
+  /// Creates a [HomeScreen].
+  const HomeScreen({super.key});
 
-  @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  late PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  void _startChat(BuildContext context, String message) {
+    final modelId = context.read<ModelsCubit>().state.selectedModelId;
+    if (modelId == null) {
+      context.showSnackBar(
+        localizedTextRead(context, 'Please select a model first', 'الرجاء اختيار نموذج أولاً'),
+      );
+      return;
+    }
+    final conversationId = DateTime.now().microsecondsSinceEpoch.toString();
+    context.pushTo(
+      RouteNames.conversationPath(conversationId),
+      extra: ChatLaunchData(message: message, modelId: modelId),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isArabic = ref.watch(localizationProvider) == 'ar';
-    final isDarkMode = ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    final isDark = context.watch<ThemeCubit>().state.isDark;
+    final isArabic = isArabicLocale(context);
     final textDirection = isArabic ? TextDirection.rtl : TextDirection.ltr;
 
-    return Scaffold(
+    return AppScaffold(
       body: Directionality(
         textDirection: textDirection,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header with Model Selector
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Theme Toggle
-                    FadeInLeft(
-                      child: IconButton(
-                        icon: Icon(
-                          isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        onPressed: () {
-                          ref.read(themeProvider.notifier).toggleTheme();
-                        },
-                      ),
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: <Widget>[
+                  IconButton(
+                    icon: Icon(
+                      isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                      color: theme.colorScheme.primary,
                     ),
-                    // Hajeen Logo
-                    FadeIn(
-                      child: Text(
-                        '🧠 Hajeen AI',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ),
-                    // Language Toggle
-                    FadeInRight(
-                      child: IconButton(
-                        icon: Text(isArabic ? '🇺🇸' : '🇸🇦'),
-                        onPressed: () {
-                          ref.read(localizationProvider.notifier).setLocale(
-                            isArabic ? 'en' : 'ar',
+                    tooltip: localizedText(context, 'Toggle theme', 'تبديل المظهر'),
+                    onPressed: () {
+                      context.read<ThemeCubit>().toggle(
+                            MediaQuery.platformBrightnessOf(context),
                           );
-                        },
+                    },
+                  ),
+                  const Spacer(),
+                  Text(
+                    '🧠 Hajeen AI',
+                    style: theme.textTheme.headlineMedium,
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Text(isArabic ? '🇺🇸' : '🇸🇦'),
+                    tooltip: localizedText(context, 'Toggle language', 'تبديل اللغة'),
+                    onPressed: () {
+                      context.read<LocalizationCubit>().setLocale(
+                            isArabic ? AppStrings.localeEn : AppStrings.localeAr,
+                          );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: ModelSelector(),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: <Widget>[
+                    const SizedBox(height: 40),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        localizedText(context, 'Welcome to Hajeen AI', 'مرحباً بك في هاجين'),
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.displaySmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
+                    const SizedBox(height: 32),
+                    SuggestionChips(
+                      onSuggestionSelected: (suggestion) {
+                        _startChat(context, suggestion);
+                      },
+                    ),
+                    const SizedBox(height: 60),
                   ],
                 ),
               ),
-
-              const Divider(height: 1),
-
-              // Model Selector
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                child: ModelSelector(
-                  onModelSelected: (model) {
-                    ref.read(selectedModelProvider.notifier).state = model.id;
-                  },
-                ),
-              ),
-
-              // Main Content
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 40),
-                      // Welcome Message
-                      FadeInUp(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                          child: Text(
-                            Strings.welcome,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Suggestion Chips
-                      FadeInUp(
-                        delay: const Duration(milliseconds: 100),
-                        child: SuggestionChips(
-                          onSuggestionSelected: (suggestion) {
-                            _startChat(suggestion);
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(height: 60),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Chat Input Field
-              FadeInUp(
-                child: ChatInputField(
-                  onSendMessage: (message) {
-                    _startChat(message);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _startChat(String message) {
-    final selectedModel = ref.read(selectedModelProvider);
-    if (selectedModel == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a model first')),
-      );
-      return;
-    }
-
-    // Navigate to chat screen
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(
-          initialMessage: message,
-          modelId: selectedModel,
+            ),
+            ChatInputField(
+              hintText: localizedText(context, 'Ask anything…', 'اسأل أي شيء…'),
+              onSendMessage: (message) => _startChat(context, message),
+            ),
+          ],
         ),
       ),
     );

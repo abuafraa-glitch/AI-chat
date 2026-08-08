@@ -1,175 +1,148 @@
+import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../config/localization/app_localization.dart';
-import '../../providers/localization_provider.dart';
 
-class ChatInputField extends ConsumerStatefulWidget {
-  final Function(String) onSendMessage;
+/// Composer input used at the bottom of the chat surfaces.
+///
+/// A pure presentation widget: it holds the text-editing state, watches
+/// the active locale for direction and tooltips, and forwards the
+/// trimmed message through [onSendMessage]. Attachment actions are
+/// optional and only rendered when a callback is supplied.
+class ChatInputField extends StatefulWidget {
+  /// Localized hint shown while the field is empty.
+  final String hintText;
+
+  /// Invoked with the trimmed message when the user sends.
+  final ValueChanged<String> onSendMessage;
+
+  /// Optional file-attachment action; hides the button when `null`.
   final VoidCallback? onAttachFile;
+
+  /// Optional image-attachment action; hides the button when `null`.
   final VoidCallback? onUploadImage;
+
+  /// Optional audio-recording action; hides the button when `null`.
   final VoidCallback? onRecordAudio;
 
+  /// Creates a [ChatInputField].
   const ChatInputField({
-    Key? key,
+    super.key,
+    required this.hintText,
     required this.onSendMessage,
     this.onAttachFile,
     this.onUploadImage,
     this.onRecordAudio,
-  }) : super(key: key);
+  });
 
   @override
-  ConsumerState<ChatInputField> createState() => _ChatInputFieldState();
+  State<ChatInputField> createState() => _ChatInputFieldState();
 }
 
-class _ChatInputFieldState extends ConsumerState<ChatInputField> {
-  late final TextEditingController _controller;
+class _ChatInputFieldState extends State<ChatInputField> {
+  final TextEditingController _controller = TextEditingController();
   bool _isComposing = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
     _controller.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();
   }
 
   void _onTextChanged() {
-    setState(() {
-      _isComposing = _controller.text.trim().isNotEmpty;
-    });
+    final composing = _controller.text.trim().isNotEmpty;
+    if (composing != _isComposing) {
+      setState(() {
+        _isComposing = composing;
+      });
+    }
   }
 
   void _sendMessage() {
-    if (!_isComposing) return;
-
     final message = _controller.text.trim();
-    if (message.isEmpty) return;
-
+    if (message.isEmpty) {
+      return;
+    }
     widget.onSendMessage(message);
     _controller.clear();
-    _onTextChanged();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isArabic = ref.watch(localizationProvider) == 'ar';
+    final isArabic = isArabicLocale(context);
+    final theme = Theme.of(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(
-            color: Theme.of(context).dividerColor,
-          ),
+          top: BorderSide(color: theme.dividerColor),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          // Action Buttons (for attachments)
+        children: <Widget>[
           if (widget.onAttachFile != null ||
               widget.onUploadImage != null ||
               widget.onRecordAudio != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
+              padding: const EdgeInsets.only(bottom: 12),
               child: Row(
-                children: [
+                children: <Widget>[
                   if (widget.onAttachFile != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: IconButton(
-                        icon: const Icon(Icons.attach_file),
-                        onPressed: widget.onAttachFile,
-                        tooltip: Strings.attachFile,
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.attach_file),
+                      tooltip: localizedText(context, 'Attach file', 'إرفاق ملف'),
+                      onPressed: widget.onAttachFile,
                     ),
                   if (widget.onUploadImage != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: IconButton(
-                        icon: const Icon(Icons.image),
-                        onPressed: widget.onUploadImage,
-                        tooltip: Strings.uploadImage,
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.image_outlined),
+                      tooltip: localizedText(context, 'Upload image', 'رفع صورة'),
+                      onPressed: widget.onUploadImage,
                     ),
                   if (widget.onRecordAudio != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: IconButton(
-                        icon: const Icon(Icons.mic),
-                        onPressed: widget.onRecordAudio,
-                        tooltip: Strings.recordAudio,
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.mic_none),
+                      tooltip: localizedText(context, 'Record audio', 'تسجيل صوتي'),
+                      onPressed: widget.onRecordAudio,
                     ),
                   const Spacer(),
                 ],
               ),
             ),
-
-          // Input Row
           Row(
-            children: [
-              // Text Field
+            children: <Widget>[
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.background,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
+                child: Directionality(
+                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
                   child: TextField(
                     controller: _controller,
                     maxLines: null,
                     minLines: 1,
-                    textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
-                      hintText: Strings.askAnything,
-                      hintTextDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                      hintText: widget.hintText,
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
                       ),
                     ),
-                    textCapitalization: TextCapitalization.sentences,
                   ),
                 ),
               ),
-
               const SizedBox(width: 8),
-
-              // Send Button
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _isComposing
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _isComposing ? _sendMessage : null,
-                    customBorder: const CircleBorder(),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Icon(
-                        Icons.send_rounded,
-                        color: _isComposing
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                ),
+              IconButton.filled(
+                icon: const Icon(Icons.send_rounded),
+                onPressed: _isComposing ? _sendMessage : null,
+                tooltip: localizedText(context, 'Send', 'إرسال'),
               ),
             ],
           ),

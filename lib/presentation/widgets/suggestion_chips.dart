@@ -1,63 +1,90 @@
+import 'package:ai_chat/presentation/animations/fade_in_slide.dart';
+import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
-import 'package:animate_do/animate_do.dart';
-import '../../config/localization/app_localization.dart';
 
+/// Renders quick-start suggestion chips.
+///
+/// A pure presentation widget: labels are derived from the active
+/// locale and tapping a chip forwards its text through
+/// [onSuggestionSelected]. It performs no logic of its own.
 class SuggestionChips extends StatelessWidget {
-  final Function(String) onSuggestionSelected;
+  /// Invoked with the suggestion text when a chip is tapped.
+  final ValueChanged<String> onSuggestionSelected;
 
+  /// Creates a [SuggestionChips].
   const SuggestionChips({
-    Key? key,
+    super.key,
     required this.onSuggestionSelected,
-  }) : super(key: key);
+  });
+
+  List<(String, String)> _suggestions(BuildContext context) {
+    return <(String, String)>[
+      ('✨', localizedText(context, 'Ask anything', 'اسأل أي شيء')),
+      ('💻', localizedText(context, 'Write code', 'اكتب كوداً')),
+      ('📄', localizedText(context, 'Analyze a file', 'حلّل ملفاً')),
+      ('🌍', localizedText(context, 'Translate', 'ترجم')),
+      ('📚', localizedText(context, 'Summarize', 'لخّص')),
+      ('💡', localizedText(context, 'Suggest ideas', 'اقترح أفكاراً')),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    final suggestions = [
-      ('✨', Strings.askAnything),
-      ('💻', Strings.writeCode),
-      ('📄', Strings.analyzeFile),
-      ('🌍', Strings.translate),
-      ('📚', Strings.summarize),
-      ('💡', Strings.suggestIdeas),
-    ];
+    final suggestions = _suggestions(context);
+    final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
         alignment: WrapAlignment.center,
-        children: List.generate(
-          suggestions.length,
-          (index) => FadeInUp(
-            delay: Duration(milliseconds: index * 50),
-            child: GestureDetector(
-              onTap: () => onSuggestionSelected(suggestions[index].$2),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      suggestions[index].$1,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      suggestions[index].$2,
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                  ],
-                ),
+        children: <Widget>[
+          for (var index = 0; index < suggestions.length; index++)
+            FadeInSlide(
+              delay: Duration(milliseconds: index * 60),
+              slideDistance: 8,
+              child: _SuggestionChip(
+                icon: suggestions[index].$1,
+                label: suggestions[index].$2,
+                onTap: () => onSuggestionSelected(suggestions[index].$2),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionChip extends StatelessWidget {
+  const _SuggestionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(icon, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Text(label, style: theme.textTheme.labelLarge),
+            ],
           ),
         ),
       ),

@@ -1,238 +1,245 @@
+import 'package:ai_chat/core/widgets/app_scaffold.dart';
+import 'package:ai_chat/core/widgets/empty_state.dart';
+import 'package:ai_chat/core/widgets/error_view.dart';
+import 'package:ai_chat/core/widgets/loaders/loading_indicator.dart';
+import 'package:ai_chat/data/models/subscription_model.dart';
+import 'package:ai_chat/presentation/blocs/subscriptions_cubit.dart';
+import 'package:ai_chat/presentation/widgets/formatters.dart';
+import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animate_do/animate_do.dart';
-import '../../providers/api_provider.dart';
-import '../../config/localization/app_localization.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class SubscriptionScreen extends ConsumerStatefulWidget {
-  const SubscriptionScreen({Key? key}) : super(key: key);
+/// Subscription plans tab.
+///
+/// Purely presentational: it observes [SubscriptionsCubit] and renders
+/// the plan catalogue (raw server payloads, accessed defensively) and
+/// the typed current [SubscriptionModel]. Purchase flows are out of
+/// scope for the presentation layer, so no subscribe handlers live
+/// here.
+class SubscriptionScreen extends StatelessWidget {
+  /// Creates a [SubscriptionScreen].
+  const SubscriptionScreen({super.key});
 
-  @override
-  ConsumerState<SubscriptionScreen> createState() => _SubscriptionScreenState();
-}
+  String _stringOf(Map<String, dynamic> map, String key) {
+    final value = map[key];
+    return value is String ? value : '';
+  }
 
-class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
+  String _priceOf(Map<String, dynamic> map) {
+    final price = map['price'];
+    return price is num ? price.toString() : '';
+  }
+
+  List<String> _featuresOf(Map<String, dynamic> map) {
+    final features = map['features'];
+    if (features is List) {
+      return features
+          .whereType<String>()
+          .toList();
+    }
+    return const <String>[];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final plansAsync = ref.watch(subscriptionPlansProvider);
-    final currentSubAsync = ref.watch(currentSubscriptionProvider);
+    final cubit = context.watch<SubscriptionsCubit>();
+    final state = cubit.state;
 
-    return Scaffold(
+    return AppScaffold(
       appBar: AppBar(
-        title: const Text('Subscription Plans'),
-      ),
-      body: plansAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
-        data: (plans) => SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Current Subscription Info
-              currentSubAsync.when(
-                data: (currentSub) {
-                  if (currentSub != null && currentSub.isActive) {
-                    return FadeInUp(
-                      child: Container(
-                        padding: const EdgeInsets.all(16.0),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Current Plan',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              currentSub.plan.name,
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Active until ${currentSub.endDate}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Plans Grid
-              Text(
-                'Choose Your Plan',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-
-              Column(
-                children: List.generate(
-                  plans.length,
-                  (index) => FadeInUp(
-                    delay: Duration(milliseconds: index * 100),
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: _PlanCard(
-                        plan: plans[index],
-                        isCurrentPlan: currentSubAsync.maybeWhen(
-                          data: (currentSub) => currentSub?.planId == plans[index].id,
-                          orElse: () => false,
-                        ),
-                        onSubscribe: () => _handleSubscribe(plans[index]),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        title: Text(
+          localizedText(context, 'Subscription Plans', 'خطط الاشتراك'),
         ),
       ),
+      body: _buildContent(context, cubit, state),
     );
   }
 
-  Future<void> _handleSubscribe(dynamic plan) async {
-    // TODO: Implement checkout flow
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Subscribe to ${plan.name}')),
+  Widget _buildContent(
+    BuildContext context,
+    SubscriptionsCubit cubit,
+    SubscriptionsState state,
+  ) {
+    if (state.isLoading && state.plans.isEmpty) {
+      return const Center(child: LoadingIndicator());
+    }
+
+    if (state.error != null && state.plans.isEmpty) {
+      return ErrorView(
+        description: state.error,
+        onRetry: cubit.load,
+      );
+    }
+
+    if (state.plans.isEmpty) {
+      return const EmptyState(
+        variant: EmptyStateVariant.noData,
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: <Widget>[
+        if (state.currentSubscription != null) ...<Widget>[
+          _CurrentSubscriptionCard(
+            subscription: state.currentSubscription!,
+            formatDate: formatAppDate,
+            localized: (en, ar) => localizedText(context, en, ar),
+          ),
+          const SizedBox(height: 24),
+        ],
+        Text(
+          localizedText(context, 'Choose your plan', 'اختر خطتك'),
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 16),
+        for (final plan in state.plans)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _PlanCard(
+              name: _stringOf(plan, 'name'),
+              description: _stringOf(plan, 'description'),
+              price: _priceOf(plan),
+              features: _featuresOf(plan),
+              localized: (en, ar) => localizedText(context, en, ar),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _CurrentSubscriptionCard extends StatelessWidget {
+  const _CurrentSubscriptionCard({
+    required this.subscription,
+    required this.formatDate,
+    required this.localized,
+  });
+
+  final SubscriptionModel subscription;
+  final String Function(DateTime) formatDate;
+  final String Function(String, String) localized;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final planName = subscription.planType.name;
+    final status = subscription.status.name;
+    final endDate = subscription.endDate;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            localized('Current Plan', 'الخطة الحالية'),
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            planName,
+            style: theme.textTheme.headlineMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${subscription.price} ${subscription.currency}',
+            style: theme.textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            endDate != null
+                ? '${localized('Active until', 'نشطة حتى')} ${formatDate(endDate)}'
+                : localized('Status', 'الحالة'),
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            status,
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _PlanCard extends StatelessWidget {
-  final dynamic plan;
-  final bool isCurrentPlan;
-  final VoidCallback onSubscribe;
-
   const _PlanCard({
-    required this.plan,
-    required this.isCurrentPlan,
-    required this.onSubscribe,
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.features,
+    required this.localized,
   });
+
+  final String name;
+  final String description;
+  final String price;
+  final List<String> features;
+  final String Function(String, String) localized;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isCurrentPlan
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).dividerColor,
-          width: isCurrentPlan ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    plan.name,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    plan.description,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-              if (isCurrentPlan)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Current',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+    final theme = Theme.of(context);
 
-          const SizedBox(height: 16),
-
-          // Price
-          Row(
-            baseline: TextBaseline.alphabetic,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            children: [
-              Text(
-                '\$${plan.price}',
-                style: Theme.of(context).textTheme.displaySmall,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '/${plan.billingCycleDays}days',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Features List
-          ...plan.features.map<Widget>((feature) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      feature,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-
-          const SizedBox(height: 20),
-
-          // Action Button
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: isCurrentPlan ? null : onSubscribe,
-              child: Text(isCurrentPlan ? Strings.currentPlan : Strings.subscribe_now),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              name,
+              style: theme.textTheme.headlineSmall,
             ),
-          ),
-        ],
+            if (description.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Text(
+                  price.isEmpty
+                      ? localized('Contact us', 'تواصل معنا')
+                      : '\$$price',
+                  style: theme.textTheme.displaySmall,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            for (final feature in features)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.check_circle,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        feature,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
