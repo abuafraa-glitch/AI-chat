@@ -1,9 +1,9 @@
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_radius.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppTextField extends StatefulWidget {
   final TextEditingController? controller;

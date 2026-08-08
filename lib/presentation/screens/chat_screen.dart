@@ -1,6 +1,4 @@
-import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
-import 'package:ai_chat/core/services/local_storage_service.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -9,7 +7,6 @@ import 'package:ai_chat/data/models/message_model.dart';
 import 'package:ai_chat/presentation/animations/fade_in_slide.dart';
 import 'package:ai_chat/presentation/blocs/chat_cubit.dart';
 import 'package:ai_chat/presentation/blocs/data_sources.dart';
-import 'package:ai_chat/presentation/blocs/localization_cubit.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
 import 'package:ai_chat/presentation/widgets/chat_input_field.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
@@ -19,20 +16,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-/// Launch payload carried through the conversation route when a chat is
-/// started with an initial message.
+/// Launch payload carried through the conversation route.
+///
+/// When [message] is non-empty the chat sends it on arrival; otherwise
+/// the screen simply loads the (empty) thread. [modelId] defaults to
+/// the user's current selection when omitted.
 class ChatLaunchData {
   /// Creates [ChatLaunchData] for a new conversation.
   const ChatLaunchData({
-    required this.message,
-    required this.modelId,
+    this.message = '',
+    this.modelId,
   });
 
   /// Initial user message to send on arrival.
   final String message;
 
-  /// Model that should answer the initial message.
-  final String modelId;
+  /// Model that should answer the initial message, or `null` to use
+  /// the current selection.
+  final String? modelId;
 }
 
 /// Renders a single conversation.
@@ -59,19 +60,12 @@ class ChatScreen extends StatelessWidget {
       providers: <BlocProviderSingleChildWidget>[
         BlocProvider<ChatCubit>(
           create: (context) => ChatCubit(
-            remoteDataSource: buildRemoteDataSource(),
-            localDataSource: buildLocalDataSource(),
+            repository: buildMessageRepository(),
           ),
         ),
-        BlocProvider<LocalizationCubit>(
-          create: (context) =>
-              LocalizationCubit(storage: sl<LocalStorageService>()),
-        ),
         BlocProvider<ModelsCubit>(
-          create: (context) => ModelsCubit(
-            remoteDataSource: buildRemoteDataSource(),
-            localDataSource: buildLocalDataSource(),
-          )..loadModels(),
+          create: (context) =>
+              ModelsCubit(repository: buildAIRepository())..loadModels(),
         ),
       ],
       child: _ChatView(conversationId: conversationId),
@@ -110,10 +104,13 @@ class _ChatViewState extends State<_ChatView> {
     final extra = GoRouterState.of(context).extra;
     if (extra is ChatLaunchData) {
       _launchData = extra;
-      _send(extra.message, extra.modelId);
-    } else {
-      context.read<ChatCubit>().loadMessages(widget.conversationId);
+      final modelId = _modelId(context);
+      if (extra.message.isNotEmpty && modelId != null) {
+        _send(extra.message, modelId);
+        return;
+      }
     }
+    context.read<ChatCubit>().loadMessages(widget.conversationId);
   }
 
   @override

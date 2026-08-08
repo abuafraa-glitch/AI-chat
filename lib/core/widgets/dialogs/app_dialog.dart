@@ -1,108 +1,58 @@
-
 import 'package:flutter/material.dart';
-import 'package:ai_chat/core/extensions/build_context_extension.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
-import 'package:ai_chat/core/widgets/cards/app_card.dart';
 
-enum InfoCardStatus {
-  info,
-  success,
-  warning,
-  error,
-}
+/// Themed application dialog used across Hajeen AI.
+///
+/// A thin wrapper around [AlertDialog] that inherits the Material 3
+/// dialog theming configured in [ThemeData.dialogTheme]. Use the
+/// static [AppDialog.show] helper to present it, or embed
+/// [AppDialog] directly as a dialog widget.
+class AppDialog extends StatelessWidget {
+  /// Optional dialog header widget (usually a [Text]).
+  final Widget? title;
 
-class InfoCard extends StatelessWidget {
-  final String title;
-  final String? description;
-  final IconData? icon;
-  final Widget? badge;
-  final InfoCardStatus status;
+  /// Optional dialog body widget.
+  final Widget? content;
+
+  /// Optional action row rendered below [content].
   final List<Widget>? actions;
-  final bool showCloseButton;
-  final VoidCallback? onClose;
 
-  const InfoCard({
+  /// Whether tapping outside the dialog dismisses it.
+  ///
+  /// Honoured by [AppDialog.show]; stored here so widget-level usage
+  /// stays source-compatible with the dialog API.
+  final bool barrierDismissible;
+
+  /// Creates an [AppDialog].
+  const AppDialog({
     super.key,
-    required this.title,
-    this.description,
-    this.icon,
-    this.badge,
-    this.status = InfoCardStatus.info,
+    this.title,
+    this.content,
     this.actions,
-    this.showCloseButton = false,
-    this.onClose,
+    this.barrierDismissible = true,
   });
 
-  Color _getStatusColor(BuildContext context) {
-    switch (status) {
-      case InfoCardStatus.info:
-        return context.colorScheme.primary;
-      case InfoCardStatus.success:
-        return context.colorScheme.secondary;
-      case InfoCardStatus.warning:
-        return context.colorScheme.tertiary;
-      case InfoCardStatus.error:
-        return context.colorScheme.error;
-    }
+  /// Presents a dialog built by [builder] over [context].
+  ///
+  /// Returns the value passed to `Navigator.pop`, or `null` when the
+  /// dialog is dismissed without a result.
+  static Future<T?> show<T>(
+    BuildContext context,
+    WidgetBuilder builder, {
+    bool barrierDismissible = true,
+  }) {
+    return showDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      builder: builder,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color statusColor = _getStatusColor(context);
-
-    return AppCard(
-      backgroundColor: statusColor.withOpacity(0.1),
-      border: Border.all(color: statusColor.withOpacity(0.5)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (icon != null)
-                Icon(
-                  icon,
-                  color: statusColor,
-                  size: 24,
-                ),
-              if (icon != null) const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  title,
-                  style: context.textTheme.titleMedium?.copyWith(
-                    color: context.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              if (badge != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                badge!,
-              ],
-              if (showCloseButton)
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: onClose,
-                  color: context.colorScheme.onSurface.withOpacity(0.6),
-                ),
-            ],
-          ),
-          if (description != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              description!,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurface.withOpacity(0.8),
-              ),
-            ),
-          ],
-          if (actions != null && actions!.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: actions!,
-            ),
-          ],
-        ],
-      ),
+    return AlertDialog(
+      title: title,
+      content: content,
+      actions: actions,
     );
   }
 }

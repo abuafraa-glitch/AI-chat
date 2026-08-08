@@ -1,6 +1,6 @@
 
-import 'package:flutter/material.dart';
 import 'package:ai_chat/core/widgets/responsive_layout.dart';
+import 'package:flutter/material.dart';
 
 class AppScaffold extends StatelessWidget {
   final PreferredSizeWidget? appBar;
@@ -63,7 +63,7 @@ class AppScaffold extends StatelessWidget {
     }
 
     // Add responsive layout wrapper
-    content = ResponsiveLayout(child: content);
+    content = ResponsiveLayout(mobile: content);
 
     // Add loading and error overlays
     if (loadingOverlay != null || errorOverlay != null) {

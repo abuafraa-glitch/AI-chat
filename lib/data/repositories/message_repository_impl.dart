@@ -1,88 +1,88 @@
-import 'package:dartz/dartz.dart';
-
-import 'package:ai_chat/core/errors/error_handler.dart';
-import 'package:ai_chat/core/errors/failures.dart';
 import 'package:ai_chat/data/datasources/local/local_data_source.dart';
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:ai_chat/data/models/message_model.dart';
+import 'package:ai_chat/data/repositories/message_repository.dart';
 
-/// Implementation of Message repository.
+/// Implementation of [MessageRepository].
 ///
-/// Manages message sending, streaming, and retrieval.
-class MessageRepositoryImpl {
-  final RemoteDataSource _remoteDataSource;
-  final LocalDataSource _localDataSource;
-
+/// Manages message history, sending, streaming and regeneration while
+/// keeping the local thread cache in sync.
+class MessageRepositoryImpl implements MessageRepository {
+  /// Creates a [MessageRepositoryImpl] wired to [remoteDataSource] and
+  /// [localDataSource].
   MessageRepositoryImpl({
     required RemoteDataSource remoteDataSource,
     required LocalDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  })  : _remote = remoteDataSource,
+        _local = localDataSource;
 
-  /// Fetches messages for a specific conversation.
-  Future<Either<Failure, List<MessageModel>>> getMessages(
-    String conversationId,
-  ) async {
+  final RemoteDataSource _remote;
+  final LocalDataSource _local;
+
+  @override
+  Future<List<MessageModel>> getMessages(String conversationId) async {
     try {
-      final messages = await _remoteDataSource.getConversationMessages(conversationId);
-      await _localDataSource.saveMessages(conversationId, messages);
-      return Right(messages);
-    } catch (e) {
-      try {
-        final cached = await _localDataSource.getMessages(conversationId);
-        return Right(cached);
-      } catch (_) {
-        return Left(ErrorHandler.handle(e).failure);
+      final messages = await _remote.getConversationMessages(conversationId);
+      await _local.saveMessages(conversationId, messages);
+      return messages;
+    } on Exception {
+      final cached = await _cachedMessages(conversationId);
+      if (cached != null && cached.isNotEmpty) {
+        return cached;
       }
+      rethrow;
     }
   }
 
-  /// Sends a message and updates local cache.
-  Future<Either<Failure, MessageModel>> sendMessage(
+  @override
+  Future<MessageModel> sendMessage({
+    required String conversationId,
+    required Map<String, dynamic> data,
+  }) async {
+    final message = await _remote.sendMessage(
+      conversationId: conversationId,
+      data: data,
+    );
+    final current = await _cachedMessages(conversationId) ?? const <MessageModel>[];
+    await _local.saveMessages(conversationId, <MessageModel>[...current, message]);
+    return message;
+  }
+
+  @override
+  Stream<String> streamMessage({
+    required String conversationId,
+    Map<String, dynamic>? data,
+  }) {
+    return _remote.streamMessage(conversationId: conversationId, data: data);
+  }
+
+  @override
+  Future<MessageModel> regenerateMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final message = await _remote.regenerateMessage(
+      conversationId: conversationId,
+      messageId: messageId,
+    );
+    await _local.updateMessage(message);
+    return message;
+  }
+
+  @override
+  Future<void> cacheMessages(
     String conversationId,
-    Map<String, dynamic> data,
-  ) async {
-    try {
-      final message = await _remoteDataSource.sendMessage(conversationId, data);
-      final current = await _localDataSource.getMessages(conversationId);
-      await _localDataSource.saveMessages(conversationId, [...current, message]);
-      return Right(message);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
-    }
+    List<MessageModel> messages,
+  ) {
+    return _local.saveMessages(conversationId, messages);
   }
 
-  /// Streams message tokens.
-  Stream<String> streamMessage(String conversationId, Map<String, dynamic> data) {
-    return _remoteDataSource.streamMessage(conversationId, data);
-  }
-
-  /// Regenerates a message.
-  Future<Either<Failure, MessageModel>> regenerateMessage(
-    String conversationId,
-    String messageId,
-  ) async {
+  /// Returns the locally cached thread, or `null`.
+  Future<List<MessageModel>?> _cachedMessages(String conversationId) async {
     try {
-      final newMessage = await _remoteDataSource.regenerateMessage(
-        conversationId,
-        messageId,
-      );
-      // Update the specific message in local storage
-      await _localDataSource.updateMessage(newMessage);
-      return Right(newMessage);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
-    }
-  }
-
-  /// Retries a failed message.
-  Future<Either<Failure, MessageModel>> retryMessage(String messageId) async {
-    try {
-      final message = await _remoteDataSource.retryMessage(messageId);
-      await _localDataSource.updateMessage(message);
-      return Right(message);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
+      return await _local.getMessages(conversationId);
+    } on Exception {
+      return null;
     }
   }
 }

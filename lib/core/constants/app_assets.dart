@@ -73,15 +73,10 @@ abstract final class AppAssets {
 
   // ---- Fonts ----------------------------------------------------------------
 
-  /// `assets/fonts/Roboto-Regular.ttf` — primary regular weight.
-  static const String fontRegular = 'assets/fonts/Roboto-Regular.ttf';
-
-  /// `assets/fonts/Roboto-Medium.ttf` — primary medium weight.
-  static const String fontMedium = 'assets/fonts/Roboto-Medium.ttf';
-
-  /// `assets/fonts/Roboto-Bold.ttf` — primary bold weight.
-  static const String fontBold = 'assets/fonts/Roboto-Bold.ttf';
+  /// `assets/fonts/Cairo-Variable.ttf` — bundled Cairo variable font
+  /// (covers Arabic and Latin, weights 200–1000).
+  static const String fontCairo = 'assets/fonts/Cairo-Variable.ttf';
 
   /// Font family name referenced in `TextStyle.fontFamily`.
-  static const String fontFamily = 'Roboto';
+  static const String fontFamily = 'Cairo';
 }

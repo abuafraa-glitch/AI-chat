@@ -1,19 +1,16 @@
 import 'dart:convert';
 
-import 'package:injectable/injectable.dart';
-
-import '../../../core/constants/storage_keys.dart';
-import '../../../core/services/local_storage_service.dart';
-import '../../../core/services/secure_storage_service.dart';
-import '../../models/ai_model.dart';
-import '../../models/conversation_model.dart';
-import '../../models/message_model.dart';
-import '../../models/subscription_model.dart';
-import 'local_data_source.dart';
+import 'package:ai_chat/core/constants/storage_keys.dart';
+import 'package:ai_chat/core/services/local_storage_service.dart';
+import 'package:ai_chat/core/services/secure_storage_service.dart';
+import 'package:ai_chat/data/datasources/local/local_data_source.dart';
+import 'package:ai_chat/data/models/ai_model.dart';
+import 'package:ai_chat/data/models/conversation_model.dart';
+import 'package:ai_chat/data/models/message_model.dart';
+import 'package:ai_chat/data/models/subscription_model.dart';
 
 /// Implementation of [LocalDataSource] that uses [LocalStorageService]
 /// and [SecureStorageService] for local data persistence.
-@LazySingleton(as: LocalDataSource)
 class LocalDataSourceImpl implements LocalDataSource {
   final LocalStorageService _localStorageService;
   final SecureStorageService _secureStorageService;

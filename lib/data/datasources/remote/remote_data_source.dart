@@ -17,11 +17,36 @@ abstract interface class RemoteDataSource {
     required String password,
   });
 
+  /// Registers a new account and returns the raw response containing
+  /// tokens when the server auto-signs-in the new user.
+  Future<Map<String, dynamic>> register({
+    required String name,
+    required String email,
+    required String password,
+  });
+
   /// Invalidates the current session on the server.
   Future<void> logout();
 
   /// Fetches the current authenticated user profile.
   Future<Map<String, dynamic>> getCurrentUser();
+
+  /// Initiates the password-recovery flow for [email].
+  Future<void> forgotPassword(String email);
+
+  /// Completes the password-reset flow with the emailed [token] and a
+  /// new [password].
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+  });
+
+  /// Confirms the email address with the emailed verification [code].
+  Future<void> verifyEmail({
+    required String email,
+    required String code,
+  });
 
   // ── AI Models ─────────────────────────────────────────────────────────────
 
@@ -73,6 +98,9 @@ abstract interface class RemoteDataSource {
 
   // ── Files ─────────────────────────────────────────────────────────────────
 
+  /// Lists the files uploaded by the current user.
+  Future<List<Map<String, dynamic>>> getFiles();
+
   /// Uploads a file to the server.
   Future<Map<String, dynamic>> uploadFile({
     required String filePath,
@@ -82,6 +110,21 @@ abstract interface class RemoteDataSource {
 
   /// Deletes a previously uploaded file.
   Future<void> deleteFile(String fileId);
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+
+  /// Lists the in-app notifications for the current user.
+  Future<List<Map<String, dynamic>>> getNotifications();
+
+  // ── Agents ────────────────────────────────────────────────────────────────
+
+  /// Lists the AI agent definitions available to the current user.
+  Future<List<Map<String, dynamic>>> getAgents();
+
+  // ── Payments ──────────────────────────────────────────────────────────────
+
+  /// Lists the payment history of the current user.
+  Future<List<Map<String, dynamic>>> getPaymentHistory();
 
   // ── Subscriptions ─────────────────────────────────────────────────────────
 

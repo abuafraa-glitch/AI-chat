@@ -133,8 +133,8 @@ abstract final class HttpStatusCode {
 ///
 /// Paths intentionally omit the API version — the version is added
 /// once, at the configuration layer, to keep it swappable.
-abstract final class ApiPath {
-  const ApiPath._();
+abstract final class ApiPaths {
+  const ApiPaths._();
 
   /// `/auth` — login, register, refresh, logout.
   static const String auth = '/auth';

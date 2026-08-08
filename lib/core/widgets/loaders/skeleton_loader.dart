@@ -1,8 +1,8 @@
 
-import 'package:flutter/material.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_radius.dart';
 import 'package:ai_chat/core/widgets/loaders/shimmer_loader.dart';
+import 'package:flutter/material.dart';
 
 class SkeletonLoader extends StatelessWidget {
   final double? width;

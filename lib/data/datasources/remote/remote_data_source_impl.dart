@@ -36,6 +36,24 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    final response = await _apiConsumer.post<Map<String, dynamic>>(
+      path: Endpoints.register,
+      data: <String, String>{
+        'name': name,
+        'email': email,
+        'password': password,
+      },
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+    return _handleResponse(response);
+  }
+
+  @override
   Future<void> logout() async {
     final response = await _apiConsumer.post<void>(
       path: Endpoints.logout,
@@ -49,6 +67,47 @@ class RemoteDataSourceImpl implements RemoteDataSource {
     final response = await _apiConsumer.get<Map<String, dynamic>>(
       path: Endpoints.me,
       fromJson: (json) => json as Map<String, dynamic>,
+    );
+    return _handleResponse(response);
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    final response = await _apiConsumer.post<void>(
+      path: Endpoints.forgotPassword,
+      data: <String, String>{'email': email},
+      fromJson: (_) {},
+    );
+    return _handleResponse(response);
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+  }) async {
+    final response = await _apiConsumer.post<void>(
+      path: Endpoints.resetPassword,
+      data: <String, String>{
+        'email': email,
+        'token': token,
+        'password': password,
+      },
+      fromJson: (_) {},
+    );
+    return _handleResponse(response);
+  }
+
+  @override
+  Future<void> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    final response = await _apiConsumer.post<void>(
+      path: Endpoints.verifyEmail,
+      data: <String, String>{'email': email, 'code': code},
+      fromJson: (_) {},
     );
     return _handleResponse(response);
   }
@@ -175,6 +234,15 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   // ── Files ─────────────────────────────────────────────────────────────────
 
   @override
+  Future<List<Map<String, dynamic>>> getFiles() async {
+    final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
+      path: Endpoints.files,
+      fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
+    );
+    return _handleResponse(response);
+  }
+
+  @override
   Future<Map<String, dynamic>> uploadFile({
     required String filePath,
     required String fileFieldName,
@@ -194,6 +262,39 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   Future<void> deleteFile(String fileId) async {
     final response = await _apiConsumer.delete(
       path: Endpoints.file(fileId),
+    );
+    return _handleResponse(response);
+  }
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+
+  @override
+  Future<List<Map<String, dynamic>>> getNotifications() async {
+    final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
+      path: Endpoints.notifications,
+      fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
+    );
+    return _handleResponse(response);
+  }
+
+  // ── Agents ────────────────────────────────────────────────────────────────
+
+  @override
+  Future<List<Map<String, dynamic>>> getAgents() async {
+    final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
+      path: Endpoints.agents,
+      fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
+    );
+    return _handleResponse(response);
+  }
+
+  // ── Payments ──────────────────────────────────────────────────────────────
+
+  @override
+  Future<List<Map<String, dynamic>>> getPaymentHistory() async {
+    final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
+      path: Endpoints.paymentHistory,
+      fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
     );
     return _handleResponse(response);
   }

@@ -3,22 +3,36 @@ import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
 import 'package:ai_chat/core/widgets/loaders/loading_indicator.dart';
 import 'package:ai_chat/data/models/subscription_model.dart';
+import 'package:ai_chat/presentation/blocs/data_sources.dart';
 import 'package:ai_chat/presentation/blocs/subscriptions_cubit.dart';
 import 'package:ai_chat/presentation/widgets/formatters.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Subscription plans tab.
+/// Subscription plans page.
 ///
-/// Purely presentational: it observes [SubscriptionsCubit] and renders
-/// the plan catalogue (raw server payloads, accessed defensively) and
-/// the typed current [SubscriptionModel]. Purchase flows are out of
-/// scope for the presentation layer, so no subscribe handlers live
-/// here.
+/// This screen is a self-contained route pushed above the main shell,
+/// so it provides its own [SubscriptionsCubit]. It renders the plan
+/// catalogue (raw server payloads, accessed defensively) and the typed
+/// current [SubscriptionModel]. Purchase flows are out of scope for the
+/// presentation layer, so no subscribe handlers live here.
 class SubscriptionScreen extends StatelessWidget {
   /// Creates a [SubscriptionScreen].
   const SubscriptionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<SubscriptionsCubit>(
+      create: (context) =>
+          SubscriptionsCubit(repository: buildSubscriptionRepository())..load(),
+      child: const _SubscriptionView(),
+    );
+  }
+}
+
+class _SubscriptionView extends StatelessWidget {
+  const _SubscriptionView();
 
   String _stringOf(Map<String, dynamic> map, String key) {
     final value = map[key];

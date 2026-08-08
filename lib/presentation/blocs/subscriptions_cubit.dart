@@ -1,6 +1,5 @@
-import 'package:ai_chat/data/datasources/local/local_data_source.dart';
-import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:ai_chat/data/models/subscription_model.dart';
+import 'package:ai_chat/data/repositories/subscription_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -52,37 +51,29 @@ final class SubscriptionsState extends Equatable {
 
 /// Manages subscription plans and the user's active subscription.
 ///
-/// Plans are fetched from the remote data source; the active
-/// subscription is served from the remote source when available and
-/// falls back to the locally cached subscription. A `null` current
-/// subscription simply means the user has not subscribed yet.
+/// Data is loaded through [SubscriptionRepository], which applies the
+/// remote-first / cache-fallback policy. A `null` current subscription
+/// simply means the user has not subscribed yet.
 final class SubscriptionsCubit extends Cubit<SubscriptionsState> {
-  /// Creates a [SubscriptionsCubit] wired to [remoteDataSource] and
-  /// [localDataSource].
-  SubscriptionsCubit({
-    required RemoteDataSource remoteDataSource,
-    required LocalDataSource localDataSource,
-  })  : _remote = remoteDataSource,
-        _local = localDataSource,
+  /// Creates a [SubscriptionsCubit] wired to [repository].
+  SubscriptionsCubit({required SubscriptionRepository repository})
+      : _repository = repository,
         super(const SubscriptionsState());
 
-  final RemoteDataSource _remote;
-  final LocalDataSource _local;
+  final SubscriptionRepository _repository;
 
   /// Loads subscription plans and the active subscription.
   Future<void> load() async {
     emit(state.copyWith(isLoading: true, error: null));
-
     await _loadPlans();
     await _loadCurrentSubscription();
-
     emit(state.copyWith(isLoading: false));
   }
 
   /// Loads the available plans; failures are surfaced in the state.
   Future<void> _loadPlans() async {
     try {
-      final plans = await _remote.getSubscriptionPlans();
+      final plans = await _repository.getPlans();
       emit(state.copyWith(plans: plans));
     } on Exception catch (error) {
       emit(state.copyWith(error: error.toString()));
@@ -92,23 +83,11 @@ final class SubscriptionsCubit extends Cubit<SubscriptionsState> {
   /// Loads the active subscription with a local-cache fallback.
   Future<void> _loadCurrentSubscription() async {
     try {
-      final subscription = await _remote.getSubscription();
-      await _local.saveSubscription(subscription);
+      final subscription = await _repository.getSubscription();
       emit(state.copyWith(currentSubscription: subscription));
     } on Exception {
-      final cached = await _safeCachedSubscription();
-      if (cached != null) {
-        emit(state.copyWith(currentSubscription: cached));
-      }
-    }
-  }
-
-  /// Returns the cached subscription, or `null` when unavailable.
-  Future<SubscriptionModel?> _safeCachedSubscription() async {
-    try {
-      return await _local.getSubscription();
-    } on Exception {
-      return null;
+      // The repository already served the cache or the call failed;
+      // a missing subscription is a valid state.
     }
   }
 }

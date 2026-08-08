@@ -1,91 +1,75 @@
-import 'package:dartz/dartz.dart';
-
-import 'package:ai_chat/core/errors/error_handler.dart';
-import 'package:ai_chat/core/errors/failures.dart';
 import 'package:ai_chat/data/datasources/local/local_data_source.dart';
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:ai_chat/data/models/conversation_model.dart';
+import 'package:ai_chat/data/repositories/conversation_repository.dart';
 
-/// Implementation of Conversation repository.
+/// Implementation of [ConversationRepository].
 ///
-/// Orchestrates conversation data between remote and local sources.
-class ConversationRepositoryImpl {
-  final RemoteDataSource _remoteDataSource;
-  final LocalDataSource _localDataSource;
-
+/// Orchestrates conversation data between the remote and local sources,
+/// keeping the local cache in sync after every successful mutation and
+/// serving the cache when the network is unavailable.
+class ConversationRepositoryImpl implements ConversationRepository {
+  /// Creates a [ConversationRepositoryImpl] wired to
+  /// [remoteDataSource] and [localDataSource].
   ConversationRepositoryImpl({
     required RemoteDataSource remoteDataSource,
     required LocalDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  })  : _remote = remoteDataSource,
+        _local = localDataSource;
 
-  /// Retrieves all conversations.
-  ///
-  /// Syncs remote data with local storage.
-  Future<Either<Failure, List<ConversationModel>>> getConversations() async {
+  final RemoteDataSource _remote;
+  final LocalDataSource _local;
+
+  @override
+  Future<List<ConversationModel>> getConversations() async {
     try {
-      final conversations = await _remoteDataSource.getConversations();
-      await _localDataSource.saveConversations(conversations);
-      return Right(conversations);
-    } catch (e) {
-      try {
-        final cached = await _localDataSource.getConversations();
-        return Right(cached);
-      } catch (_) {
-        return Left(ErrorHandler.handle(e).failure);
+      final conversations = await _remote.getConversations();
+      await _local.saveConversations(conversations);
+      return conversations;
+    } on Exception {
+      final cached = await _cachedConversations();
+      if (cached != null && cached.isNotEmpty) {
+        return cached;
       }
+      rethrow;
     }
   }
 
-  /// Creates a new conversation.
-  Future<Either<Failure, ConversationModel>> createConversation(
+  @override
+  Future<ConversationModel> createConversation(
     Map<String, dynamic> data,
   ) async {
-    try {
-      final conversation = await _remoteDataSource.createConversation(data);
-      // Update local cache with the new conversation
-      final current = await _localDataSource.getConversations();
-      await _localDataSource.saveConversations([conversation, ...current]);
-      return Right(conversation);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
-    }
+    final conversation = await _remote.createConversation(data);
+    await _local.updateConversation(conversation);
+    return conversation;
   }
 
-  /// Updates an existing conversation.
-  Future<Either<Failure, ConversationModel>> updateConversation(
-    String id,
-    Map<String, dynamic> data,
-  ) async {
-    try {
-      final updated = await _remoteDataSource.updateConversation(id, data);
-      await _localDataSource.updateConversation(updated);
-      return Right(updated);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
-    }
+  @override
+  Future<ConversationModel> updateConversation({
+    required String id,
+    required Map<String, dynamic> data,
+  }) async {
+    final updated = await _remote.updateConversation(id: id, data: data);
+    await _local.updateConversation(updated);
+    return updated;
   }
 
-  /// Deletes a conversation.
-  Future<Either<Failure, void>> deleteConversation(String id) async {
-    try {
-      await _remoteDataSource.deleteConversation(id);
-      await _localDataSource.deleteConversation(id);
-      return const Right(null);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
-    }
+  @override
+  Future<void> deleteConversation(String id) async {
+    await _remote.deleteConversation(id);
+    await _local.deleteConversation(id);
   }
 
-  /// Searches conversations.
-  Future<Either<Failure, List<ConversationModel>>> searchConversations(
-    String query,
-  ) async {
+  @override
+  Future<List<ConversationModel>> searchConversations(String query) =>
+      _remote.searchConversations(query);
+
+  /// Returns the locally cached conversation list, or `null`.
+  Future<List<ConversationModel>?> _cachedConversations() async {
     try {
-      final results = await _remoteDataSource.searchConversations(query);
-      return Right(results);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
+      return await _local.getConversations();
+    } on Exception {
+      return null;
     }
   }
 }

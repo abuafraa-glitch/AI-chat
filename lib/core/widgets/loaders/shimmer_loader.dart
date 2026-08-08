@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:flutter/material.dart';
 
 class ShimmerLoader extends StatefulWidget {
   final Widget child;

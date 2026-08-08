@@ -1,6 +1,5 @@
-import 'package:ai_chat/data/datasources/local/local_data_source.dart';
-import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:ai_chat/data/models/message_model.dart';
+import 'package:ai_chat/data/repositories/message_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -53,29 +52,24 @@ final class ChatState extends Equatable {
 /// Manages a chat conversation: message history, sending, streaming
 /// and regeneration.
 ///
-/// All network and storage orchestration lives here — widgets only
-/// observe the state and forward user intents. Streaming chunks are
-/// accumulated into [ChatState.streamingContent] and the finalised
-/// assistant message is persisted through [LocalDataSource].
+/// All network and storage orchestration is delegated to
+/// [MessageRepository]; widgets only observe the state and forward
+/// user intents. Streaming chunks are accumulated into
+/// [ChatState.streamingContent] and the finalised thread is persisted
+/// through the repository's cache.
 final class ChatCubit extends Cubit<ChatState> {
-  /// Creates a [ChatCubit] wired to [remoteDataSource] and
-  /// [localDataSource].
-  ChatCubit({
-    required RemoteDataSource remoteDataSource,
-    required LocalDataSource localDataSource,
-  })  : _remote = remoteDataSource,
-        _local = localDataSource,
+  /// Creates a [ChatCubit] wired to [repository].
+  ChatCubit({required MessageRepository repository}) : _repository = repository,
         super(const ChatState());
 
-  final RemoteDataSource _remote;
-  final LocalDataSource _local;
+  final MessageRepository _repository;
 
   /// Sends [content] to [conversationId] using [modelId] and streams
   /// the assistant response.
   ///
   /// A placeholder assistant message is appended immediately, then
   /// token chunks update [ChatState.streamingContent] until the stream
-  /// completes, at which point the finalised thread is persisted.
+  /// completes, at which point the finalised thread is cached.
   Future<void> sendMessage({
     required String conversationId,
     required String content,
@@ -112,7 +106,7 @@ final class ChatCubit extends Cubit<ChatState> {
 
     var buffer = '';
     try {
-      final stream = _remote.streamMessage(
+      final stream = _repository.streamMessage(
         conversationId: conversationId,
         data: <String, dynamic>{'content': content, 'modelId': modelId},
       );
@@ -132,7 +126,7 @@ final class ChatCubit extends Cubit<ChatState> {
         buffer,
         isStreaming: false,
       );
-      await _local.saveMessages(conversationId, finalised);
+      await _repository.cacheMessages(conversationId, finalised);
       emit(
         state.copyWith(
           messages: finalised,
@@ -176,20 +170,13 @@ final class ChatCubit extends Cubit<ChatState> {
   /// Loads the message history for [conversationId].
   ///
   /// Serves the locally cached thread first, then refreshes from the
-  /// remote source.
+  /// remote source (both handled by the repository).
   Future<void> loadMessages(String conversationId) async {
-    final cached = await _safeCachedMessages(conversationId);
-    if (cached != null && cached.isNotEmpty) {
-      emit(state.copyWith(messages: cached));
-    }
     try {
-      final messages = await _remote.getConversationMessages(conversationId);
-      await _local.saveMessages(conversationId, messages);
-      emit(state.copyWith(messages: messages));
+      final messages = await _repository.getMessages(conversationId);
+      emit(state.copyWith(messages: messages, error: null));
     } on Exception catch (error) {
-      if (cached == null || cached.isEmpty) {
-        emit(state.copyWith(error: error.toString()));
-      }
+      emit(state.copyWith(error: error.toString()));
     }
   }
 
@@ -220,15 +207,6 @@ final class ChatCubit extends Cubit<ChatState> {
         isStreaming: isStreaming ?? message.isStreaming,
       );
     }).toList();
-  }
-
-  /// Returns the cached thread for [conversationId], or `null`.
-  Future<List<MessageModel>?> _safeCachedMessages(String conversationId) async {
-    try {
-      return await _local.getMessages(conversationId);
-    } on Exception {
-      return null;
-    }
   }
 
   /// Generates a unique message id.

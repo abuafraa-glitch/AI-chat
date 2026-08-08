@@ -1,6 +1,6 @@
 
-import 'package:flutter/material.dart';
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
+import 'package:flutter/material.dart';
 
 class LoadingButton extends StatelessWidget {
   final String text;

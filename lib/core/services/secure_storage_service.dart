@@ -1,4 +1,5 @@
 import 'package:ai_chat/core/constants/storage_keys.dart';
+import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// A typed wrapper around [FlutterSecureStorage] for the Hajeen AI
@@ -25,7 +26,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// final token = await secureStorage.readAccessToken();
 /// await secureStorage.clearTokens();
 /// ```
-final class SecureStorageService {
+final class SecureStorageService implements TokenProvider {
   /// Creates a [SecureStorageService].
   ///
   /// The [storage] parameter is exposed for dependency injection in

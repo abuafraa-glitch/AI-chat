@@ -1,6 +1,6 @@
 
-import 'package:flutter/material.dart';
 import 'package:ai_chat/core/constants/app_constants.dart';
+import 'package:flutter/material.dart';
 
 class ResponsiveLayout extends StatelessWidget {
   final Widget mobile;

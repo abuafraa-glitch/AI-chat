@@ -1,7 +1,7 @@
-import '../../models/ai_model.dart';
-import '../../models/conversation_model.dart';
-import '../../models/message_model.dart';
-import '../../models/subscription_model.dart';
+import 'package:ai_chat/data/models/ai_model.dart';
+import 'package:ai_chat/data/models/conversation_model.dart';
+import 'package:ai_chat/data/models/message_model.dart';
+import 'package:ai_chat/data/models/subscription_model.dart';
 
 /// An abstract interface for managing all local data storage operations.
 ///

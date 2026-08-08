@@ -1,71 +1,52 @@
-import 'package:dartz/dartz.dart';
-
-import 'package:ai_chat/core/errors/error_handler.dart';
-import 'package:ai_chat/core/errors/failures.dart';
 import 'package:ai_chat/data/datasources/local/local_data_source.dart';
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:ai_chat/data/models/subscription_model.dart';
+import 'package:ai_chat/data/repositories/subscription_repository.dart';
 
-/// Implementation of Subscription repository.
+/// Implementation of [SubscriptionRepository].
 ///
-/// Handles subscription plans and user subscription status.
-class SubscriptionRepositoryImpl {
-  final RemoteDataSource _remoteDataSource;
-  final LocalDataSource _localDataSource;
-
+/// Handles subscription plans and the user's active subscription,
+/// serving the cached subscription when the network is unavailable.
+class SubscriptionRepositoryImpl implements SubscriptionRepository {
+  /// Creates a [SubscriptionRepositoryImpl] wired to
+  /// [remoteDataSource] and [localDataSource].
   SubscriptionRepositoryImpl({
     required RemoteDataSource remoteDataSource,
     required LocalDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  })  : _remote = remoteDataSource,
+        _local = localDataSource;
 
-  /// Fetches available subscription plans.
-  Future<Either<Failure, List<Map<String, dynamic>>>> getPlans() async {
-    try {
-      final plans = await _remoteDataSource.getPlans();
-      return Right(plans);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
-    }
-  }
+  final RemoteDataSource _remote;
+  final LocalDataSource _local;
 
-  /// Fetches the user's current subscription.
-  Future<Either<Failure, SubscriptionModel>> getSubscription() async {
+  @override
+  Future<List<Map<String, dynamic>>> getPlans() => _remote.getSubscriptionPlans();
+
+  @override
+  Future<SubscriptionModel> getSubscription() async {
     try {
-      final subscription = await _remoteDataSource.getSubscription();
-      await _localDataSource.saveSubscription(subscription);
-      return Right(subscription);
-    } catch (e) {
-      try {
-        final cached = await _localDataSource.getSubscription();
-        if (cached != null) {
-          return Right(cached);
-        }
-        return Left(ErrorHandler.handle(e).failure);
-      } catch (_) {
-        return Left(ErrorHandler.handle(e).failure);
+      final subscription = await _remote.getSubscription();
+      await _local.saveSubscription(subscription);
+      return subscription;
+    } on Exception {
+      final cached = await _cachedSubscription();
+      if (cached != null) {
+        return cached;
       }
+      rethrow;
     }
   }
 
-  /// Initiates a purchase.
-  Future<Either<Failure, Map<String, dynamic>>> purchase(String planId) async {
-    try {
-      final result = await _remoteDataSource.purchase(planId);
-      return Right(result);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
-    }
-  }
+  @override
+  Future<void> cancelSubscription(String subscriptionId) =>
+      _remote.cancelSubscription(subscriptionId);
 
-  /// Cancels the current subscription.
-  Future<Either<Failure, void>> cancelSubscription(String subscriptionId) async {
+  /// Returns the locally cached subscription, or `null`.
+  Future<SubscriptionModel?> _cachedSubscription() async {
     try {
-      await _remoteDataSource.cancelSubscription(subscriptionId);
-      // Optionally update local cache to reflect cancellation
-      return const Right(null);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e).failure);
+      return await _local.getSubscription();
+    } on Exception {
+      return null;
     }
   }
 }

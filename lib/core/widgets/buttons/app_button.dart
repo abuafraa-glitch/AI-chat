@@ -1,8 +1,8 @@
 
-import 'package:flutter/material.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/theme/app_radius.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
+import 'package:flutter/material.dart';
 
 enum AppButtonType {
   primary,
@@ -69,7 +69,7 @@ class AppButton extends StatelessWidget {
                 backgroundColor: effectiveBackgroundColor,
                 foregroundColor: effectiveForegroundColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.mdRadius.x),
+                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.md),
                 ),
                 padding: _getPadding(size),
                 textStyle: _getTextStyle(textTheme, size),
@@ -86,7 +86,7 @@ class AppButton extends StatelessWidget {
                 backgroundColor: effectiveBackgroundColor,
                 foregroundColor: effectiveForegroundColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.mdRadius.x),
+                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.md),
                 ),
                 padding: _getPadding(size),
                 textStyle: _getTextStyle(textTheme, size),
@@ -103,7 +103,7 @@ class AppButton extends StatelessWidget {
                 foregroundColor: effectiveForegroundColor,
                 side: BorderSide(color: effectiveBorderColor),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.mdRadius.x),
+                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.md),
                 ),
                 padding: _getPadding(size),
                 textStyle: _getTextStyle(textTheme, size),
@@ -118,7 +118,7 @@ class AppButton extends StatelessWidget {
               style: TextButton.styleFrom(
                 foregroundColor: effectiveForegroundColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.mdRadius.x),
+                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.md),
                 ),
                 padding: _getPadding(size),
                 textStyle: _getTextStyle(textTheme, size),
@@ -135,7 +135,7 @@ class AppButton extends StatelessWidget {
                 backgroundColor: effectiveBackgroundColor,
                 foregroundColor: effectiveForegroundColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.mdRadius.x),
+                  borderRadius: BorderRadius.circular(borderRadius ?? AppRadius.md),
                 ),
                 padding: _getPadding(size),
                 textStyle: _getTextStyle(textTheme, size),

@@ -1,6 +1,5 @@
 import 'package:ai_chat/core/constants/app_constants.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -108,17 +107,16 @@ extension ResponsiveBuildContextExtension on BuildContext {
 
 // ── Locale & localisation ──────────────────────────────────────────────────
 
+/// Extensions exposing the active [Locale] and text direction from the
+/// widget tree.
+///
+/// The locale is read from Flutter's [Localizations] layer, which is
+/// driven by the root [MaterialApp.router] `locale` parameter; screens
+/// switch languages through `LocalizationCubit`, never through this
+/// extension.
 extension LocaleBuildContextExtension on BuildContext {
   /// The currently active locale.
-  Locale get locale => EasyLocalization.of(this)!.locale;
-
-  /// All locales supported by the application.
-  List<Locale> get supportedLocales =>
-      EasyLocalization.of(this)!.supportedLocales;
-
-  /// Changes the application locale to [newLocale].
-  Future<void> setLocale(Locale newLocale) async =>
-      EasyLocalization.of(this)!.setLocale(newLocale);
+  Locale get locale => Localizations.localeOf(this);
 
   /// `true` when the current locale uses right-to-left text direction.
   bool get isRtl =>

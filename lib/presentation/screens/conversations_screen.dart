@@ -7,18 +7,21 @@ import 'package:ai_chat/core/widgets/inputs/app_text_field.dart';
 import 'package:ai_chat/core/widgets/loaders/loading_indicator.dart';
 import 'package:ai_chat/data/models/conversation_model.dart';
 import 'package:ai_chat/presentation/blocs/conversations_cubit.dart';
+import 'package:ai_chat/presentation/screens/chat_screen.dart';
+import 'package:ai_chat/presentation/screens/home_screen.dart';
 import 'package:ai_chat/presentation/widgets/formatters.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Conversation list tab.
+/// Chat tab — the conversation list of the application.
 ///
 /// Purely presentational: it observes [ConversationsCubit], derives the
 /// filtered list through [ConversationsCubit.filterAndSort] (the logic
 /// lives in the cubit, not the widget), and renders loading, error,
-/// empty and data states. Opening a conversation navigates through
-/// go_router.
+/// empty and data states. When there are no conversations yet, the
+/// [HomeScreen] welcome hub is shown instead. Opening a conversation
+/// navigates through go_router.
 class ConversationsScreen extends StatefulWidget {
   /// Creates a [ConversationsScreen].
   const ConversationsScreen({super.key});
@@ -44,6 +47,14 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     });
   }
 
+  void _startConversation(BuildContext context) {
+    final conversationId = DateTime.now().microsecondsSinceEpoch.toString();
+    context.pushTo(
+      RouteNames.conversationPath(conversationId),
+      extra: const ChatLaunchData(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.watch<ConversationsCubit>();
@@ -53,8 +64,13 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     return AppScaffold(
       appBar: AppBar(
         title: Text(
-          localizedText(context, 'Conversations', 'المحادثات'),
+          localizedText(context, 'Chats', 'المحادثات'),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: localizedText(context, 'New conversation', 'محادثة جديدة'),
+        onPressed: () => _startConversation(context),
+        child: const Icon(Icons.add),
       ),
       body: Column(
         children: <Widget>[
@@ -96,15 +112,13 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       );
     }
 
+    if (conversations.isEmpty && _query.isEmpty) {
+      return const HomeScreen();
+    }
+
     if (conversations.isEmpty) {
-      return EmptyState(
-        variant: _query.isEmpty
-            ? EmptyStateVariant.noConversations
-            : EmptyStateVariant.noResults,
-        buttonText: _query.isEmpty
-            ? localizedText(context, 'Start a conversation', 'ابدأ محادثة')
-            : null,
-        onButtonPressed: _query.isEmpty ? () => _startConversation(context) : null,
+      return const EmptyState(
+        variant: EmptyStateVariant.noResults,
       );
     }
 
@@ -151,10 +165,5 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         );
       },
     );
-  }
-
-  void _startConversation(BuildContext context) {
-    final conversationId = DateTime.now().microsecondsSinceEpoch.toString();
-    context.pushTo(RouteNames.conversationPath(conversationId));
   }
 }

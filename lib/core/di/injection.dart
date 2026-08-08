@@ -4,6 +4,7 @@ import 'package:ai_chat/core/network/api_client.dart';
 import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:ai_chat/core/network/dio_factory.dart';
 import 'package:ai_chat/core/network/network_info.dart';
+import 'package:ai_chat/core/routes/app_router.dart';
 import 'package:ai_chat/core/services/cache_service.dart';
 import 'package:ai_chat/core/services/connectivity_service.dart';
 import 'package:ai_chat/core/services/local_storage_service.dart';
@@ -11,6 +12,23 @@ import 'package:ai_chat/core/services/logger_service.dart';
 import 'package:ai_chat/core/services/permission_service.dart';
 import 'package:ai_chat/core/services/secure_storage_service.dart';
 import 'package:ai_chat/core/theme/theme_cubit.dart';
+import 'package:ai_chat/data/datasources/local/local_data_source.dart';
+import 'package:ai_chat/data/datasources/local/local_data_source_impl.dart';
+import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
+import 'package:ai_chat/data/datasources/remote/remote_data_source_impl.dart';
+import 'package:ai_chat/data/repositories/ai_repository.dart';
+import 'package:ai_chat/data/repositories/ai_repository_impl.dart';
+import 'package:ai_chat/data/repositories/conversation_repository.dart';
+import 'package:ai_chat/data/repositories/conversation_repository_impl.dart';
+import 'package:ai_chat/data/repositories/file_repository.dart';
+import 'package:ai_chat/data/repositories/file_repository_impl.dart';
+import 'package:ai_chat/data/repositories/message_repository.dart';
+import 'package:ai_chat/data/repositories/message_repository_impl.dart';
+import 'package:ai_chat/data/repositories/subscription_repository.dart';
+import 'package:ai_chat/data/repositories/subscription_repository_impl.dart';
+import 'package:ai_chat/presentation/blocs/auth_controller.dart';
+import 'package:ai_chat/presentation/blocs/localization_cubit.dart';
+import 'package:ai_chat/presentation/routing/router_page_factory.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -20,26 +38,24 @@ import 'package:internet_connection_checker_plus/internet_connection_checker_plu
 /// Global instance of the GetIt service locator.
 final GetIt sl = GetIt.instance;
 
-/// Initializes all the dependencies for the application.
+/// Initialises all dependencies for the application.
 ///
-/// This function should be called once during the application's bootstrap
-/// phase. It registers all services, repositories, and other dependencies
-/// with the GetIt service locator.
+/// Must be called once during the bootstrap phase, after
+/// [AppConfig.initialize], and before the first frame is rendered.
 Future<void> initDependencies() async {
-  // ---------------------------------------------------------------------------
-  // Core Dependencies
-  // ---------------------------------------------------------------------------
+  // ── Core services ─────────────────────────────────────────────────────────
 
-  // LoggerService: Singleton
+  // LoggerService: singleton.
   sl.registerLazySingleton<LoggerService>(
     () => LoggerService(flavor: AppConfig.instance.flavor),
   );
 
-  // LocalStorageService: Async Singleton
+  // LocalStorageService: async singleton.
   final localStorageService = await LocalStorageService.create();
   sl.registerSingleton<LocalStorageService>(localStorageService);
 
-  // SecureStorageService: Singleton
+  // SecureStorageService: singleton; implements TokenProvider directly,
+  // so the network layer reads and persists tokens through it.
   sl.registerLazySingleton<SecureStorageService>(
     () => SecureStorageService(
       storage: const FlutterSecureStorage(
@@ -50,11 +66,14 @@ Future<void> initDependencies() async {
       ),
     ),
   );
+  sl.registerLazySingleton<TokenProvider>(
+    () => sl<SecureStorageService>(),
+  );
 
-  // CacheService: Singleton
+  // CacheService: in-memory TTL cache.
   sl.registerLazySingleton<CacheService>(CacheService.new);
 
-  // ConnectivityService: Singleton with async initialization and dispose
+  // ConnectivityService: singleton with async initialisation.
   sl.registerSingleton<ConnectivityService>(
     ConnectivityService(
       connectivity: Connectivity(),
@@ -63,19 +82,17 @@ Future<void> initDependencies() async {
   );
   await sl<ConnectivityService>().initialise();
 
-  // PermissionService: Singleton
+  // PermissionService: singleton.
   sl.registerLazySingleton<PermissionService>(PermissionService.new);
 
-  // ErrorHandler: Singleton
+  // ErrorHandler: singleton.
   sl.registerLazySingleton<ErrorHandler>(
     () => ErrorHandler(logger: sl<LoggerService>()),
   );
 
-  // ---------------------------------------------------------------------------
-  // Network Dependencies
-  // ---------------------------------------------------------------------------
+  // ── Network ───────────────────────────────────────────────────────────────
 
-  // NetworkInfo: Singleton
+  // NetworkInfo: singleton.
   sl.registerLazySingleton<NetworkInfo>(
     () => NetworkInfoImpl(
       connectionChecker: InternetConnectionCheckerPlus(),
@@ -83,14 +100,7 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // TokenProvider: SecureStorageService acts as TokenProvider
-  // Using a dynamic cast for now as SecureStorageService contains the required methods.
-  // ignore: avoid_dynamic_calls
-  sl.registerLazySingleton<TokenProvider>(
-    () => sl<SecureStorageService>() as dynamic,
-  );
-
-  // Dio: Singleton
+  // Dio: singleton, fully configured with the interceptor stack.
   sl.registerLazySingleton<Dio>(
     () => DioFactory.create(
       config: AppConfig.instance,
@@ -99,28 +109,97 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // ApiConsumer: Singleton
+  // ApiConsumer: singleton.
   sl.registerLazySingleton<ApiConsumer>(
     () => ApiClient(dio: sl<Dio>()),
   );
 
-  // ---------------------------------------------------------------------------
-  // Presentation Layer Dependencies
-  // ---------------------------------------------------------------------------
+  // ── Data sources ──────────────────────────────────────────────────────────
 
-  // ThemeCubit: Factory
+  sl.registerLazySingleton<RemoteDataSource>(
+    () => RemoteDataSourceImpl(apiConsumer: sl<ApiConsumer>()),
+  );
+
+  sl.registerLazySingleton<LocalDataSource>(
+    () => LocalDataSourceImpl(
+      sl<LocalStorageService>(),
+      sl<SecureStorageService>(),
+    ),
+  );
+
+  // ── Repositories ──────────────────────────────────────────────────────────
+
+  sl.registerLazySingleton<AIRepository>(
+    () => AIRepositoryImpl(
+      remoteDataSource: sl<RemoteDataSource>(),
+      localDataSource: sl<LocalDataSource>(),
+    ),
+  );
+
+  sl.registerLazySingleton<ConversationRepository>(
+    () => ConversationRepositoryImpl(
+      remoteDataSource: sl<RemoteDataSource>(),
+      localDataSource: sl<LocalDataSource>(),
+    ),
+  );
+
+  sl.registerLazySingleton<MessageRepository>(
+    () => MessageRepositoryImpl(
+      remoteDataSource: sl<RemoteDataSource>(),
+      localDataSource: sl<LocalDataSource>(),
+    ),
+  );
+
+  sl.registerLazySingleton<SubscriptionRepository>(
+    () => SubscriptionRepositoryImpl(
+      remoteDataSource: sl<RemoteDataSource>(),
+      localDataSource: sl<LocalDataSource>(),
+    ),
+  );
+
+  sl.registerLazySingleton<FileRepository>(
+    () => FileRepositoryImpl(remoteDataSource: sl<RemoteDataSource>()),
+  );
+
+  // ── Presentation state management ─────────────────────────────────────────
+
+  // ThemeCubit: factory — one instance per widget subtree.
   sl.registerFactory<ThemeCubit>(
     () => ThemeCubit(localStorageService: sl<LocalStorageService>()),
   );
 
-  // Note: Data, Domain, and other Presentation dependencies (like AppRouter)
-  // will be registered here as they are implemented in future phases.
+  // LocalizationCubit: factory.
+  sl.registerFactory<LocalizationCubit>(
+    () => LocalizationCubit(storage: sl<LocalStorageService>()),
+  );
+
+  // ── Routing / auth wiring ─────────────────────────────────────────────────
+
+  // AuthController: singleton ChangeNotifier driving the router guards.
+  sl.registerLazySingleton<AuthController>(
+    () => AuthController(
+      remoteDataSource: sl<RemoteDataSource>(),
+      secureStorage: sl<SecureStorageService>(),
+      localStorage: sl<LocalStorageService>(),
+    ),
+  );
+
+  // Router page factory: maps every route to a concrete screen.
+  sl.registerLazySingleton<AppRouterPageFactory>(RouterPageFactory.new);
+
+  // AppRouter: singleton; the router listens to the auth controller for
+  // reactive redirect re-evaluation.
+  sl.registerLazySingleton<AppRouter>(
+    () => AppRouter(
+      authStatusProvider: sl<AuthController>(),
+      pageFactory: sl<AppRouterPageFactory>(),
+    ),
+  );
 }
 
 /// Resets the GetIt service locator, unregistering all dependencies.
 ///
-/// This is useful for testing or when a complete re-initialization
-/// of the application's dependencies is required.
+/// Useful for testing or when a complete re-initialisation is required.
 Future<void> resetDependencies() async {
   await sl.reset(dispose: true);
 }

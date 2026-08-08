@@ -1,8 +1,7 @@
 
+import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-import 'package:ai_chat/core/extensions/build_context_extension.dart';
 
 class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
@@ -40,7 +39,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: backgroundColor ?? context.colorScheme.background,
+      backgroundColor: backgroundColor ?? context.colorScheme.surface,
       elevation: elevation ?? 0,
       centerTitle: centerTitle,
       automaticallyImplyLeading: automaticallyImplyLeading,
@@ -48,7 +47,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
           ? IconButton(
               icon: Icon(
                 context.isRtl ? Icons.arrow_forward_ios : Icons.arrow_back_ios,
-                color: context.colorScheme.onBackground,
+                color: context.colorScheme.onSurface,
               ),
               onPressed: () => context.popRoute(),
             )
@@ -62,14 +61,14 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
                   Text(
                     title!,
                     style: context.textTheme.titleLarge?.copyWith(
-                      color: context.colorScheme.onBackground,
+                      color: context.colorScheme.onSurface,
                     ),
                   ),
                 if (subtitle != null)
                   Text(
                     subtitle!,
                     style: context.textTheme.titleSmall?.copyWith(
-                      color: context.colorScheme.onBackground.withOpacity(0.7),
+                      color: context.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
               ],

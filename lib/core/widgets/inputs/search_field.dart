@@ -1,10 +1,10 @@
 
-import 'package:flutter/material.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/theme/app_radius.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/utils/debounce.dart';
 import 'package:ai_chat/core/widgets/inputs/app_text_field.dart';
+import 'package:flutter/material.dart';
 
 class SearchField extends StatefulWidget {
   final TextEditingController? controller;
