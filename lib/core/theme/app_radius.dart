@@ -18,8 +18,9 @@ import 'package:flutter/material.dart';
 /// | xxl     | 24 dp | Modals, large panels                      |
 /// | full    | 99 dp | Pills, fully-rounded avatars              |
 ///
-/// Use [AppRadius.circular] for quick [Radius] values and
-/// [AppRadius.all] for quick [BorderRadius] values.
+/// Use [AppRadius.xsRadius], [AppRadius.smRadius], … for quick [Radius]
+/// values and [AppRadius.xs], [AppRadius.sm], … for quick [BorderRadius]
+/// values.
 abstract final class AppRadius {
   // ── Radius atoms ──────────────────────────────────────────────────────────
 

@@ -13,8 +13,8 @@ class MessageRepositoryImpl implements MessageRepository {
   MessageRepositoryImpl({
     required RemoteDataSource remoteDataSource,
     required LocalDataSource localDataSource,
-  })  : _remote = remoteDataSource,
-        _local = localDataSource;
+  }) : _remote = remoteDataSource,
+       _local = localDataSource;
 
   final RemoteDataSource _remote;
   final LocalDataSource _local;
@@ -43,8 +43,12 @@ class MessageRepositoryImpl implements MessageRepository {
       conversationId: conversationId,
       data: data,
     );
-    final current = await _cachedMessages(conversationId) ?? const <MessageModel>[];
-    await _local.saveMessages(conversationId, <MessageModel>[...current, message]);
+    final current =
+        await _cachedMessages(conversationId) ?? const <MessageModel>[];
+    await _local.saveMessages(conversationId, <MessageModel>[
+      ...current,
+      message,
+    ]);
     return message;
   }
 

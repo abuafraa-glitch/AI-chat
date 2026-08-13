@@ -16,7 +16,8 @@ abstract final class StorageKeys {
   static const String themeMode = 'app.theme_mode';
 
   /// Identifier of the last opened conversation.
-  static const String lastOpenedConversationId = 'app.last_opened_conversation_id';
+  static const String lastOpenedConversationId =
+      'app.last_opened_conversation_id';
 
   // ---- Authenticated user profile (non-sensitive) ---------------------------
 
@@ -31,6 +32,9 @@ abstract final class StorageKeys {
 
   /// Avatar URL cached for offline UI rendering.
   static const String currentUserAvatarUrl = 'auth.current_user_avatar_url';
+
+  /// Full serialized user profile cached for offline UI rendering.
+  static const String currentUser = 'auth.current_user';
 
   /// Expiration timestamp of the access token (milliseconds since epoch).
   static const String accessTokenExpiresAt = 'auth.access_token_expires_at';
@@ -118,5 +122,6 @@ abstract final class CacheKeys {
   static const String connectivityStatus = 'memory.connectivity_status';
 
   /// Cached unread notifications count.
-  static const String unreadNotificationsCount = 'memory.unread_notifications_count';
+  static const String unreadNotificationsCount =
+      'memory.unread_notifications_count';
 }

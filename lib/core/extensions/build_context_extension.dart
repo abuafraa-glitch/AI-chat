@@ -35,8 +35,7 @@ extension ThemeBuildContextExtension on BuildContext {
   Color get surfaceColor => Theme.of(this).colorScheme.surface;
 
   /// The default scaffold background colour.
-  Color get scaffoldBackgroundColor =>
-      Theme.of(this).scaffoldBackgroundColor;
+  Color get scaffoldBackgroundColor => Theme.of(this).scaffoldBackgroundColor;
 }
 
 // ── Media query ────────────────────────────────────────────────────────────
@@ -71,25 +70,21 @@ extension MediaQueryBuildContextExtension on BuildContext {
       MediaQuery.orientationOf(this) == Orientation.landscape;
 
   /// `true` when the device is in portrait orientation.
-  bool get isPortrait =>
-      MediaQuery.orientationOf(this) == Orientation.portrait;
+  bool get isPortrait => MediaQuery.orientationOf(this) == Orientation.portrait;
 }
 
 // ── Responsive breakpoints ─────────────────────────────────────────────────
 
 extension ResponsiveBuildContextExtension on BuildContext {
   /// `true` when the screen width is at least [AppBreakpoints.tablet].
-  bool get isTablet =>
-      MediaQuery.sizeOf(this).width >= AppBreakpoints.tablet;
+  bool get isTablet => MediaQuery.sizeOf(this).width >= AppBreakpoints.tablet;
 
   /// `true` when the screen width is at least [AppBreakpoints.desktop].
-  bool get isDesktop =>
-      MediaQuery.sizeOf(this).width >= AppBreakpoints.desktop;
+  bool get isDesktop => MediaQuery.sizeOf(this).width >= AppBreakpoints.desktop;
 
   /// `true` when the screen width is below [AppBreakpoints.tablet]
   /// (phone form factor).
-  bool get isPhone =>
-      MediaQuery.sizeOf(this).width < AppBreakpoints.tablet;
+  bool get isPhone => MediaQuery.sizeOf(this).width < AppBreakpoints.tablet;
 
   /// Returns [phone], [tablet], or [desktop] depending on the current
   /// screen width, eagerly evaluating only the matching branch.
@@ -135,12 +130,19 @@ extension NavigationBuildContextExtension on BuildContext {
       GoRouter.of(this).go(path, extra: extra);
 
   /// Pushes [path] onto the navigation stack.
-  Future<T?> pushTo<T>(String path, {Object? extra}) =>
+  ///
+  /// Use [pushToForResult] when the pushed route returns a value that the
+  /// caller needs to await.
+  Future<void> pushTo(String path, {Object? extra}) =>
+      GoRouter.of(this).push<void>(path, extra: extra);
+
+  /// Pushes [path] onto the navigation stack and awaits the result value.
+  Future<T?> pushToForResult<T>(String path, {Object? extra}) =>
       GoRouter.of(this).push<T>(path, extra: extra);
 
   /// Replaces the current route with [path].
   void replaceTo(String path, {Object? extra}) =>
-      GoRouter.of(this).replace(path, extra: extra);
+      GoRouter.of(this).replace<void>(path, extra: extra);
 
   /// Pops the current route if the stack allows it.
   void popRoute<T extends Object?>([T? result]) {
@@ -175,8 +177,7 @@ extension NavigationBuildContextExtension on BuildContext {
   void goToSettings() => GoRouter.of(this).go(RouteNames.settings);
 
   /// Navigates to the notifications screen.
-  void goToNotifications() =>
-      GoRouter.of(this).go(RouteNames.notifications);
+  void goToNotifications() => GoRouter.of(this).go(RouteNames.notifications);
 
   /// Navigates to the search screen.
   void goToSearch() => GoRouter.of(this).go(RouteNames.search);
@@ -207,18 +208,12 @@ extension OverlayBuildContextExtension on BuildContext {
 
   /// Shows an error [SnackBar] styled with the error colour.
   void showErrorSnackBar(String message) {
-    showSnackBar(
-      message,
-      backgroundColor: colorScheme.error,
-    );
+    showSnackBar(message, backgroundColor: colorScheme.error);
   }
 
   /// Shows a success [SnackBar] styled with the secondary colour.
   void showSuccessSnackBar(String message) {
-    showSnackBar(
-      message,
-      backgroundColor: colorScheme.secondary,
-    );
+    showSnackBar(message, backgroundColor: colorScheme.secondary);
   }
 
   /// Hides any currently visible [SnackBar].

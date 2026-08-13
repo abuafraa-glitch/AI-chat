@@ -6,11 +6,7 @@ import 'package:equatable/equatable.dart';
 /// providing a way to handle errors without throwing exceptions.
 /// All failures are immutable and support equality checks via [Equatable].
 abstract class Failure extends Equatable {
-  const Failure({
-    required this.message,
-    required this.code,
-    this.metadata,
-  });
+  const Failure({required this.message, required this.code, this.metadata});
 
   /// A human-readable message intended for the user or logging.
   final String message;

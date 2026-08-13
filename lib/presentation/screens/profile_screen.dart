@@ -4,6 +4,7 @@ import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
 import 'package:ai_chat/core/services/local_storage_service.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
 import 'package:ai_chat/core/widgets/dialogs/confirmation_dialog.dart';
@@ -27,7 +28,9 @@ class ProfileScreen extends StatelessWidget {
       return AppValues.defaultAvatarInitials;
     }
     final first = parts.first[0].toUpperCase();
-    final last = parts.length > 1 ? parts[parts.length - 1][0].toUpperCase() : '';
+    final last = parts.length > 1
+        ? parts[parts.length - 1][0].toUpperCase()
+        : '';
     return '$first$last';
   }
 
@@ -53,9 +56,11 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final storage = sl<LocalStorageService>();
-    final displayName = storage.getString(StorageKeys.currentUserDisplayName) ??
+    final displayName =
+        storage.getString(StorageKeys.currentUserDisplayName) ??
         AppValues.defaultDisplayName;
-    final email = storage.getString(StorageKeys.currentUserEmail) ??
+    final email =
+        storage.getString(StorageKeys.currentUserEmail) ??
         AppValues.defaultEmail;
 
     return AppScaffold(
@@ -63,12 +68,12 @@ class ProfileScreen extends StatelessWidget {
         title: Text(localizedText(context, 'Profile', 'الملف الشخصي')),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.all4,
         child: Column(
           children: <Widget>[
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: AppSpacing.all5,
                 child: Row(
                   children: <Widget>[
                     CircleAvatar(
@@ -81,16 +86,13 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    AppSpacing.gap4,
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text(
-                            displayName,
-                            style: theme.textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 4),
+                          Text(displayName, style: theme.textTheme.titleLarge),
+                          AppSpacing.gap1,
                           Text(
                             email,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -104,7 +106,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            AppSpacing.gap6,
             _ProfileSection(
               title: localizedText(context, 'Workspace', 'مساحة العمل'),
               children: <Widget>[
@@ -130,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            AppSpacing.gap6,
             _ProfileSection(
               title: localizedText(context, 'Billing', 'الفواتير'),
               children: <Widget>[
@@ -141,12 +143,16 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 _ProfileTile(
                   icon: Icons.receipt_outlined,
-                  title: localizedText(context, 'Payment history', 'سجل المدفوعات'),
+                  title: localizedText(
+                    context,
+                    'Payment history',
+                    'سجل المدفوعات',
+                  ),
                   onTap: () => context.pushTo(RouteNames.payments),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            AppSpacing.gap6,
             AppButton(
               text: localizedText(context, 'Sign out', 'تسجيل الخروج'),
               onPressed: () => _confirmSignOut(context),
@@ -161,10 +167,7 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _ProfileSection extends StatelessWidget {
-  const _ProfileSection({
-    required this.title,
-    required this.children,
-  });
+  const _ProfileSection({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
@@ -182,7 +185,7 @@ class _ProfileSection extends StatelessWidget {
             color: theme.colorScheme.primary,
           ),
         ),
-        const SizedBox(height: 12),
+        AppSpacing.gap3,
         Card(
           child: Column(
             children: List<Widget>.generate(
@@ -190,8 +193,7 @@ class _ProfileSection extends StatelessWidget {
               (index) => Column(
                 children: <Widget>[
                   children[index],
-                  if (index < children.length - 1)
-                    const Divider(height: 1),
+                  if (index < children.length - 1) const Divider(height: 1),
                 ],
               ),
             ),

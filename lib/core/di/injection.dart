@@ -66,9 +66,7 @@ Future<void> initDependencies() async {
       ),
     ),
   );
-  sl.registerLazySingleton<TokenProvider>(
-    () => sl<SecureStorageService>(),
-  );
+  sl.registerLazySingleton<TokenProvider>(sl.call);
 
   // CacheService: in-memory TTL cache.
   sl.registerLazySingleton<CacheService>(CacheService.new);
@@ -95,7 +93,7 @@ Future<void> initDependencies() async {
   // NetworkInfo: singleton.
   sl.registerLazySingleton<NetworkInfo>(
     () => NetworkInfoImpl(
-      connectionChecker: InternetConnectionCheckerPlus(),
+      connectionChecker: InternetConnection(),
       connectivity: Connectivity(),
     ),
   );
@@ -110,9 +108,7 @@ Future<void> initDependencies() async {
   );
 
   // ApiConsumer: singleton.
-  sl.registerLazySingleton<ApiConsumer>(
-    () => ApiClient(dio: sl<Dio>()),
-  );
+  sl.registerLazySingleton<ApiConsumer>(() => ApiClient(dio: sl<Dio>()));
 
   // ── Data sources ──────────────────────────────────────────────────────────
 

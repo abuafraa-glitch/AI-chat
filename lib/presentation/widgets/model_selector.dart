@@ -1,3 +1,5 @@
+import 'package:ai_chat/core/theme/app_radius.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/loaders/loading_indicator.dart';
 import 'package:ai_chat/data/models/ai_model.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
@@ -69,12 +71,12 @@ class ModelSelector extends StatelessWidget {
     final state = cubit.state;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: AppSpacing.h4,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: AppSpacing.inputField,
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.md,
           border: Border.all(color: theme.dividerColor),
         ),
         child: _buildContent(context, cubit, state),
@@ -97,7 +99,7 @@ class ModelSelector extends StatelessWidget {
             height: 20,
             child: LoadingIndicator(strokeWidth: 2),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.gap3,
           Text(
             localizedText(context, 'Loading models…', 'جارٍ تحميل النماذج…'),
             style: theme.textTheme.bodyMedium,
@@ -110,10 +112,14 @@ class ModelSelector extends StatelessWidget {
       return Row(
         children: <Widget>[
           Icon(Icons.error_outline, color: theme.colorScheme.error),
-          const SizedBox(width: 12),
+          AppSpacing.gap3,
           Expanded(
             child: Text(
-              localizedText(context, 'Failed to load models', 'تعذّر تحميل النماذج'),
+              localizedText(
+                context,
+                'Failed to load models',
+                'تعذّر تحميل النماذج',
+              ),
               style: theme.textTheme.bodyMedium,
             ),
           ),
@@ -143,15 +149,12 @@ class ModelSelector extends StatelessWidget {
               _providerIcon(selected.provider),
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 12),
+            AppSpacing.gap3,
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    selected.name,
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  Text(selected.name, style: theme.textTheme.titleMedium),
                   Text(
                     _providerLabel(selected.provider),
                     style: theme.textTheme.bodySmall,
@@ -161,7 +164,11 @@ class ModelSelector extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.info_outline, size: 20),
-              tooltip: localizedText(context, 'Model details', 'تفاصيل النموذج'),
+              tooltip: localizedText(
+                context,
+                'Model details',
+                'تفاصيل النموذج',
+              ),
               onPressed: () => ModelDetailsDialog.show(context, selected),
             ),
           ] else
@@ -192,16 +199,14 @@ class ModelSelector extends StatelessWidget {
 
     showModalBottomSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.topXxl),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.all4,
               child: Text(
                 localizedText(sheetContext, 'Select Model', 'اختر النموذج'),
                 style: Theme.of(sheetContext).textTheme.headlineSmall,
@@ -221,9 +226,7 @@ class ModelSelector extends StatelessWidget {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: Text(model.name),
-                    subtitle: Text(
-                      _providerLabel(model.provider),
-                    ),
+                    subtitle: Text(_providerLabel(model.provider)),
                     trailing: isSelected
                         ? Icon(
                             Icons.check_circle,

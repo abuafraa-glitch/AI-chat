@@ -54,9 +54,8 @@ final class ConnectivityService {
   ConnectivityService({
     Connectivity? connectivity,
     InternetConnection? internetConnection,
-  })  : _connectivity = connectivity ?? Connectivity(),
-        _internetConnection =
-            internetConnection ?? InternetConnection();
+  }) : _connectivity = connectivity ?? Connectivity(),
+       _internetConnection = internetConnection ?? InternetConnection();
 
   final Connectivity _connectivity;
   final InternetConnection _internetConnection;
@@ -99,10 +98,12 @@ final class ConnectivityService {
   /// [status] or [statusStream] are consumed.
   Future<void> initialise() async {
     await _refreshStatus();
-    _connectivitySubscription =
-        _connectivity.onConnectivityChanged.listen(_onInterfaceChanged);
-    _internetSubscription =
-        _internetConnection.onStatusChange.listen(_onInternetStatusChanged);
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
+      _onInterfaceChanged,
+    );
+    _internetSubscription = _internetConnection.onStatusChange.listen(
+      _onInternetStatusChanged,
+    );
   }
 
   /// Cancels all active subscriptions and closes [statusStream].
@@ -173,7 +174,6 @@ final class ConnectivityService {
   static bool _hasNetworkInterface(List<ConnectivityResult> results) =>
       results.any(
         (r) =>
-            r != ConnectivityResult.none &&
-            r != ConnectivityResult.bluetooth,
+            r != ConnectivityResult.none && r != ConnectivityResult.bluetooth,
       );
 }

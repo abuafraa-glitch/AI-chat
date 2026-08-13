@@ -33,13 +33,14 @@ final class SecureStorageService implements TokenProvider {
   /// tests. Production code should omit it; the default instance is
   /// configured automatically with the correct platform options.
   SecureStorageService({FlutterSecureStorage? storage})
-      : _storage = storage ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-              iOptions: IOSOptions(
-                accessibility: KeychainAccessibility.first_unlock_this_device,
-              ),
-            );
+    : _storage =
+          storage ??
+          const FlutterSecureStorage(
+            aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            iOptions: IOSOptions(
+              accessibility: KeychainAccessibility.first_unlock_this_device,
+            ),
+          );
 
   final FlutterSecureStorage _storage;
 
@@ -76,19 +77,21 @@ final class SecureStorageService implements TokenProvider {
 
   /// Returns the current access token, or `null` if none has been
   /// stored.
-  Future<String?> readAccessToken() =>
-      read(SecureStorageKeys.accessToken);
+  @override
+  Future<String?> readAccessToken() => read(SecureStorageKeys.accessToken);
 
   /// Persists [token] as the current access token.
+  @override
   Future<void> writeAccessToken(String token) =>
       write(SecureStorageKeys.accessToken, token);
 
   /// Returns the current refresh token, or `null` if none has been
   /// stored.
-  Future<String?> readRefreshToken() =>
-      read(SecureStorageKeys.refreshToken);
+  @override
+  Future<String?> readRefreshToken() => read(SecureStorageKeys.refreshToken);
 
   /// Persists [token] as the current refresh token.
+  @override
   Future<void> writeRefreshToken(String token) =>
       write(SecureStorageKeys.refreshToken, token);
 
@@ -96,6 +99,7 @@ final class SecureStorageService implements TokenProvider {
   ///
   /// Call this during user sign-out to invalidate the local session
   /// before navigating to the login screen.
+  @override
   Future<void> clearTokens() async {
     await Future.wait<void>(<Future<void>>[
       delete(SecureStorageKeys.accessToken),
@@ -124,8 +128,7 @@ final class SecureStorageService implements TokenProvider {
 
   /// Returns the stored PIN hash, or `null` if the user has not set a
   /// PIN.
-  Future<String?> readPinCodeHash() =>
-      read(SecureStorageKeys.pinCodeHash);
+  Future<String?> readPinCodeHash() => read(SecureStorageKeys.pinCodeHash);
 
   /// Persists [hash] as the PIN code hash.
   ///
@@ -134,6 +137,5 @@ final class SecureStorageService implements TokenProvider {
       write(SecureStorageKeys.pinCodeHash, hash);
 
   /// Removes the stored PIN hash.
-  Future<void> deletePinCodeHash() =>
-      delete(SecureStorageKeys.pinCodeHash);
+  Future<void> deletePinCodeHash() => delete(SecureStorageKeys.pinCodeHash);
 }

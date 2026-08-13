@@ -41,7 +41,12 @@ final class ModelsState extends Equatable {
   }
 
   @override
-  List<Object?> get props => <Object?>[models, selectedModelId, isLoading, error];
+  List<Object?> get props => <Object?>[
+    models,
+    selectedModelId,
+    isLoading,
+    error,
+  ];
 }
 
 /// Manages the AI model catalogue and the user's current selection.
@@ -51,8 +56,9 @@ final class ModelsState extends Equatable {
 /// id in state so the rest of the UI can react to changes.
 final class ModelsCubit extends Cubit<ModelsState> {
   /// Creates a [ModelsCubit] wired to [repository].
-  ModelsCubit({required AIRepository repository}) : _repository = repository,
-        super(const ModelsState());
+  ModelsCubit({required AIRepository repository})
+    : _repository = repository,
+      super(const ModelsState());
 
   final AIRepository _repository;
 

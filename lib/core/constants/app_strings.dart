@@ -49,10 +49,7 @@ abstract final class AppStrings {
   static const String localeAr = 'ar';
 
   /// Locale codes the application explicitly supports.
-  static const List<String> supportedLocaleCodes = <String>[
-    localeEn,
-    localeAr,
-  ];
+  static const List<String> supportedLocaleCodes = <String>[localeEn, localeAr];
 
   // ---- Platform identifiers -------------------------------------------------
 

@@ -1,22 +1,7 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String? title;
-  final String? subtitle;
-  final List<Widget>? actions;
-  final bool automaticallyImplyLeading;
-  final Widget? leading;
-  final Color? backgroundColor;
-  final double? elevation;
-  final double? height;
-  final bool centerTitle;
-  final bool showBackButton;
-  final bool searchMode;
-  final Widget? searchField;
-
   const AppAppBar({
     super.key,
     this.title,
@@ -32,6 +17,18 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.searchMode = false,
     this.searchField,
   });
+  final String? title;
+  final String? subtitle;
+  final List<Widget>? actions;
+  final bool automaticallyImplyLeading;
+  final Widget? leading;
+  final Color? backgroundColor;
+  final double? elevation;
+  final double? height;
+  final bool centerTitle;
+  final bool showBackButton;
+  final bool searchMode;
+  final Widget? searchField;
 
   @override
   Size get preferredSize => Size.fromHeight(height ?? kToolbarHeight);
@@ -43,7 +40,8 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: elevation ?? 0,
       centerTitle: centerTitle,
       automaticallyImplyLeading: automaticallyImplyLeading,
-      leading: showBackButton && context.canPop() && leading == null
+      leading:
+          showBackButton && Navigator.of(context).canPop() && leading == null
           ? IconButton(
               icon: Icon(
                 context.isRtl ? Icons.arrow_forward_ios : Icons.arrow_back_ios,
@@ -68,7 +66,9 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
                   Text(
                     subtitle!,
                     style: context.textTheme.titleSmall?.copyWith(
-                      color: context.colorScheme.onSurface.withOpacity(0.7),
+                      color: context.colorScheme.onSurface.withValues(
+                        alpha: 0.7,
+                      ),
                     ),
                   ),
               ],

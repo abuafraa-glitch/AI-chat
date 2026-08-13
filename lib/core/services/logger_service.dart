@@ -64,9 +64,13 @@ final class LoggerService {
     String? tag,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _log(LogLevel.verbose, message,
-          tag: tag, error: error, stackTrace: stackTrace);
+  }) => _log(
+    LogLevel.verbose,
+    message,
+    tag: tag,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   /// Emits a [LogLevel.info] entry.
   void i(
@@ -74,9 +78,13 @@ final class LoggerService {
     String? tag,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _log(LogLevel.info, message,
-          tag: tag, error: error, stackTrace: stackTrace);
+  }) => _log(
+    LogLevel.info,
+    message,
+    tag: tag,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   /// Emits a [LogLevel.warning] entry.
   void w(
@@ -84,9 +92,13 @@ final class LoggerService {
     String? tag,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _log(LogLevel.warning, message,
-          tag: tag, error: error, stackTrace: stackTrace);
+  }) => _log(
+    LogLevel.warning,
+    message,
+    tag: tag,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   /// Emits a [LogLevel.error] entry.
   void e(
@@ -94,9 +106,13 @@ final class LoggerService {
     String? tag,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _log(LogLevel.error, message,
-          tag: tag, error: error, stackTrace: stackTrace);
+  }) => _log(
+    LogLevel.error,
+    message,
+    tag: tag,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   /// Emits a [LogLevel.fatal] entry.
   void f(
@@ -104,9 +120,13 @@ final class LoggerService {
     String? tag,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _log(LogLevel.fatal, message,
-          tag: tag, error: error, stackTrace: stackTrace);
+  }) => _log(
+    LogLevel.fatal,
+    message,
+    tag: tag,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   // ── Core dispatch ─────────────────────────────────────────────────────────
 

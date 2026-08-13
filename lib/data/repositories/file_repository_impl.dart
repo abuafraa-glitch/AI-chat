@@ -5,7 +5,7 @@ import 'package:ai_chat/data/repositories/file_repository.dart';
 class FileRepositoryImpl implements FileRepository {
   /// Creates a [FileRepositoryImpl] wired to [remoteDataSource].
   FileRepositoryImpl({required RemoteDataSource remoteDataSource})
-      : _remote = remoteDataSource;
+    : _remote = remoteDataSource;
 
   final RemoteDataSource _remote;
 

@@ -4,6 +4,8 @@ import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/routes/route_guards.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
 import 'package:ai_chat/core/theme/app_colors.dart';
+import 'package:ai_chat/core/theme/app_radius.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/theme/app_text_styles.dart';
 import 'package:ai_chat/presentation/blocs/auth_controller.dart';
 import 'package:flutter/material.dart';
@@ -88,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 height: 96,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: AppRadius.full,
                 ),
                 child: const Icon(
                   Icons.auto_awesome,
@@ -96,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               Text(
                 AppConfig.instance.appName,
                 style: AppTextStyles.headlineLarge.copyWith(
@@ -110,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 height: 28,
                 child: CircularProgressIndicator(strokeWidth: 2.5),
               ),
-              const SizedBox(height: 32),
+              AppSpacing.gap8,
             ],
           ),
         ),

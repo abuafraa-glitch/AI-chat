@@ -6,9 +6,9 @@ import 'package:ai_chat/core/theme/app_theme.dart';
 import 'package:ai_chat/core/theme/theme_cubit.dart';
 import 'package:ai_chat/presentation/blocs/localization_cubit.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:nested/nested.dart';
 
 /// Root widget of the Hajeen AI application.
 ///
@@ -24,7 +24,7 @@ class HajeenAIApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: <BlocProviderSingleChildWidget>[
+      providers: <SingleChildWidget>[
         BlocProvider<ThemeCubit>(
           create: (context) => sl<ThemeCubit>()..loadSavedTheme(),
         ),
@@ -44,10 +44,7 @@ class HajeenAIApp extends StatelessWidget {
                 darkTheme: AppTheme.dark,
                 themeMode: themeState.mode,
                 locale: Locale(localeState.locale),
-                supportedLocales: const <Locale>[
-                  Locale('en'),
-                  Locale('ar'),
-                ],
+                supportedLocales: const <Locale>[Locale('en'), Locale('ar')],
                 localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,

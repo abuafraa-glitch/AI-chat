@@ -1,4 +1,5 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/utils/formatters.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
@@ -78,13 +79,9 @@ class _FilesView extends StatelessWidget {
     final state = cubit.state;
 
     return AppScaffold(
-      appBar: AppBar(
-        title: Text(localizedText(context, 'Files', 'الملفات')),
-      ),
+      appBar: AppBar(title: Text(localizedText(context, 'Files', 'الملفات'))),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: state.isUploading
-            ? null
-            : () => _pickAndUpload(context),
+        onPressed: state.isUploading ? null : () => _pickAndUpload(context),
         icon: state.isUploading
             ? const SizedBox(
                 width: 18,
@@ -108,10 +105,7 @@ class _FilesView extends StatelessWidget {
     }
 
     if (state.error != null && state.files.isEmpty) {
-      return ErrorView(
-        description: state.error,
-        onRetry: cubit.load,
-      );
+      return ErrorView(description: state.error, onRetry: cubit.load);
     }
 
     if (state.files.isEmpty) {
@@ -128,7 +122,7 @@ class _FilesView extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: AppSpacing.buttonSm,
       itemCount: state.files.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
@@ -143,9 +137,7 @@ class _FilesView extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          subtitle: Text(
-            Formatters.formatFileSize(_sizeOf(file)),
-          ),
+          subtitle: Text(Formatters.formatFileSize(_sizeOf(file))),
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: localizedText(context, 'Delete', 'حذف'),

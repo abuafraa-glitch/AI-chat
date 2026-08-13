@@ -1,6 +1,7 @@
 import 'package:ai_chat/core/constants/app_strings.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/theme/theme_cubit.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/presentation/blocs/localization_cubit.dart';
@@ -27,12 +28,10 @@ class SettingsScreen extends StatelessWidget {
 
     return AppScaffold(
       appBar: AppBar(
-        title: Text(
-          localizedText(context, 'Settings', 'الإعدادات'),
-        ),
+        title: Text(localizedText(context, 'Settings', 'الإعدادات')),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.all4,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -41,7 +40,9 @@ class SettingsScreen extends StatelessWidget {
               children: <Widget>[
                 SwitchListTile(
                   secondary: Icon(
-                    isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                    isDark
+                        ? Icons.dark_mode_outlined
+                        : Icons.light_mode_outlined,
                   ),
                   title: Text(
                     localizedText(context, 'Dark mode', 'الوضع الداكن'),
@@ -58,9 +59,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 ListTile(
                   leading: const Icon(Icons.language_outlined),
-                  title: Text(
-                    localizedText(context, 'Language', 'اللغة'),
-                  ),
+                  title: Text(localizedText(context, 'Language', 'اللغة')),
                   trailing: DropdownButton<String>(
                     value: locale,
                     underline: const SizedBox(),
@@ -83,7 +82,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            AppSpacing.gap6,
             _SettingsSection(
               title: localizedText(context, 'Account', 'الحساب'),
               children: <Widget>[
@@ -99,28 +98,33 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            AppSpacing.gap6,
             _SettingsSection(
               title: localizedText(context, 'Subscription', 'الاشتراك'),
               children: <Widget>[
                 _SettingsTile(
                   icon: Icons.card_membership_outlined,
-                  title: localizedText(context, 'Manage Subscription', 'إدارة الاشتراك'),
+                  title: localizedText(
+                    context,
+                    'Manage Subscription',
+                    'إدارة الاشتراك',
+                  ),
                   onTap: () => context.pushTo(RouteNames.subscriptions),
                 ),
                 _SettingsTile(
                   icon: Icons.receipt_outlined,
-                  title: localizedText(context, 'Billing History', 'سجل الفواتير'),
+                  title: localizedText(
+                    context,
+                    'Billing History',
+                    'سجل الفواتير',
+                  ),
                   onTap: () => context.pushTo(RouteNames.payments),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            AppSpacing.gap6,
             Center(
-              child: Text(
-                'Hajeen AI v1.0.0',
-                style: theme.textTheme.bodySmall,
-              ),
+              child: Text('Hajeen AI v1.0.0', style: theme.textTheme.bodySmall),
             ),
           ],
         ),
@@ -130,10 +134,7 @@ class SettingsScreen extends StatelessWidget {
 }
 
 class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
-    required this.title,
-    required this.children,
-  });
+  const _SettingsSection({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
@@ -151,7 +152,7 @@ class _SettingsSection extends StatelessWidget {
             color: theme.colorScheme.primary,
           ),
         ),
-        const SizedBox(height: 12),
+        AppSpacing.gap3,
         Card(
           child: Column(
             children: List<Widget>.generate(
@@ -159,8 +160,7 @@ class _SettingsSection extends StatelessWidget {
               (index) => Column(
                 children: <Widget>[
                   children[index],
-                  if (index < children.length - 1)
-                    const Divider(height: 1),
+                  if (index < children.length - 1) const Divider(height: 1),
                 ],
               ),
             ),

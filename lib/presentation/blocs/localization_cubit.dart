@@ -33,8 +33,8 @@ final class LocalizationState extends Equatable {
 final class LocalizationCubit extends Cubit<LocalizationState> {
   /// Creates a [LocalizationCubit] backed by [storage].
   LocalizationCubit({required LocalStorageService storage})
-      : _storage = storage,
-        super(LocalizationState(locale: _hydrate(storage)));
+    : _storage = storage,
+      super(LocalizationState(locale: _hydrate(storage)));
 
   /// Storage layer used to persist the locale preference.
   final LocalStorageService _storage;

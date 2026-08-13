@@ -4,10 +4,7 @@ import 'dart:collection';
 /// A single cache entry holding a strongly-typed value and its
 /// expiration timestamp.
 final class _CacheEntry<T extends Object> {
-  const _CacheEntry({
-    required this.value,
-    required this.expiresAt,
-  });
+  const _CacheEntry({required this.value, required this.expiresAt});
 
   final T value;
   final DateTime expiresAt;
@@ -43,11 +40,7 @@ final class CacheService {
   /// Inserts [value] under [key] with a time-to-live of [ttl].
   ///
   /// If [key] already exists its entry is silently overwritten.
-  void put<T extends Object>(
-    String key,
-    T value, {
-    required Duration ttl,
-  }) {
+  void put<T extends Object>(String key, T value, {required Duration ttl}) {
     _store[key] = _CacheEntry<T>(
       value: value,
       expiresAt: DateTime.now().add(ttl),

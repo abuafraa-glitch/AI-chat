@@ -14,7 +14,9 @@ class NotFoundScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppBar(
-        title: Text(localizedText(context, 'Page not found', 'الصفحة غير موجودة')),
+        title: Text(
+          localizedText(context, 'Page not found', 'الصفحة غير موجودة'),
+        ),
       ),
       body: EmptyState(
         variant: EmptyStateVariant.custom,

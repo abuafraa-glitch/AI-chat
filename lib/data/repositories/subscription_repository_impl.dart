@@ -13,14 +13,15 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   SubscriptionRepositoryImpl({
     required RemoteDataSource remoteDataSource,
     required LocalDataSource localDataSource,
-  })  : _remote = remoteDataSource,
-        _local = localDataSource;
+  }) : _remote = remoteDataSource,
+       _local = localDataSource;
 
   final RemoteDataSource _remote;
   final LocalDataSource _local;
 
   @override
-  Future<List<Map<String, dynamic>>> getPlans() => _remote.getSubscriptionPlans();
+  Future<List<Map<String, dynamic>>> getPlans() =>
+      _remote.getSubscriptionPlans();
 
   @override
   Future<SubscriptionModel> getSubscription() async {

@@ -106,8 +106,7 @@ abstract final class RouteGuard {
     if (location.startsWith(RouteNames.payments) && !flags.enablePayments) {
       return RouteNames.chat;
     }
-    if (location.startsWith(RouteNames.files) &&
-        !flags.enableFileManagement) {
+    if (location.startsWith(RouteNames.files) && !flags.enableFileManagement) {
       return RouteNames.chat;
     }
     if (location.startsWith(RouteNames.search) && !flags.enableSearch) {

@@ -42,11 +42,11 @@ final class SubscriptionsState extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        plans,
-        currentSubscription,
-        isLoading,
-        error,
-      ];
+    plans,
+    currentSubscription,
+    isLoading,
+    error,
+  ];
 }
 
 /// Manages subscription plans and the user's active subscription.
@@ -57,8 +57,8 @@ final class SubscriptionsState extends Equatable {
 final class SubscriptionsCubit extends Cubit<SubscriptionsState> {
   /// Creates a [SubscriptionsCubit] wired to [repository].
   SubscriptionsCubit({required SubscriptionRepository repository})
-      : _repository = repository,
-        super(const SubscriptionsState());
+    : _repository = repository,
+      super(const SubscriptionsState());
 
   final SubscriptionRepository _repository;
 

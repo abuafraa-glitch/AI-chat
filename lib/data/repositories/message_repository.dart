@@ -32,5 +32,8 @@ abstract interface class MessageRepository {
 
   /// Persists a complete [messages] thread for [conversationId] into
   /// the local cache (used after streaming finalises).
-  Future<void> cacheMessages(String conversationId, List<MessageModel> messages);
+  Future<void> cacheMessages(
+    String conversationId,
+    List<MessageModel> messages,
+  );
 }

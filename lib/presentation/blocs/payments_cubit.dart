@@ -41,8 +41,8 @@ final class PaymentsState extends Equatable {
 final class PaymentsCubit extends Cubit<PaymentsState> {
   /// Creates a [PaymentsCubit] wired to [remoteDataSource].
   PaymentsCubit({required RemoteDataSource remoteDataSource})
-      : _remote = remoteDataSource,
-        super(const PaymentsState());
+    : _remote = remoteDataSource,
+      super(const PaymentsState());
 
   final RemoteDataSource _remote;
 

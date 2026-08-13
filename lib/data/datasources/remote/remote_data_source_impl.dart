@@ -1,4 +1,4 @@
-import 'package:ai_chat/core/errors/exceptions.dart';
+import 'package:ai_chat/core/errors/exceptions.dart' as domain;
 import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:ai_chat/core/network/endpoints.dart';
 import 'package:ai_chat/core/network/network_response.dart';
@@ -16,7 +16,7 @@ import 'package:ai_chat/data/models/subscription_model.dart';
 /// repository layer.
 class RemoteDataSourceImpl implements RemoteDataSource {
   const RemoteDataSourceImpl({required ApiConsumer apiConsumer})
-      : _apiConsumer = apiConsumer;
+    : _apiConsumer = apiConsumer;
 
   final ApiConsumer _apiConsumer;
 
@@ -148,7 +148,9 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   }
 
   @override
-  Future<ConversationModel> createConversation(Map<String, dynamic> data) async {
+  Future<ConversationModel> createConversation(
+    Map<String, dynamic> data,
+  ) async {
     final response = await _apiConsumer.post<ConversationModel>(
       path: Endpoints.conversations,
       data: data,
@@ -260,9 +262,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   @override
   Future<void> deleteFile(String fileId) async {
-    final response = await _apiConsumer.delete(
-      path: Endpoints.file(fileId),
-    );
+    final response = await _apiConsumer.delete(path: Endpoints.file(fileId));
     return _handleResponse(response);
   }
 
@@ -353,24 +353,23 @@ class RemoteDataSourceImpl implements RemoteDataSource {
     );
   }
 
-  /// Maps [NetworkException] from the core network layer to [AppException]
+  /// Maps [NetworkException] from the core network layer to [domain.AppException]
   /// for the domain/repository layer.
-  AppException _mapToAppException(NetworkException exception) {
+  domain.AppException _mapToAppException(NetworkException exception) {
     final message = exception.message;
 
     return switch (exception) {
-      NoConnectionException() => NetworkException(message: message),
-      RequestTimeoutException() => TimeoutException(message: message),
-      UnauthorizedException() => UnauthorizedException(message: message),
-      ForbiddenException() => ForbiddenException(message: message),
-      NotFoundException() => NotFoundException(message: message),
+      NoConnectionException() => domain.NetworkException(message: message),
+      RequestTimeoutException() => domain.TimeoutException(message: message),
+      UnauthorizedException() => domain.UnauthorizedException(message: message),
+      ForbiddenException() => domain.ForbiddenException(message: message),
+      NotFoundException() => domain.NotFoundException(message: message),
       UnprocessableEntityException() ||
-      BadRequestException() =>
-        ValidationException(message: message),
-      RateLimitException() => RateLimitException(message: message),
-      ServerException() => ServerException(message: message),
-      RequestCancelledException() => NetworkException(message: message),
-      _ => UnknownException(message: message),
+      BadRequestException() => domain.ValidationException(message: message),
+      RateLimitException() => domain.RateLimitException(message: message),
+      ServerException() => domain.ServerException(message: message),
+      RequestCancelledException() => domain.NetworkException(message: message),
+      _ => domain.UnknownException(message: message),
     };
   }
 }

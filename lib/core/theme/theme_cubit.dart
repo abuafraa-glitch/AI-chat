@@ -73,8 +73,8 @@ final class ThemeState {
 /// ```
 final class ThemeCubit extends Cubit<ThemeState> {
   ThemeCubit({required LocalStorageService localStorageService})
-      : _storage = localStorageService,
-        super(const ThemeState(ThemeMode.system));
+    : _storage = localStorageService,
+      super(const ThemeState(ThemeMode.system));
 
   final LocalStorageService _storage;
 
@@ -112,8 +112,8 @@ final class ThemeCubit extends Cubit<ThemeState> {
   ///   (light or dark) after this call, so the app no longer follows
   ///   the OS.
   Future<void> toggle(Brightness systemBrightness) {
-    final effectivelyDark = state.isDark ||
-        (state.isSystem && systemBrightness == Brightness.dark);
+    final effectivelyDark =
+        state.isDark || (state.isSystem && systemBrightness == Brightness.dark);
     return effectivelyDark ? setLight() : setDark();
   }
 

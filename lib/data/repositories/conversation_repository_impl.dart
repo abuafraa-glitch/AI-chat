@@ -14,8 +14,8 @@ class ConversationRepositoryImpl implements ConversationRepository {
   ConversationRepositoryImpl({
     required RemoteDataSource remoteDataSource,
     required LocalDataSource localDataSource,
-  })  : _remote = remoteDataSource,
-        _local = localDataSource;
+  }) : _remote = remoteDataSource,
+       _local = localDataSource;
 
   final RemoteDataSource _remote;
   final LocalDataSource _local;

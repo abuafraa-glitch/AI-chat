@@ -2,6 +2,7 @@ import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/errors/exceptions.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/utils/validators.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/loading_button.dart';
@@ -68,7 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
     if (error is AppException && error.message.isNotEmpty) {
       return error.message;
     }
-    return localizedTextRead(context, 'Sign in failed. Please try again.', 'فشل تسجيل الدخول. حاول مرة أخرى.');
+    return localizedTextRead(
+      context,
+      'Sign in failed. Please try again.',
+      'فشل تسجيل الدخول. حاول مرة أخرى.',
+    );
   }
 
   @override
@@ -77,27 +82,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return AppScaffold(
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.v6,
+          vertical: AppSpacing.v8,
+        ),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               Icon(
                 Icons.auto_awesome,
                 size: 56,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               Text(
                 localizedText(context, 'Welcome back', 'مرحباً بعودتك'),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineMedium,
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gap2,
               Text(
-                localizedText(context, 'Sign in to continue', 'سجّل الدخول للمتابعة'),
+                localizedText(
+                  context,
+                  'Sign in to continue',
+                  'سجّل الدخول للمتابعة',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -111,9 +123,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 textInputAction: TextInputAction.next,
                 validator: (value) => Validators.email(value)
                     ? null
-                    : localizedTextRead(context, 'Enter a valid email', 'أدخل بريداً إلكترونياً صحيحاً'),
+                    : localizedTextRead(
+                        context,
+                        'Enter a valid email',
+                        'أدخل بريداً إلكترونياً صحيحاً',
+                      ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               AppTextField(
                 controller: _passwordController,
                 hintText: localizedText(context, 'Password', 'كلمة المرور'),
@@ -122,16 +138,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 onSubmitted: (_) => _submit(),
                 validator: (value) => Validators.required(value)
                     ? null
-                    : localizedTextRead(context, 'Enter your password', 'أدخل كلمة المرور'),
+                    : localizedTextRead(
+                        context,
+                        'Enter your password',
+                        'أدخل كلمة المرور',
+                      ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               LoadingButton(
                 text: localizedText(context, 'Sign In', 'تسجيل الدخول'),
                 onPressed: _submit,
                 isLoading: _isLoading,
                 fullWidth: true,
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gap2,
               TextButton(
                 onPressed: () {
                   if (!_isLoading) {
@@ -139,10 +159,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   }
                 },
                 child: Text(
-                  localizedText(context, 'Forgot password?', 'نسيت كلمة المرور؟'),
+                  localizedText(
+                    context,
+                    'Forgot password?',
+                    'نسيت كلمة المرور؟',
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[

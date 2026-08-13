@@ -1,19 +1,9 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
 import 'package:ai_chat/core/widgets/dialogs/app_dialog.dart';
 import 'package:flutter/material.dart';
 
 class ConfirmationDialog extends StatelessWidget {
-  final String title;
-  final String description;
-  final String confirmText;
-  final String cancelText;
-  final VoidCallback onConfirm;
-  final VoidCallback? onCancel;
-  final bool isDestructive;
-
   const ConfirmationDialog({
     super.key,
     required this.title,
@@ -24,18 +14,19 @@ class ConfirmationDialog extends StatelessWidget {
     this.onCancel,
     this.isDestructive = false,
   });
+  final String title;
+  final String description;
+  final String confirmText;
+  final String cancelText;
+  final VoidCallback onConfirm;
+  final VoidCallback? onCancel;
+  final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: Text(
-        title,
-        style: context.textTheme.titleLarge,
-      ),
-      content: Text(
-        description,
-        style: context.textTheme.bodyMedium,
-      ),
+      title: Text(title, style: context.textTheme.titleLarge),
+      content: Text(description, style: context.textTheme.bodyMedium),
       actions: [
         AppButton(
           text: cancelText,
@@ -53,7 +44,9 @@ class ConfirmationDialog extends StatelessWidget {
             onConfirm();
             context.popRoute();
           },
-          type: isDestructive ? AppButtonType.destructive : AppButtonType.primary,
+          type: isDestructive
+              ? AppButtonType.destructive
+              : AppButtonType.primary,
         ),
       ],
     );

@@ -1,3 +1,4 @@
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +9,16 @@ import 'package:flutter/material.dart';
 /// trimmed message through [onSendMessage]. Attachment actions are
 /// optional and only rendered when a callback is supplied.
 class ChatInputField extends StatefulWidget {
+  /// Creates a [ChatInputField].
+  const ChatInputField({
+    super.key,
+    required this.hintText,
+    required this.onSendMessage,
+    this.onAttachFile,
+    this.onUploadImage,
+    this.onRecordAudio,
+  });
+
   /// Localized hint shown while the field is empty.
   final String hintText;
 
@@ -22,16 +33,6 @@ class ChatInputField extends StatefulWidget {
 
   /// Optional audio-recording action; hides the button when `null`.
   final VoidCallback? onRecordAudio;
-
-  /// Creates a [ChatInputField].
-  const ChatInputField({
-    super.key,
-    required this.hintText,
-    required this.onSendMessage,
-    this.onAttachFile,
-    this.onUploadImage,
-    this.onRecordAudio,
-  });
 
   @override
   State<ChatInputField> createState() => _ChatInputFieldState();
@@ -78,12 +79,10 @@ class _ChatInputFieldState extends State<ChatInputField> {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: AppSpacing.inputField,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: theme.dividerColor),
-        ),
+        border: Border(top: BorderSide(color: theme.dividerColor)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -92,25 +91,37 @@ class _ChatInputFieldState extends State<ChatInputField> {
               widget.onUploadImage != null ||
               widget.onRecordAudio != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: AppSpacing.bottom3,
               child: Row(
                 children: <Widget>[
                   if (widget.onAttachFile != null)
                     IconButton(
                       icon: const Icon(Icons.attach_file),
-                      tooltip: localizedText(context, 'Attach file', 'إرفاق ملف'),
+                      tooltip: localizedText(
+                        context,
+                        'Attach file',
+                        'إرفاق ملف',
+                      ),
                       onPressed: widget.onAttachFile,
                     ),
                   if (widget.onUploadImage != null)
                     IconButton(
                       icon: const Icon(Icons.image_outlined),
-                      tooltip: localizedText(context, 'Upload image', 'رفع صورة'),
+                      tooltip: localizedText(
+                        context,
+                        'Upload image',
+                        'رفع صورة',
+                      ),
                       onPressed: widget.onUploadImage,
                     ),
                   if (widget.onRecordAudio != null)
                     IconButton(
                       icon: const Icon(Icons.mic_none),
-                      tooltip: localizedText(context, 'Record audio', 'تسجيل صوتي'),
+                      tooltip: localizedText(
+                        context,
+                        'Record audio',
+                        'تسجيل صوتي',
+                      ),
                       onPressed: widget.onRecordAudio,
                     ),
                   const Spacer(),
@@ -121,7 +132,9 @@ class _ChatInputFieldState extends State<ChatInputField> {
             children: <Widget>[
               Expanded(
                 child: Directionality(
-                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                  textDirection: isArabic
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
                   child: TextField(
                     controller: _controller,
                     maxLines: null,
@@ -138,7 +151,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              AppSpacing.gap2,
               IconButton.filled(
                 icon: const Icon(Icons.send_rounded),
                 onPressed: _isComposing ? _sendMessage : null,

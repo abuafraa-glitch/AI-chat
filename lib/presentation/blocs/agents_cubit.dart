@@ -41,8 +41,8 @@ final class AgentsState extends Equatable {
 final class AgentsCubit extends Cubit<AgentsState> {
   /// Creates an [AgentsCubit] wired to [remoteDataSource].
   AgentsCubit({required RemoteDataSource remoteDataSource})
-      : _remote = remoteDataSource,
-        super(const AgentsState());
+    : _remote = remoteDataSource,
+      super(const AgentsState());
 
   final RemoteDataSource _remote;
 

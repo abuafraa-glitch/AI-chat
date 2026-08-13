@@ -30,28 +30,83 @@ abstract final class AppLogger {
   const AppLogger._();
 
   /// Logs a [LoggerLevel.debug] message.
-  static void debug(String message, {String tag = AppStrings.appTag, Object? error, StackTrace? stackTrace}) {
-    _log(LoggerLevel.debug, message, tag: tag, error: error, stackTrace: stackTrace);
+  static void debug(
+    String message, {
+    String tag = AppStrings.appTag,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    _log(
+      LoggerLevel.debug,
+      message,
+      tag: tag,
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   /// Logs an [LoggerLevel.info] message.
-  static void info(String message, {String tag = AppStrings.appTag, Object? error, StackTrace? stackTrace}) {
-    _log(LoggerLevel.info, message, tag: tag, error: error, stackTrace: stackTrace);
+  static void info(
+    String message, {
+    String tag = AppStrings.appTag,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    _log(
+      LoggerLevel.info,
+      message,
+      tag: tag,
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   /// Logs a [LoggerLevel.warning] message.
-  static void warning(String message, {String tag = AppStrings.appTag, Object? error, StackTrace? stackTrace}) {
-    _log(LoggerLevel.warning, message, tag: tag, error: error, stackTrace: stackTrace);
+  static void warning(
+    String message, {
+    String tag = AppStrings.appTag,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    _log(
+      LoggerLevel.warning,
+      message,
+      tag: tag,
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   /// Logs an [LoggerLevel.error] message.
-  static void error(String message, {String tag = AppStrings.appTag, Object? error, StackTrace? stackTrace}) {
-    _log(LoggerLevel.error, message, tag: tag, error: error, stackTrace: stackTrace);
+  static void error(
+    String message, {
+    String tag = AppStrings.appTag,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    _log(
+      LoggerLevel.error,
+      message,
+      tag: tag,
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   /// Logs a [LoggerLevel.critical] message.
-  static void critical(String message, {String tag = AppStrings.appTag, Object? error, StackTrace? stackTrace}) {
-    _log(LoggerLevel.critical, message, tag: tag, error: error, stackTrace: stackTrace);
+  static void critical(
+    String message, {
+    String tag = AppStrings.appTag,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    _log(
+      LoggerLevel.critical,
+      message,
+      tag: tag,
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   /// Internal logging logic that filters by level and environment.

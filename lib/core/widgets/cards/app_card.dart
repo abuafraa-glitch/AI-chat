@@ -1,18 +1,9 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_radius.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 
 class AppCard extends StatelessWidget {
-  final Widget child;
-  final double? elevation;
-  final BorderRadiusGeometry? borderRadius;
-  final EdgeInsetsGeometry? padding;
-  final Color? backgroundColor;
-  final BoxBorder? border;
-  final List<BoxShadow>? boxShadow;
-
   const AppCard({
     super.key,
     required this.child,
@@ -23,6 +14,13 @@ class AppCard extends StatelessWidget {
     this.border,
     this.boxShadow,
   });
+  final Widget child;
+  final double? elevation;
+  final BorderRadiusGeometry? borderRadius;
+  final EdgeInsetsGeometry? padding;
+  final Color? backgroundColor;
+  final BoxBorder? border;
+  final List<BoxShadow>? boxShadow;
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +30,13 @@ class AppCard extends StatelessWidget {
         color: backgroundColor ?? context.colorScheme.surface,
         borderRadius: borderRadius ?? AppRadius.lg,
         border: border,
-        boxShadow: boxShadow ??
+        boxShadow:
+            boxShadow ??
             [
               BoxShadow(
-                color: context.colorScheme.shadow.withOpacity(elevation != null ? (elevation! * 0.05) : 0.1),
+                color: context.colorScheme.shadow.withValues(
+                  alpha: elevation != null ? (elevation! * 0.05) : 0.1,
+                ),
                 blurRadius: elevation != null ? (elevation! * 2) : 8,
                 offset: Offset(0, elevation != null ? (elevation! * 0.5) : 4),
               ),

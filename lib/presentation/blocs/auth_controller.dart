@@ -17,15 +17,16 @@ import 'package:flutter/foundation.dart';
 /// Call [bootstrap] from the splash screen; the controller starts in
 /// [AuthStatus.loading] and resolves to authenticated / unauthenticated
 /// based on the persisted session.
-final class AuthController extends ChangeNotifier implements AuthStatusProvider {
+final class AuthController extends ChangeNotifier
+    implements AuthStatusProvider {
   /// Creates an [AuthController] wired to the data layer.
   AuthController({
     required RemoteDataSource remoteDataSource,
     required SecureStorageService secureStorage,
     required LocalStorageService localStorage,
-  })  : _remote = remoteDataSource,
-        _secureStorage = secureStorage,
-        _localStorage = localStorage;
+  }) : _remote = remoteDataSource,
+       _secureStorage = secureStorage,
+       _localStorage = localStorage;
 
   final RemoteDataSource _remote;
   final SecureStorageService _secureStorage;
@@ -59,10 +60,7 @@ final class AuthController extends ChangeNotifier implements AuthStatusProvider 
   ///
   /// Throws an [AppException] subtype on failure — screens catch it
   /// and surface the message.
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     final result = await _remote.login(email: email, password: password);
     await _persistSession(result);
     _status = AuthStatus.authenticated;
@@ -99,10 +97,7 @@ final class AuthController extends ChangeNotifier implements AuthStatusProvider 
 
   /// Marks the first-launch onboarding flow as completed.
   Future<void> markOnboardingCompleted() async {
-    await _localStorage.setBool(
-      StorageKeys.onboardingCompleted,
-      value: true,
-    );
+    await _localStorage.setBool(StorageKeys.onboardingCompleted, value: true);
     _hasCompletedOnboarding = true;
     notifyListeners();
   }
@@ -126,10 +121,7 @@ final class AuthController extends ChangeNotifier implements AuthStatusProvider 
   }
 
   /// Confirms the email address with the emailed [code].
-  Future<void> verifyEmail({
-    required String email,
-    required String code,
-  }) {
+  Future<void> verifyEmail({required String email, required String code}) {
     return _remote.verifyEmail(email: email, code: code);
   }
 

@@ -8,6 +8,14 @@ import 'package:flutter/material.dart';
 /// dependency-free. Use it anywhere an item should reveal itself
 /// gradually, e.g. list entries or screen sections.
 class FadeInSlide extends StatelessWidget {
+  /// Creates a [FadeInSlide].
+  const FadeInSlide({
+    super.key,
+    required this.child,
+    this.delay = Duration.zero,
+    this.slideDistance = 12,
+  });
+
   /// The widget to reveal.
   final Widget child;
 
@@ -17,19 +25,11 @@ class FadeInSlide extends StatelessWidget {
   /// Distance the child travels vertically while fading in.
   final double slideDistance;
 
-  /// Creates a [FadeInSlide].
-  const FadeInSlide({
-    super.key,
-    required this.child,
-    this.delay = Duration.zero,
-    this.slideDistance = 12,
-  });
-
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
-      duration: Duration(milliseconds: 250) + delay,
+      duration: const Duration(milliseconds: 250) + delay,
       curve: Curves.easeOut,
       builder: (context, value, child) => Opacity(
         opacity: value,

@@ -1,5 +1,6 @@
 import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
+import 'package:ai_chat/core/theme/app_radius.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/presentation/blocs/auth_controller.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
@@ -61,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.v2),
                 child: TextButton(
-                  onPressed: () => _finish(),
+                  onPressed: _finish,
                   child: Text(localizedText(context, 'Skip', 'تخطي')),
                 ),
               ),
@@ -78,7 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 itemBuilder: (context, index) {
                   final slide = _slides[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: AppSpacing.h8,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
@@ -87,7 +88,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           height: 120,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(32),
+                            borderRadius: AppRadius.xxl,
                           ),
                           child: Icon(
                             slide.icon,
@@ -101,13 +102,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           textAlign: TextAlign.center,
                           style: theme.textTheme.headlineMedium,
                         ),
-                        const SizedBox(height: 16),
+                        AppSpacing.gap4,
                         Text(
-                          localizedText(
-                            context,
-                            slide.bodyEn,
-                            slide.bodyAr,
-                          ),
+                          localizedText(context, slide.bodyEn, slide.bodyAr),
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
@@ -125,14 +122,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 final isActive = index == _currentPage;
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  margin: AppSpacing.h1,
                   width: isActive ? 24 : 8,
                   height: 8,
                   decoration: BoxDecoration(
                     color: isActive
                         ? theme.colorScheme.primary
                         : theme.colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadius.xs,
                   ),
                 );
               }),
@@ -158,26 +155,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   static final List<_OnboardingSlide> _slides = <_OnboardingSlide>[
-    _OnboardingSlide(
+    const _OnboardingSlide(
       icon: Icons.smart_toy_outlined,
       titleEn: 'Chat with the best AI models',
       titleAr: 'تحدث مع أفضل نماذج الذكاء الاصطناعي',
-      bodyEn: 'One app, many models — OpenAI, Claude, Gemini and more, with real-time streaming replies.',
-      bodyAr: 'تطبيق واحد، نماذج متعددة — OpenAI وClaude وGemini وغيرها، مع ردود بثّ مباشر.',
+      bodyEn:
+          'One app, many models — OpenAI, Claude, Gemini and more, with real-time streaming replies.',
+      bodyAr:
+          'تطبيق واحد، نماذج متعددة — OpenAI وClaude وGemini وغيرها، مع ردود بثّ مباشر.',
     ),
-    _OnboardingSlide(
+    const _OnboardingSlide(
       icon: Icons.history_rounded,
       titleEn: 'Your conversations, everywhere',
       titleAr: 'محادثاتك في كل مكان',
-      bodyEn: 'Every chat is saved automatically and synchronised across your devices.',
+      bodyEn:
+          'Every chat is saved automatically and synchronised across your devices.',
       bodyAr: 'كل محادثة تُحفظ تلقائياً وتُتزامن عبر أجهزتك.',
     ),
-    _OnboardingSlide(
+    const _OnboardingSlide(
       icon: Icons.workspace_premium_outlined,
       titleEn: 'Unlock powerful features',
       titleAr: 'افتح ميزات قوية',
-      bodyEn: 'Subscriptions, file uploads, search, notifications and agents — all in one place.',
-      bodyAr: 'الاشتراكات، رفع الملفات، البحث، الإشعارات والوكلاء — كل ذلك في مكان واحد.',
+      bodyEn:
+          'Subscriptions, file uploads, search, notifications and agents — all in one place.',
+      bodyAr:
+          'الاشتراكات، رفع الملفات، البحث، الإشعارات والوكلاء — كل ذلك في مكان واحد.',
     ),
   ];
 }

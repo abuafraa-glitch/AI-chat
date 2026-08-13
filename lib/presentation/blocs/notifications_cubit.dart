@@ -41,8 +41,8 @@ final class NotificationsState extends Equatable {
 final class NotificationsCubit extends Cubit<NotificationsState> {
   /// Creates a [NotificationsCubit] wired to [remoteDataSource].
   NotificationsCubit({required RemoteDataSource remoteDataSource})
-      : _remote = remoteDataSource,
-        super(const NotificationsState());
+    : _remote = remoteDataSource,
+      super(const NotificationsState());
 
   final RemoteDataSource _remote;
 

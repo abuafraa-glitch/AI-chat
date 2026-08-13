@@ -1,4 +1,3 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
@@ -6,14 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class ErrorView extends StatelessWidget {
-  final String? title;
-  final String? description;
-  final String? errorCode;
-  final VoidCallback? onRetry;
-  final String? retryButtonText;
-  final Widget? customActions;
-  final dynamic errorDetails;
-
   const ErrorView({
     super.key,
     this.title,
@@ -24,6 +15,13 @@ class ErrorView extends StatelessWidget {
     this.customActions,
     this.errorDetails,
   });
+  final String? title;
+  final String? description;
+  final String? errorCode;
+  final VoidCallback? onRetry;
+  final String? retryButtonText;
+  final Widget? customActions;
+  final dynamic errorDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +44,10 @@ class ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              description ?? 'نعتذر، حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+              description ??
+                  'نعتذر، حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
               style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurface.withOpacity(0.7),
+                color: context.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -57,7 +56,7 @@ class ErrorView extends StatelessWidget {
               Text(
                 'رمز الخطأ: $errorCode',
                 style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.onSurface.withOpacity(0.5),
+                  color: context.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -76,7 +75,10 @@ class ErrorView extends StatelessWidget {
             if (kDebugMode && errorDetails != null) ...[
               const SizedBox(height: AppSpacing.lg),
               ExpansionTile(
-                title: Text('تفاصيل الخطأ (للمطورين)', style: context.textTheme.bodySmall),
+                title: Text(
+                  'تفاصيل الخطأ (للمطورين)',
+                  style: context.textTheme.bodySmall,
+                ),
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),

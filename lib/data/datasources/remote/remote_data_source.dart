@@ -43,10 +43,7 @@ abstract interface class RemoteDataSource {
   });
 
   /// Confirms the email address with the emailed verification [code].
-  Future<void> verifyEmail({
-    required String email,
-    required String code,
-  });
+  Future<void> verifyEmail({required String email, required String code});
 
   // ── AI Models ─────────────────────────────────────────────────────────────
 

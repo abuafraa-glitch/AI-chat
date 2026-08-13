@@ -1,4 +1,3 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_radius.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
@@ -7,15 +6,6 @@ import 'package:ai_chat/core/widgets/inputs/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 class SearchField extends StatefulWidget {
-  final TextEditingController? controller;
-  final String? hintText;
-  final ValueChanged<String>? onChanged;
-  final ValueChanged<String>? onSubmitted;
-  final VoidCallback? onClear;
-  final Duration debounceDuration;
-  final List<String>? suggestions;
-  final Function(String)? onSuggestionSelected;
-
   const SearchField({
     super.key,
     this.controller,
@@ -27,6 +17,14 @@ class SearchField extends StatefulWidget {
     this.suggestions,
     this.onSuggestionSelected,
   });
+  final TextEditingController? controller;
+  final String? hintText;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final VoidCallback? onClear;
+  final Duration debounceDuration;
+  final List<String>? suggestions;
+  final void Function(String)? onSuggestionSelected;
 
   @override
   State<SearchField> createState() => _SearchFieldState();
@@ -78,7 +76,7 @@ class _SearchFieldState extends State<SearchField> {
           onClear: _onClear,
           prefixIcon: Icon(
             Icons.search,
-            color: context.colorScheme.onSurface.withOpacity(0.6),
+            color: context.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
         if (widget.suggestions != null &&
@@ -91,7 +89,7 @@ class _SearchFieldState extends State<SearchField> {
               borderRadius: AppRadius.sm,
               boxShadow: [
                 BoxShadow(
-                  color: context.colorScheme.shadow.withOpacity(0.1),
+                  color: context.colorScheme.shadow.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),

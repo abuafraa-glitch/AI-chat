@@ -2,14 +2,11 @@ import 'package:ai_chat/presentation/blocs/conversations_cubit.dart';
 import 'package:ai_chat/presentation/blocs/data_sources.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
 import 'package:ai_chat/presentation/blocs/subscriptions_cubit.dart';
-import 'package:ai_chat/presentation/screens/conversations_screen.dart';
-import 'package:ai_chat/presentation/screens/models_screen.dart';
-import 'package:ai_chat/presentation/screens/profile_screen.dart';
-import 'package:ai_chat/presentation/screens/settings_screen.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nested/nested.dart';
 
 /// Main application shell rendered by the router for the four primary
 /// tabs.
@@ -26,10 +23,7 @@ import 'package:go_router/go_router.dart';
 /// no widget below this point talks to the network or storage directly.
 class MainLayout extends StatelessWidget {
   /// Creates the [MainLayout] shell for [navigationShell].
-  const MainLayout({
-    super.key,
-    required this.navigationShell,
-  });
+  const MainLayout({super.key, required this.navigationShell});
 
   /// go_router navigation shell driving the tab branches.
   final StatefulNavigationShell navigationShell;
@@ -44,20 +38,20 @@ class MainLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: <BlocProviderSingleChildWidget>[
+      providers: <SingleChildWidget>[
         BlocProvider<ModelsCubit>(
           create: (context) =>
               ModelsCubit(repository: buildAIRepository())..loadModels(),
         ),
         BlocProvider<ConversationsCubit>(
-          create: (context) => ConversationsCubit(
-            repository: buildConversationRepository(),
-          )..loadConversations(),
+          create: (context) =>
+              ConversationsCubit(repository: buildConversationRepository())
+                ..loadConversations(),
         ),
         BlocProvider<SubscriptionsCubit>(
-          create: (context) => SubscriptionsCubit(
-            repository: buildSubscriptionRepository(),
-          )..load(),
+          create: (context) =>
+              SubscriptionsCubit(repository: buildSubscriptionRepository())
+                ..load(),
         ),
       ],
       child: Scaffold(

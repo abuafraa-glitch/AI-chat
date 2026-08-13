@@ -114,38 +114,34 @@ final class PermissionService {
   /// Requests camera permission for photo capture in the chat input.
   Future<PermissionOutcome> requestCamera({
     bool openSettingsIfPermanentlyDenied = false,
-  }) =>
-      request(
-        Permission.camera,
-        openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
-      );
+  }) => request(
+    Permission.camera,
+    openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
+  );
 
   /// Requests access to the device photo library for file attachments.
   Future<PermissionOutcome> requestPhotos({
     bool openSettingsIfPermanentlyDenied = false,
-  }) =>
-      request(
-        Permission.photos,
-        openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
-      );
+  }) => request(
+    Permission.photos,
+    openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
+  );
 
   /// Requests notification permission for in-app and push alerts.
   Future<PermissionOutcome> requestNotifications({
     bool openSettingsIfPermanentlyDenied = false,
-  }) =>
-      request(
-        Permission.notification,
-        openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
-      );
+  }) => request(
+    Permission.notification,
+    openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
+  );
 
   /// Requests microphone permission for voice-input features.
   Future<PermissionOutcome> requestMicrophone({
     bool openSettingsIfPermanentlyDenied = false,
-  }) =>
-      request(
-        Permission.microphone,
-        openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
-      );
+  }) => request(
+    Permission.microphone,
+    openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
+  );
 
   /// Requests storage permission for file download and management.
   ///
@@ -155,11 +151,10 @@ final class PermissionService {
   /// routing.
   Future<PermissionOutcome> requestStorage({
     bool openSettingsIfPermanentlyDenied = false,
-  }) =>
-      request(
-        Permission.storage,
-        openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
-      );
+  }) => request(
+    Permission.storage,
+    openSettingsIfPermanentlyDenied: openSettingsIfPermanentlyDenied,
+  );
 
   // ── Settings ──────────────────────────────────────────────────────────────
 

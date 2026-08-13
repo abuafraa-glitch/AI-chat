@@ -32,8 +32,7 @@ extension DateTimeFormattingExtension on DateTime {
   String toDisplayTime12() => DateFormat('h:mm a').format(this);
 
   /// Returns a combined date-time string: `dd/MM/yyyy HH:mm`.
-  String toDisplayDateTime() =>
-      '${toDisplayDate()} ${toDisplayTime24()}';
+  String toDisplayDateTime() => '${toDisplayDate()} ${toDisplayTime24()}';
 
   // ── Relative time ─────────────────────────────────────────────────────────
 

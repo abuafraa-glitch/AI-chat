@@ -200,9 +200,7 @@ final class ApiClient implements ApiConsumer {
       final response = await _dio.post<dynamic>(
         path,
         data: formData,
-        options: Options(
-          contentType: ApiContentType.multipartFormData,
-        ),
+        options: Options(contentType: ApiContentType.multipartFormData),
         onSendProgress: onSendProgress,
         cancelToken: token,
       );
@@ -235,10 +233,7 @@ final class ApiClient implements ApiConsumer {
       final response = await _dio.post<ResponseBody>(
         path,
         data: data,
-        options: Options(
-          responseType: ResponseType.stream,
-          headers: headers,
-        ),
+        options: Options(responseType: ResponseType.stream, headers: headers),
         cancelToken: token,
       );
 
@@ -291,13 +286,16 @@ final class ApiClient implements ApiConsumer {
       DioExceptionType.cancel => const RequestCancelledException(),
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout =>
-        RequestTimeoutException(statusCode: error.response?.statusCode),
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.transformTimeout => RequestTimeoutException(
+        statusCode: error.response?.statusCode,
+      ),
       DioExceptionType.connectionError => const NoConnectionException(),
       DioExceptionType.badCertificate => const CertificateException(),
       DioExceptionType.badResponse => _mapBadResponse(error),
-      DioExceptionType.unknown =>
-        UnknownNetworkException(message: error.message ?? 'Unknown error.'),
+      DioExceptionType.unknown => UnknownNetworkException(
+        message: error.message ?? 'Unknown error.',
+      ),
     };
   }
 
@@ -308,17 +306,16 @@ final class ApiClient implements ApiConsumer {
     final message = _extractErrorMessage(error.response);
 
     return switch (statusCode) {
-      HttpStatusCode.unauthorized =>
-        UnauthorizedException(message: message),
+      HttpStatusCode.unauthorized => UnauthorizedException(message: message),
       HttpStatusCode.forbidden => ForbiddenException(message: message),
       HttpStatusCode.notFound => NotFoundException(message: message),
       HttpStatusCode.conflict => ConflictException(message: message),
-      HttpStatusCode.unprocessableEntity =>
-        UnprocessableEntityException(message: message),
-      HttpStatusCode.tooManyRequests =>
-        RateLimitException(
-          retryAfterSeconds: _parseRetryAfterHeader(error.response?.headers),
-        ),
+      HttpStatusCode.unprocessableEntity => UnprocessableEntityException(
+        message: message,
+      ),
+      HttpStatusCode.tooManyRequests => RateLimitException(
+        retryAfterSeconds: _parseRetryAfterHeader(error.response?.headers),
+      ),
       _ when (statusCode ?? 0) >= HttpStatusCode.internalServerError =>
         ServerException(message: message, statusCode: statusCode),
       _ when (statusCode ?? 0) >= HttpStatusCode.badRequest =>

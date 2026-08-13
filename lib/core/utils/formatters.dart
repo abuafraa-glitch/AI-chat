@@ -38,13 +38,21 @@ abstract final class Formatters {
   // ---------------------------------------------------------------------------
 
   /// Formats a [num] into a currency string (e.g., '$1,234.56').
-  static String formatCurrency(num amount, {String symbol = '$', String? locale}) {
+  static String formatCurrency(
+    num amount, {
+    String symbol = '\$',
+    String? locale,
+  }) {
     final formatter = NumberFormat.currency(locale: locale, symbol: symbol);
     return formatter.format(amount);
   }
 
   /// Formats a [num] into a decimal number string with a specified number of decimal places.
-  static String formatDecimal(num number, {int decimalDigits = 2, String? locale}) {
+  static String formatDecimal(
+    num number, {
+    int decimalDigits = 2,
+    String? locale,
+  }) {
     final formatter = NumberFormat.decimalPattern(locale)
       ..minimumFractionDigits = decimalDigits
       ..maximumFractionDigits = decimalDigits;
@@ -52,7 +60,11 @@ abstract final class Formatters {
   }
 
   /// Formats a [num] into a percentage string (e.g., '12.34%').
-  static String formatPercentage(num value, {int decimalDigits = 2, String? locale}) {
+  static String formatPercentage(
+    num value, {
+    int decimalDigits = 2,
+    String? locale,
+  }) {
     final formatter = NumberFormat.percentPattern(locale)
       ..minimumFractionDigits = decimalDigits
       ..maximumFractionDigits = decimalDigits;
@@ -90,10 +102,13 @@ abstract final class Formatters {
   /// Capitalizes the first letter of each word in a string.
   static String capitalizeWords(String text) {
     if (text.isEmpty) return text;
-    return text.split(' ').map((word) {
-      if (word.isEmpty) return '';
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
+    return text
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return '';
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
   /// Truncates a string to a specified [maxLength] and appends an ellipsis if truncated.

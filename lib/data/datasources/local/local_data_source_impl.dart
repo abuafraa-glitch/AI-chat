@@ -12,10 +12,12 @@ import 'package:ai_chat/data/models/subscription_model.dart';
 /// Implementation of [LocalDataSource] that uses [LocalStorageService]
 /// and [SecureStorageService] for local data persistence.
 class LocalDataSourceImpl implements LocalDataSource {
+  const LocalDataSourceImpl(
+    this._localStorageService,
+    this._secureStorageService,
+  );
   final LocalStorageService _localStorageService;
   final SecureStorageService _secureStorageService;
-
-  const LocalDataSourceImpl(this._localStorageService, this._secureStorageService);
 
   // ── Authentication ────────────────────────────────────────────────────────
 
@@ -38,12 +40,17 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<void> saveUser(Map<String, dynamic> userJson) async {
-    await _localStorageService.setString(StorageKeys.currentUser, jsonEncode(userJson));
+    await _localStorageService.setString(
+      StorageKeys.currentUser,
+      jsonEncode(userJson),
+    );
   }
 
   @override
   Future<Map<String, dynamic>?> getUser() async {
-    final String? userJsonString = _localStorageService.getString(StorageKeys.currentUser);
+    final String? userJsonString = _localStorageService.getString(
+      StorageKeys.currentUser,
+    );
     if (userJsonString == null) return null;
     return jsonDecode(userJsonString) as Map<String, dynamic>;
   }
@@ -57,16 +64,25 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<void> saveAIModels(List<AIModel> models) async {
-    final List<Map<String, dynamic>> jsonList = models.map((model) => model.toJson()).toList();
-    await _localStorageService.setString(StorageKeys.modelCatalogCache, jsonEncode(jsonList));
+    final List<Map<String, dynamic>> jsonList = models
+        .map((model) => model.toJson())
+        .toList();
+    await _localStorageService.setString(
+      StorageKeys.modelCatalogCache,
+      jsonEncode(jsonList),
+    );
   }
 
   @override
   Future<List<AIModel>> getAIModels() async {
-    final String? jsonString = _localStorageService.getString(StorageKeys.modelCatalogCache);
+    final String? jsonString = _localStorageService.getString(
+      StorageKeys.modelCatalogCache,
+    );
     if (jsonString == null) return [];
     final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
-    return jsonList.map((json) => AIModel.fromJson(json as Map<String, dynamic>)).toList();
+    return jsonList
+        .map((json) => AIModel.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -78,29 +94,40 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<void> saveConversations(List<ConversationModel> conversations) async {
-    final List<Map<String, dynamic>> jsonList = conversations.map((conv) => conv.toJson()).toList();
-    await _localStorageService.setString(StorageKeys.conversationsCache, jsonEncode(jsonList));
+    final List<Map<String, dynamic>> jsonList = conversations
+        .map((conv) => conv.toJson())
+        .toList();
+    await _localStorageService.setString(
+      StorageKeys.conversationsCache,
+      jsonEncode(jsonList),
+    );
   }
 
   @override
   Future<List<ConversationModel>> getConversations() async {
-    final String? jsonString = _localStorageService.getString(StorageKeys.conversationsCache);
+    final String? jsonString = _localStorageService.getString(
+      StorageKeys.conversationsCache,
+    );
     if (jsonString == null) return [];
     final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
-    return jsonList.map((json) => ConversationModel.fromJson(json as Map<String, dynamic>)).toList();
+    return jsonList
+        .map((json) => ConversationModel.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   @override
   Future<void> deleteConversation(String id) async {
-    List<ConversationModel> conversations = await getConversations();
+    final List<ConversationModel> conversations = await getConversations();
     conversations.removeWhere((conv) => conv.id == id);
     await saveConversations(conversations);
   }
 
   @override
   Future<void> updateConversation(ConversationModel conversation) async {
-    List<ConversationModel> conversations = await getConversations();
-    final int index = conversations.indexWhere((conv) => conv.id == conversation.id);
+    final List<ConversationModel> conversations = await getConversations();
+    final int index = conversations.indexWhere(
+      (conv) => conv.id == conversation.id,
+    );
     if (index != -1) {
       conversations[index] = conversation;
     } else {
@@ -112,27 +139,43 @@ class LocalDataSourceImpl implements LocalDataSource {
   // ── Messages ──────────────────────────────────────────────────────────────
 
   @override
-  Future<void> saveMessages(String conversationId, List<MessageModel> messages) async {
-    final List<Map<String, dynamic>> jsonList = messages.map((msg) => msg.toJson()).toList();
-    await _localStorageService.setString(CacheKeys.conversationMessages(conversationId), jsonEncode(jsonList));
+  Future<void> saveMessages(
+    String conversationId,
+    List<MessageModel> messages,
+  ) async {
+    final List<Map<String, dynamic>> jsonList = messages
+        .map((msg) => msg.toJson())
+        .toList();
+    await _localStorageService.setString(
+      CacheKeys.conversationMessages(conversationId),
+      jsonEncode(jsonList),
+    );
   }
 
   @override
   Future<List<MessageModel>> getMessages(String conversationId) async {
-    final String? jsonString = _localStorageService.getString(CacheKeys.conversationMessages(conversationId));
+    final String? jsonString = _localStorageService.getString(
+      CacheKeys.conversationMessages(conversationId),
+    );
     if (jsonString == null) return [];
     final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
-    return jsonList.map((json) => MessageModel.fromJson(json as Map<String, dynamic>)).toList();
+    return jsonList
+        .map((json) => MessageModel.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   @override
   Future<void> deleteMessages(String conversationId) async {
-    await _localStorageService.remove(CacheKeys.conversationMessages(conversationId));
+    await _localStorageService.remove(
+      CacheKeys.conversationMessages(conversationId),
+    );
   }
 
   @override
   Future<void> updateMessage(MessageModel message) async {
-    List<MessageModel> messages = await getMessages(message.conversationId);
+    final List<MessageModel> messages = await getMessages(
+      message.conversationId,
+    );
     final int index = messages.indexWhere((msg) => msg.id == message.id);
     if (index != -1) {
       messages[index] = message;
@@ -152,7 +195,9 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<Map<String, dynamic>?> getSettings() async {
-    final String? settingsJsonString = _localStorageService.getString('app.settings');
+    final String? settingsJsonString = _localStorageService.getString(
+      'app.settings',
+    );
     if (settingsJsonString == null) return null;
     return jsonDecode(settingsJsonString) as Map<String, dynamic>;
   }
@@ -161,14 +206,21 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<void> saveSubscription(SubscriptionModel subscription) async {
-    await _localStorageService.setString(StorageKeys.subscriptionCache, jsonEncode(subscription.toJson()));
+    await _localStorageService.setString(
+      StorageKeys.subscriptionCache,
+      jsonEncode(subscription.toJson()),
+    );
   }
 
   @override
   Future<SubscriptionModel?> getSubscription() async {
-    final String? jsonString = _localStorageService.getString(StorageKeys.subscriptionCache);
+    final String? jsonString = _localStorageService.getString(
+      StorageKeys.subscriptionCache,
+    );
     if (jsonString == null) return null;
-    return SubscriptionModel.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
+    return SubscriptionModel.fromJson(
+      jsonDecode(jsonString) as Map<String, dynamic>,
+    );
   }
 
   // ── Cache Management ──────────────────────────────────────────────────────

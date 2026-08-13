@@ -1,18 +1,7 @@
-
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
 import 'package:flutter/material.dart';
 
 class LoadingButton extends StatelessWidget {
-  final String text;
-  final VoidCallback? onPressed;
-  final bool isLoading;
-  final AppButtonType type;
-  final AppButtonSize size;
-  final bool fullWidth;
-  final Widget? icon;
-  final String? loadingText;
-  final Widget? loadingIcon;
-
   const LoadingButton({
     super.key,
     required this.text,
@@ -25,6 +14,15 @@ class LoadingButton extends StatelessWidget {
     this.loadingText,
     this.loadingIcon,
   });
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final AppButtonType type;
+  final AppButtonSize size;
+  final bool fullWidth;
+  final Widget? icon;
+  final String? loadingText;
+  final Widget? loadingIcon;
 
   @override
   Widget build(BuildContext context) {

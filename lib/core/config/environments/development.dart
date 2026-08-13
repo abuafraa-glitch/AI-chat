@@ -1,5 +1,5 @@
-import '../app_config.dart';
-import '../flavor.dart';
+import 'package:ai_chat/core/config/app_config.dart';
+import 'package:ai_chat/core/config/flavor.dart';
 
 /// Configuration for the local development environment.
 ///
@@ -12,32 +12,29 @@ base class DevelopmentConfig extends EnvironmentConfig {
   @override
   AppConfig build() {
     return const AppConfig.internal(
-      appName: const String.fromEnvironment(
+      appName: String.fromEnvironment(
         'APP_NAME',
         defaultValue: 'Hajeen AI Dev',
       ),
-      appVersion: const String.fromEnvironment(
+      appVersion: String.fromEnvironment(
         'APP_VERSION',
         defaultValue: '1.0.0+1',
       ),
-      apiBaseUrl: const String.fromEnvironment(
+      apiBaseUrl: String.fromEnvironment(
         'API_BASE_URL',
         defaultValue: 'https://api-dev.hajeen.ai',
       ),
-      webSocketUrl: const String.fromEnvironment(
+      webSocketUrl: String.fromEnvironment(
         'WS_BASE_URL',
         defaultValue: 'wss://ws-dev.hajeen.ai',
       ),
-      apiVersion: const String.fromEnvironment(
-        'API_VERSION',
-        defaultValue: 'v1',
-      ),
+      apiVersion: String.fromEnvironment('API_VERSION', defaultValue: 'v1'),
       flavor: Flavor.development,
-      connectionTimeout: const Duration(seconds: 60),
-      receiveTimeout: const Duration(seconds: 120),
+      connectionTimeout: Duration(seconds: 60),
+      receiveTimeout: Duration(seconds: 120),
       debugMode: true,
       enableLogging: true,
-      featureFlags: const FeatureFlags(
+      featureFlags: FeatureFlags(
         enableChat: true,
         enableAiModelSelection: true,
         enableSubscriptions: true,

@@ -14,28 +14,13 @@ enum AIProvider {
 }
 
 /// Represents the type of the AI model (where it is hosted/executed).
-enum AIModelType {
-  cloud,
-  local,
-}
+enum AIModelType { cloud, local }
 
 /// A production-ready, immutable model representing an AI Model and its capabilities.
-/// 
+///
 /// This model is designed to be highly extensible to support various providers
 /// and future capabilities without breaking existing architecture.
 class AIModel extends Equatable {
-  final String id;
-  final String name;
-  final String? description;
-  final String version;
-  final AIProvider provider;
-  final AIModelType type;
-  final int contextWindow;
-  final int? maxOutputTokens;
-  final AIModelCapabilities capabilities;
-  final bool isAvailable;
-  final Map<String, dynamic> metadata;
-
   const AIModel({
     required this.id,
     required this.name,
@@ -49,6 +34,42 @@ class AIModel extends Equatable {
     this.isAvailable = true,
     this.metadata = const {},
   });
+
+  /// Creates an [AIModel] instance from a JSON map.
+  factory AIModel.fromJson(Map<String, dynamic> json) {
+    return AIModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      version: json['version'] as String,
+      provider: AIProvider.values.firstWhere(
+        (e) => e.name == json['provider'],
+        orElse: () => AIProvider.custom,
+      ),
+      type: AIModelType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => AIModelType.cloud,
+      ),
+      contextWindow: json['contextWindow'] as int,
+      maxOutputTokens: json['maxOutputTokens'] as int?,
+      capabilities: AIModelCapabilities.fromJson(
+        json['capabilities'] as Map<String, dynamic>,
+      ),
+      isAvailable: json['isAvailable'] as bool? ?? true,
+      metadata: json['metadata'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+  final String id;
+  final String name;
+  final String? description;
+  final String version;
+  final AIProvider provider;
+  final AIModelType type;
+  final int contextWindow;
+  final int? maxOutputTokens;
+  final AIModelCapabilities capabilities;
+  final bool isAvailable;
+  final Map<String, dynamic> metadata;
 
   /// Creates a copy of this [AIModel] with the given fields replaced by the new values.
   AIModel copyWith({
@@ -79,31 +100,6 @@ class AIModel extends Equatable {
     );
   }
 
-  /// Creates an [AIModel] instance from a JSON map.
-  factory AIModel.fromJson(Map<String, dynamic> json) {
-    return AIModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String?,
-      version: json['version'] as String,
-      provider: AIProvider.values.firstWhere(
-        (e) => e.name == json['provider'],
-        orElse: () => AIProvider.custom,
-      ),
-      type: AIModelType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => AIModelType.cloud,
-      ),
-      contextWindow: json['contextWindow'] as int,
-      maxOutputTokens: json['maxOutputTokens'] as int?,
-      capabilities: AIModelCapabilities.fromJson(
-        json['capabilities'] as Map<String, dynamic>,
-      ),
-      isAvailable: json['isAvailable'] as bool? ?? true,
-      metadata: json['metadata'] as Map<String, dynamic>? ?? const {},
-    );
-  }
-
   /// Converts this [AIModel] instance to a JSON map.
   Map<String, dynamic> toJson() {
     return {
@@ -123,30 +119,22 @@ class AIModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        description,
-        version,
-        provider,
-        type,
-        contextWindow,
-        maxOutputTokens,
-        capabilities,
-        isAvailable,
-        metadata,
-      ];
+    id,
+    name,
+    description,
+    version,
+    provider,
+    type,
+    contextWindow,
+    maxOutputTokens,
+    capabilities,
+    isAvailable,
+    metadata,
+  ];
 }
 
 /// Represents the technical capabilities of an [AIModel].
 class AIModelCapabilities extends Equatable {
-  final bool supportsVision;
-  final bool supportsAudio;
-  final bool supportsVideo;
-  final bool supportsStreaming;
-  final bool supportsToolUse;
-  final bool supportsJsonMode;
-  final bool supportsSystemPrompt;
-
   const AIModelCapabilities({
     this.supportsVision = false,
     this.supportsAudio = false,
@@ -156,6 +144,25 @@ class AIModelCapabilities extends Equatable {
     this.supportsJsonMode = false,
     this.supportsSystemPrompt = true,
   });
+
+  factory AIModelCapabilities.fromJson(Map<String, dynamic> json) {
+    return AIModelCapabilities(
+      supportsVision: json['supportsVision'] as bool? ?? false,
+      supportsAudio: json['supportsAudio'] as bool? ?? false,
+      supportsVideo: json['supportsVideo'] as bool? ?? false,
+      supportsStreaming: json['supportsStreaming'] as bool? ?? true,
+      supportsToolUse: json['supportsToolUse'] as bool? ?? false,
+      supportsJsonMode: json['supportsJsonMode'] as bool? ?? false,
+      supportsSystemPrompt: json['supportsSystemPrompt'] as bool? ?? true,
+    );
+  }
+  final bool supportsVision;
+  final bool supportsAudio;
+  final bool supportsVideo;
+  final bool supportsStreaming;
+  final bool supportsToolUse;
+  final bool supportsJsonMode;
+  final bool supportsSystemPrompt;
 
   AIModelCapabilities copyWith({
     bool? supportsVision,
@@ -177,18 +184,6 @@ class AIModelCapabilities extends Equatable {
     );
   }
 
-  factory AIModelCapabilities.fromJson(Map<String, dynamic> json) {
-    return AIModelCapabilities(
-      supportsVision: json['supportsVision'] as bool? ?? false,
-      supportsAudio: json['supportsAudio'] as bool? ?? false,
-      supportsVideo: json['supportsVideo'] as bool? ?? false,
-      supportsStreaming: json['supportsStreaming'] as bool? ?? true,
-      supportsToolUse: json['supportsToolUse'] as bool? ?? false,
-      supportsJsonMode: json['supportsJsonMode'] as bool? ?? false,
-      supportsSystemPrompt: json['supportsSystemPrompt'] as bool? ?? true,
-    );
-  }
-
   Map<String, dynamic> toJson() {
     return {
       'supportsVision': supportsVision,
@@ -203,12 +198,12 @@ class AIModelCapabilities extends Equatable {
 
   @override
   List<Object?> get props => [
-        supportsVision,
-        supportsAudio,
-        supportsVideo,
-        supportsStreaming,
-        supportsToolUse,
-        supportsJsonMode,
-        supportsSystemPrompt,
-      ];
+    supportsVision,
+    supportsAudio,
+    supportsVideo,
+    supportsStreaming,
+    supportsToolUse,
+    supportsJsonMode,
+    supportsSystemPrompt,
+  ];
 }

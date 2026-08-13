@@ -34,29 +34,33 @@ final class RouterPageFactory implements AppRouterPageFactory {
   // ── Bootstrap ─────────────────────────────────────────────────────────────
 
   @override
-  Widget buildSplashPage(GoRouterState state) => const SplashScreen();
+  Widget buildSplashPage(BuildContext context, GoRouterState state) =>
+      const SplashScreen();
 
   @override
-  Widget buildOnboardingPage(GoRouterState state) => const OnboardingScreen();
+  Widget buildOnboardingPage(BuildContext context, GoRouterState state) =>
+      const OnboardingScreen();
 
   // ── Authentication ────────────────────────────────────────────────────────
 
   @override
-  Widget buildLoginPage(GoRouterState state) => const LoginScreen();
+  Widget buildLoginPage(BuildContext context, GoRouterState state) =>
+      const LoginScreen();
 
   @override
-  Widget buildRegisterPage(GoRouterState state) => const RegisterScreen();
+  Widget buildRegisterPage(BuildContext context, GoRouterState state) =>
+      const RegisterScreen();
 
   @override
-  Widget buildForgotPasswordPage(GoRouterState state) =>
+  Widget buildForgotPasswordPage(BuildContext context, GoRouterState state) =>
       const ForgotPasswordScreen();
 
   @override
-  Widget buildResetPasswordPage(GoRouterState state) =>
+  Widget buildResetPasswordPage(BuildContext context, GoRouterState state) =>
       const ResetPasswordScreen();
 
   @override
-  Widget buildVerifyEmailPage(GoRouterState state) =>
+  Widget buildVerifyEmailPage(BuildContext context, GoRouterState state) =>
       const VerifyEmailScreen();
 
   // ── Main shell ────────────────────────────────────────────────────────────
@@ -71,43 +75,55 @@ final class RouterPageFactory implements AppRouterPageFactory {
   }
 
   @override
-  Widget buildChatListPage(GoRouterState state) => const ConversationsScreen();
+  Widget buildChatListPage(BuildContext context, GoRouterState state) =>
+      const ConversationsScreen();
 
   @override
-  Widget buildChatPage(GoRouterState state, String conversationId) {
+  Widget buildChatPage(
+    BuildContext context,
+    GoRouterState state,
+    String conversationId,
+  ) {
     return ChatScreen(conversationId: conversationId);
   }
 
   @override
-  Widget buildModelsPage(GoRouterState state) => const ModelsScreen();
+  Widget buildModelsPage(BuildContext context, GoRouterState state) =>
+      const ModelsScreen();
 
   @override
-  Widget buildProfilePage(GoRouterState state) => const ProfileScreen();
+  Widget buildProfilePage(BuildContext context, GoRouterState state) =>
+      const ProfileScreen();
 
   @override
-  Widget buildSettingsPage(GoRouterState state) => const SettingsScreen();
+  Widget buildSettingsPage(BuildContext context, GoRouterState state) =>
+      const SettingsScreen();
 
   // ── Feature screens ───────────────────────────────────────────────────────
 
   @override
-  Widget buildSearchPage(GoRouterState state) => const SearchScreen();
+  Widget buildSearchPage(BuildContext context, GoRouterState state) =>
+      const SearchScreen();
 
   @override
-  Widget buildNotificationsPage(GoRouterState state) =>
+  Widget buildNotificationsPage(BuildContext context, GoRouterState state) =>
       const NotificationsScreen();
 
   @override
-  Widget buildFilesPage(GoRouterState state) => const FilesScreen();
+  Widget buildFilesPage(BuildContext context, GoRouterState state) =>
+      const FilesScreen();
 
   @override
-  Widget buildSubscriptionsPage(GoRouterState state) =>
+  Widget buildSubscriptionsPage(BuildContext context, GoRouterState state) =>
       const SubscriptionScreen();
 
   @override
-  Widget buildPaymentsPage(GoRouterState state) => const PaymentsScreen();
+  Widget buildPaymentsPage(BuildContext context, GoRouterState state) =>
+      const PaymentsScreen();
 
   @override
-  Widget buildAgentsPage(GoRouterState state) => const AgentsScreen();
+  Widget buildAgentsPage(BuildContext context, GoRouterState state) =>
+      const AgentsScreen();
 
   @override
   Widget buildNotFoundPage(BuildContext context, GoRouterState state) =>

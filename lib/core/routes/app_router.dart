@@ -19,25 +19,25 @@ import 'package:go_router/go_router.dart';
 /// without depending on [AppRouter]'s internal wiring.
 abstract interface class AppRouterPageFactory {
   /// Builds the splash / bootstrap screen.
-  Widget buildSplashPage(GoRouterState state);
+  Widget buildSplashPage(BuildContext context, GoRouterState state);
 
   /// Builds the first-launch onboarding flow.
-  Widget buildOnboardingPage(GoRouterState state);
+  Widget buildOnboardingPage(BuildContext context, GoRouterState state);
 
   /// Builds the login screen.
-  Widget buildLoginPage(GoRouterState state);
+  Widget buildLoginPage(BuildContext context, GoRouterState state);
 
   /// Builds the registration screen.
-  Widget buildRegisterPage(GoRouterState state);
+  Widget buildRegisterPage(BuildContext context, GoRouterState state);
 
   /// Builds the forgot-password screen.
-  Widget buildForgotPasswordPage(GoRouterState state);
+  Widget buildForgotPasswordPage(BuildContext context, GoRouterState state);
 
   /// Builds the reset-password screen.
-  Widget buildResetPasswordPage(GoRouterState state);
+  Widget buildResetPasswordPage(BuildContext context, GoRouterState state);
 
   /// Builds the e-mail verification screen.
-  Widget buildVerifyEmailPage(GoRouterState state);
+  Widget buildVerifyEmailPage(BuildContext context, GoRouterState state);
 
   /// Builds the main shell widget (e.g. bottom-navigation scaffold).
   ///
@@ -51,37 +51,41 @@ abstract interface class AppRouterPageFactory {
   );
 
   /// Builds the conversation list (home tab).
-  Widget buildChatListPage(GoRouterState state);
+  Widget buildChatListPage(BuildContext context, GoRouterState state);
 
   /// Builds the chat detail screen for [conversationId].
-  Widget buildChatPage(GoRouterState state, String conversationId);
+  Widget buildChatPage(
+    BuildContext context,
+    GoRouterState state,
+    String conversationId,
+  );
 
   /// Builds the AI model catalogue screen.
-  Widget buildModelsPage(GoRouterState state);
+  Widget buildModelsPage(BuildContext context, GoRouterState state);
 
   /// Builds the user profile screen.
-  Widget buildProfilePage(GoRouterState state);
+  Widget buildProfilePage(BuildContext context, GoRouterState state);
 
   /// Builds the settings screen.
-  Widget buildSettingsPage(GoRouterState state);
+  Widget buildSettingsPage(BuildContext context, GoRouterState state);
 
   /// Builds the global search screen.
-  Widget buildSearchPage(GoRouterState state);
+  Widget buildSearchPage(BuildContext context, GoRouterState state);
 
   /// Builds the in-app notification feed.
-  Widget buildNotificationsPage(GoRouterState state);
+  Widget buildNotificationsPage(BuildContext context, GoRouterState state);
 
   /// Builds the file management screen.
-  Widget buildFilesPage(GoRouterState state);
+  Widget buildFilesPage(BuildContext context, GoRouterState state);
 
   /// Builds the subscription management screen.
-  Widget buildSubscriptionsPage(GoRouterState state);
+  Widget buildSubscriptionsPage(BuildContext context, GoRouterState state);
 
   /// Builds the payment / billing screen.
-  Widget buildPaymentsPage(GoRouterState state);
+  Widget buildPaymentsPage(BuildContext context, GoRouterState state);
 
   /// Builds the agents management screen.
-  Widget buildAgentsPage(GoRouterState state);
+  Widget buildAgentsPage(BuildContext context, GoRouterState state);
 
   /// Builds the error screen shown when a route is not found.
   Widget buildNotFoundPage(BuildContext context, GoRouterState state);
@@ -125,8 +129,8 @@ final class AppRouter {
   AppRouter({
     required AuthStatusProvider authStatusProvider,
     required AppRouterPageFactory pageFactory,
-  })  : _authStatusProvider = authStatusProvider,
-        _pageFactory = pageFactory;
+  }) : _authStatusProvider = authStatusProvider,
+       _pageFactory = pageFactory;
 
   final AuthStatusProvider _authStatusProvider;
   final AppRouterPageFactory _pageFactory;
@@ -158,128 +162,106 @@ final class AppRouter {
   // ── Route tree ───────────────────────────────────────────────────────────
 
   List<RouteBase> _buildRoutes() => <RouteBase>[
-        // ── Bootstrap ──────────────────────────────────────────────────────
-        GoRoute(
-          path: RouteNames.splash,
-          builder: _pageFactory.buildSplashPage,
-        ),
+    // ── Bootstrap ──────────────────────────────────────────────────────
+    GoRoute(path: RouteNames.splash, builder: _pageFactory.buildSplashPage),
 
-        // ── Onboarding ─────────────────────────────────────────────────────
-        GoRoute(
-          path: RouteNames.onboarding,
-          builder: _pageFactory.buildOnboardingPage,
-        ),
+    // ── Onboarding ─────────────────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.onboarding,
+      builder: _pageFactory.buildOnboardingPage,
+    ),
 
-        // ── Authentication shell ────────────────────────────────────────────
+    // ── Authentication shell ────────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.auth,
+      redirect: (_, state) =>
+          state.uri.path == RouteNames.auth ? RouteNames.login : null,
+      routes: <RouteBase>[
+        GoRoute(path: 'login', builder: _pageFactory.buildLoginPage),
+        GoRoute(path: 'register', builder: _pageFactory.buildRegisterPage),
         GoRoute(
-          path: RouteNames.auth,
-          redirect: (_, state) => state.uri.path == RouteNames.auth
-              ? RouteNames.login
-              : null,
+          path: 'forgot-password',
+          builder: _pageFactory.buildForgotPasswordPage,
+        ),
+        GoRoute(
+          path: 'reset-password',
+          builder: _pageFactory.buildResetPasswordPage,
+        ),
+        GoRoute(
+          path: 'verify-email',
+          builder: _pageFactory.buildVerifyEmailPage,
+        ),
+      ],
+    ),
+
+    // ── Main shell (bottom navigation) ─────────────────────────────────
+    StatefulShellRoute.indexedStack(
+      builder: _pageFactory.buildMainShell,
+      branches: <StatefulShellBranch>[
+        // Tab 0 — Chat
+        StatefulShellBranch(
           routes: <RouteBase>[
             GoRoute(
-              path: 'login',
-              builder: _pageFactory.buildLoginPage,
-            ),
-            GoRoute(
-              path: 'register',
-              builder: _pageFactory.buildRegisterPage,
-            ),
-            GoRoute(
-              path: 'forgot-password',
-              builder: _pageFactory.buildForgotPasswordPage,
-            ),
-            GoRoute(
-              path: 'reset-password',
-              builder: _pageFactory.buildResetPasswordPage,
-            ),
-            GoRoute(
-              path: 'verify-email',
-              builder: _pageFactory.buildVerifyEmailPage,
-            ),
-          ],
-        ),
-
-        // ── Main shell (bottom navigation) ─────────────────────────────────
-        StatefulShellRoute.indexedStack(
-          builder: _pageFactory.buildMainShell,
-          branches: <StatefulShellBranch>[
-            // Tab 0 — Chat
-            StatefulShellBranch(
+              path: RouteNames.chat,
+              builder: _pageFactory.buildChatListPage,
               routes: <RouteBase>[
                 GoRoute(
-                  path: RouteNames.chat,
-                  builder: _pageFactory.buildChatListPage,
-                  routes: <RouteBase>[
-                    GoRoute(
-                      path: ':${RouteNames.paramConversationId}',
-                      builder: (context, state) => _pageFactory.buildChatPage(
-                        state,
-                        state.pathParameters[RouteNames.paramConversationId] ??
-                            '',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            // Tab 1 — Models
-            StatefulShellBranch(
-              routes: <RouteBase>[
-                GoRoute(
-                  path: RouteNames.models,
-                  builder: _pageFactory.buildModelsPage,
-                ),
-              ],
-            ),
-
-            // Tab 2 — Profile
-            StatefulShellBranch(
-              routes: <RouteBase>[
-                GoRoute(
-                  path: RouteNames.profile,
-                  builder: _pageFactory.buildProfilePage,
-                ),
-              ],
-            ),
-
-            // Tab 3 — Settings
-            StatefulShellBranch(
-              routes: <RouteBase>[
-                GoRoute(
-                  path: RouteNames.settings,
-                  builder: _pageFactory.buildSettingsPage,
+                  path: ':${RouteNames.paramConversationId}',
+                  builder: (context, state) => _pageFactory.buildChatPage(
+                    context,
+                    state,
+                    state.pathParameters[RouteNames.paramConversationId] ?? '',
+                  ),
                 ),
               ],
             ),
           ],
         ),
 
-        // ── Feature screens (pushed over the shell) ─────────────────────────
-        GoRoute(
-          path: RouteNames.search,
-          builder: _pageFactory.buildSearchPage,
+        // Tab 1 — Models
+        StatefulShellBranch(
+          routes: <RouteBase>[
+            GoRoute(
+              path: RouteNames.models,
+              builder: _pageFactory.buildModelsPage,
+            ),
+          ],
         ),
-        GoRoute(
-          path: RouteNames.notifications,
-          builder: _pageFactory.buildNotificationsPage,
+
+        // Tab 2 — Profile
+        StatefulShellBranch(
+          routes: <RouteBase>[
+            GoRoute(
+              path: RouteNames.profile,
+              builder: _pageFactory.buildProfilePage,
+            ),
+          ],
         ),
-        GoRoute(
-          path: RouteNames.files,
-          builder: _pageFactory.buildFilesPage,
+
+        // Tab 3 — Settings
+        StatefulShellBranch(
+          routes: <RouteBase>[
+            GoRoute(
+              path: RouteNames.settings,
+              builder: _pageFactory.buildSettingsPage,
+            ),
+          ],
         ),
-        GoRoute(
-          path: RouteNames.subscriptions,
-          builder: _pageFactory.buildSubscriptionsPage,
-        ),
-        GoRoute(
-          path: RouteNames.payments,
-          builder: _pageFactory.buildPaymentsPage,
-        ),
-        GoRoute(
-          path: RouteNames.agents,
-          builder: _pageFactory.buildAgentsPage,
-        ),
-      ];
+      ],
+    ),
+
+    // ── Feature screens (pushed over the shell) ─────────────────────────
+    GoRoute(path: RouteNames.search, builder: _pageFactory.buildSearchPage),
+    GoRoute(
+      path: RouteNames.notifications,
+      builder: _pageFactory.buildNotificationsPage,
+    ),
+    GoRoute(path: RouteNames.files, builder: _pageFactory.buildFilesPage),
+    GoRoute(
+      path: RouteNames.subscriptions,
+      builder: _pageFactory.buildSubscriptionsPage,
+    ),
+    GoRoute(path: RouteNames.payments, builder: _pageFactory.buildPaymentsPage),
+    GoRoute(path: RouteNames.agents, builder: _pageFactory.buildAgentsPage),
+  ];
 }

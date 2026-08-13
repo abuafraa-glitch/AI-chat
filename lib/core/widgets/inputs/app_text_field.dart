@@ -1,4 +1,3 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_radius.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
@@ -6,31 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AppTextField extends StatefulWidget {
-  final TextEditingController? controller;
-  final String? hintText;
-  final String? labelText;
-  final String? initialValue;
-  final bool obscureText;
-  final bool readOnly;
-  final bool enabled;
-  final int? maxLines;
-  final int? minLines;
-  final int? maxLength;
-  final ValueChanged<String>? onChanged;
-  final ValueChanged<String>? onSubmitted;
-  final FormFieldValidator<String>? validator;
-  final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
-  final Widget? prefixIcon;
-  final Widget? suffixIcon;
-  final bool isPassword;
-  final bool isSearch;
-  final VoidCallback? onClear;
-  final List<TextInputFormatter>? inputFormatters;
-  final AutovalidateMode? autovalidateMode;
-  final FocusNode? focusNode;
-  final bool showCounterText;
-
   const AppTextField({
     super.key,
     this.controller,
@@ -58,6 +32,30 @@ class AppTextField extends StatefulWidget {
     this.focusNode,
     this.showCounterText = false,
   });
+  final TextEditingController? controller;
+  final String? hintText;
+  final String? labelText;
+  final String? initialValue;
+  final bool obscureText;
+  final bool readOnly;
+  final bool enabled;
+  final int? maxLines;
+  final int? minLines;
+  final int? maxLength;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final FormFieldValidator<String>? validator;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
+  final bool isPassword;
+  final bool isSearch;
+  final VoidCallback? onClear;
+  final List<TextInputFormatter>? inputFormatters;
+  final AutovalidateMode? autovalidateMode;
+  final FocusNode? focusNode;
+  final bool showCounterText;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -70,7 +68,8 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? TextEditingController(text: widget.initialValue);
+    _controller =
+        widget.controller ?? TextEditingController(text: widget.initialValue);
     _obscureText = widget.obscureText || widget.isPassword;
   }
 
@@ -116,13 +115,15 @@ class _AppTextFieldState extends State<AppTextField> {
         counterText: widget.showCounterText ? null : '',
         fillColor: colorScheme.surface,
         filled: true,
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: AppRadius.sm,
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.sm,
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.5),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.sm,
@@ -151,15 +152,17 @@ class _AppTextFieldState extends State<AppTextField> {
       return IconButton(
         icon: Icon(
           _obscureText ? Icons.visibility_off : Icons.visibility,
-          color: context.colorScheme.onSurface.withOpacity(0.6),
+          color: context.colorScheme.onSurface.withValues(alpha: 0.6),
         ),
         onPressed: _toggleObscureText,
       );
-    } else if (widget.isSearch && _controller.text.isNotEmpty && widget.onClear != null) {
+    } else if (widget.isSearch &&
+        _controller.text.isNotEmpty &&
+        widget.onClear != null) {
       return IconButton(
         icon: Icon(
           Icons.clear,
-          color: context.colorScheme.onSurface.withOpacity(0.6),
+          color: context.colorScheme.onSurface.withValues(alpha: 0.6),
         ),
         onPressed: widget.onClear,
       );

@@ -1,20 +1,9 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_radius.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class OtpField extends StatefulWidget {
-  final int length;
-  final ValueChanged<String> onCompleted;
-  final ValueChanged<String>? onChanged;
-  final bool obscureText;
-  final bool autoFocus;
-  final TextStyle? textStyle;
-  final InputDecoration? decoration;
-  final List<TextInputFormatter>? inputFormatters;
-
   const OtpField({
     super.key,
     this.length = 4,
@@ -26,6 +15,14 @@ class OtpField extends StatefulWidget {
     this.decoration,
     this.inputFormatters,
   }) : assert(length > 0);
+  final int length;
+  final ValueChanged<String> onCompleted;
+  final ValueChanged<String>? onChanged;
+  final bool obscureText;
+  final bool autoFocus;
+  final TextStyle? textStyle;
+  final InputDecoration? decoration;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   State<OtpField> createState() => _OtpFieldState();
@@ -39,7 +36,10 @@ class _OtpFieldState extends State<OtpField> {
   void initState() {
     super.initState();
     _focusNodes = List.generate(widget.length, (index) => FocusNode());
-    _textControllers = List.generate(widget.length, (index) => TextEditingController());
+    _textControllers = List.generate(
+      widget.length,
+      (index) => TextEditingController(),
+    );
 
     if (widget.autoFocus) {
       _focusNodes[0].requestFocus();
@@ -90,23 +90,28 @@ class _OtpFieldState extends State<OtpField> {
             textAlign: TextAlign.center,
             obscureText: widget.obscureText,
             style: widget.textStyle ?? context.textTheme.headlineSmall,
-            inputFormatters: widget.inputFormatters ??
+            inputFormatters:
+                widget.inputFormatters ??
                 [
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(1),
                 ],
-            decoration: widget.decoration ??
+            decoration:
+                widget.decoration ??
                 InputDecoration(
                   counterText: '',
                   filled: true,
                   fillColor: context.colorScheme.surface,
-                  border: OutlineInputBorder(
+                  border: const OutlineInputBorder(
                     borderRadius: AppRadius.sm,
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: AppRadius.sm,
-                    borderSide: BorderSide(color: context.colorScheme.primary, width: 2),
+                    borderSide: BorderSide(
+                      color: context.colorScheme.primary,
+                      width: 2,
+                    ),
                   ),
                 ),
             onChanged: (value) => _onChanged(value, index),

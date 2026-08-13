@@ -2,11 +2,6 @@ import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class ShimmerLoader extends StatefulWidget {
-  final Widget child;
-  final Duration duration;
-  final Color? baseColor;
-  final Color? highlightColor;
-
   const ShimmerLoader({
     super.key,
     required this.child,
@@ -14,19 +9,26 @@ class ShimmerLoader extends StatefulWidget {
     this.baseColor,
     this.highlightColor,
   });
+  final Widget child;
+  final Duration duration;
+  final Color? baseColor;
+  final Color? highlightColor;
 
   @override
   State<ShimmerLoader> createState() => _ShimmerLoaderState();
 }
 
-class _ShimmerLoaderState extends State<ShimmerLoader> with SingleTickerProviderStateMixin {
+class _ShimmerLoaderState extends State<ShimmerLoader>
+    with SingleTickerProviderStateMixin {
   late AnimationController _shimmerController;
 
   @override
   void initState() {
     super.initState();
-    _shimmerController = AnimationController(vsync: this, duration: widget.duration)
-      ..repeat(reverse: false);
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    )..repeat(reverse: false);
   }
 
   @override
@@ -37,8 +39,12 @@ class _ShimmerLoaderState extends State<ShimmerLoader> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = widget.baseColor ?? context.colorScheme.surfaceVariant.withOpacity(0.5);
-    final highlightColor = widget.highlightColor ?? context.colorScheme.surfaceVariant.withOpacity(0.2);
+    final baseColor =
+        widget.baseColor ??
+        context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+    final highlightColor =
+        widget.highlightColor ??
+        context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2);
 
     return AnimatedBuilder(
       animation: _shimmerController,
@@ -51,7 +57,9 @@ class _ShimmerLoaderState extends State<ShimmerLoader> with SingleTickerProvider
               end: Alignment.bottomRight,
               colors: [baseColor, highlightColor, baseColor],
               stops: const [0.1, 0.3, 0.5],
-              transform: _SlidingGradientTransform(slidePercent: _shimmerController.value),
+              transform: _SlidingGradientTransform(
+                slidePercent: _shimmerController.value,
+              ),
             ).createShader(bounds);
           },
           child: widget.child,
@@ -62,9 +70,8 @@ class _ShimmerLoaderState extends State<ShimmerLoader> with SingleTickerProvider
 }
 
 class _SlidingGradientTransform extends GradientTransform {
-  final double slidePercent;
-
   const _SlidingGradientTransform({required this.slidePercent});
+  final double slidePercent;
 
   @override
   Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {

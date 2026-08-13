@@ -25,11 +25,9 @@ import 'package:dio/dio.dart';
 ///   is offline the retry is aborted immediately and the original error
 ///   is propagated.
 final class RetryInterceptor extends Interceptor {
-  RetryInterceptor({
-    required Dio dio,
-    required NetworkInfo networkInfo,
-  })  : _dio = dio,
-        _networkInfo = networkInfo;
+  RetryInterceptor({required Dio dio, required NetworkInfo networkInfo})
+    : _dio = dio,
+      _networkInfo = networkInfo;
 
   final Dio _dio;
   final NetworkInfo _networkInfo;
@@ -91,10 +89,11 @@ final class RetryInterceptor extends Interceptor {
       DioExceptionType.connectionTimeout => true,
       DioExceptionType.sendTimeout => true,
       DioExceptionType.receiveTimeout => true,
+      DioExceptionType.transformTimeout => true,
       DioExceptionType.connectionError => true,
       DioExceptionType.badResponse => _isRetryableStatus(
-          error.response?.statusCode,
-        ),
+        error.response?.statusCode,
+      ),
       DioExceptionType.cancel => false,
       DioExceptionType.badCertificate => false,
       DioExceptionType.unknown => false,
@@ -123,8 +122,8 @@ final class RetryInterceptor extends Interceptor {
   ///
   /// Formula: `random(0, min(cap, base × 2^attempt))`
   Duration _computeBackoff(int attempt) {
-    final base = ApiDefaults.retryBackoffBaseMs;
-    final cap = ApiDefaults.retryBackoffCapMs;
+    const base = ApiDefaults.retryBackoffBaseMs;
+    const cap = ApiDefaults.retryBackoffCapMs;
     final ceiling = math.min(cap, base * math.pow(2, attempt).toInt());
     final ms = _random.nextInt(math.max(1, ceiling));
     return Duration(milliseconds: ms);

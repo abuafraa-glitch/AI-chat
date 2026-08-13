@@ -1,6 +1,7 @@
 import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/errors/exceptions.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/utils/validators.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/loading_button.dart';
@@ -58,7 +59,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
       final message = error is AppException && error.message.isNotEmpty
           ? error.message
-          : localizedTextRead(context, 'Something went wrong. Try again.', 'حدث خطأ ما. حاول مرة أخرى.');
+          : localizedTextRead(
+              context,
+              'Something went wrong. Try again.',
+              'حدث خطأ ما. حاول مرة أخرى.',
+            );
       context.showErrorSnackBar(message);
     } finally {
       if (mounted) {
@@ -75,10 +80,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return AppScaffold(
       appBar: AppBar(
-        title: Text(localizedText(context, 'Reset password', 'إعادة تعيين كلمة المرور')),
+        title: Text(
+          localizedText(context, 'Reset password', 'إعادة تعيين كلمة المرور'),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        padding: AppSpacing.all6,
         child: Form(
           key: _formKey,
           child: Column(
@@ -89,7 +96,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 size: 56,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               Text(
                 localizedText(
                   context,
@@ -99,7 +106,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: 32),
+              AppSpacing.gap8,
               AppTextField(
                 controller: _emailController,
                 hintText: localizedText(context, 'Email', 'البريد الإلكتروني'),
@@ -108,11 +115,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 onSubmitted: (_) => _submit(),
                 validator: (value) => Validators.email(value)
                     ? null
-                    : localizedTextRead(context, 'Enter a valid email', 'أدخل بريداً إلكترونياً صحيحاً'),
+                    : localizedTextRead(
+                        context,
+                        'Enter a valid email',
+                        'أدخل بريداً إلكترونياً صحيحاً',
+                      ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               LoadingButton(
-                text: localizedText(context, 'Send Reset Link', 'إرسال رابط إعادة التعيين'),
+                text: localizedText(
+                  context,
+                  'Send Reset Link',
+                  'إرسال رابط إعادة التعيين',
+                ),
                 onPressed: _submit,
                 isLoading: _isLoading,
                 fullWidth: true,

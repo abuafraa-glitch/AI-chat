@@ -1,6 +1,7 @@
 import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/errors/exceptions.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/utils/validators.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/loading_button.dart';
@@ -71,7 +72,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (error is AppException && error.message.isNotEmpty) {
       return error.message;
     }
-    return localizedTextRead(context, 'Registration failed. Please try again.', 'فشل التسجيل. حاول مرة أخرى.');
+    return localizedTextRead(
+      context,
+      'Registration failed. Please try again.',
+      'فشل التسجيل. حاول مرة أخرى.',
+    );
   }
 
   @override
@@ -83,7 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: Text(localizedText(context, 'Create account', 'إنشاء حساب')),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        padding: AppSpacing.all6,
         child: Form(
           key: _formKey,
           child: Column(
@@ -95,9 +100,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 textInputAction: TextInputAction.next,
                 validator: (value) => Validators.minLength(value, 2)
                     ? null
-                    : localizedTextRead(context, 'Enter your name', 'أدخل اسمك'),
+                    : localizedTextRead(
+                        context,
+                        'Enter your name',
+                        'أدخل اسمك',
+                      ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               AppTextField(
                 controller: _emailController,
                 hintText: localizedText(context, 'Email', 'البريد الإلكتروني'),
@@ -105,9 +114,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 textInputAction: TextInputAction.next,
                 validator: (value) => Validators.email(value)
                     ? null
-                    : localizedTextRead(context, 'Enter a valid email', 'أدخل بريداً إلكترونياً صحيحاً'),
+                    : localizedTextRead(
+                        context,
+                        'Enter a valid email',
+                        'أدخل بريداً إلكترونياً صحيحاً',
+                      ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               AppTextField(
                 controller: _passwordController,
                 hintText: localizedText(context, 'Password', 'كلمة المرور'),
@@ -115,33 +128,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 textInputAction: TextInputAction.next,
                 validator: (value) => Validators.minLength(value, 6)
                     ? null
-                    : localizedTextRead(context, 'At least 6 characters', '6 أحرف على الأقل'),
+                    : localizedTextRead(
+                        context,
+                        'At least 6 characters',
+                        '6 أحرف على الأقل',
+                      ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               AppTextField(
                 controller: _confirmController,
-                hintText: localizedText(context, 'Confirm password', 'تأكيد كلمة المرور'),
+                hintText: localizedText(
+                  context,
+                  'Confirm password',
+                  'تأكيد كلمة المرور',
+                ),
                 isPassword: true,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
                 validator: (value) =>
-                    value == _passwordController.text && Validators.required(value)
-                        ? null
-                        : localizedTextRead(context, 'Passwords do not match', 'كلمتا المرور غير متطابقتين'),
+                    value == _passwordController.text &&
+                        Validators.required(value)
+                    ? null
+                    : localizedTextRead(
+                        context,
+                        'Passwords do not match',
+                        'كلمتا المرور غير متطابقتين',
+                      ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               LoadingButton(
                 text: localizedText(context, 'Create Account', 'إنشاء الحساب'),
                 onPressed: _submit,
                 isLoading: _isLoading,
                 fullWidth: true,
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   Text(
-                    localizedText(context, 'Already have an account?', 'لديك حساب بالفعل؟'),
+                    localizedText(
+                      context,
+                      'Already have an account?',
+                      'لديك حساب بالفعل؟',
+                    ),
                     style: theme.textTheme.bodyMedium,
                   ),
                   TextButton(

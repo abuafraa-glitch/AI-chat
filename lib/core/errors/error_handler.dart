@@ -41,27 +41,111 @@ final class ErrorHandler {
     final metadata = exception.metadata;
 
     return switch (exception) {
-      ServerException() => ServerFailure(message: message, code: code, metadata: metadata),
-      NetworkException() => NetworkFailure(message: message, code: code, metadata: metadata),
-      CacheException() => CacheFailure(message: message, code: code, metadata: metadata),
-      TimeoutException() => TimeoutFailure(message: message, code: code, metadata: metadata),
-      UnauthorizedException() => UnauthorizedFailure(message: message, code: code, metadata: metadata),
-      ForbiddenException() => ForbiddenFailure(message: message, code: code, metadata: metadata),
-      ValidationException() => ValidationFailure(message: message, code: code, metadata: metadata),
-      NotFoundException() => NotFoundFailure(message: message, code: code, metadata: metadata),
-      ParsingException() => ParsingFailure(message: message, code: code, metadata: metadata),
-      StorageException() => StorageFailure(message: message, code: code, metadata: metadata),
-      WebSocketException() => WebSocketFailure(message: message, code: code, metadata: metadata),
-      StreamingException() => StreamingFailure(message: message, code: code, metadata: metadata),
-      FileException() => FileFailure(message: message, code: code, metadata: metadata),
-      AuthenticationException() => AuthenticationFailure(message: message, code: code, metadata: metadata),
-      SubscriptionException() => SubscriptionFailure(message: message, code: code, metadata: metadata),
-      PaymentException() => PaymentFailure(message: message, code: code, metadata: metadata),
-      AIException() => AIFailure(message: message, code: code, metadata: metadata),
-      RAGException() => RAGFailure(message: message, code: code, metadata: metadata),
-      AgentException() => AgentFailure(message: message, code: code, metadata: metadata),
-      RateLimitException() => RateLimitFailure(message: message, code: code, metadata: metadata),
-      UnknownException() => UnknownFailure(message: message, code: code, metadata: metadata),
+      ServerException() => ServerFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      NetworkException() => NetworkFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      CacheException() => CacheFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      TimeoutException() => TimeoutFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      UnauthorizedException() => UnauthorizedFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      ForbiddenException() => ForbiddenFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      ValidationException() => ValidationFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      NotFoundException() => NotFoundFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      ParsingException() => ParsingFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      StorageException() => StorageFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      WebSocketException() => WebSocketFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      StreamingException() => StreamingFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      FileException() => FileFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      AuthenticationException() => AuthenticationFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      SubscriptionException() => SubscriptionFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      PaymentException() => PaymentFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      AIException() => AIFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      RAGException() => RAGFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      AgentException() => AgentFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      RateLimitException() => RateLimitFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
+      UnknownException() => UnknownFailure(
+        message: message,
+        code: code,
+        metadata: metadata,
+      ),
       _ => UnknownFailure(message: message, code: code, metadata: metadata),
     };
   }
@@ -74,24 +158,23 @@ final class ErrorHandler {
     return switch (error.type) {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout =>
-        const TimeoutFailure(
-          message: 'The request timed out. Please try again.',
-          code: AppStrings.errorCodeTimeout,
-        ),
+      DioExceptionType.receiveTimeout => const TimeoutFailure(
+        message: 'The request timed out. Please try again.',
+        code: AppStrings.errorCodeTimeout,
+      ),
       DioExceptionType.connectionError => const NetworkFailure(
-          message: 'No internet connection. Please check your network.',
-          code: AppStrings.errorCodeNoConnection,
-        ),
+        message: 'No internet connection. Please check your network.',
+        code: AppStrings.errorCodeNoConnection,
+      ),
       DioExceptionType.badResponse => _mapDioBadResponse(error.response),
       DioExceptionType.cancel => const NetworkFailure(
-          message: 'Request was cancelled.',
-          code: 'ERR_CANCELLED',
-        ),
+        message: 'Request was cancelled.',
+        code: 'ERR_CANCELLED',
+      ),
       _ => const UnknownFailure(
-          message: 'A network error occurred.',
-          code: AppStrings.errorCodeUnknown,
-        ),
+        message: 'A network error occurred.',
+        code: AppStrings.errorCodeUnknown,
+      ),
     };
   }
 
@@ -101,18 +184,30 @@ final class ErrorHandler {
     final message = _extractMessageFromResponse(response);
 
     if (statusCode >= 500) {
-      return ServerFailure(
-        message: message,
-        code: AppStrings.errorCodeServer,
-      );
+      return ServerFailure(message: message, code: AppStrings.errorCodeServer);
     }
 
     return switch (statusCode) {
-      401 => UnauthorizedFailure(message: message, code: AppStrings.errorCodeUnauthenticated),
-      403 => ForbiddenFailure(message: message, code: AppStrings.errorCodeForbidden),
-      404 => NotFoundFailure(message: message, code: AppStrings.errorCodeNotFound),
-      422 || 400 => ValidationFailure(message: message, code: AppStrings.errorCodeValidation),
-      429 => RateLimitFailure(message: message, code: AppStrings.errorCodeRateLimited),
+      401 => UnauthorizedFailure(
+        message: message,
+        code: AppStrings.errorCodeUnauthenticated,
+      ),
+      403 => ForbiddenFailure(
+        message: message,
+        code: AppStrings.errorCodeForbidden,
+      ),
+      404 => NotFoundFailure(
+        message: message,
+        code: AppStrings.errorCodeNotFound,
+      ),
+      422 || 400 => ValidationFailure(
+        message: message,
+        code: AppStrings.errorCodeValidation,
+      ),
+      429 => RateLimitFailure(
+        message: message,
+        code: AppStrings.errorCodeRateLimited,
+      ),
       _ => UnknownFailure(message: message, code: AppStrings.errorCodeUnknown),
     };
   }
@@ -122,7 +217,9 @@ final class ErrorHandler {
     if (response == null) return 'An unexpected error occurred.';
     final data = response.data;
     if (data is Map<String, dynamic>) {
-      return data['message']?.toString() ?? data['error']?.toString() ?? 'Server error occurred.';
+      return data['message']?.toString() ??
+          data['error']?.toString() ??
+          'Server error occurred.';
     }
     return 'Server returned an error (${response.statusCode}).';
   }
@@ -138,14 +235,11 @@ final class ErrorHandler {
   /// Logs the error using [LoggerService].
   void _logError(Object error, [StackTrace? stackTrace]) {
     final tag = _getLogTagForError(error);
-    final message = error is AppException ? exceptionToTechnicalMessage(error) : error.toString();
+    final message = error is AppException
+        ? exceptionToTechnicalMessage(error)
+        : error.toString();
 
-    _logger.e(
-      message,
-      tag: tag,
-      error: error,
-      stackTrace: stackTrace,
-    );
+    _logger.e(message, tag: tag, error: error, stackTrace: stackTrace);
   }
 
   /// Returns a suitable log tag based on the error type.
@@ -153,8 +247,10 @@ final class ErrorHandler {
     return switch (error) {
       NetworkException() || DioException() => AppStrings.logTagNetwork,
       StorageException() || CacheException() => AppStrings.logTagStorage,
-      AuthenticationException() || UnauthorizedException() => AppStrings.logTagAuth,
-      WebSocketException() || StreamingException() => AppStrings.logTagWebSocket,
+      AuthenticationException() ||
+      UnauthorizedException() => AppStrings.logTagAuth,
+      WebSocketException() ||
+      StreamingException() => AppStrings.logTagWebSocket,
       _ => 'ErrorHandler',
     };
   }

@@ -1,3 +1,5 @@
+import 'package:ai_chat/core/theme/app_radius.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/presentation/animations/fade_in_slide.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +10,11 @@ import 'package:flutter/material.dart';
 /// locale and tapping a chip forwards its text through
 /// [onSuggestionSelected]. It performs no logic of its own.
 class SuggestionChips extends StatelessWidget {
+  /// Creates a [SuggestionChips].
+  const SuggestionChips({super.key, required this.onSuggestionSelected});
+
   /// Invoked with the suggestion text when a chip is tapped.
   final ValueChanged<String> onSuggestionSelected;
-
-  /// Creates a [SuggestionChips].
-  const SuggestionChips({
-    super.key,
-    required this.onSuggestionSelected,
-  });
 
   List<(String, String)> _suggestions(BuildContext context) {
     return <(String, String)>[
@@ -31,10 +30,9 @@ class SuggestionChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final suggestions = _suggestions(context);
-    final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: AppSpacing.h6,
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
@@ -72,17 +70,20 @@ class _SuggestionChip extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: theme.colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: AppRadius.xxl,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadius.xxl,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.v4,
+            vertical: AppSpacing.v2,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(icon, style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 8),
+              AppSpacing.gap2,
               Text(label, style: theme.textTheme.labelLarge),
             ],
           ),

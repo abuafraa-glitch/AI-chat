@@ -7,6 +7,15 @@ import 'package:flutter/material.dart';
 /// static [AppDialog.show] helper to present it, or embed
 /// [AppDialog] directly as a dialog widget.
 class AppDialog extends StatelessWidget {
+  /// Creates an [AppDialog].
+  const AppDialog({
+    super.key,
+    this.title,
+    this.content,
+    this.actions,
+    this.barrierDismissible = true,
+  });
+
   /// Optional dialog header widget (usually a [Text]).
   final Widget? title;
 
@@ -21,15 +30,6 @@ class AppDialog extends StatelessWidget {
   /// Honoured by [AppDialog.show]; stored here so widget-level usage
   /// stays source-compatible with the dialog API.
   final bool barrierDismissible;
-
-  /// Creates an [AppDialog].
-  const AppDialog({
-    super.key,
-    this.title,
-    this.content,
-    this.actions,
-    this.barrierDismissible = true,
-  });
 
   /// Presents a dialog built by [builder] over [context].
   ///
@@ -49,10 +49,6 @@ class AppDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: title,
-      content: content,
-      actions: actions,
-    );
+    return AlertDialog(title: title, content: content, actions: actions);
   }
 }

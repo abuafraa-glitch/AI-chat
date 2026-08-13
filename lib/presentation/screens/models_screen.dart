@@ -1,3 +1,4 @@
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -48,7 +49,9 @@ class ModelsScreen extends StatelessWidget {
 
     return AppScaffold(
       appBar: AppBar(
-        title: Text(localizedText(context, 'AI Models', 'نماذج الذكاء الاصطناعي')),
+        title: Text(
+          localizedText(context, 'AI Models', 'نماذج الذكاء الاصطناعي'),
+        ),
       ),
       body: _buildContent(context, cubit, state),
     );
@@ -64,22 +67,17 @@ class ModelsScreen extends StatelessWidget {
     }
 
     if (state.error != null && state.models.isEmpty) {
-      return ErrorView(
-        description: state.error,
-        onRetry: cubit.loadModels,
-      );
+      return ErrorView(description: state.error, onRetry: cubit.loadModels);
     }
 
     if (state.models.isEmpty) {
-      return const EmptyState(
-        variant: EmptyStateVariant.noData,
-      );
+      return const EmptyState(variant: EmptyStateVariant.noData);
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.all4,
       itemCount: state.models.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => AppSpacing.gap3,
       itemBuilder: (context, index) {
         final model = state.models[index];
         final isSelected = model.id == state.selectedModelId;

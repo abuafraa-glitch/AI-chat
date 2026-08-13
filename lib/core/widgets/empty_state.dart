@@ -1,4 +1,3 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
@@ -13,15 +12,6 @@ enum EmptyStateVariant {
 }
 
 class EmptyState extends StatelessWidget {
-  final EmptyStateVariant variant;
-  final IconData? icon;
-  final String? imagePath;
-  final String? title;
-  final String? description;
-  final String? buttonText;
-  final VoidCallback? onButtonPressed;
-  final Widget? customWidget;
-
   const EmptyState({
     super.key,
     this.variant = EmptyStateVariant.noData,
@@ -33,12 +23,21 @@ class EmptyState extends StatelessWidget {
     this.onButtonPressed,
     this.customWidget,
   });
+  final EmptyStateVariant variant;
+  final IconData? icon;
+  final String? imagePath;
+  final String? title;
+  final String? description;
+  final String? buttonText;
+  final VoidCallback? onButtonPressed;
+  final Widget? customWidget;
 
   @override
   Widget build(BuildContext context) {
-    String effectiveTitle = title ?? _getTitle(context, variant);
-    String effectiveDescription = description ?? _getDescription(context, variant);
-    IconData? effectiveIcon = icon ?? _getIcon(variant);
+    final String effectiveTitle = title ?? _getTitle(context, variant);
+    final String effectiveDescription =
+        description ?? _getDescription(context, variant);
+    final IconData? effectiveIcon = icon ?? _getIcon(variant);
 
     return Center(
       child: Padding(
@@ -56,7 +55,7 @@ class EmptyState extends StatelessWidget {
               Icon(
                 effectiveIcon,
                 size: 80,
-                color: context.colorScheme.onSurface.withOpacity(0.6),
+                color: context.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -69,16 +68,13 @@ class EmptyState extends StatelessWidget {
             Text(
               effectiveDescription,
               style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurface.withOpacity(0.7),
+                color: context.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
             if (buttonText != null && onButtonPressed != null) ...[
               const SizedBox(height: AppSpacing.lg),
-              AppButton(
-                text: buttonText!,
-                onPressed: onButtonPressed!,
-              ),
+              AppButton(text: buttonText!, onPressed: onButtonPressed!),
             ],
           ],
         ),

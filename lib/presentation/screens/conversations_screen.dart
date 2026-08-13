@@ -1,5 +1,6 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -13,6 +14,7 @@ import 'package:ai_chat/presentation/widgets/formatters.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 
 /// Chat tab — the conversation list of the application.
 ///
@@ -48,7 +50,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   }
 
   void _startConversation(BuildContext context) {
-    final conversationId = DateTime.now().microsecondsSinceEpoch.toString();
+    final conversationId = const Uuid().v4();
     context.pushTo(
       RouteNames.conversationPath(conversationId),
       extra: const ChatLaunchData(),
@@ -62,11 +64,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final filtered = cubit.filterAndSort(_query);
 
     return AppScaffold(
-      appBar: AppBar(
-        title: Text(
-          localizedText(context, 'Chats', 'المحادثات'),
-        ),
-      ),
+      appBar: AppBar(title: Text(localizedText(context, 'Chats', 'المحادثات'))),
       floatingActionButton: FloatingActionButton(
         tooltip: localizedText(context, 'New conversation', 'محادثة جديدة'),
         onPressed: () => _startConversation(context),
@@ -75,11 +73,15 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       body: Column(
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.all4,
             child: AppTextField(
               controller: _searchController,
               isSearch: true,
-              hintText: localizedText(context, 'Search conversations…', 'ابحث في المحادثات…'),
+              hintText: localizedText(
+                context,
+                'Search conversations…',
+                'ابحث في المحادثات…',
+              ),
               onClear: _clearSearch,
               onChanged: (value) {
                 setState(() {
@@ -117,25 +119,21 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     }
 
     if (conversations.isEmpty) {
-      return const EmptyState(
-        variant: EmptyStateVariant.noResults,
-      );
+      return const EmptyState(variant: EmptyStateVariant.noResults);
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: AppSpacing.h4,
       itemCount: conversations.length,
       itemBuilder: (context, index) {
         final conversation = conversations[index];
         final isPinned = conversation.status == ConversationStatus.pinned;
         return Card(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: AppSpacing.bottom3,
           child: ListTile(
             leading: Icon(
               isPinned ? Icons.push_pin : Icons.chat_bubble_outline,
-              color: isPinned
-                  ? Theme.of(context).colorScheme.primary
-                  : null,
+              color: isPinned ? Theme.of(context).colorScheme.primary : null,
             ),
             title: Text(
               conversation.title,
@@ -152,7 +150,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  AppSpacing.gap1,
                 ],
                 Text(
                   formatAppDate(conversation.updatedAt),

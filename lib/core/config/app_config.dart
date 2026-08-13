@@ -1,7 +1,7 @@
-import 'environments/development.dart';
-import 'environments/production.dart';
-import 'environments/staging.dart';
-import 'flavor.dart';
+import 'package:ai_chat/core/config/environments/development.dart';
+import 'package:ai_chat/core/config/environments/production.dart';
+import 'package:ai_chat/core/config/environments/staging.dart';
+import 'package:ai_chat/core/config/flavor.dart';
 
 /// Immutable snapshot of feature flags for the active environment.
 ///

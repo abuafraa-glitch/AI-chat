@@ -73,7 +73,9 @@ abstract final class AppTheme {
 
       // ── AppBar ────────────────────────────────────────────────────────────
       appBarTheme: AppBarTheme(
-        backgroundColor: isDark ? AppColors.scaffoldDark : AppColors.scaffoldLight,
+        backgroundColor: isDark
+            ? AppColors.scaffoldDark
+            : AppColors.scaffoldLight,
         foregroundColor: scheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 1,
@@ -153,11 +155,11 @@ abstract final class AppTheme {
         ),
         errorStyle: AppTextStyles.bodySmall.copyWith(color: scheme.error),
         contentPadding: AppSpacing.inputField,
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: AppRadius.md,
           borderSide: BorderSide.none,
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: AppRadius.md,
           borderSide: BorderSide.none,
         ),
@@ -173,7 +175,7 @@ abstract final class AppTheme {
           borderRadius: AppRadius.md,
           borderSide: BorderSide(color: scheme.error, width: 1.5),
         ),
-        disabledBorder: OutlineInputBorder(
+        disabledBorder: const OutlineInputBorder(
           borderRadius: AppRadius.md,
           borderSide: BorderSide.none,
         ),
@@ -186,10 +188,7 @@ abstract final class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.lg,
-          side: BorderSide(
-            color: scheme.outlineVariant,
-            width: 0.5,
-          ),
+          side: BorderSide(color: scheme.outlineVariant, width: 0.5),
         ),
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
@@ -261,7 +260,9 @@ abstract final class AppTheme {
 
       // ── Snack bar ─────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark ? const Color(0xFF2D2F45) : const Color(0xFF1A1A2E),
+        backgroundColor: isDark
+            ? const Color(0xFF2D2F45)
+            : const Color(0xFF1A1A2E),
         contentTextStyle: AppTextStyles.bodyMedium.copyWith(
           color: Colors.white,
         ),
@@ -273,7 +274,9 @@ abstract final class AppTheme {
 
       // ── Chip ──────────────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
-        backgroundColor: isDark ? AppColors.inputFillDark : AppColors.inputFillLight,
+        backgroundColor: isDark
+            ? AppColors.inputFillDark
+            : AppColors.inputFillLight,
         selectedColor: scheme.primaryContainer,
         labelStyle: AppTextStyles.labelMedium.copyWith(
           color: scheme.onSurfaceVariant,
@@ -309,9 +312,7 @@ abstract final class AppTheme {
           return Colors.transparent;
         }),
         checkColor: WidgetStateProperty.all(scheme.onPrimary),
-        shape: const RoundedRectangleBorder(
-          borderRadius: AppRadius.xs,
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.xs),
         side: BorderSide(color: scheme.outline),
       ),
 
@@ -340,9 +341,7 @@ abstract final class AppTheme {
         subtitleTextStyle: AppTextStyles.bodySmall.copyWith(
           color: scheme.onSurfaceVariant,
         ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: AppRadius.md,
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
       ),
 
       // ── Floating action button ────────────────────────────────────────────

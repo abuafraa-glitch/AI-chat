@@ -38,7 +38,8 @@ abstract final class Validators {
   static bool email(String? email) {
     if (email == null || email.isEmpty) return false;
     final emailRegex = RegExp(
-        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+    );
     return emailRegex.hasMatch(email);
   }
 
@@ -48,7 +49,8 @@ abstract final class Validators {
     if (password == null || password.isEmpty) return false;
     // At least 8 characters, one uppercase, one lowercase, one digit, one special character
     final passwordRegex = RegExp(
-        r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$%^&*()_+{}|:<>?~-]).{8,}');
+      r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$%^&*()_+{}|:<>?~-]).{8,}',
+    );
     return passwordRegex.hasMatch(password);
   }
 
@@ -72,7 +74,8 @@ abstract final class Validators {
   static bool url(String? url) {
     if (url == null || url.isEmpty) return false;
     final urlRegex = RegExp(
-        r'^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$');
+      r'^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$',
+    );
     return urlRegex.hasMatch(url);
   }
 

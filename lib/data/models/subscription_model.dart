@@ -13,41 +13,16 @@ enum SubscriptionPlanType {
 }
 
 /// Represents the billing cycle of a subscription.
-enum SubscriptionBillingCycle {
-  monthly,
-  yearly,
-  trial,
-  oneTime,
-  custom,
-}
+enum SubscriptionBillingCycle { monthly, yearly, trial, oneTime, custom }
 
 /// Represents the current status of a user's subscription.
-enum SubscriptionStatus {
-  active,
-  canceled,
-  expired,
-  pending,
-  trialing,
-  paused,
-}
+enum SubscriptionStatus { active, canceled, expired, pending, trialing, paused }
 
 /// A production-ready, immutable model representing a user's subscription.
 ///
 /// This model is designed to be highly extensible to support various plan types,
 /// billing cycles, and future subscription features.
 class SubscriptionModel extends Equatable {
-  final String id;
-  final String userId;
-  final SubscriptionPlanType planType;
-  final SubscriptionBillingCycle billingCycle;
-  final SubscriptionStatus status;
-  final DateTime startDate;
-  final DateTime? endDate;
-  final double price;
-  final String currency;
-  final Map<String, dynamic> features;
-  final Map<String, dynamic> metadata;
-
   const SubscriptionModel({
     required this.id,
     required this.userId,
@@ -61,6 +36,45 @@ class SubscriptionModel extends Equatable {
     this.features = const {},
     this.metadata = const {},
   });
+
+  /// Creates a [SubscriptionModel] instance from a JSON map.
+  factory SubscriptionModel.fromJson(Map<String, dynamic> json) {
+    return SubscriptionModel(
+      id: json['id'] as String,
+      userId: json['userId'] as String,
+      planType: SubscriptionPlanType.values.firstWhere(
+        (e) => e.name == json['planType'],
+        orElse: () => SubscriptionPlanType.custom,
+      ),
+      billingCycle: SubscriptionBillingCycle.values.firstWhere(
+        (e) => e.name == json['billingCycle'],
+        orElse: () => SubscriptionBillingCycle.custom,
+      ),
+      status: SubscriptionStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => SubscriptionStatus.pending,
+      ),
+      startDate: DateTime.parse(json['startDate'] as String),
+      endDate: json['endDate'] != null
+          ? DateTime.parse(json['endDate'] as String)
+          : null,
+      price: (json['price'] as num).toDouble(),
+      currency: json['currency'] as String,
+      features: json['features'] as Map<String, dynamic>? ?? {},
+      metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+    );
+  }
+  final String id;
+  final String userId;
+  final SubscriptionPlanType planType;
+  final SubscriptionBillingCycle billingCycle;
+  final SubscriptionStatus status;
+  final DateTime startDate;
+  final DateTime? endDate;
+  final double price;
+  final String currency;
+  final Map<String, dynamic> features;
+  final Map<String, dynamic> metadata;
 
   /// Creates a copy of this [SubscriptionModel] with the given fields replaced by the new values.
   SubscriptionModel copyWith({
@@ -91,61 +105,35 @@ class SubscriptionModel extends Equatable {
     );
   }
 
-  /// Creates a [SubscriptionModel] instance from a JSON map.
-  factory SubscriptionModel.fromJson(Map<String, dynamic> json) {
-    return SubscriptionModel(
-      id: json["id"] as String,
-      userId: json["userId"] as String,
-      planType: SubscriptionPlanType.values.firstWhere(
-        (e) => e.name == json["planType"],
-        orElse: () => SubscriptionPlanType.custom,
-      ),
-      billingCycle: SubscriptionBillingCycle.values.firstWhere(
-        (e) => e.name == json["billingCycle"],
-        orElse: () => SubscriptionBillingCycle.custom,
-      ),
-      status: SubscriptionStatus.values.firstWhere(
-        (e) => e.name == json["status"],
-        orElse: () => SubscriptionStatus.pending,
-      ),
-      startDate: DateTime.parse(json["startDate"] as String),
-      endDate: json["endDate"] != null ? DateTime.parse(json["endDate"] as String) : null,
-      price: (json["price"] as num).toDouble(),
-      currency: json["currency"] as String,
-      features: json["features"] as Map<String, dynamic>? ?? {},
-      metadata: json["metadata"] as Map<String, dynamic>? ?? {},
-    );
-  }
-
   /// Converts this [SubscriptionModel] instance to a JSON map.
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "userId": userId,
-      "planType": planType.name,
-      "billingCycle": billingCycle.name,
-      "status": status.name,
-      "startDate": startDate.toIso8601String(),
-      "endDate": endDate?.toIso8601String(),
-      "price": price,
-      "currency": currency,
-      "features": features,
-      "metadata": metadata,
+      'id': id,
+      'userId': userId,
+      'planType': planType.name,
+      'billingCycle': billingCycle.name,
+      'status': status.name,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+      'price': price,
+      'currency': currency,
+      'features': features,
+      'metadata': metadata,
     };
   }
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        planType,
-        billingCycle,
-        status,
-        startDate,
-        endDate,
-        price,
-        currency,
-        features,
-        metadata,
-      ];
+    id,
+    userId,
+    planType,
+    billingCycle,
+    status,
+    startDate,
+    endDate,
+    price,
+    currency,
+    features,
+    metadata,
+  ];
 }

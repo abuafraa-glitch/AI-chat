@@ -1,5 +1,6 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
 import 'package:ai_chat/presentation/screens/chat_screen.dart';
 import 'package:ai_chat/presentation/widgets/chat_input_field.dart';
@@ -8,6 +9,7 @@ import 'package:ai_chat/presentation/widgets/model_selector.dart';
 import 'package:ai_chat/presentation/widgets/suggestion_chips.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 
 /// Welcome / new-chat hub shown when the conversation list is empty.
 ///
@@ -24,11 +26,15 @@ class HomeScreen extends StatelessWidget {
     final modelId = context.read<ModelsCubit>().state.selectedModelId;
     if (modelId == null) {
       context.showSnackBar(
-        localizedTextRead(context, 'Please select a model first', 'الرجاء اختيار نموذج أولاً'),
+        localizedTextRead(
+          context,
+          'Please select a model first',
+          'الرجاء اختيار نموذج أولاً',
+        ),
       );
       return;
     }
-    final conversationId = DateTime.now().microsecondsSinceEpoch.toString();
+    final conversationId = const Uuid().v4();
     context.pushTo(
       RouteNames.conversationPath(conversationId),
       extra: ChatLaunchData(message: message, modelId: modelId),
@@ -41,27 +47,29 @@ class HomeScreen extends StatelessWidget {
 
     return Column(
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: ModelSelector(),
-        ),
+        const Padding(padding: AppSpacing.v3Insets, child: ModelSelector()),
         Expanded(
           child: SingleChildScrollView(
             child: Column(
               children: <Widget>[
                 const SizedBox(height: 40),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: AppSpacing.h6,
                   child: Text(
-                    localizedText(context, 'Welcome to Hajeen AI', 'مرحباً بك في هاجين'),
+                    localizedText(
+                      context,
+                      'Welcome to Hajeen AI',
+                      'مرحباً بك في هاجين',
+                    ),
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.displaySmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                AppSpacing.gap3,
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  padding: AppSpacing.h8,
                   child: Text(
                     localizedText(
                       context,
@@ -74,13 +82,13 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                AppSpacing.gap8,
                 SuggestionChips(
                   onSuggestionSelected: (suggestion) {
                     _startChat(context, suggestion);
                   },
                 ),
-                const SizedBox(height: 48),
+                AppSpacing.gap12,
               ],
             ),
           ),

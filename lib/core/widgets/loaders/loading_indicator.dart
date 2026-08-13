@@ -1,18 +1,9 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:flutter/material.dart';
 
-enum LoadingIndicatorType {
-  circular,
-  linear,
-}
+enum LoadingIndicatorType { circular, linear }
 
 class LoadingIndicator extends StatelessWidget {
-  final LoadingIndicatorType type;
-  final Color? color;
-  final double? value;
-  final double? strokeWidth;
-
   const LoadingIndicator({
     super.key,
     this.type = LoadingIndicatorType.circular,
@@ -20,6 +11,10 @@ class LoadingIndicator extends StatelessWidget {
     this.value,
     this.strokeWidth,
   });
+  final LoadingIndicatorType type;
+  final Color? color;
+  final double? value;
+  final double? strokeWidth;
 
   @override
   Widget build(BuildContext context) {

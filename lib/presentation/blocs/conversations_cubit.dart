@@ -48,12 +48,12 @@ final class ConversationsState extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        conversations,
-        searchResults,
-        isLoading,
-        isSearching,
-        error,
-      ];
+    conversations,
+    searchResults,
+    isLoading,
+    isSearching,
+    error,
+  ];
 }
 
 /// Manages the user's conversation list and search.
@@ -65,8 +65,8 @@ final class ConversationsState extends Equatable {
 final class ConversationsCubit extends Cubit<ConversationsState> {
   /// Creates a [ConversationsCubit] wired to [repository].
   ConversationsCubit({required ConversationRepository repository})
-      : _repository = repository,
-        super(const ConversationsState());
+    : _repository = repository,
+      super(const ConversationsState());
 
   final ConversationRepository _repository;
 
@@ -87,7 +87,12 @@ final class ConversationsCubit extends Cubit<ConversationsState> {
   Future<void> search(String query) async {
     final normalized = query.trim();
     if (normalized.isEmpty) {
-      emit(state.copyWith(searchResults: const <ConversationModel>[], isSearching: false));
+      emit(
+        state.copyWith(
+          searchResults: const <ConversationModel>[],
+          isSearching: false,
+        ),
+      );
       return;
     }
     emit(state.copyWith(isSearching: true, error: null));
@@ -109,8 +114,7 @@ final class ConversationsCubit extends Cubit<ConversationsState> {
         return true;
       }
       final title = conversation.title.toLowerCase();
-      final snippet =
-          conversation.lastMessageSnippet?.toLowerCase() ?? '';
+      final snippet = conversation.lastMessageSnippet?.toLowerCase() ?? '';
       return title.contains(normalized) || snippet.contains(normalized);
     }).toList();
 

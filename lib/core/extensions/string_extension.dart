@@ -16,9 +16,7 @@ extension StringValidationExtension on String {
   /// practice.
   bool get isValidEmail {
     if (isEmpty) return false;
-    final regex = RegExp(
-      r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
-    );
+    final regex = RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
     return regex.hasMatch(trim());
   }
 
@@ -30,13 +28,14 @@ extension StringValidationExtension on String {
   /// letter, one digit, and one special character.
   bool get isValidPassword {
     final len = length;
-    if (len < AppLimits.minPasswordLength || len > AppLimits.maxPasswordLength) {
+    if (len < AppLimits.minPasswordLength ||
+        len > AppLimits.maxPasswordLength) {
       return false;
     }
     final hasUpper = contains(RegExp('[A-Z]'));
     final hasLower = contains(RegExp('[a-z]'));
     final hasDigit = contains(RegExp('[0-9]'));
-    final hasSpecial = contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>\-_=+\[\]\\;\'`~/]'));
+    final hasSpecial = contains(RegExp(r'[!@#$%^&*()\-_=+\[\]{}|;:,.?/~`]'));
     return hasUpper && hasLower && hasDigit && hasSpecial;
   }
 
@@ -181,10 +180,8 @@ extension StringFormattingExtension on String {
   /// are Arabic, indicating the content should be displayed RTL.
   bool get isPrimarilyArabic {
     if (isEmpty) return false;
-    final arabicCount =
-        RegExp(r'[\u0600-\u06FF]').allMatches(this).length;
-    final latinCount =
-        RegExp(r'[a-zA-Z]').allMatches(this).length;
+    final arabicCount = RegExp(r'[\u0600-\u06FF]').allMatches(this).length;
+    final latinCount = RegExp(r'[a-zA-Z]').allMatches(this).length;
     if (arabicCount == 0 && latinCount == 0) return false;
     return arabicCount >= latinCount;
   }

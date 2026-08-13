@@ -1,26 +1,11 @@
-
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/cards/app_card.dart';
 import 'package:flutter/material.dart';
 
-enum InfoCardStatus {
-  info,
-  success,
-  warning,
-  error,
-}
+enum InfoCardStatus { info, success, warning, error }
 
 class InfoCard extends StatelessWidget {
-  final String title;
-  final String? description;
-  final IconData? icon;
-  final Widget? badge;
-  final InfoCardStatus status;
-  final List<Widget>? actions;
-  final bool showCloseButton;
-  final VoidCallback? onClose;
-
   const InfoCard({
     super.key,
     required this.title,
@@ -32,6 +17,14 @@ class InfoCard extends StatelessWidget {
     this.showCloseButton = false,
     this.onClose,
   });
+  final String title;
+  final String? description;
+  final IconData? icon;
+  final Widget? badge;
+  final InfoCardStatus status;
+  final List<Widget>? actions;
+  final bool showCloseButton;
+  final VoidCallback? onClose;
 
   Color _getStatusColor(BuildContext context) {
     switch (status) {
@@ -51,19 +44,14 @@ class InfoCard extends StatelessWidget {
     final Color statusColor = _getStatusColor(context);
 
     return AppCard(
-      backgroundColor: statusColor.withOpacity(0.1),
-      border: Border.all(color: statusColor.withOpacity(0.5)),
+      backgroundColor: statusColor.withValues(alpha: 0.1),
+      border: Border.all(color: statusColor.withValues(alpha: 0.5)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              if (icon != null)
-                Icon(
-                  icon,
-                  color: statusColor,
-                  size: 24,
-                ),
+              if (icon != null) Icon(icon, color: statusColor, size: 24),
               if (icon != null) const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -81,7 +69,7 @@ class InfoCard extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: onClose,
-                  color: context.colorScheme.onSurface.withOpacity(0.6),
+                  color: context.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
             ],
           ),
@@ -90,16 +78,13 @@ class InfoCard extends StatelessWidget {
             Text(
               description!,
               style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurface.withOpacity(0.8),
+                color: context.colorScheme.onSurface.withValues(alpha: 0.8),
               ),
             ),
           ],
           if (actions != null && actions!.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: actions!,
-            ),
+            Row(mainAxisAlignment: MainAxisAlignment.end, children: actions!),
           ],
         ],
       ),

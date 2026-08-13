@@ -46,8 +46,9 @@ final class FilesState extends Equatable {
 /// Manages file listing, upload and deletion through [FileRepository].
 final class FilesCubit extends Cubit<FilesState> {
   /// Creates a [FilesCubit] wired to [repository].
-  FilesCubit({required FileRepository repository}) : _repository = repository,
-        super(const FilesState());
+  FilesCubit({required FileRepository repository})
+    : _repository = repository,
+      super(const FilesState());
 
   final FileRepository _repository;
 
@@ -91,9 +92,7 @@ final class FilesCubit extends Cubit<FilesState> {
       await _repository.deleteFile(fileId);
       emit(
         state.copyWith(
-          files: state.files
-              .where((file) => _idOf(file) != fileId)
-              .toList(),
+          files: state.files.where((file) => _idOf(file) != fileId).toList(),
         ),
       );
     } on Exception catch (error) {

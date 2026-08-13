@@ -1,6 +1,7 @@
 import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/errors/exceptions.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/utils/validators.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/loading_button.dart';
@@ -68,7 +69,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       }
       final message = error is AppException && error.message.isNotEmpty
           ? error.message
-          : localizedTextRead(context, 'Could not reset the password.', 'تعذّرت إعادة تعيين كلمة المرور.');
+          : localizedTextRead(
+              context,
+              'Could not reset the password.',
+              'تعذّرت إعادة تعيين كلمة المرور.',
+            );
       context.showErrorSnackBar(message);
     } finally {
       if (mounted) {
@@ -86,7 +91,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         title: Text(localizedText(context, 'New password', 'كلمة مرور جديدة')),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        padding: AppSpacing.all6,
         child: Form(
           key: _formKey,
           child: Column(
@@ -99,42 +104,75 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 textInputAction: TextInputAction.next,
                 validator: (value) => Validators.email(value)
                     ? null
-                    : localizedTextRead(context, 'Enter a valid email', 'أدخل بريداً إلكترونياً صحيحاً'),
+                    : localizedTextRead(
+                        context,
+                        'Enter a valid email',
+                        'أدخل بريداً إلكترونياً صحيحاً',
+                      ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               AppTextField(
                 controller: _tokenController,
-                hintText: localizedText(context, 'Reset token', 'رمز إعادة التعيين'),
+                hintText: localizedText(
+                  context,
+                  'Reset token',
+                  'رمز إعادة التعيين',
+                ),
                 textInputAction: TextInputAction.next,
                 validator: (value) => Validators.required(value)
                     ? null
-                    : localizedTextRead(context, 'Enter the reset token', 'أدخل رمز إعادة التعيين'),
+                    : localizedTextRead(
+                        context,
+                        'Enter the reset token',
+                        'أدخل رمز إعادة التعيين',
+                      ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               AppTextField(
                 controller: _passwordController,
-                hintText: localizedText(context, 'New password', 'كلمة المرور الجديدة'),
+                hintText: localizedText(
+                  context,
+                  'New password',
+                  'كلمة المرور الجديدة',
+                ),
                 isPassword: true,
                 textInputAction: TextInputAction.next,
                 validator: (value) => Validators.minLength(value, 6)
                     ? null
-                    : localizedTextRead(context, 'At least 6 characters', '6 أحرف على الأقل'),
+                    : localizedTextRead(
+                        context,
+                        'At least 6 characters',
+                        '6 أحرف على الأقل',
+                      ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               AppTextField(
                 controller: _confirmController,
-                hintText: localizedText(context, 'Confirm password', 'تأكيد كلمة المرور'),
+                hintText: localizedText(
+                  context,
+                  'Confirm password',
+                  'تأكيد كلمة المرور',
+                ),
                 isPassword: true,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
                 validator: (value) =>
-                    value == _passwordController.text && Validators.required(value)
-                        ? null
-                        : localizedTextRead(context, 'Passwords do not match', 'كلمتا المرور غير متطابقتين'),
+                    value == _passwordController.text &&
+                        Validators.required(value)
+                    ? null
+                    : localizedTextRead(
+                        context,
+                        'Passwords do not match',
+                        'كلمتا المرور غير متطابقتين',
+                      ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               LoadingButton(
-                text: localizedText(context, 'Update Password', 'تحديث كلمة المرور'),
+                text: localizedText(
+                  context,
+                  'Update Password',
+                  'تحديث كلمة المرور',
+                ),
                 onPressed: _submit,
                 isLoading: _isLoading,
                 fullWidth: true,

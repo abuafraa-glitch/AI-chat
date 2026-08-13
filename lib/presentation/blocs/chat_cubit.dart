@@ -1,7 +1,14 @@
+import 'dart:async';
+
 import 'package:ai_chat/data/models/message_model.dart';
 import 'package:ai_chat/data/repositories/message_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
+
+/// Sentinel used by [ChatState.copyWith] to distinguish "not supplied"
+/// from "explicitly null".
+const Object _sentinel = Object();
 
 /// Immutable state for a chat conversation.
 final class ChatState extends Equatable {
@@ -26,27 +33,33 @@ final class ChatState extends Equatable {
   final String? error;
 
   /// Returns a copy with the given fields replaced.
+  ///
+  /// [streamingContent] and [error] accept `null` to explicitly clear
+  /// the field; pass [Object] (the default sentinel) to keep the
+  /// current value.
   ChatState copyWith({
     List<MessageModel>? messages,
     bool? isLoading,
-    String? streamingContent,
-    String? error,
+    Object? streamingContent = _sentinel,
+    Object? error = _sentinel,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      streamingContent: streamingContent ?? this.streamingContent,
-      error: error ?? this.error,
+      streamingContent: identical(streamingContent, _sentinel)
+          ? this.streamingContent
+          : streamingContent as String?,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
 
   @override
   List<Object?> get props => <Object?>[
-        messages,
-        isLoading,
-        streamingContent,
-        error,
-      ];
+    messages,
+    isLoading,
+    streamingContent,
+    error,
+  ];
 }
 
 /// Manages a chat conversation: message history, sending, streaming
@@ -59,10 +72,19 @@ final class ChatState extends Equatable {
 /// through the repository's cache.
 final class ChatCubit extends Cubit<ChatState> {
   /// Creates a [ChatCubit] wired to [repository].
-  ChatCubit({required MessageRepository repository}) : _repository = repository,
-        super(const ChatState());
+  ChatCubit({required MessageRepository repository})
+    : _repository = repository,
+      super(const ChatState());
 
   final MessageRepository _repository;
+
+  /// Active stream subscription for an in-flight response, cancelled
+  /// in [close] so emissions never leak after the cubit is disposed.
+  StreamSubscription<String>? _streamSubscription;
+
+  /// `true` while a streaming response is in progress; guards against
+  /// duplicate concurrent streams.
+  bool _isStreaming = false;
 
   /// Sends [content] to [conversationId] using [modelId] and streams
   /// the assistant response.
@@ -75,9 +97,14 @@ final class ChatCubit extends Cubit<ChatState> {
     required String content,
     required String modelId,
   }) async {
+    if (_isStreaming) {
+      return;
+    }
+    _isStreaming = true;
+
     final now = DateTime.now();
     final userMessage = MessageModel(
-      id: _newId(),
+      id: const Uuid().v4(),
       conversationId: conversationId,
       role: MessageRole.user,
       content: content,
@@ -85,7 +112,7 @@ final class ChatCubit extends Cubit<ChatState> {
       updatedAt: now,
     );
     final assistantPlaceholder = MessageModel(
-      id: _newId(),
+      id: const Uuid().v4(),
       conversationId: conversationId,
       role: MessageRole.assistant,
       content: '',
@@ -93,9 +120,13 @@ final class ChatCubit extends Cubit<ChatState> {
       updatedAt: now,
       isStreaming: true,
     );
-    final thread = <MessageModel>[...state.messages, userMessage, assistantPlaceholder];
+    final thread = <MessageModel>[
+      ...state.messages,
+      userMessage,
+      assistantPlaceholder,
+    ];
 
-    emit(
+    _safeEmit(
       state.copyWith(
         messages: thread,
         isLoading: true,
@@ -105,44 +136,102 @@ final class ChatCubit extends Cubit<ChatState> {
     );
 
     var buffer = '';
+    var completed = false;
+    final done = Completer<void>();
     try {
       final stream = _repository.streamMessage(
         conversationId: conversationId,
         data: <String, dynamic>{'content': content, 'modelId': modelId},
       );
-      await for (final chunk in stream) {
-        buffer += chunk;
-        emit(
-          state.copyWith(
-            messages: _updateAssistant(thread, assistantPlaceholder.id, buffer),
-            streamingContent: buffer,
-          ),
-        );
-      }
-
-      final finalised = _updateAssistant(
-        thread,
-        assistantPlaceholder.id,
-        buffer,
-        isStreaming: false,
+      _streamSubscription = stream.listen(
+        (chunk) {
+          buffer += chunk;
+          if (!isClosed) {
+            _safeEmit(
+              state.copyWith(
+                messages: _updateAssistant(
+                  thread,
+                  assistantPlaceholder.id,
+                  buffer,
+                ),
+                streamingContent: buffer,
+              ),
+            );
+          }
+        },
+        onDone: () {
+          if (completed) {
+            return;
+          }
+          completed = true;
+          final finalised = _updateAssistant(
+            thread,
+            assistantPlaceholder.id,
+            buffer,
+            isStreaming: false,
+          );
+          _repository.cacheMessages(conversationId, finalised).then((_) {
+            _safeEmit(
+              state.copyWith(
+                messages: finalised,
+                isLoading: false,
+                streamingContent: null,
+              ),
+            );
+            if (!done.isCompleted) {
+              done.complete();
+            }
+          });
+        },
+        onError: (Object error) {
+          if (completed) {
+            return;
+          }
+          completed = true;
+          _safeEmit(
+            state.copyWith(
+              isLoading: false,
+              streamingContent: null,
+              error: error.toString(),
+            ),
+          );
+          if (!done.isCompleted) {
+            done.complete();
+          }
+        },
       );
-      await _repository.cacheMessages(conversationId, finalised);
-      emit(
-        state.copyWith(
-          messages: finalised,
-          isLoading: false,
-          streamingContent: null,
-        ),
-      );
+      // Await completion so callers that await [sendMessage] resolve
+      // when the stream finishes; [close] cancels the subscription so
+      // emissions never leak after the cubit is disposed.
+      await done.future;
     } on Exception catch (error) {
-      emit(
+      _safeEmit(
         state.copyWith(
           isLoading: false,
           streamingContent: null,
           error: error.toString(),
         ),
       );
+    } finally {
+      _streamSubscription = null;
+      _isStreaming = false;
     }
+  }
+
+  /// Emits [state] only while the cubit is still open.
+  void _safeEmit(ChatState state) {
+    if (!isClosed) {
+      emit(state);
+    }
+  }
+
+  /// Cancels any in-flight stream and releases resources.
+  @override
+  Future<void> close() async {
+    await _streamSubscription?.cancel();
+    _streamSubscription = null;
+    _isStreaming = false;
+    await super.close();
   }
 
   /// Regenerates the last assistant response.
@@ -207,10 +296,5 @@ final class ChatCubit extends Cubit<ChatState> {
         isStreaming: isStreaming ?? message.isStreaming,
       );
     }).toList();
-  }
-
-  /// Generates a unique message id.
-  static String _newId() {
-    return DateTime.now().microsecondsSinceEpoch.toString();
   }
 }

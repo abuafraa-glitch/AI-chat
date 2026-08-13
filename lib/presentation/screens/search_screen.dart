@@ -1,4 +1,5 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -25,9 +26,8 @@ class SearchScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ConversationsCubit>(
-      create: (context) => ConversationsCubit(
-        repository: buildConversationRepository(),
-      ),
+      create: (context) =>
+          ConversationsCubit(repository: buildConversationRepository()),
       child: const _SearchView(),
     );
   }
@@ -57,15 +57,17 @@ class _SearchViewState extends State<_SearchView> {
     final results = state.searchResults;
 
     return AppScaffold(
-      appBar: AppBar(
-        title: Text(localizedText(context, 'Search', 'البحث')),
-      ),
+      appBar: AppBar(title: Text(localizedText(context, 'Search', 'البحث'))),
       body: Column(
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.all4,
             child: SearchField(
-              hintText: localizedText(context, 'Search conversations…', 'ابحث في المحادثات…'),
+              hintText: localizedText(
+                context,
+                'Search conversations…',
+                'ابحث في المحادثات…',
+              ),
               onChanged: _onQueryChanged,
             ),
           ),
@@ -108,7 +110,7 @@ class _SearchViewState extends State<_SearchView> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: AppSpacing.h4,
       itemCount: results.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {

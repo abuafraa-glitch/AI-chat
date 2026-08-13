@@ -1,6 +1,7 @@
 import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/errors/exceptions.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/utils/validators.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/loading_button.dart';
@@ -50,7 +51,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         return;
       }
       context.showSuccessSnackBar(
-        localizedTextRead(context, 'Email verified. You can sign in now.', 'تم التحقق من البريد. يمكنك تسجيل الدخول الآن.'),
+        localizedTextRead(
+          context,
+          'Email verified. You can sign in now.',
+          'تم التحقق من البريد. يمكنك تسجيل الدخول الآن.',
+        ),
       );
       context.goToLogin();
     } on Exception catch (error) {
@@ -59,7 +64,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       }
       final message = error is AppException && error.message.isNotEmpty
           ? error.message
-          : localizedTextRead(context, 'Verification failed. Try again.', 'فشل التحقق. حاول مرة أخرى.');
+          : localizedTextRead(
+              context,
+              'Verification failed. Try again.',
+              'فشل التحقق. حاول مرة أخرى.',
+            );
       context.showErrorSnackBar(message);
     } finally {
       if (mounted) {
@@ -79,7 +88,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         title: Text(localizedText(context, 'Verify email', 'تحقق من البريد')),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        padding: AppSpacing.all6,
         child: Form(
           key: _formKey,
           child: Column(
@@ -90,7 +99,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 size: 56,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gap4,
               Text(
                 localizedText(
                   context,
@@ -100,7 +109,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: 32),
+              AppSpacing.gap8,
               AppTextField(
                 controller: _emailController,
                 hintText: localizedText(context, 'Email', 'البريد الإلكتروني'),
@@ -108,9 +117,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 textInputAction: TextInputAction.next,
                 validator: (value) => Validators.email(value)
                     ? null
-                    : localizedTextRead(context, 'Enter a valid email', 'أدخل بريداً إلكترونياً صحيحاً'),
+                    : localizedTextRead(
+                        context,
+                        'Enter a valid email',
+                        'أدخل بريداً إلكترونياً صحيحاً',
+                      ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               OtpField(
                 length: 6,
                 autoFocus: false,
@@ -120,7 +133,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   });
                 },
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gap6,
               LoadingButton(
                 text: localizedText(context, 'Verify', 'تحقق'),
                 onPressed: _submit,

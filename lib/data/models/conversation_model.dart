@@ -1,27 +1,13 @@
 import 'package:equatable/equatable.dart';
 
 /// Represents the status of a conversation.
-enum ConversationStatus {
-  active,
-  archived,
-  deleted,
-  pinned,
-}
+enum ConversationStatus { active, archived, deleted, pinned }
 
 /// A production-ready, immutable model representing a conversation.
 ///
 /// This model focuses solely on conversation metadata and does not store
 /// individual messages, which are managed separately.
 class ConversationModel extends Equatable {
-  final String id;
-  final String title;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final ConversationStatus status;
-  final String? lastMessageSnippet;
-  final String? aiModelId;
-  final Map<String, dynamic> metadata;
-
   const ConversationModel({
     required this.id,
     required this.title,
@@ -32,6 +18,31 @@ class ConversationModel extends Equatable {
     this.aiModelId,
     this.metadata = const {},
   });
+
+  /// Creates a [ConversationModel] instance from a JSON map.
+  factory ConversationModel.fromJson(Map<String, dynamic> json) {
+    return ConversationModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      status: ConversationStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => ConversationStatus.active,
+      ),
+      lastMessageSnippet: json['lastMessageSnippet'] as String?,
+      aiModelId: json['aiModelId'] as String?,
+      metadata: json['metadata'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+  final String id;
+  final String title;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final ConversationStatus status;
+  final String? lastMessageSnippet;
+  final String? aiModelId;
+  final Map<String, dynamic> metadata;
 
   /// Creates a copy of this [ConversationModel] with the given fields replaced by the new values.
   ConversationModel copyWith({
@@ -56,23 +67,6 @@ class ConversationModel extends Equatable {
     );
   }
 
-  /// Creates a [ConversationModel] instance from a JSON map.
-  factory ConversationModel.fromJson(Map<String, dynamic> json) {
-    return ConversationModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      status: ConversationStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => ConversationStatus.active,
-      ),
-      lastMessageSnippet: json['lastMessageSnippet'] as String?,
-      aiModelId: json['aiModelId'] as String?,
-      metadata: json['metadata'] as Map<String, dynamic>? ?? const {},
-    );
-  }
-
   /// Converts this [ConversationModel] instance to a JSON map.
   Map<String, dynamic> toJson() {
     return {
@@ -89,13 +83,13 @@ class ConversationModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        createdAt,
-        updatedAt,
-        status,
-        lastMessageSnippet,
-        aiModelId,
-        metadata,
-      ];
+    id,
+    title,
+    createdAt,
+    updatedAt,
+    status,
+    lastMessageSnippet,
+    aiModelId,
+    metadata,
+  ];
 }

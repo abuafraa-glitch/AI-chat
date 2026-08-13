@@ -17,7 +17,8 @@ abstract final class AppAssets {
   static const String logoDark = 'assets/images/logo_dark.png';
 
   /// `assets/images/avatar_placeholder.png` — neutral avatar.
-  static const String avatarPlaceholder = 'assets/images/avatar_placeholder.png';
+  static const String avatarPlaceholder =
+      'assets/images/avatar_placeholder.png';
 
   /// `assets/images/empty_state.png` — illustration for empty lists.
   static const String emptyState = 'assets/images/empty_state.png';

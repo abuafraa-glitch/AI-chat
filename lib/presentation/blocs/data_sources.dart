@@ -1,11 +1,6 @@
 import 'package:ai_chat/core/di/injection.dart';
-import 'package:ai_chat/core/network/api_consumer.dart';
-import 'package:ai_chat/core/services/local_storage_service.dart';
-import 'package:ai_chat/core/services/secure_storage_service.dart';
 import 'package:ai_chat/data/datasources/local/local_data_source.dart';
-import 'package:ai_chat/data/datasources/local/local_data_source_impl.dart';
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
-import 'package:ai_chat/data/datasources/remote/remote_data_source_impl.dart';
 import 'package:ai_chat/data/repositories/ai_repository.dart';
 import 'package:ai_chat/data/repositories/conversation_repository.dart';
 import 'package:ai_chat/data/repositories/file_repository.dart';

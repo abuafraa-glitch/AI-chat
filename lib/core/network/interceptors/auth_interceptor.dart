@@ -26,9 +26,9 @@ final class AuthInterceptor extends Interceptor {
     required Dio dio,
     required TokenProvider tokenProvider,
     required AppConfig config,
-  })  : _dio = dio,
-        _tokenProvider = tokenProvider,
-        _config = config;
+  }) : _dio = dio,
+       _tokenProvider = tokenProvider,
+       _config = config;
 
   final Dio _dio;
   final TokenProvider _tokenProvider;
@@ -64,10 +64,7 @@ final class AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == HttpStatusCode.unauthorized &&
         !_isRefreshRequest(err.requestOptions)) {
       await _handleUnauthorized(err, handler);

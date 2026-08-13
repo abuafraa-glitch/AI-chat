@@ -30,8 +30,9 @@ sealed class NetworkResponse<T> {
     return switch (this) {
       NetworkSuccess<T>(:final T data, :final int statusCode) =>
         NetworkSuccess<R>(data: transform(data), statusCode: statusCode),
-      NetworkError<T>(:final NetworkException exception) =>
-        NetworkError<R>(exception: exception),
+      NetworkError<T>(:final NetworkException exception) => NetworkError<R>(
+        exception: exception,
+      ),
     };
   }
 
@@ -91,51 +92,48 @@ sealed class NetworkException implements Exception {
 /// The device has no internet connectivity at call time.
 final class NoConnectionException extends NetworkException {
   const NoConnectionException()
-      : super(message: 'No internet connection available.');
+    : super(message: 'No internet connection available.');
 }
 
 /// The connection or receive timeout was exceeded.
 final class RequestTimeoutException extends NetworkException {
   const RequestTimeoutException({super.statusCode})
-      : super(message: 'The request timed out.');
+    : super(message: 'The request timed out.');
 }
 
 /// The server returned HTTP 401 and the token refresh flow also failed.
 ///
 /// The caller should redirect the user to the authentication screen.
 final class UnauthorizedException extends NetworkException {
-  const UnauthorizedException({required String message})
-      : super(message: message, statusCode: 401);
+  const UnauthorizedException({required super.message})
+    : super(statusCode: 401);
 }
 
 /// The server returned HTTP 403 — authenticated but not permitted.
 final class ForbiddenException extends NetworkException {
-  const ForbiddenException({required String message})
-      : super(message: message, statusCode: 403);
+  const ForbiddenException({required super.message}) : super(statusCode: 403);
 }
 
 /// The requested resource does not exist (HTTP 404).
 final class NotFoundException extends NetworkException {
-  const NotFoundException({required String message})
-      : super(message: message, statusCode: 404);
+  const NotFoundException({required super.message}) : super(statusCode: 404);
 }
 
 /// The request conflicts with the current server state (HTTP 409).
 final class ConflictException extends NetworkException {
-  const ConflictException({required String message})
-      : super(message: message, statusCode: 409);
+  const ConflictException({required super.message}) : super(statusCode: 409);
 }
 
 /// The server returned HTTP 422 — semantically invalid payload.
 final class UnprocessableEntityException extends NetworkException {
-  const UnprocessableEntityException({required String message})
-      : super(message: message, statusCode: 422);
+  const UnprocessableEntityException({required super.message})
+    : super(statusCode: 422);
 }
 
 /// The client has exceeded the server rate limit (HTTP 429).
 final class RateLimitException extends NetworkException {
   const RateLimitException({this.retryAfterSeconds})
-      : super(message: 'Rate limit exceeded.', statusCode: 429);
+    : super(message: 'Rate limit exceeded.', statusCode: 429);
 
   /// Seconds to wait before the next attempt, as instructed by the server.
   final int? retryAfterSeconds;
@@ -143,30 +141,27 @@ final class RateLimitException extends NetworkException {
 
 /// A 4xx error not covered by the specific types above.
 final class BadRequestException extends NetworkException {
-  const BadRequestException({required String message, super.statusCode})
-      : super(message: message);
+  const BadRequestException({required super.message, super.statusCode});
 }
 
 /// The server returned a 5xx error.
 final class ServerException extends NetworkException {
-  const ServerException({required String message, super.statusCode})
-      : super(message: message);
+  const ServerException({required super.message, super.statusCode});
 }
 
 /// The request was cancelled by the caller via a cancel token.
 final class RequestCancelledException extends NetworkException {
   const RequestCancelledException()
-      : super(message: 'The request was cancelled.');
+    : super(message: 'The request was cancelled.');
 }
 
 /// An SSL / TLS certificate problem was detected.
 final class CertificateException extends NetworkException {
   const CertificateException()
-      : super(message: 'SSL certificate verification failed.');
+    : super(message: 'SSL certificate verification failed.');
 }
 
 /// An error that does not fit any of the typed categories above.
 final class UnknownNetworkException extends NetworkException {
-  const UnknownNetworkException({required String message, super.statusCode})
-      : super(message: message);
+  const UnknownNetworkException({required super.message, super.statusCode});
 }

@@ -1,3 +1,4 @@
+// ignore_for_file: unused_field
 import 'package:flutter/material.dart';
 
 // ── Raw palette ─────────────────────────────────────────────────────────────
@@ -44,7 +45,7 @@ abstract final class _Brand {
 
 abstract final class _DarkNeutral {
   static const Color n900 = Color(0xFF0C0E1A); // scaffold background
-  static const Color n850 = Color(0xFF10132000); // unused, kept for reference
+  static const Color n850 = Color(0xFF101320); // unused, kept for reference
   static const Color n800 = Color(0xFF151829); // surface
   static const Color n750 = Color(0xFF1C2038); // card / elevated surface
   static const Color n700 = Color(0xFF252946); // input fill
@@ -52,7 +53,7 @@ abstract final class _DarkNeutral {
   static const Color n400 = Color(0xFF7B80A8); // disabled / placeholder text
   static const Color n200 = Color(0xFFBEC2E0); // secondary text
   static const Color n100 = Color(0xFFE8EAF6); // primary text
-  static const Color n50  = Color(0xFFF0F1FA); // high-emphasis text
+  static const Color n50 = Color(0xFFF0F1FA); // high-emphasis text
 }
 
 abstract final class _LightNeutral {
@@ -62,7 +63,7 @@ abstract final class _LightNeutral {
   static const Color n300 = Color(0xFFC5C6DB); // border / divider
   static const Color n200 = Color(0xFFE4E5F1); // input fill
   static const Color n100 = Color(0xFFF0F1FA); // card surface
-  static const Color n50  = Color(0xFFF5F6FF); // scaffold background
+  static const Color n50 = Color(0xFFF5F6FF); // scaffold background
 }
 
 // ── Semantic surface ─────────────────────────────────────────────────────────

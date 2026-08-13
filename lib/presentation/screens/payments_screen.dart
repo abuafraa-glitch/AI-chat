@@ -1,3 +1,4 @@
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -71,10 +72,7 @@ class _PaymentsView extends StatelessWidget {
     }
 
     if (state.error != null && state.items.isEmpty) {
-      return ErrorView(
-        description: state.error,
-        onRetry: cubit.load,
-      );
+      return ErrorView(description: state.error, onRetry: cubit.load);
     }
 
     if (state.items.isEmpty) {
@@ -91,7 +89,7 @@ class _PaymentsView extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: AppSpacing.buttonSm,
       itemCount: state.items.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
@@ -119,8 +117,8 @@ class _PaymentsView extends StatelessWidget {
                 Text(
                   status,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                 ),
             ],
           ),

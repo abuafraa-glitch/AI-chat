@@ -53,21 +53,11 @@ abstract final class DioFactory {
         },
       );
 
-    dio.interceptors.addAll(
-      <Interceptor>[
-        AuthInterceptor(
-          dio: dio,
-          tokenProvider: tokenProvider,
-          config: config,
-        ),
-        RetryInterceptor(
-          dio: dio,
-          networkInfo: networkInfo,
-        ),
-        if (config.enableLogging)
-          LoggingInterceptor(debugMode: config.debugMode),
-      ],
-    );
+    dio.interceptors.addAll(<Interceptor>[
+      AuthInterceptor(dio: dio, tokenProvider: tokenProvider, config: config),
+      RetryInterceptor(dio: dio, networkInfo: networkInfo),
+      if (config.enableLogging) LoggingInterceptor(debugMode: config.debugMode),
+    ]);
 
     return dio;
   }

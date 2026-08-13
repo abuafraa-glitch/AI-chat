@@ -127,9 +127,16 @@ abstract final class Helpers {
   }
 
   /// Generates a random string of a specified length.
-  static String randomString(int length, {String chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'}) {
-    return String.fromCharCodes(Iterable.generate(
-      length, (_) => chars.codeUnitAt(_random.nextInt(chars.length)),
-    ));
+  static String randomString(
+    int length, {
+    String chars =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+  }) {
+    return String.fromCharCodes(
+      Iterable.generate(
+        length,
+        (_) => chars.codeUnitAt(_random.nextInt(chars.length)),
+      ),
+    );
   }
 }

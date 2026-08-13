@@ -26,7 +26,7 @@ abstract interface class NetworkInfo {
   Stream<bool> get connectivityStream;
 }
 
-/// Production implementation backed by [InternetConnectionCheckerPlus]
+/// Production implementation backed by [InternetConnection]
 /// and [Connectivity].
 ///
 /// Inject via the DI container; do not construct directly in feature
@@ -34,19 +34,19 @@ abstract interface class NetworkInfo {
 /// the owning service when the application is shutting down.
 final class NetworkInfoImpl implements NetworkInfo {
   NetworkInfoImpl({
-    required InternetConnectionCheckerPlus connectionChecker,
+    required InternetConnection connectionChecker,
     required Connectivity connectivity,
-  })  : _connectionChecker = connectionChecker,
-        _connectivity = connectivity;
+  }) : _connectionChecker = connectionChecker,
+       _connectivity = connectivity;
 
-  final InternetConnectionCheckerPlus _connectionChecker;
+  final InternetConnection _connectionChecker;
 
   // Retained so the DI container can dispose it if needed in the future.
   // ignore: unused_field
   final Connectivity _connectivity;
 
   @override
-  Future<bool> get isConnected => _connectionChecker.hasConnection;
+  Future<bool> get isConnected => _connectionChecker.hasInternetAccess;
 
   @override
   Stream<bool> get connectivityStream =>
@@ -56,6 +56,6 @@ final class NetworkInfoImpl implements NetworkInfo {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  static bool _toBoolean(InternetConnectionStatus status) =>
-      status == InternetConnectionStatus.connected;
+  static bool _toBoolean(InternetStatus status) =>
+      status == InternetStatus.connected;
 }

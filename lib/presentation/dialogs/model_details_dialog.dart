@@ -9,14 +9,11 @@ import 'package:flutter/material.dart';
 /// and localizes its labels through [localizedText]. It contains no
 /// business logic and never fetches data.
 class ModelDetailsDialog extends StatelessWidget {
+  /// Creates a [ModelDetailsDialog] for [model].
+  const ModelDetailsDialog({super.key, required this.model});
+
   /// The model whose details are displayed.
   final AIModel model;
-
-  /// Creates a [ModelDetailsDialog] for [model].
-  const ModelDetailsDialog({
-    super.key,
-    required this.model,
-  });
 
   /// Opens the dialog over [context].
   static Future<void> show(BuildContext context, AIModel model) {
@@ -141,10 +138,7 @@ class ModelDetailsDialog extends StatelessWidget {
 }
 
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.label,
-    required this.value,
-  });
+  const _DetailRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -166,9 +160,7 @@ class _DetailRow extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(value, style: theme.textTheme.bodyMedium),
-          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );
@@ -176,10 +168,7 @@ class _DetailRow extends StatelessWidget {
 }
 
 class _CapabilityChip extends StatelessWidget {
-  const _CapabilityChip({
-    required this.label,
-    required this.enabled,
-  });
+  const _CapabilityChip({required this.label, required this.enabled});
 
   final String label;
   final bool enabled;
@@ -187,13 +176,11 @@ class _CapabilityChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = enabled ? theme.colorScheme.primary : theme.colorScheme.outline;
+    final color = enabled
+        ? theme.colorScheme.primary
+        : theme.colorScheme.outline;
     return Chip(
-      avatar: Icon(
-        enabled ? Icons.check : Icons.close,
-        size: 16,
-        color: color,
-      ),
+      avatar: Icon(enabled ? Icons.check : Icons.close, size: 16, color: color),
       label: Text(label),
       labelStyle: theme.textTheme.labelSmall?.copyWith(color: color),
       side: BorderSide(color: theme.colorScheme.outlineVariant),

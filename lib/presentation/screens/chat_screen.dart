@@ -1,4 +1,5 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
+import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -23,10 +24,7 @@ import 'package:go_router/go_router.dart';
 /// the user's current selection when omitted.
 class ChatLaunchData {
   /// Creates [ChatLaunchData] for a new conversation.
-  const ChatLaunchData({
-    this.message = '',
-    this.modelId,
-  });
+  const ChatLaunchData({this.message = '', this.modelId});
 
   /// Initial user message to send on arrival.
   final String message;
@@ -38,36 +36,22 @@ class ChatLaunchData {
 
 /// Renders a single conversation.
 ///
-/// This screen is a self-contained route: it provides its own
-/// [ChatCubit], [LocalizationCubit] and [ModelsCubit] because it is
-/// pushed above the main shell and therefore cannot rely on the shell's
-/// provider tree. It observes [ChatState] and renders the four UI
-/// phases — loading, error, empty and streaming — without containing
-/// any business logic.
+/// This screen reuses the [ModelsCubit] provided by [MainLayout] (the
+/// shell) so model selection stays single-sourced across tabs; it only
+/// provides its own [ChatCubit], which is conversation-scoped. It
+/// observes [ChatState] and renders the four UI phases — loading,
+/// error, empty and streaming — without containing any business logic.
 class ChatScreen extends StatelessWidget {
+  /// Creates a [ChatScreen] for [conversationId].
+  const ChatScreen({super.key, required this.conversationId});
+
   /// Identifier of the conversation to display.
   final String conversationId;
 
-  /// Creates a [ChatScreen] for [conversationId].
-  const ChatScreen({
-    super.key,
-    required this.conversationId,
-  });
-
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: <BlocProviderSingleChildWidget>[
-        BlocProvider<ChatCubit>(
-          create: (context) => ChatCubit(
-            repository: buildMessageRepository(),
-          ),
-        ),
-        BlocProvider<ModelsCubit>(
-          create: (context) =>
-              ModelsCubit(repository: buildAIRepository())..loadModels(),
-        ),
-      ],
+    return BlocProvider<ChatCubit>(
+      create: (context) => ChatCubit(repository: buildMessageRepository()),
       child: _ChatView(conversationId: conversationId),
     );
   }
@@ -129,24 +113,32 @@ class _ChatViewState extends State<_ChatView> {
 
   void _send(String content, String modelId) {
     context.read<ChatCubit>().sendMessage(
-          conversationId: widget.conversationId,
-          content: content,
-          modelId: modelId,
-        );
+      conversationId: widget.conversationId,
+      content: content,
+      modelId: modelId,
+    );
   }
 
   void _onSendPressed(String content) {
     final state = context.read<ChatCubit>().state;
     if (state.isLoading) {
       context.showSnackBar(
-        localizedTextRead(context, 'Waiting for the response…', 'بانتظار الرد…'),
+        localizedTextRead(
+          context,
+          'Waiting for the response…',
+          'بانتظار الرد…',
+        ),
       );
       return;
     }
     final modelId = _modelId(context);
     if (modelId == null) {
       context.showSnackBar(
-        localizedTextRead(context, 'Please select a model first', 'الرجاء اختيار نموذج أولاً'),
+        localizedTextRead(
+          context,
+          'Please select a model first',
+          'الرجاء اختيار نموذج أولاً',
+        ),
       );
       return;
     }
@@ -222,14 +214,12 @@ class _ChatViewState extends State<_ChatView> {
     }
 
     if (state.messages.isEmpty) {
-      return const EmptyState(
-        variant: EmptyStateVariant.noData,
-      );
+      return const EmptyState(variant: EmptyStateVariant.noData);
     }
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: AppSpacing.inputField,
       itemCount: state.messages.length,
       itemBuilder: (context, index) {
         final message = state.messages[index];
@@ -237,17 +227,17 @@ class _ChatViewState extends State<_ChatView> {
           child: MessageBubble(
             message: message,
             onCopy: () => _copyMessage(message.content),
-          onRegenerate: message.role == MessageRole.assistant
-              ? () {
-                  final modelId = _modelId(context);
-                  if (modelId != null) {
-                    context.read<ChatCubit>().regenerate(
-                          conversationId: widget.conversationId,
-                          modelId: modelId,
-                        );
+            onRegenerate: message.role == MessageRole.assistant
+                ? () {
+                    final modelId = _modelId(context);
+                    if (modelId != null) {
+                      context.read<ChatCubit>().regenerate(
+                        conversationId: widget.conversationId,
+                        modelId: modelId,
+                      );
+                    }
                   }
-                }
-              : null,
+                : null,
           ),
         );
       },
