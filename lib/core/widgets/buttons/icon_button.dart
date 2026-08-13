@@ -4,6 +4,17 @@ import 'package:flutter/material.dart';
 enum AppIconButtonType { filled, outlined, tonal, standard }
 
 class AppIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final AppIconButtonType type;
+  final double? size;
+  final String? tooltip;
+  final Color? iconColor;
+  final Color? backgroundColor;
+  final Color? borderColor;
+  final double? borderRadius;
+  final bool isCircular;
+
   const AppIconButton({
     super.key,
     required this.icon,
@@ -17,30 +28,22 @@ class AppIconButton extends StatelessWidget {
     this.borderRadius,
     this.isCircular = false,
   });
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final AppIconButtonType type;
-  final double? size;
-  final String? tooltip;
-  final Color? iconColor;
-  final Color? backgroundColor;
-  final Color? borderColor;
-  final BorderRadius? borderRadius;
-  final bool isCircular;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final Widget iconWidget = Icon(icon, size: size ?? 24.0, color: iconColor);
+    Widget iconWidget = Icon(icon, size: size ?? 24.0, color: iconColor);
 
     OutlinedBorder? buttonShape;
     if (isCircular) {
       buttonShape = const CircleBorder();
     } else {
       buttonShape = RoundedRectangleBorder(
-        borderRadius: borderRadius ?? AppRadius.md,
+        borderRadius: borderRadius != null
+            ? BorderRadius.circular(borderRadius!)
+            : AppRadius.md,
       );
     }
 

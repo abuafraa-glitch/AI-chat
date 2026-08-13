@@ -6,10 +6,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
-/// Sentinel used by [ChatState.copyWith] to distinguish "not supplied"
-/// from "explicitly null".
-const Object _sentinel = Object();
-
 /// Immutable state for a chat conversation.
 final class ChatState extends Equatable {
   /// Creates a [ChatState].
@@ -33,23 +29,17 @@ final class ChatState extends Equatable {
   final String? error;
 
   /// Returns a copy with the given fields replaced.
-  ///
-  /// [streamingContent] and [error] accept `null` to explicitly clear
-  /// the field; pass [Object] (the default sentinel) to keep the
-  /// current value.
   ChatState copyWith({
     List<MessageModel>? messages,
     bool? isLoading,
-    Object? streamingContent = _sentinel,
-    Object? error = _sentinel,
+    String? streamingContent,
+    String? error,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      streamingContent: identical(streamingContent, _sentinel)
-          ? this.streamingContent
-          : streamingContent as String?,
-      error: identical(error, _sentinel) ? this.error : error as String?,
+      streamingContent: streamingContent ?? this.streamingContent,
+      error: error ?? this.error,
     );
   }
 
@@ -78,13 +68,18 @@ final class ChatCubit extends Cubit<ChatState> {
 
   final MessageRepository _repository;
 
-  /// Active stream subscription for an in-flight response, cancelled
-  /// in [close] so emissions never leak after the cubit is disposed.
+  /// Active streaming subscription, or `null` when no stream is in
+  /// flight. Held so [close] can cancel it deterministically.
   StreamSubscription<String>? _streamSubscription;
 
-  /// `true` while a streaming response is in progress; guards against
-  /// duplicate concurrent streams.
-  bool _isStreaming = false;
+  /// Cancellation key for the in-flight stream request, or `null` when
+  /// no stream is in flight. Passed to the network layer so the
+  /// underlying Dio request is aborted on [close] / [stopStreaming].
+  String? _cancelToken;
+
+  /// `true` once the cubit has been closed; guards against emitting
+  /// on a closed cubit (which would otherwise throw `StateError`).
+  bool _isClosed = false;
 
   /// Sends [content] to [conversationId] using [modelId] and streams
   /// the assistant response.
@@ -92,19 +87,20 @@ final class ChatCubit extends Cubit<ChatState> {
   /// A placeholder assistant message is appended immediately, then
   /// token chunks update [ChatState.streamingContent] until the stream
   /// completes, at which point the finalised thread is cached.
+  ///
+  /// If a stream is already in flight it is cancelled before a new one
+  /// starts, preventing duplicate/orphaned streams.
   Future<void> sendMessage({
     required String conversationId,
     required String content,
     required String modelId,
   }) async {
-    if (_isStreaming) {
-      return;
-    }
-    _isStreaming = true;
+    // Cancel any in-flight stream before starting a new one.
+    await _cancelActiveStream();
 
     final now = DateTime.now();
     final userMessage = MessageModel(
-      id: const Uuid().v4(),
+      id: _newId(),
       conversationId: conversationId,
       role: MessageRole.user,
       content: content,
@@ -112,7 +108,7 @@ final class ChatCubit extends Cubit<ChatState> {
       updatedAt: now,
     );
     final assistantPlaceholder = MessageModel(
-      id: const Uuid().v4(),
+      id: _newId(),
       conversationId: conversationId,
       role: MessageRole.assistant,
       content: '',
@@ -136,17 +132,20 @@ final class ChatCubit extends Cubit<ChatState> {
     );
 
     var buffer = '';
-    var completed = false;
-    final done = Completer<void>();
-    try {
-      final stream = _repository.streamMessage(
-        conversationId: conversationId,
-        data: <String, dynamic>{'content': content, 'modelId': modelId},
-      );
-      _streamSubscription = stream.listen(
-        (chunk) {
-          buffer += chunk;
-          if (!isClosed) {
+    _cancelToken = _newId();
+
+    final completer = Completer<void>();
+    Object? caughtError;
+
+    _streamSubscription = _repository
+        .streamMessage(
+          conversationId: conversationId,
+          data: <String, dynamic>{'content': content, 'modelId': modelId},
+          cancelToken: _cancelToken,
+        )
+        .listen(
+          (chunk) {
+            buffer += chunk;
             _safeEmit(
               state.copyWith(
                 messages: _updateAssistant(
@@ -157,81 +156,76 @@ final class ChatCubit extends Cubit<ChatState> {
                 streamingContent: buffer,
               ),
             );
-          }
-        },
-        onDone: () {
-          if (completed) {
-            return;
-          }
-          completed = true;
-          final finalised = _updateAssistant(
-            thread,
-            assistantPlaceholder.id,
-            buffer,
-            isStreaming: false,
-          );
-          _repository.cacheMessages(conversationId, finalised).then((_) {
+          },
+          onDone: () {
+            final finalised = _updateAssistant(
+              thread,
+              assistantPlaceholder.id,
+              buffer,
+              isStreaming: false,
+            );
+            // Persist the finalised thread and clear streaming state.
+            _repository
+                .cacheMessages(conversationId, finalised)
+                .then((_) {
+                  _safeEmit(
+                    state.copyWith(
+                      messages: finalised,
+                      isLoading: false,
+                      streamingContent: null,
+                    ),
+                  );
+                  _streamSubscription = null;
+                  _cancelToken = null;
+                  if (!completer.isCompleted) completer.complete();
+                })
+                .catchError((Object error) {
+                  _safeEmit(
+                    state.copyWith(
+                      isLoading: false,
+                      streamingContent: null,
+                      error: error.toString(),
+                    ),
+                  );
+                  _streamSubscription = null;
+                  _cancelToken = null;
+                  if (!completer.isCompleted) completer.complete();
+                });
+          },
+          onError: (Object error) {
             _safeEmit(
               state.copyWith(
-                messages: finalised,
                 isLoading: false,
                 streamingContent: null,
+                error: error.toString(),
               ),
             );
-            if (!done.isCompleted) {
-              done.complete();
+            _streamSubscription = null;
+            _cancelToken = null;
+            if (!completer.isCompleted) {
+              caughtError = error;
+              completer.complete();
             }
-          });
-        },
-        onError: (Object error) {
-          if (completed) {
-            return;
-          }
-          completed = true;
-          _safeEmit(
-            state.copyWith(
-              isLoading: false,
-              streamingContent: null,
-              error: error.toString(),
-            ),
-          );
-          if (!done.isCompleted) {
-            done.complete();
-          }
-        },
-      );
-      // Await completion so callers that await [sendMessage] resolve
-      // when the stream finishes; [close] cancels the subscription so
-      // emissions never leak after the cubit is disposed.
-      await done.future;
-    } on Exception catch (error) {
-      _safeEmit(
-        state.copyWith(
-          isLoading: false,
-          streamingContent: null,
-          error: error.toString(),
-        ),
-      );
-    } finally {
-      _streamSubscription = null;
-      _isStreaming = false;
+          },
+          cancelOnError: true,
+        );
+
+    await completer.future;
+    if (caughtError != null) {
+      // Re-throw so callers awaiting [sendMessage] can observe the
+      // failure; the state has already been updated above.
+      // ignore: only_throw_errors
+      throw caughtError!;
     }
   }
 
-  /// Emits [state] only while the cubit is still open.
-  void _safeEmit(ChatState state) {
-    if (!isClosed) {
-      emit(state);
-    }
-  }
-
-  /// Cancels any in-flight stream and releases resources.
-  @override
-  Future<void> close() async {
-    await _streamSubscription?.cancel();
-    _streamSubscription = null;
-    _isStreaming = false;
-    await super.close();
+  /// Cancels the in-flight stream (if any) without closing the cubit.
+  ///
+  /// Used when the user manually stops generation or when a new
+  /// message supersedes an in-flight one.
+  Future<void> stopStreaming() async {
+    await _cancelActiveStream();
+    _safeEmit(state.copyWith(isLoading: false, streamingContent: null));
   }
 
   /// Regenerates the last assistant response.
@@ -248,7 +242,7 @@ final class ChatCubit extends Cubit<ChatState> {
       return;
     }
     final content = thread[lastUserIndex].content;
-    emit(state.copyWith(messages: thread.sublist(0, lastUserIndex + 1)));
+    _safeEmit(state.copyWith(messages: thread.sublist(0, lastUserIndex + 1)));
     await sendMessage(
       conversationId: conversationId,
       content: content,
@@ -263,10 +257,40 @@ final class ChatCubit extends Cubit<ChatState> {
   Future<void> loadMessages(String conversationId) async {
     try {
       final messages = await _repository.getMessages(conversationId);
-      emit(state.copyWith(messages: messages, error: null));
+      _safeEmit(state.copyWith(messages: messages, error: null));
     } on Exception catch (error) {
-      emit(state.copyWith(error: error.toString()));
+      _safeEmit(state.copyWith(error: error.toString()));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _isClosed = true;
+    _cancelActiveStream();
+    return super.close();
+  }
+
+  // ── Private helpers ────────────────────────────────────────────────────
+
+  /// Emits [state] only while the cubit is open. After [close] any
+  /// emission is silently dropped, preventing `StateError: Cannot use
+  /// emit after close` and avoiding orphaned stream emissions.
+  void _safeEmit(ChatState newState) {
+    if (!_isClosed) emit(newState);
+  }
+
+  /// Cancels and clears the active stream subscription + network token.
+  ///
+  /// Both the local [StreamSubscription] and the upstream Dio request
+  /// (via the repository's cancellation API) are aborted, so neither
+  /// emissions nor network activity survive [close] / [stopStreaming].
+  Future<void> _cancelActiveStream() async {
+    final sub = _streamSubscription;
+    final token = _cancelToken;
+    _streamSubscription = null;
+    _cancelToken = null;
+    _repository.cancelStream(token);
+    await sub?.cancel();
   }
 
   /// Returns the index of the last user message, or `-1`.
@@ -297,4 +321,8 @@ final class ChatCubit extends Cubit<ChatState> {
       );
     }).toList();
   }
+
+  /// Generates a unique local message id (UUID v4).
+  static const Uuid _uuid = Uuid();
+  static String _newId() => _uuid.v4();
 }

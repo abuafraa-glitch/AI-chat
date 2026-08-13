@@ -7,6 +7,19 @@ enum AppButtonType { primary, secondary, outlined, text, destructive }
 enum AppButtonSize { small, medium, large }
 
 class AppButton extends StatelessWidget {
+  final String text;
+  final VoidCallback? onPressed;
+  final AppButtonType type;
+  final AppButtonSize size;
+  final bool fullWidth;
+  final bool isLoading;
+  final Widget? icon;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
+  final Color? borderColor;
+  final double? borderRadius;
+  final EdgeInsetsGeometry? padding;
+
   const AppButton({
     super.key,
     required this.text,
@@ -22,18 +35,6 @@ class AppButton extends StatelessWidget {
     this.borderRadius,
     this.padding,
   });
-  final String text;
-  final VoidCallback? onPressed;
-  final AppButtonType type;
-  final AppButtonSize size;
-  final bool fullWidth;
-  final bool isLoading;
-  final Widget? icon;
-  final Color? backgroundColor;
-  final Color? foregroundColor;
-  final Color? borderColor;
-  final BorderRadius? borderRadius;
-  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +45,12 @@ class AppButton extends StatelessWidget {
     Color? effectiveBackgroundColor;
     Color? effectiveForegroundColor;
     Color? effectiveBorderColor;
+    // Resolve the corner radius once. `borderRadius` (double?) overrides the
+    // design-token default (AppRadius.sm = 8 dp BorderRadius). Collapse to a
+    // single [BorderRadius] so the rest of the build stays type-consistent.
+    final BorderRadius effectiveBorderRadius = borderRadius != null
+        ? BorderRadius.circular(borderRadius!)
+        : AppRadius.sm;
     ButtonStyleButton Function({VoidCallback? onPressed, required Widget child})
     buttonBuilder;
 
@@ -51,85 +58,90 @@ class AppButton extends StatelessWidget {
       case AppButtonType.primary:
         effectiveBackgroundColor = backgroundColor ?? colorScheme.primary;
         effectiveForegroundColor = foregroundColor ?? colorScheme.onPrimary;
-        buttonBuilder = ({onPressed, required child}) => ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: effectiveBackgroundColor,
-            foregroundColor: effectiveForegroundColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: borderRadius ?? AppRadius.md,
-            ),
-            padding: _getPadding(size),
-            textStyle: _getTextStyle(textTheme, size),
-          ),
-          child: child,
-        );
+        buttonBuilder = ({VoidCallback? onPressed, required Widget child}) =>
+            ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: effectiveBackgroundColor,
+                foregroundColor: effectiveForegroundColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: effectiveBorderRadius,
+                ),
+                padding: _getPadding(size),
+                textStyle: _getTextStyle(textTheme, size),
+              ),
+              child: child,
+            );
         break;
       case AppButtonType.secondary:
         effectiveBackgroundColor = backgroundColor ?? colorScheme.secondary;
         effectiveForegroundColor = foregroundColor ?? colorScheme.onSecondary;
-        buttonBuilder = ({onPressed, required child}) => ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: effectiveBackgroundColor,
-            foregroundColor: effectiveForegroundColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: borderRadius ?? AppRadius.md,
-            ),
-            padding: _getPadding(size),
-            textStyle: _getTextStyle(textTheme, size),
-          ),
-          child: child,
-        );
+        buttonBuilder = ({VoidCallback? onPressed, required Widget child}) =>
+            ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: effectiveBackgroundColor,
+                foregroundColor: effectiveForegroundColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: effectiveBorderRadius,
+                ),
+                padding: _getPadding(size),
+                textStyle: _getTextStyle(textTheme, size),
+              ),
+              child: child,
+            );
         break;
       case AppButtonType.outlined:
         effectiveBorderColor = borderColor ?? colorScheme.primary;
         effectiveForegroundColor = foregroundColor ?? colorScheme.primary;
-        buttonBuilder = ({onPressed, required child}) => OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: effectiveForegroundColor,
-            side: BorderSide(color: effectiveBorderColor!),
-            shape: RoundedRectangleBorder(
-              borderRadius: borderRadius ?? AppRadius.md,
-            ),
-            padding: _getPadding(size),
-            textStyle: _getTextStyle(textTheme, size),
-          ),
-          child: child,
-        );
+        buttonBuilder = ({VoidCallback? onPressed, required Widget child}) =>
+            OutlinedButton(
+              onPressed: onPressed,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: effectiveForegroundColor,
+                side: BorderSide(color: effectiveBorderColor!),
+                shape: RoundedRectangleBorder(
+                  borderRadius: effectiveBorderRadius,
+                ),
+                padding: _getPadding(size),
+                textStyle: _getTextStyle(textTheme, size),
+              ),
+              child: child,
+            );
         break;
       case AppButtonType.text:
         effectiveForegroundColor = foregroundColor ?? colorScheme.primary;
-        buttonBuilder = ({onPressed, required child}) => TextButton(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(
-            foregroundColor: effectiveForegroundColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: borderRadius ?? AppRadius.md,
-            ),
-            padding: _getPadding(size),
-            textStyle: _getTextStyle(textTheme, size),
-          ),
-          child: child,
-        );
+        buttonBuilder = ({VoidCallback? onPressed, required Widget child}) =>
+            TextButton(
+              onPressed: onPressed,
+              style: TextButton.styleFrom(
+                foregroundColor: effectiveForegroundColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: effectiveBorderRadius,
+                ),
+                padding: _getPadding(size),
+                textStyle: _getTextStyle(textTheme, size),
+              ),
+              child: child,
+            );
         break;
       case AppButtonType.destructive:
         effectiveBackgroundColor = backgroundColor ?? colorScheme.error;
         effectiveForegroundColor = foregroundColor ?? colorScheme.onError;
-        buttonBuilder = ({onPressed, required child}) => ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: effectiveBackgroundColor,
-            foregroundColor: effectiveForegroundColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: borderRadius ?? AppRadius.md,
-            ),
-            padding: _getPadding(size),
-            textStyle: _getTextStyle(textTheme, size),
-          ),
-          child: child,
-        );
+        buttonBuilder = ({VoidCallback? onPressed, required Widget child}) =>
+            ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: effectiveBackgroundColor,
+                foregroundColor: effectiveForegroundColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: effectiveBorderRadius,
+                ),
+                padding: _getPadding(size),
+                textStyle: _getTextStyle(textTheme, size),
+              ),
+              child: child,
+            );
         break;
     }
 

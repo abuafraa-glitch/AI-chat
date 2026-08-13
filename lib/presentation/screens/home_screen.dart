@@ -1,6 +1,6 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
+import 'package:ai_chat/presentation/blocs/conversations_cubit.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
 import 'package:ai_chat/presentation/screens/chat_screen.dart';
 import 'package:ai_chat/presentation/widgets/chat_input_field.dart';
@@ -9,7 +9,6 @@ import 'package:ai_chat/presentation/widgets/model_selector.dart';
 import 'package:ai_chat/presentation/widgets/suggestion_chips.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
 
 /// Welcome / new-chat hub shown when the conversation list is empty.
 ///
@@ -22,7 +21,7 @@ class HomeScreen extends StatelessWidget {
   /// Creates a [HomeScreen].
   const HomeScreen({super.key});
 
-  void _startChat(BuildContext context, String message) {
+  void _startChat(BuildContext context, String message) async {
     final modelId = context.read<ModelsCubit>().state.selectedModelId;
     if (modelId == null) {
       context.showSnackBar(
@@ -34,11 +33,32 @@ class HomeScreen extends StatelessWidget {
       );
       return;
     }
-    final conversationId = const Uuid().v4();
-    context.pushTo(
-      RouteNames.conversationPath(conversationId),
-      extra: ChatLaunchData(message: message, modelId: modelId),
-    );
+    // Create the conversation on the backend first so we navigate with
+    // the authoritative server id — never a locally fabricated timestamp
+    // id that would fool the app into thinking the thread exists.
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final conversation = await context
+          .read<ConversationsCubit>()
+          .createConversation(<String, dynamic>{'modelId': modelId});
+      if (!context.mounted) return;
+      context.pushTo<void>(
+        RouteNames.conversationPath(conversation.id),
+        extra: ChatLaunchData(message: message, modelId: modelId),
+      );
+    } on Exception {
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(
+            localizedTextRead(
+              context,
+              'Could not start a new conversation',
+              'تعذّر بدء محادثة جديدة',
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -47,14 +67,17 @@ class HomeScreen extends StatelessWidget {
 
     return Column(
       children: <Widget>[
-        const Padding(padding: AppSpacing.v3Insets, child: ModelSelector()),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: ModelSelector(),
+        ),
         Expanded(
           child: SingleChildScrollView(
             child: Column(
               children: <Widget>[
                 const SizedBox(height: 40),
                 Padding(
-                  padding: AppSpacing.h6,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     localizedText(
                       context,
@@ -67,9 +90,9 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                AppSpacing.gap3,
+                const SizedBox(height: 12),
                 Padding(
-                  padding: AppSpacing.h8,
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
                     localizedText(
                       context,
@@ -82,13 +105,13 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                AppSpacing.gap8,
+                const SizedBox(height: 32),
                 SuggestionChips(
                   onSuggestionSelected: (suggestion) {
                     _startChat(context, suggestion);
                   },
                 ),
-                AppSpacing.gap12,
+                const SizedBox(height: 48),
               ],
             ),
           ),

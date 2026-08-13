@@ -4,7 +4,6 @@ import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
 import 'package:ai_chat/core/services/local_storage_service.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
 import 'package:ai_chat/core/widgets/dialogs/confirmation_dialog.dart';
@@ -68,12 +67,12 @@ class ProfileScreen extends StatelessWidget {
         title: Text(localizedText(context, 'Profile', 'الملف الشخصي')),
       ),
       body: SingleChildScrollView(
-        padding: AppSpacing.all4,
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: <Widget>[
             Card(
               child: Padding(
-                padding: AppSpacing.all5,
+                padding: const EdgeInsets.all(20),
                 child: Row(
                   children: <Widget>[
                     CircleAvatar(
@@ -86,13 +85,13 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    AppSpacing.gap4,
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(displayName, style: theme.textTheme.titleLarge),
-                          AppSpacing.gap1,
+                          const SizedBox(height: 4),
                           Text(
                             email,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -106,7 +105,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
-            AppSpacing.gap6,
+            const SizedBox(height: 24),
             _ProfileSection(
               title: localizedText(context, 'Workspace', 'مساحة العمل'),
               children: <Widget>[
@@ -123,23 +122,23 @@ class ProfileScreen extends StatelessWidget {
                 _ProfileTile(
                   icon: Icons.folder_outlined,
                   title: localizedText(context, 'Files', 'الملفات'),
-                  onTap: () => context.pushTo(RouteNames.files),
+                  onTap: () => context.pushTo<void>(RouteNames.files),
                 ),
                 _ProfileTile(
                   icon: Icons.smart_toy_outlined,
                   title: localizedText(context, 'Agents', 'الوكلاء'),
-                  onTap: () => context.pushTo(RouteNames.agents),
+                  onTap: () => context.pushTo<void>(RouteNames.agents),
                 ),
               ],
             ),
-            AppSpacing.gap6,
+            const SizedBox(height: 24),
             _ProfileSection(
               title: localizedText(context, 'Billing', 'الفواتير'),
               children: <Widget>[
                 _ProfileTile(
                   icon: Icons.card_membership_outlined,
                   title: localizedText(context, 'Subscription', 'الاشتراك'),
-                  onTap: () => context.pushTo(RouteNames.subscriptions),
+                  onTap: () => context.pushTo<void>(RouteNames.subscriptions),
                 ),
                 _ProfileTile(
                   icon: Icons.receipt_outlined,
@@ -148,11 +147,11 @@ class ProfileScreen extends StatelessWidget {
                     'Payment history',
                     'سجل المدفوعات',
                   ),
-                  onTap: () => context.pushTo(RouteNames.payments),
+                  onTap: () => context.pushTo<void>(RouteNames.payments),
                 ),
               ],
             ),
-            AppSpacing.gap6,
+            const SizedBox(height: 24),
             AppButton(
               text: localizedText(context, 'Sign out', 'تسجيل الخروج'),
               onPressed: () => _confirmSignOut(context),
@@ -185,7 +184,7 @@ class _ProfileSection extends StatelessWidget {
             color: theme.colorScheme.primary,
           ),
         ),
-        AppSpacing.gap3,
+        const SizedBox(height: 12),
         Card(
           child: Column(
             children: List<Widget>.generate(

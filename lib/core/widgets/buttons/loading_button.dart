@@ -1,4 +1,5 @@
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
+import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 
 class LoadingButton extends StatelessWidget {
@@ -27,7 +28,10 @@ class LoadingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppButton(
-      text: isLoading ? loadingText ?? 'Loading...' : text,
+      text: isLoading
+          ? loadingText ??
+                localizedTextRead(context, 'Loading...', 'جارٍ التحميل...')
+          : text,
       onPressed: isLoading ? null : onPressed,
       isLoading: isLoading,
       type: type,

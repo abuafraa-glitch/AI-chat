@@ -1,4 +1,5 @@
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
+import 'package:ai_chat/data/models/agent_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,13 +7,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 final class AgentsState extends Equatable {
   /// Creates an [AgentsState].
   const AgentsState({
-    this.items = const <Map<String, dynamic>>[],
+    this.items = const <AgentModel>[],
     this.isLoading = false,
     this.error,
   });
 
-  /// Agent definitions (raw server maps).
-  final List<Map<String, dynamic>> items;
+  /// Agent definitions.
+  final List<AgentModel> items;
 
   /// `true` while the catalogue is being fetched.
   final bool isLoading;
@@ -22,7 +23,7 @@ final class AgentsState extends Equatable {
 
   /// Returns a copy with the given fields replaced.
   AgentsState copyWith({
-    List<Map<String, dynamic>>? items,
+    List<AgentModel>? items,
     bool? isLoading,
     String? error,
   }) {

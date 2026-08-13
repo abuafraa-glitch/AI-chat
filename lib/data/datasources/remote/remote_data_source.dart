@@ -1,7 +1,12 @@
+import 'package:ai_chat/data/models/agent_model.dart';
 import 'package:ai_chat/data/models/ai_model.dart';
 import 'package:ai_chat/data/models/conversation_model.dart';
+import 'package:ai_chat/data/models/file_model.dart';
 import 'package:ai_chat/data/models/message_model.dart';
+import 'package:ai_chat/data/models/notification_model.dart';
+import 'package:ai_chat/data/models/payment_model.dart';
 import 'package:ai_chat/data/models/subscription_model.dart';
+import 'package:ai_chat/data/models/subscription_plan_model.dart';
 
 /// Abstract interface defining all remote server operations for Hajeen AI.
 ///
@@ -79,10 +84,23 @@ abstract interface class RemoteDataSource {
   });
 
   /// Streams message tokens in real-time via SSE.
+  ///
+  /// Pass a [cancelToken] to allow the caller to abort an in-flight
+  /// stream via [ApiConsumer.cancelRequest]; `null` creates an anonymous
+  /// (non-cancellable) token.
   Stream<String> streamMessage({
     required String conversationId,
     Map<String, dynamic>? data,
+    String? cancelToken,
   });
+
+  /// Aborts any in-flight request/stream associated with [cancelToken].
+  ///
+  /// No-op when [cancelToken] is `null` or unknown to the network layer.
+  /// This closes the cancellation loop so callers (e.g. a Cubit's
+  /// [close]) can stop the upstream Dio request, not just drop the
+  /// local [StreamSubscription].
+  void cancelStream(String? cancelToken);
 
   /// Triggers a new model generation for an existing user message.
   Future<MessageModel> regenerateMessage({
@@ -96,10 +114,10 @@ abstract interface class RemoteDataSource {
   // ── Files ─────────────────────────────────────────────────────────────────
 
   /// Lists the files uploaded by the current user.
-  Future<List<Map<String, dynamic>>> getFiles();
+  Future<List<FileModel>> getFiles();
 
   /// Uploads a file to the server.
-  Future<Map<String, dynamic>> uploadFile({
+  Future<FileModel> uploadFile({
     required String filePath,
     required String fileFieldName,
     Map<String, String>? additionalFields,
@@ -111,22 +129,22 @@ abstract interface class RemoteDataSource {
   // ── Notifications ─────────────────────────────────────────────────────────
 
   /// Lists the in-app notifications for the current user.
-  Future<List<Map<String, dynamic>>> getNotifications();
+  Future<List<NotificationModel>> getNotifications();
 
   // ── Agents ────────────────────────────────────────────────────────────────
 
   /// Lists the AI agent definitions available to the current user.
-  Future<List<Map<String, dynamic>>> getAgents();
+  Future<List<AgentModel>> getAgents();
 
   // ── Payments ──────────────────────────────────────────────────────────────
 
   /// Lists the payment history of the current user.
-  Future<List<Map<String, dynamic>>> getPaymentHistory();
+  Future<List<PaymentModel>> getPaymentHistory();
 
   // ── Subscriptions ─────────────────────────────────────────────────────────
 
   /// Lists all available subscription plans.
-  Future<List<Map<String, dynamic>>> getSubscriptionPlans();
+  Future<List<SubscriptionPlanModel>> getSubscriptionPlans();
 
   /// Fetches the user's active subscription.
   Future<SubscriptionModel> getSubscription();

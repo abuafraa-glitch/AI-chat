@@ -19,10 +19,21 @@ abstract interface class MessageRepository {
 
   /// Opens the SSE stream for [conversationId], yielding decoded
   /// UTF-8 chunks as they arrive.
+  ///
+  /// Pass a [cancelToken] to make the stream cancellable via the
+  /// network layer's cancellation API.
   Stream<String> streamMessage({
     required String conversationId,
     Map<String, dynamic>? data,
+    String? cancelToken,
   });
+
+  /// Cancels the in-flight stream/request bound to [cancelToken].
+  ///
+  /// Call this from a Cubit's [close] or an explicit stop action so the
+  /// upstream Dio request is aborted, not merely the local subscription
+  /// dropped. No-op for `null` or unknown tokens.
+  void cancelStream(String? cancelToken);
 
   /// Triggers a new model generation for an existing message.
   Future<MessageModel> regenerateMessage({

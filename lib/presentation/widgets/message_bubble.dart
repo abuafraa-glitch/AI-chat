@@ -1,5 +1,3 @@
-import 'package:ai_chat/core/theme/app_radius.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/data/models/message_model.dart';
 import 'package:ai_chat/presentation/widgets/formatters.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
@@ -11,14 +9,6 @@ import 'package:flutter/material.dart';
 /// callbacks, and reads the active locale only for tooltips. It never
 /// talks to the network, storage, or state layer directly.
 class MessageBubble extends StatelessWidget {
-  /// Creates a [MessageBubble].
-  const MessageBubble({
-    super.key,
-    required this.message,
-    required this.onCopy,
-    this.onRegenerate,
-  });
-
   /// The message to display.
   final MessageModel message;
 
@@ -29,6 +19,14 @@ class MessageBubble extends StatelessWidget {
   /// rendered for assistant messages when non-null.
   final VoidCallback? onRegenerate;
 
+  /// Creates a [MessageBubble].
+  const MessageBubble({
+    super.key,
+    required this.message,
+    required this.onCopy,
+    this.onRegenerate,
+  });
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -37,7 +35,7 @@ class MessageBubble extends StatelessWidget {
     final isAssistant = message.role == MessageRole.assistant;
 
     return Padding(
-      padding: AppSpacing.v2Insets,
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: isUser
             ? CrossAxisAlignment.end
@@ -47,12 +45,12 @@ class MessageBubble extends StatelessWidget {
             constraints: BoxConstraints(
               maxWidth: MediaQuery.sizeOf(context).width * 0.75,
             ),
-            padding: AppSpacing.inputField,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: isUser
                   ? colorScheme.primary
                   : colorScheme.surfaceContainerHighest,
-              borderRadius: AppRadius.lg,
+              borderRadius: BorderRadius.circular(16),
               border: isUser ? null : Border.all(color: theme.dividerColor),
             ),
             child: Column(
@@ -60,7 +58,7 @@ class MessageBubble extends StatelessWidget {
               children: <Widget>[
                 if (message.isStreaming && isAssistant)
                   Padding(
-                    padding: AppSpacing.bottom2,
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
@@ -69,7 +67,7 @@ class MessageBubble extends StatelessWidget {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                        AppSpacing.gap2,
+                        const SizedBox(width: 8),
                         Text(
                           localizedText(context, 'Thinking', 'جارٍ التفكير'),
                           style: theme.textTheme.bodySmall,
@@ -89,7 +87,7 @@ class MessageBubble extends StatelessWidget {
                 ),
                 if (message.content.isNotEmpty)
                   Padding(
-                    padding: AppSpacing.top2,
+                    padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       formatAppTime(message.createdAt),
                       style: TextStyle(
@@ -105,7 +103,7 @@ class MessageBubble extends StatelessWidget {
           ),
           if (isAssistant)
             Padding(
-              padding: AppSpacing.top1,
+              padding: const EdgeInsets.only(top: 4),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[

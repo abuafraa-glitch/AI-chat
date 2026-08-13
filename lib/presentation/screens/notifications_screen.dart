@@ -1,4 +1,3 @@
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -30,19 +29,6 @@ class NotificationsScreen extends StatelessWidget {
 
 class _NotificationsView extends StatelessWidget {
   const _NotificationsView();
-
-  String _stringOf(Map<String, dynamic> map, String key) {
-    final value = map[key];
-    return value is String ? value : '';
-  }
-
-  DateTime? _dateOf(Map<String, dynamic> map) {
-    final raw = map['createdAt'];
-    if (raw is String) {
-      return DateTime.tryParse(raw);
-    }
-    return null;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,40 +74,38 @@ class _NotificationsView extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: AppSpacing.buttonSm,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: state.items.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final item = state.items[index];
-        final title = _stringOf(item, 'title');
-        final body = _stringOf(item, 'body');
-        final date = _dateOf(item);
-        final read = item['read'] == true;
         return ListTile(
           leading: CircleAvatar(
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             child: Icon(
-              read ? Icons.notifications_outlined : Icons.notifications_active,
+              item.isRead
+                  ? Icons.notifications_outlined
+                  : Icons.notifications_active,
               color: Theme.of(context).colorScheme.primary,
             ),
           ),
           title: Text(
-            title.isEmpty
+            item.title.isEmpty
                 ? localizedText(context, 'Notification', 'إشعار')
-                : title,
+                : item.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              if (body.isNotEmpty) ...<Widget>[
-                Text(body, maxLines: 2, overflow: TextOverflow.ellipsis),
+              if (item.body.isNotEmpty) ...<Widget>[
+                Text(item.body, maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
               ],
-              if (date != null)
+              if (item.createdAt != null)
                 Text(
-                  formatAppDate(date),
+                  formatAppDate(item.createdAt!),
                   style: Theme.of(context).textTheme.labelSmall,
                 ),
             ],

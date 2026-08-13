@@ -15,8 +15,9 @@ dependencies:
 
   # State Management
   flutter_bloc: ^9.1.1
-  equatable: ^2.0.7
+  # Required for the SingleChildWidget type used by MultiBlocProvider.
   nested: ^1.0.0
+  equatable: ^2.0.7
 
   # Dependency Injection
   get_it: ^8.2.0

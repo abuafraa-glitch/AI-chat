@@ -233,7 +233,15 @@ final class ApiClient implements ApiConsumer {
       final response = await _dio.post<ResponseBody>(
         path,
         data: data,
-        options: Options(responseType: ResponseType.stream, headers: headers),
+        // Streaming must not be killed by the default receive timeout:
+        // token generation can take longer than a regular REST response.
+        // A zero duration disables the receive timeout for this request
+        // only, while connection/send timeouts still protect the caller.
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: headers,
+          receiveTimeout: const Duration(milliseconds: 0),
+        ),
         cancelToken: token,
       );
 

@@ -1,5 +1,4 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -7,6 +6,7 @@ import 'package:ai_chat/core/widgets/loaders/loading_indicator.dart';
 import 'package:ai_chat/data/models/message_model.dart';
 import 'package:ai_chat/presentation/animations/fade_in_slide.dart';
 import 'package:ai_chat/presentation/blocs/chat_cubit.dart';
+import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/presentation/blocs/data_sources.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
 import 'package:ai_chat/presentation/widgets/chat_input_field.dart';
@@ -15,6 +15,7 @@ import 'package:ai_chat/presentation/widgets/message_bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nested/nested.dart';
 import 'package:go_router/go_router.dart';
 
 /// Launch payload carried through the conversation route.
@@ -36,22 +37,28 @@ class ChatLaunchData {
 
 /// Renders a single conversation.
 ///
-/// This screen reuses the [ModelsCubit] provided by [MainLayout] (the
-/// shell) so model selection stays single-sourced across tabs; it only
-/// provides its own [ChatCubit], which is conversation-scoped. It
-/// observes [ChatState] and renders the four UI phases — loading,
-/// error, empty and streaming — without containing any business logic.
+/// This screen is a self-contained route: it provides its own [ChatCubit]
+/// (per-conversation state) but shares the application-wide [ModelsCubit]
+/// singleton from the DI container via [BlocProvider.value], so the
+/// model selection stays consistent with the main shell. It observes
+/// [ChatState] and renders the four UI phases — loading, error, empty
+/// and streaming — without containing any business logic.
 class ChatScreen extends StatelessWidget {
-  /// Creates a [ChatScreen] for [conversationId].
-  const ChatScreen({super.key, required this.conversationId});
-
   /// Identifier of the conversation to display.
   final String conversationId;
 
+  /// Creates a [ChatScreen] for [conversationId].
+  const ChatScreen({super.key, required this.conversationId});
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ChatCubit>(
-      create: (context) => ChatCubit(repository: buildMessageRepository()),
+    return MultiBlocProvider(
+      providers: <SingleChildWidget>[
+        BlocProvider<ChatCubit>(
+          create: (context) => ChatCubit(repository: buildMessageRepository()),
+        ),
+        BlocProvider<ModelsCubit>.value(value: sl<ModelsCubit>()),
+      ],
       child: _ChatView(conversationId: conversationId),
     );
   }
@@ -219,7 +226,7 @@ class _ChatViewState extends State<_ChatView> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: AppSpacing.inputField,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       itemCount: state.messages.length,
       itemBuilder: (context, index) {
         final message = state.messages[index];

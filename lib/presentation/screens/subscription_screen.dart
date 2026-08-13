@@ -1,5 +1,3 @@
-import 'package:ai_chat/core/theme/app_radius.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -36,24 +34,6 @@ class SubscriptionScreen extends StatelessWidget {
 class _SubscriptionView extends StatelessWidget {
   const _SubscriptionView();
 
-  String _stringOf(Map<String, dynamic> map, String key) {
-    final value = map[key];
-    return value is String ? value : '';
-  }
-
-  String _priceOf(Map<String, dynamic> map) {
-    final price = map['price'];
-    return price is num ? price.toString() : '';
-  }
-
-  List<String> _featuresOf(Map<String, dynamic> map) {
-    final features = map['features'];
-    if (features is List) {
-      return features.whereType<String>().toList();
-    }
-    return const <String>[];
-  }
-
   @override
   Widget build(BuildContext context) {
     final cubit = context.watch<SubscriptionsCubit>();
@@ -87,7 +67,7 @@ class _SubscriptionView extends StatelessWidget {
     }
 
     return ListView(
-      padding: AppSpacing.all4,
+      padding: const EdgeInsets.all(16),
       children: <Widget>[
         if (state.currentSubscription != null) ...<Widget>[
           _CurrentSubscriptionCard(
@@ -95,21 +75,21 @@ class _SubscriptionView extends StatelessWidget {
             formatDate: formatAppDate,
             localized: (en, ar) => localizedText(context, en, ar),
           ),
-          AppSpacing.gap6,
+          const SizedBox(height: 24),
         ],
         Text(
           localizedText(context, 'Choose your plan', 'اختر خطتك'),
           style: Theme.of(context).textTheme.headlineSmall,
         ),
-        AppSpacing.gap4,
+        const SizedBox(height: 16),
         for (final plan in state.plans)
           Padding(
-            padding: AppSpacing.bottom4,
+            padding: const EdgeInsets.only(bottom: 16),
             child: _PlanCard(
-              name: _stringOf(plan, 'name'),
-              description: _stringOf(plan, 'description'),
-              price: _priceOf(plan),
-              features: _featuresOf(plan),
+              name: plan.name,
+              description: plan.description,
+              price: plan.price == 0 ? '' : plan.price.toString(),
+              features: plan.features,
               localized: (en, ar) => localizedText(context, en, ar),
             ),
           ),
@@ -137,10 +117,10 @@ class _CurrentSubscriptionCard extends StatelessWidget {
     final endDate = subscription.endDate;
 
     return Container(
-      padding: AppSpacing.all4,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer,
-        borderRadius: AppRadius.md,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,21 +129,21 @@ class _CurrentSubscriptionCard extends StatelessWidget {
             localized('Current Plan', 'الخطة الحالية'),
             style: theme.textTheme.titleMedium,
           ),
-          AppSpacing.gap2,
+          const SizedBox(height: 8),
           Text(planName, style: theme.textTheme.headlineMedium),
-          AppSpacing.gap2,
+          const SizedBox(height: 8),
           Text(
             '${subscription.price} ${subscription.currency}',
             style: theme.textTheme.bodyLarge,
           ),
-          AppSpacing.gap1,
+          const SizedBox(height: 4),
           Text(
             endDate != null
                 ? '${localized('Active until', 'نشطة حتى')} ${formatDate(endDate)}'
                 : localized('Status', 'الحالة'),
             style: theme.textTheme.bodySmall,
           ),
-          AppSpacing.gap1,
+          const SizedBox(height: 4),
           Text(status, style: theme.textTheme.bodySmall),
         ],
       ),
@@ -192,16 +172,16 @@ class _PlanCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: AppSpacing.all5,
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(name, style: theme.textTheme.headlineSmall),
             if (description.isNotEmpty) ...<Widget>[
-              AppSpacing.gap1,
+              const SizedBox(height: 4),
               Text(description, style: theme.textTheme.bodySmall),
             ],
-            AppSpacing.gap4,
+            const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
@@ -214,10 +194,10 @@ class _PlanCard extends StatelessWidget {
                 ),
               ],
             ),
-            AppSpacing.gap4,
+            const SizedBox(height: 16),
             for (final feature in features)
               Padding(
-                padding: AppSpacing.v1Insets,
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: <Widget>[
                     Icon(
@@ -225,7 +205,7 @@ class _PlanCard extends StatelessWidget {
                       color: theme.colorScheme.primary,
                       size: 20,
                     ),
-                    AppSpacing.gap3,
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(feature, style: theme.textTheme.bodyMedium),
                     ),

@@ -1,4 +1,3 @@
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -29,11 +28,6 @@ class AgentsScreen extends StatelessWidget {
 
 class _AgentsView extends StatelessWidget {
   const _AgentsView();
-
-  String _stringOf(Map<String, dynamic> map, String key) {
-    final value = map[key];
-    return value is String ? value : '';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,14 +67,12 @@ class _AgentsView extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: AppSpacing.buttonSm,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: state.items.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final agent = state.items[index];
-        final name = _stringOf(agent, 'name');
-        final description = _stringOf(agent, 'description');
-        final status = _stringOf(agent, 'status');
+        final status = agent.status.name;
         return ListTile(
           leading: CircleAvatar(
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
@@ -90,15 +82,21 @@ class _AgentsView extends StatelessWidget {
             ),
           ),
           title: Text(
-            name.isEmpty ? localizedText(context, 'Agent', 'وكيل') : name,
+            agent.name.isEmpty
+                ? localizedText(context, 'Agent', 'وكيل')
+                : agent.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              if (description.isNotEmpty) ...<Widget>[
-                Text(description, maxLines: 2, overflow: TextOverflow.ellipsis),
+              if (agent.description.isNotEmpty) ...<Widget>[
+                Text(
+                  agent.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 2),
               ],
               if (status.isNotEmpty)

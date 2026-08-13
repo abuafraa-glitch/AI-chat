@@ -1,6 +1,7 @@
 import 'package:ai_chat/data/datasources/local/local_data_source.dart';
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:ai_chat/data/models/subscription_model.dart';
+import 'package:ai_chat/data/models/subscription_plan_model.dart';
 import 'package:ai_chat/data/repositories/subscription_repository.dart';
 
 /// Implementation of [SubscriptionRepository].
@@ -20,7 +21,7 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   final LocalDataSource _local;
 
   @override
-  Future<List<Map<String, dynamic>>> getPlans() =>
+  Future<List<SubscriptionPlanModel>> getPlans() =>
       _remote.getSubscriptionPlans();
 
   @override

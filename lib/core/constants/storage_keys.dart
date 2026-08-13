@@ -33,7 +33,11 @@ abstract final class StorageKeys {
   /// Avatar URL cached for offline UI rendering.
   static const String currentUserAvatarUrl = 'auth.current_user_avatar_url';
 
-  /// Full serialized user profile cached for offline UI rendering.
+  /// Aggregated JSON blob of the currently signed-in user profile
+  /// (non-sensitive), cached for offline rendering by the local data
+  /// source. Distinct from the individual `auth.current_user_*` fields
+  /// above, which mirror the same data as typed primitives for the auth
+  /// controller and profile screen.
   static const String currentUser = 'auth.current_user';
 
   /// Expiration timestamp of the access token (milliseconds since epoch).

@@ -5,6 +5,7 @@ import 'package:ai_chat/core/network/interceptors/auth_interceptor.dart';
 import 'package:ai_chat/core/network/interceptors/logging_interceptor.dart';
 import 'package:ai_chat/core/network/interceptors/retry_interceptor.dart';
 import 'package:ai_chat/core/network/network_info.dart';
+import 'package:ai_chat/core/services/logger_service.dart';
 import 'package:dio/dio.dart';
 
 /// Factory that constructs a fully-configured [Dio] instance for
@@ -41,12 +42,14 @@ abstract final class DioFactory {
     required AppConfig config,
     required TokenProvider tokenProvider,
     required NetworkInfo networkInfo,
+    required LoggerService logger,
   }) {
     final dio = Dio()
       ..options = BaseOptions(
         baseUrl: config.resolvedApiUrl,
         connectTimeout: config.connectionTimeout,
         receiveTimeout: config.receiveTimeout,
+        sendTimeout: config.sendTimeout,
         headers: <String, String>{
           ApiHeaders.contentType: ApiContentType.jsonUtf8,
           ApiHeaders.accept: ApiContentType.json,
@@ -54,7 +57,12 @@ abstract final class DioFactory {
       );
 
     dio.interceptors.addAll(<Interceptor>[
-      AuthInterceptor(dio: dio, tokenProvider: tokenProvider, config: config),
+      AuthInterceptor(
+        dio: dio,
+        tokenProvider: tokenProvider,
+        config: config,
+        logger: logger,
+      ),
       RetryInterceptor(dio: dio, networkInfo: networkInfo),
       if (config.enableLogging) LoggingInterceptor(debugMode: config.debugMode),
     ]);

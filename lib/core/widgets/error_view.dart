@@ -1,10 +1,19 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
+import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class ErrorView extends StatelessWidget {
+  final String? title;
+  final String? description;
+  final String? errorCode;
+  final VoidCallback? onRetry;
+  final String? retryButtonText;
+  final Widget? customActions;
+  final dynamic errorDetails;
+
   const ErrorView({
     super.key,
     this.title,
@@ -15,13 +24,6 @@ class ErrorView extends StatelessWidget {
     this.customActions,
     this.errorDetails,
   });
-  final String? title;
-  final String? description;
-  final String? errorCode;
-  final VoidCallback? onRetry;
-  final String? retryButtonText;
-  final Widget? customActions;
-  final dynamic errorDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -38,14 +40,23 @@ class ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              title ?? 'حدث خطأ ما!',
+              title ??
+                  localizedTextRead(
+                    context,
+                    'Something went wrong!',
+                    'حدث خطأ ما!',
+                  ),
               style: context.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               description ??
-                  'نعتذر، حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+                  localizedTextRead(
+                    context,
+                    'Sorry, an unexpected error occurred. Please try again.',
+                    'نعتذر، حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+                  ),
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
@@ -54,7 +65,11 @@ class ErrorView extends StatelessWidget {
             if (errorCode != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'رمز الخطأ: $errorCode',
+                localizedTextRead(
+                  context,
+                  'Error code: $errorCode',
+                  'رمز الخطأ: $errorCode',
+                ),
                 style: context.textTheme.bodySmall?.copyWith(
                   color: context.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -64,7 +79,9 @@ class ErrorView extends StatelessWidget {
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.lg),
               AppButton(
-                text: retryButtonText ?? 'إعادة المحاولة',
+                text:
+                    retryButtonText ??
+                    localizedTextRead(context, 'Retry', 'إعادة المحاولة'),
                 onPressed: onRetry!,
               ),
             ],
@@ -76,7 +93,11 @@ class ErrorView extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               ExpansionTile(
                 title: Text(
-                  'تفاصيل الخطأ (للمطورين)',
+                  localizedTextRead(
+                    context,
+                    'Error details (developers)',
+                    'تفاصيل الخطأ (للمطورين)',
+                  ),
                   style: context.textTheme.bodySmall,
                 ),
                 children: [

@@ -1,5 +1,5 @@
-import 'package:ai_chat/core/config/app_config.dart';
-import 'package:ai_chat/core/config/flavor.dart';
+import '../app_config.dart';
+import '../flavor.dart';
 
 /// Configuration for the customer-facing production environment.
 ///
@@ -13,37 +13,49 @@ base class ProductionConfig extends EnvironmentConfig {
   @override
   AppConfig build() {
     return const AppConfig.internal(
-      appName: String.fromEnvironment('APP_NAME', defaultValue: 'Hajeen AI'),
-      appVersion: String.fromEnvironment(
+      appName: const String.fromEnvironment(
+        'APP_NAME',
+        defaultValue: 'Hajeen AI',
+      ),
+      appVersion: const String.fromEnvironment(
         'APP_VERSION',
         defaultValue: '1.0.0+1',
       ),
-      apiBaseUrl: String.fromEnvironment(
+      apiBaseUrl: const String.fromEnvironment(
         'API_BASE_URL',
         defaultValue: 'https://api.hajeen.ai',
       ),
-      webSocketUrl: String.fromEnvironment(
+      webSocketUrl: const String.fromEnvironment(
         'WS_BASE_URL',
         defaultValue: 'wss://ws.hajeen.ai',
       ),
-      apiVersion: String.fromEnvironment('API_VERSION', defaultValue: 'v1'),
+      apiVersion: const String.fromEnvironment(
+        'API_VERSION',
+        defaultValue: 'v1',
+      ),
       flavor: Flavor.production,
-      connectionTimeout: Duration(seconds: 20),
-      receiveTimeout: Duration(seconds: 30),
+      connectionTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
       debugMode: false,
       enableLogging: false,
-      featureFlags: FeatureFlags(
+      featureFlags: const FeatureFlags(
+        // Core, verified surfaces that do not depend on unverified
+        // backend contracts.
         enableChat: true,
         enableAiModelSelection: true,
-        enableSubscriptions: true,
-        enablePayments: true,
-        enableFileManagement: true,
-        enableSearch: true,
-        enableRag: true,
-        enableAgents: true,
         enableWebSocketStreaming: true,
-        enableNotifications: true,
         enableMultiModelSwitching: true,
+        // Backend-dependent or unverified surfaces are disabled in
+        // production until their contracts are confirmed. The route
+        // feature-flag guard redirects these to the chat surface.
+        enableSubscriptions: false,
+        enablePayments: false,
+        enableFileManagement: false,
+        enableSearch: false,
+        enableRag: false,
+        enableAgents: false,
+        enableNotifications: false,
       ),
     );
   }

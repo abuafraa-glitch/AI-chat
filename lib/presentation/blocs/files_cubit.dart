@@ -1,3 +1,4 @@
+import 'package:ai_chat/data/models/file_model.dart';
 import 'package:ai_chat/data/repositories/file_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,14 +7,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 final class FilesState extends Equatable {
   /// Creates a [FilesState].
   const FilesState({
-    this.files = const <Map<String, dynamic>>[],
+    this.files = const <FileModel>[],
     this.isLoading = false,
     this.isUploading = false,
     this.error,
   });
 
-  /// Files belonging to the current user (raw server payloads).
-  final List<Map<String, dynamic>> files;
+  /// Files belonging to the current user.
+  final List<FileModel> files;
 
   /// `true` while the file list is being fetched.
   final bool isLoading;
@@ -26,7 +27,7 @@ final class FilesState extends Equatable {
 
   /// Returns a copy with the given fields replaced.
   FilesState copyWith({
-    List<Map<String, dynamic>>? files,
+    List<FileModel>? files,
     bool? isLoading,
     bool? isUploading,
     String? error,
@@ -77,7 +78,7 @@ final class FilesCubit extends Cubit<FilesState> {
       );
       emit(
         state.copyWith(
-          files: <Map<String, dynamic>>[uploaded, ...state.files],
+          files: <FileModel>[uploaded, ...state.files],
           isUploading: false,
         ),
       );
@@ -92,17 +93,11 @@ final class FilesCubit extends Cubit<FilesState> {
       await _repository.deleteFile(fileId);
       emit(
         state.copyWith(
-          files: state.files.where((file) => _idOf(file) != fileId).toList(),
+          files: state.files.where((file) => file.id != fileId).toList(),
         ),
       );
     } on Exception catch (error) {
       emit(state.copyWith(error: error.toString()));
     }
-  }
-
-  /// Extracts the file id from a raw payload, or an empty string.
-  String _idOf(Map<String, dynamic> file) {
-    final id = file['id'];
-    return id is String ? id : '';
   }
 }

@@ -105,29 +105,32 @@ final class RequestTimeoutException extends NetworkException {
 ///
 /// The caller should redirect the user to the authentication screen.
 final class UnauthorizedException extends NetworkException {
-  const UnauthorizedException({required super.message})
-    : super(statusCode: 401);
+  const UnauthorizedException({required String message})
+    : super(message: message, statusCode: 401);
 }
 
 /// The server returned HTTP 403 — authenticated but not permitted.
 final class ForbiddenException extends NetworkException {
-  const ForbiddenException({required super.message}) : super(statusCode: 403);
+  const ForbiddenException({required String message})
+    : super(message: message, statusCode: 403);
 }
 
 /// The requested resource does not exist (HTTP 404).
 final class NotFoundException extends NetworkException {
-  const NotFoundException({required super.message}) : super(statusCode: 404);
+  const NotFoundException({required String message})
+    : super(message: message, statusCode: 404);
 }
 
 /// The request conflicts with the current server state (HTTP 409).
 final class ConflictException extends NetworkException {
-  const ConflictException({required super.message}) : super(statusCode: 409);
+  const ConflictException({required String message})
+    : super(message: message, statusCode: 409);
 }
 
 /// The server returned HTTP 422 — semantically invalid payload.
 final class UnprocessableEntityException extends NetworkException {
-  const UnprocessableEntityException({required super.message})
-    : super(statusCode: 422);
+  const UnprocessableEntityException({required String message})
+    : super(message: message, statusCode: 422);
 }
 
 /// The client has exceeded the server rate limit (HTTP 429).
@@ -141,12 +144,14 @@ final class RateLimitException extends NetworkException {
 
 /// A 4xx error not covered by the specific types above.
 final class BadRequestException extends NetworkException {
-  const BadRequestException({required super.message, super.statusCode});
+  const BadRequestException({required String message, super.statusCode})
+    : super(message: message);
 }
 
 /// The server returned a 5xx error.
 final class ServerException extends NetworkException {
-  const ServerException({required super.message, super.statusCode});
+  const ServerException({required String message, super.statusCode})
+    : super(message: message);
 }
 
 /// The request was cancelled by the caller via a cancel token.
@@ -163,5 +168,6 @@ final class CertificateException extends NetworkException {
 
 /// An error that does not fit any of the typed categories above.
 final class UnknownNetworkException extends NetworkException {
-  const UnknownNetworkException({required super.message, super.statusCode});
+  const UnknownNetworkException({required String message, super.statusCode})
+    : super(message: message);
 }

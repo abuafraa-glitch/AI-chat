@@ -1,6 +1,5 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
 import 'package:ai_chat/core/widgets/error_view.dart';
@@ -14,7 +13,6 @@ import 'package:ai_chat/presentation/widgets/formatters.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
 
 /// Chat tab — the conversation list of the application.
 ///
@@ -49,12 +47,31 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     });
   }
 
-  void _startConversation(BuildContext context) {
-    final conversationId = const Uuid().v4();
-    context.pushTo(
-      RouteNames.conversationPath(conversationId),
-      extra: const ChatLaunchData(),
-    );
+  void _startConversation(BuildContext context) async {
+    // Create on the backend first, then navigate with the real server id.
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final conversation = await context
+          .read<ConversationsCubit>()
+          .createConversation();
+      if (!context.mounted) return;
+      context.pushTo<void>(
+        RouteNames.conversationPath(conversation.id),
+        extra: const ChatLaunchData(),
+      );
+    } on Exception {
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(
+            localizedTextRead(
+              context,
+              'Could not start a new conversation',
+              'تعذّر بدء محادثة جديدة',
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -73,7 +90,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       body: Column(
         children: <Widget>[
           Padding(
-            padding: AppSpacing.all4,
+            padding: const EdgeInsets.all(16),
             child: AppTextField(
               controller: _searchController,
               isSearch: true,
@@ -123,13 +140,13 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     }
 
     return ListView.builder(
-      padding: AppSpacing.h4,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: conversations.length,
       itemBuilder: (context, index) {
         final conversation = conversations[index];
         final isPinned = conversation.status == ConversationStatus.pinned;
         return Card(
-          margin: AppSpacing.bottom3,
+          margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: Icon(
               isPinned ? Icons.push_pin : Icons.chat_bubble_outline,
@@ -150,7 +167,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  AppSpacing.gap1,
+                  const SizedBox(height: 4),
                 ],
                 Text(
                   formatAppDate(conversation.updatedAt),

@@ -31,24 +31,6 @@ class PaymentsScreen extends StatelessWidget {
 class _PaymentsView extends StatelessWidget {
   const _PaymentsView();
 
-  String _stringOf(Map<String, dynamic> map, String key) {
-    final value = map[key];
-    return value is String ? value : '';
-  }
-
-  double _amountOf(Map<String, dynamic> map) {
-    final amount = map['amount'];
-    return amount is num ? amount.toDouble() : 0;
-  }
-
-  DateTime? _dateOf(Map<String, dynamic> map) {
-    final raw = map['createdAt'];
-    if (raw is String) {
-      return DateTime.tryParse(raw);
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final cubit = context.watch<PaymentsCubit>();
@@ -94,23 +76,22 @@ class _PaymentsView extends StatelessWidget {
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final item = state.items[index];
-        final status = _stringOf(item, 'status');
-        final date = _dateOf(item);
+        final status = item.status;
         return ListTile(
           leading: const Icon(Icons.payment_outlined),
           title: Text(
-            _stringOf(item, 'description').isEmpty
+            item.description.isEmpty
                 ? localizedText(context, 'Payment', 'عملية دفع')
-                : _stringOf(item, 'description'),
+                : item.description,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              if (date != null)
+              if (item.createdAt != null)
                 Text(
-                  formatAppDate(date),
+                  formatAppDate(item.createdAt!),
                   style: Theme.of(context).textTheme.labelSmall,
                 ),
               if (status.isNotEmpty)
@@ -123,7 +104,7 @@ class _PaymentsView extends StatelessWidget {
             ],
           ),
           trailing: Text(
-            '\$${_amountOf(item).toStringAsFixed(2)}',
+            '\$${item.amount.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleMedium,
           ),
         );

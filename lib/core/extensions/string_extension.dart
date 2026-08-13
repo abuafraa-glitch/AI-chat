@@ -35,7 +35,9 @@ extension StringValidationExtension on String {
     final hasUpper = contains(RegExp('[A-Z]'));
     final hasLower = contains(RegExp('[a-z]'));
     final hasDigit = contains(RegExp('[0-9]'));
-    final hasSpecial = contains(RegExp(r'[!@#$%^&*()\-_=+\[\]{}|;:,.?/~`]'));
+    final hasSpecial = contains(
+      RegExp(r'[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;' + "'" + r'`~/]'),
+    );
     return hasUpper && hasLower && hasDigit && hasSpecial;
   }
 

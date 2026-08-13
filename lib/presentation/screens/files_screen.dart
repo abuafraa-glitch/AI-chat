@@ -1,5 +1,4 @@
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/utils/formatters.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/empty_state.dart';
@@ -33,21 +32,6 @@ class FilesScreen extends StatelessWidget {
 
 class _FilesView extends StatelessWidget {
   const _FilesView();
-
-  String _stringOf(Map<String, dynamic> map, String key) {
-    final value = map[key];
-    return value is String ? value : '';
-  }
-
-  int _sizeOf(Map<String, dynamic> map) {
-    final size = map['size'];
-    return size is int ? size : 0;
-  }
-
-  String _idOf(Map<String, dynamic> map) {
-    final id = map['id'];
-    return id is String ? id : '';
-  }
 
   Future<void> _pickAndUpload(BuildContext context) async {
     final result = await FilePicker.platform.pickFiles();
@@ -122,26 +106,25 @@ class _FilesView extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: AppSpacing.buttonSm,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: state.files.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final file = state.files[index];
-        final id = _idOf(file);
         return ListTile(
           leading: const Icon(Icons.insert_drive_file_outlined),
           title: Text(
-            _stringOf(file, 'name').isEmpty
+            file.name.isEmpty
                 ? localizedText(context, 'File', 'ملف')
-                : _stringOf(file, 'name'),
+                : file.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          subtitle: Text(Formatters.formatFileSize(_sizeOf(file))),
+          subtitle: Text(Formatters.formatFileSize(file.size)),
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: localizedText(context, 'Delete', 'حذف'),
-            onPressed: id.isEmpty ? null : () => cubit.delete(id),
+            onPressed: file.id.isEmpty ? null : () => cubit.delete(file.id),
           ),
         );
       },

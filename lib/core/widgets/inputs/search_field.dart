@@ -6,6 +6,15 @@ import 'package:ai_chat/core/widgets/inputs/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 class SearchField extends StatefulWidget {
+  final TextEditingController? controller;
+  final String? hintText;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final VoidCallback? onClear;
+  final Duration debounceDuration;
+  final List<String>? suggestions;
+  final void Function(String)? onSuggestionSelected;
+
   const SearchField({
     super.key,
     this.controller,
@@ -17,14 +26,6 @@ class SearchField extends StatefulWidget {
     this.suggestions,
     this.onSuggestionSelected,
   });
-  final TextEditingController? controller;
-  final String? hintText;
-  final ValueChanged<String>? onChanged;
-  final ValueChanged<String>? onSubmitted;
-  final VoidCallback? onClear;
-  final Duration debounceDuration;
-  final List<String>? suggestions;
-  final void Function(String)? onSuggestionSelected;
 
   @override
   State<SearchField> createState() => _SearchFieldState();

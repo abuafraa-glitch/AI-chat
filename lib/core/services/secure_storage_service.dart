@@ -77,21 +77,17 @@ final class SecureStorageService implements TokenProvider {
 
   /// Returns the current access token, or `null` if none has been
   /// stored.
-  @override
   Future<String?> readAccessToken() => read(SecureStorageKeys.accessToken);
 
   /// Persists [token] as the current access token.
-  @override
   Future<void> writeAccessToken(String token) =>
       write(SecureStorageKeys.accessToken, token);
 
   /// Returns the current refresh token, or `null` if none has been
   /// stored.
-  @override
   Future<String?> readRefreshToken() => read(SecureStorageKeys.refreshToken);
 
   /// Persists [token] as the current refresh token.
-  @override
   Future<void> writeRefreshToken(String token) =>
       write(SecureStorageKeys.refreshToken, token);
 
@@ -99,7 +95,6 @@ final class SecureStorageService implements TokenProvider {
   ///
   /// Call this during user sign-out to invalidate the local session
   /// before navigating to the login screen.
-  @override
   Future<void> clearTokens() async {
     await Future.wait<void>(<Future<void>>[
       delete(SecureStorageKeys.accessToken),

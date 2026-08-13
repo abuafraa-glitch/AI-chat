@@ -5,6 +5,7 @@ import 'package:ai_chat/core/config/app_config.dart';
 import 'package:ai_chat/core/constants/api_constants.dart';
 import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:ai_chat/core/network/endpoints.dart';
+import 'package:ai_chat/core/services/logger_service.dart';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
@@ -26,13 +27,16 @@ final class AuthInterceptor extends Interceptor {
     required Dio dio,
     required TokenProvider tokenProvider,
     required AppConfig config,
+    required LoggerService logger,
   }) : _dio = dio,
        _tokenProvider = tokenProvider,
-       _config = config;
+       _config = config,
+       _logger = logger;
 
   final Dio _dio;
   final TokenProvider _tokenProvider;
   final AppConfig _config;
+  final LoggerService _logger;
 
   /// Guards concurrent 401 handling: only one refresh is performed
   /// at a time; all other 401s wait for the same [Completer].
@@ -57,8 +61,16 @@ final class AuthInterceptor extends Interceptor {
       options.headers[ApiHeaders.appVersion] = _config.appVersion;
       options.headers[ApiHeaders.platform] = Platform.operatingSystem;
       options.headers[ApiHeaders.clientName] = _config.appName;
-    } catch (_) {
-      // Never block a request because of a header-injection failure.
+    } on Exception catch (error, stackTrace) {
+      // Do not block the request, but record the failure so silent
+      // auth/header failures are diagnosable. The token value is never
+      // logged — only the failure reason and the affected endpoint.
+      _logger.w(
+        'Failed to inject auth/metadata headers for ${options.path}',
+        tag: 'AuthInterceptor',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
     handler.next(options);
   }
@@ -139,6 +151,7 @@ final class AuthInterceptor extends Interceptor {
         baseUrl: _config.resolvedApiUrl,
         connectTimeout: _config.connectionTimeout,
         receiveTimeout: _config.receiveTimeout,
+        sendTimeout: _config.sendTimeout,
         headers: {
           ApiHeaders.contentType: ApiContentType.jsonUtf8,
           ApiHeaders.accept: ApiContentType.json,

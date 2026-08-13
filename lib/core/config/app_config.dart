@@ -120,6 +120,7 @@ class AppConfig {
     required this.flavor,
     required this.connectionTimeout,
     required this.receiveTimeout,
+    required this.sendTimeout,
     required this.debugMode,
     required this.enableLogging,
     required this.featureFlags,
@@ -162,6 +163,13 @@ class AppConfig {
 
   /// Maximum duration a complete response may take to arrive.
   final Duration receiveTimeout;
+
+  /// Maximum duration for sending the request body.
+  ///
+  /// Set generously so large uploads (e.g. file attachments) are not
+  /// aborted prematurely; streaming responses are exempted separately
+  /// via the streaming request options.
+  final Duration sendTimeout;
 
   /// When `true`, debug-only UI and verbose diagnostics are exposed.
   final bool debugMode;

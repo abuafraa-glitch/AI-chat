@@ -1,4 +1,5 @@
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
+import 'package:ai_chat/data/models/payment_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,13 +7,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 final class PaymentsState extends Equatable {
   /// Creates a [PaymentsState].
   const PaymentsState({
-    this.items = const <Map<String, dynamic>>[],
+    this.items = const <PaymentModel>[],
     this.isLoading = false,
     this.error,
   });
 
-  /// Payment records (raw server maps).
-  final List<Map<String, dynamic>> items;
+  /// Payment records.
+  final List<PaymentModel> items;
 
   /// `true` while the history is being fetched.
   final bool isLoading;
@@ -22,7 +23,7 @@ final class PaymentsState extends Equatable {
 
   /// Returns a copy with the given fields replaced.
   PaymentsState copyWith({
-    List<Map<String, dynamic>>? items,
+    List<PaymentModel>? items,
     bool? isLoading,
     String? error,
   }) {

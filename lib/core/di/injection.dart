@@ -28,6 +28,7 @@ import 'package:ai_chat/data/repositories/subscription_repository.dart';
 import 'package:ai_chat/data/repositories/subscription_repository_impl.dart';
 import 'package:ai_chat/presentation/blocs/auth_controller.dart';
 import 'package:ai_chat/presentation/blocs/localization_cubit.dart';
+import 'package:ai_chat/presentation/blocs/models_cubit.dart';
 import 'package:ai_chat/presentation/routing/router_page_factory.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
@@ -66,7 +67,7 @@ Future<void> initDependencies() async {
       ),
     ),
   );
-  sl.registerLazySingleton<TokenProvider>(sl.call);
+  sl.registerLazySingleton<TokenProvider>(() => sl<SecureStorageService>());
 
   // CacheService: in-memory TTL cache.
   sl.registerLazySingleton<CacheService>(CacheService.new);
@@ -104,6 +105,7 @@ Future<void> initDependencies() async {
       config: AppConfig.instance,
       tokenProvider: sl<TokenProvider>(),
       networkInfo: sl<NetworkInfo>(),
+      logger: sl<LoggerService>(),
     ),
   );
 
@@ -130,6 +132,16 @@ Future<void> initDependencies() async {
       remoteDataSource: sl<RemoteDataSource>(),
       localDataSource: sl<LocalDataSource>(),
     ),
+  );
+
+  // ModelsCubit: SINGLETON — the single source of truth for the AI model
+  // catalogue and the user's current selection. It is shared (via
+  // BlocProvider.value) between the main shell and the pushed ChatScreen
+  // so that selecting a model in one surface immediately reflects in the
+  // other. A singleton is correct here because model selection is an
+  // application-wide concern, not a per-screen concern.
+  sl.registerLazySingleton<ModelsCubit>(
+    () => ModelsCubit(repository: sl<AIRepository>())..loadModels(),
   );
 
   sl.registerLazySingleton<ConversationRepository>(

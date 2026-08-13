@@ -1,4 +1,3 @@
-// ignore_for_file: unused_field
 import 'package:flutter/material.dart';
 
 // ── Raw palette ─────────────────────────────────────────────────────────────
@@ -12,11 +11,9 @@ abstract final class _Brand {
   /// Deep violet — primary brand hue.
   static const Color violet50 = Color(0xFFEEE9FF);
   static const Color violet100 = Color(0xFFD8CEFF);
-  static const Color violet200 = Color(0xFFB9A5FF);
   static const Color violet300 = Color(0xFF9A7DFF);
   static const Color violet400 = Color(0xFF7C5CFC);
   static const Color violet500 = Color(0xFF6248E8);
-  static const Color violet600 = Color(0xFF4E39CC);
   static const Color violet700 = Color(0xFF3D2E8A);
   static const Color violet800 = Color(0xFF2B2057);
   static const Color violet900 = Color(0xFF1A1432);
@@ -25,12 +22,10 @@ abstract final class _Brand {
   static const Color teal300 = Color(0xFF5ADBD5);
   static const Color teal400 = Color(0xFF2ECBC3);
   static const Color teal500 = Color(0xFF00A99D);
-  static const Color teal600 = Color(0xFF008078);
   static const Color teal700 = Color(0xFF005752);
 
   /// Coral error hue.
   static const Color red300 = Color(0xFFFF8A8A);
-  static const Color red400 = Color(0xFFFF5B5B);
   static const Color red500 = Color(0xFFE53935);
   static const Color red600 = Color(0xFFC62828);
 
@@ -39,27 +34,22 @@ abstract final class _Brand {
   static const Color amber500 = Color(0xFFFFB300);
 
   /// Success green hue.
-  static const Color green400 = Color(0xFF66BB6A);
   static const Color green500 = Color(0xFF43A047);
 }
 
 abstract final class _DarkNeutral {
   static const Color n900 = Color(0xFF0C0E1A); // scaffold background
-  static const Color n850 = Color(0xFF101320); // unused, kept for reference
   static const Color n800 = Color(0xFF151829); // surface
   static const Color n750 = Color(0xFF1C2038); // card / elevated surface
   static const Color n700 = Color(0xFF252946); // input fill
   static const Color n600 = Color(0xFF343862); // border / divider
-  static const Color n400 = Color(0xFF7B80A8); // disabled / placeholder text
   static const Color n200 = Color(0xFFBEC2E0); // secondary text
   static const Color n100 = Color(0xFFE8EAF6); // primary text
-  static const Color n50 = Color(0xFFF0F1FA); // high-emphasis text
 }
 
 abstract final class _LightNeutral {
   static const Color n900 = Color(0xFF1A1A2E); // primary text
   static const Color n800 = Color(0xFF2D2D44); // secondary text
-  static const Color n600 = Color(0xFF6B6B85); // hint / disabled text
   static const Color n300 = Color(0xFFC5C6DB); // border / divider
   static const Color n200 = Color(0xFFE4E5F1); // input fill
   static const Color n100 = Color(0xFFF0F1FA); // card surface

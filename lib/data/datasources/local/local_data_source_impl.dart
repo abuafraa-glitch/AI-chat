@@ -12,12 +12,13 @@ import 'package:ai_chat/data/models/subscription_model.dart';
 /// Implementation of [LocalDataSource] that uses [LocalStorageService]
 /// and [SecureStorageService] for local data persistence.
 class LocalDataSourceImpl implements LocalDataSource {
+  final LocalStorageService _localStorageService;
+  final SecureStorageService _secureStorageService;
+
   const LocalDataSourceImpl(
     this._localStorageService,
     this._secureStorageService,
   );
-  final LocalStorageService _localStorageService;
-  final SecureStorageService _secureStorageService;
 
   // ── Authentication ────────────────────────────────────────────────────────
 
@@ -117,14 +118,14 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<void> deleteConversation(String id) async {
-    final List<ConversationModel> conversations = await getConversations();
+    List<ConversationModel> conversations = await getConversations();
     conversations.removeWhere((conv) => conv.id == id);
     await saveConversations(conversations);
   }
 
   @override
   Future<void> updateConversation(ConversationModel conversation) async {
-    final List<ConversationModel> conversations = await getConversations();
+    List<ConversationModel> conversations = await getConversations();
     final int index = conversations.indexWhere(
       (conv) => conv.id == conversation.id,
     );
@@ -173,9 +174,7 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<void> updateMessage(MessageModel message) async {
-    final List<MessageModel> messages = await getMessages(
-      message.conversationId,
-    );
+    List<MessageModel> messages = await getMessages(message.conversationId);
     final int index = messages.indexWhere((msg) => msg.id == message.id);
     if (index != -1) {
       messages[index] = message;
@@ -237,13 +236,25 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<void> clearCache() async {
-    // Clear all non-sensitive cached data
+    // Clear the well-known aggregate caches.
     await _localStorageService.remove(StorageKeys.modelCatalogCache);
+    await _localStorageService.remove(StorageKeys.modelCatalogSyncedAt);
     await _localStorageService.remove(StorageKeys.conversationsCache);
-    // Note: Individual conversation messages are cleared when their conversation is deleted
-    // or can be cleared by iterating through CacheKeys.conversationMessages(id) if IDs are known.
-    // For now, only clearing main caches.
-    // A more robust solution might involve a mechanism to list all conversation message keys.
+    await _localStorageService.remove(StorageKeys.subscriptionCache);
+
+    // Clear every cached conversation message thread. Conversation
+    // message threads are keyed dynamically
+    // (CacheKeys.conversationMessages(id)) and their ids are not known
+    // up front, so we iterate all stored keys and remove those that
+    // match the message-thread prefix. This is the robust strategy
+    // required so clearCache actually evicts all managed cached data
+    // rather than silently leaving message threads behind.
+    const messageThreadPrefix = 'memory.conversation.';
+    for (final key in _localStorageService.allKeys) {
+      if (key.startsWith(messageThreadPrefix)) {
+        await _localStorageService.remove(key);
+      }
+    }
   }
 
   @override

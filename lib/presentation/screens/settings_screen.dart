@@ -1,7 +1,6 @@
 import 'package:ai_chat/core/constants/app_strings.dart';
 import 'package:ai_chat/core/extensions/build_context_extension.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
-import 'package:ai_chat/core/theme/app_spacing.dart';
 import 'package:ai_chat/core/theme/theme_cubit.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/presentation/blocs/localization_cubit.dart';
@@ -31,7 +30,7 @@ class SettingsScreen extends StatelessWidget {
         title: Text(localizedText(context, 'Settings', 'الإعدادات')),
       ),
       body: SingleChildScrollView(
-        padding: AppSpacing.all4,
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -82,7 +81,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            AppSpacing.gap6,
+            const SizedBox(height: 24),
             _SettingsSection(
               title: localizedText(context, 'Account', 'الحساب'),
               children: <Widget>[
@@ -98,7 +97,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            AppSpacing.gap6,
+            const SizedBox(height: 24),
             _SettingsSection(
               title: localizedText(context, 'Subscription', 'الاشتراك'),
               children: <Widget>[
@@ -109,7 +108,7 @@ class SettingsScreen extends StatelessWidget {
                     'Manage Subscription',
                     'إدارة الاشتراك',
                   ),
-                  onTap: () => context.pushTo(RouteNames.subscriptions),
+                  onTap: () => context.pushTo<void>(RouteNames.subscriptions),
                 ),
                 _SettingsTile(
                   icon: Icons.receipt_outlined,
@@ -118,11 +117,11 @@ class SettingsScreen extends StatelessWidget {
                     'Billing History',
                     'سجل الفواتير',
                   ),
-                  onTap: () => context.pushTo(RouteNames.payments),
+                  onTap: () => context.pushTo<void>(RouteNames.payments),
                 ),
               ],
             ),
-            AppSpacing.gap6,
+            const SizedBox(height: 24),
             Center(
               child: Text('Hajeen AI v1.0.0', style: theme.textTheme.bodySmall),
             ),
@@ -152,7 +151,7 @@ class _SettingsSection extends StatelessWidget {
             color: theme.colorScheme.primary,
           ),
         ),
-        AppSpacing.gap3,
+        const SizedBox(height: 12),
         Card(
           child: Column(
             children: List<Widget>.generate(

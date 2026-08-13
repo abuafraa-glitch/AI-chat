@@ -1,3 +1,4 @@
+import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/presentation/blocs/conversations_cubit.dart';
 import 'package:ai_chat/presentation/blocs/data_sources.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
@@ -5,8 +6,8 @@ import 'package:ai_chat/presentation/blocs/subscriptions_cubit.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:nested/nested.dart';
+import 'package:go_router/go_router.dart';
 
 /// Main application shell rendered by the router for the four primary
 /// tabs.
@@ -39,10 +40,10 @@ class MainLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: <SingleChildWidget>[
-        BlocProvider<ModelsCubit>(
-          create: (context) =>
-              ModelsCubit(repository: buildAIRepository())..loadModels(),
-        ),
+        // Shared singleton from the DI container — selecting a model here
+        // immediately reflects in the pushed ChatScreen (single source of
+        // truth) and avoids a per-screen state split.
+        BlocProvider<ModelsCubit>.value(value: sl<ModelsCubit>()),
         BlocProvider<ConversationsCubit>(
           create: (context) =>
               ConversationsCubit(repository: buildConversationRepository())

@@ -9,11 +9,11 @@ import 'package:flutter/material.dart';
 /// and localizes its labels through [localizedText]. It contains no
 /// business logic and never fetches data.
 class ModelDetailsDialog extends StatelessWidget {
-  /// Creates a [ModelDetailsDialog] for [model].
-  const ModelDetailsDialog({super.key, required this.model});
-
   /// The model whose details are displayed.
   final AIModel model;
+
+  /// Creates a [ModelDetailsDialog] for [model].
+  const ModelDetailsDialog({super.key, required this.model});
 
   /// Opens the dialog over [context].
   static Future<void> show(BuildContext context, AIModel model) {

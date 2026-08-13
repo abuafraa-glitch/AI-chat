@@ -1,7 +1,23 @@
-import 'package:ai_chat/core/widgets/responsive_layout.dart';
 import 'package:flutter/material.dart';
 
 class AppScaffold extends StatelessWidget {
+  final PreferredSizeWidget? appBar;
+  final Widget? body;
+  final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
+  final FloatingActionButtonAnimator? floatingActionButtonAnimator;
+  final Widget? drawer;
+  final Widget? endDrawer;
+  final Widget? bottomNavigationBar;
+  final Widget? bottomSheet;
+  final Color? backgroundColor;
+  final bool? resizeToAvoidBottomInset;
+  final bool extendBody;
+  final bool extendBodyBehindAppBar;
+  final bool useSafeArea;
+  final Widget? loadingOverlay;
+  final Widget? errorOverlay;
+
   const AppScaffold({
     super.key,
     this.appBar,
@@ -21,22 +37,6 @@ class AppScaffold extends StatelessWidget {
     this.loadingOverlay,
     this.errorOverlay,
   });
-  final PreferredSizeWidget? appBar;
-  final Widget? body;
-  final Widget? floatingActionButton;
-  final FloatingActionButtonLocation? floatingActionButtonLocation;
-  final FloatingActionButtonAnimator? floatingActionButtonAnimator;
-  final Widget? drawer;
-  final Widget? endDrawer;
-  final Widget? bottomNavigationBar;
-  final Widget? bottomSheet;
-  final Color? backgroundColor;
-  final bool? resizeToAvoidBottomInset;
-  final bool extendBody;
-  final bool extendBodyBehindAppBar;
-  final bool useSafeArea;
-  final Widget? loadingOverlay;
-  final Widget? errorOverlay;
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +60,6 @@ class AppScaffold extends StatelessWidget {
     if (useSafeArea) {
       content = SafeArea(child: content);
     }
-
-    // Add responsive layout wrapper
-    content = ResponsiveLayout(mobile: content);
 
     // Add loading and error overlays
     if (loadingOverlay != null || errorOverlay != null) {

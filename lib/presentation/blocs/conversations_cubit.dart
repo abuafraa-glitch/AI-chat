@@ -70,6 +70,38 @@ final class ConversationsCubit extends Cubit<ConversationsState> {
 
   final ConversationRepository _repository;
 
+  /// Creates a new conversation on the backend and returns it.
+  ///
+  /// This is the single correct entry point for starting a new chat:
+  /// the conversation is created server-side first, the returned
+  /// [ConversationModel] carries the authoritative server ID, and the
+  /// list state is updated. Callers must navigate using the returned
+  /// `id` — never a locally fabricated timestamp id — so the app
+  /// never believes a conversation exists before the backend does.
+  Future<ConversationModel> createConversation([
+    Map<String, dynamic>? data,
+  ]) async {
+    emit(state.copyWith(isLoading: true, error: null));
+    try {
+      final conversation = await _repository.createConversation(
+        data ?? const <String, dynamic>{},
+      );
+      emit(
+        state.copyWith(
+          conversations: <ConversationModel>[
+            conversation,
+            ...state.conversations,
+          ],
+          isLoading: false,
+        ),
+      );
+      return conversation;
+    } on Exception catch (error) {
+      emit(state.copyWith(isLoading: false, error: error.toString()));
+      rethrow;
+    }
+  }
+
   /// Loads the conversation list.
   Future<void> loadConversations() async {
     emit(state.copyWith(isLoading: true, error: null));

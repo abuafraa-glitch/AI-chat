@@ -71,34 +71,23 @@ abstract final class AppSpacing {
   /// `96 dp`
   static const double v24 = 96;
 
-  // ── Semantic aliases ──────────────────────────────────────────────────────
+  // ── Semantic t-shirt scale (double values) ─────────────────────────────────
   //
-  // Short semantic aliases that mirror the Material Design t-shirt scale
-  // (sm < md < lg < xl). They are backed by the raw numeric tokens above so
-  // there is a single source of truth for every value.
-  //
-  // | Alias | Value  | Typical use                          |
-  // |-------|--------|--------------------------------------|
-  // | sm    |  8 dp  | Compact intra-component spacing      |
-  // | md    | 12 dp  | Standard intra-component spacing     |
-  // | lg    | 16 dp  | Section padding, card insets         |
-  // | xl    | 20 dp  | Screen horizontal padding            |
-  // | xxl   | 24 dp  | Large section insets, dialog padding  |
+  // Aliases on the existing 4 dp base scale so widget code reads with
+  // t-shirt sizing. These are *not* parallel constants — each maps to
+  // the matching raw value above, keeping a single source of truth.
 
-  /// `8 dp` — small spacing alias (mirrors [v2]).
+  /// `sm` = 8 dp — matches [v2].
   static const double sm = v2;
 
-  /// `12 dp` — medium spacing alias (mirrors [v3]).
-  static const double md = v3;
+  /// `md` = 16 dp — matches [v4].
+  static const double md = v4;
 
-  /// `16 dp` — large spacing alias (mirrors [v4]).
-  static const double lg = v4;
+  /// `lg` = 24 dp — matches [v6].
+  static const double lg = v6;
 
-  /// `20 dp` — extra-large spacing alias (mirrors [v5]).
-  static const double xl = v5;
-
-  /// `24 dp` — extra-extra-large spacing alias (mirrors [v6]).
-  static const double xxl = v6;
+  /// `xl` = 32 dp — matches [v8].
+  static const double xl = v8;
 
   // ── Symmetric EdgeInsets ──────────────────────────────────────────────────
 
@@ -122,6 +111,9 @@ abstract final class AppSpacing {
 
   // ── Horizontal EdgeInsets ─────────────────────────────────────────────────
 
+  /// Horizontal 4 dp.
+  static const EdgeInsets h1 = EdgeInsets.symmetric(horizontal: v1);
+
   /// Horizontal 8 dp.
   static const EdgeInsets h2 = EdgeInsets.symmetric(horizontal: v2);
 
@@ -140,9 +132,6 @@ abstract final class AppSpacing {
   /// Horizontal 32 dp.
   static const EdgeInsets h8 = EdgeInsets.symmetric(horizontal: v8);
 
-  /// Horizontal 4 dp.
-  static const EdgeInsets h1 = EdgeInsets.symmetric(horizontal: v1);
-
   // ── Vertical EdgeInsets ───────────────────────────────────────────────────
 
   /// Vertical 4 dp.
@@ -160,22 +149,10 @@ abstract final class AppSpacing {
   /// Vertical 24 dp.
   static const EdgeInsets v6Insets = EdgeInsets.symmetric(vertical: v6);
 
-  // ── Directional-only EdgeInsets ───────────────────────────────────────────
+  // ── Bottom-only EdgeInsets ────────────────────────────────────────────────
 
-  /// Bottom-only 8 dp.
-  static const EdgeInsets bottom2 = EdgeInsets.only(bottom: v2);
-
-  /// Bottom-only 12 dp.
+  /// Bottom 12 dp.
   static const EdgeInsets bottom3 = EdgeInsets.only(bottom: v3);
-
-  /// Bottom-only 16 dp.
-  static const EdgeInsets bottom4 = EdgeInsets.only(bottom: v4);
-
-  /// Top-only 4 dp.
-  static const EdgeInsets top1 = EdgeInsets.only(top: v1);
-
-  /// Top-only 8 dp.
-  static const EdgeInsets top2 = EdgeInsets.only(top: v2);
 
   // ── Composite EdgeInsets ──────────────────────────────────────────────────
 

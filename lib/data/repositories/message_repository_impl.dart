@@ -56,9 +56,17 @@ class MessageRepositoryImpl implements MessageRepository {
   Stream<String> streamMessage({
     required String conversationId,
     Map<String, dynamic>? data,
+    String? cancelToken,
   }) {
-    return _remote.streamMessage(conversationId: conversationId, data: data);
+    return _remote.streamMessage(
+      conversationId: conversationId,
+      data: data,
+      cancelToken: cancelToken,
+    );
   }
+
+  @override
+  void cancelStream(String? cancelToken) => _remote.cancelStream(cancelToken);
 
   @override
   Future<MessageModel> regenerateMessage({

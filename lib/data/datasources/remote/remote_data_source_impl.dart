@@ -1,12 +1,17 @@
-import 'package:ai_chat/core/errors/exceptions.dart' as domain;
+import 'package:ai_chat/core/errors/exceptions.dart';
 import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:ai_chat/core/network/endpoints.dart';
-import 'package:ai_chat/core/network/network_response.dart';
+import 'package:ai_chat/core/network/network_response.dart' as net;
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
+import 'package:ai_chat/data/models/agent_model.dart';
 import 'package:ai_chat/data/models/ai_model.dart';
 import 'package:ai_chat/data/models/conversation_model.dart';
+import 'package:ai_chat/data/models/file_model.dart';
 import 'package:ai_chat/data/models/message_model.dart';
+import 'package:ai_chat/data/models/notification_model.dart';
+import 'package:ai_chat/data/models/payment_model.dart';
 import 'package:ai_chat/data/models/subscription_model.dart';
+import 'package:ai_chat/data/models/subscription_plan_model.dart';
 
 /// Official implementation of [RemoteDataSource] for the Hajeen AI project.
 ///
@@ -201,11 +206,19 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   Stream<String> streamMessage({
     required String conversationId,
     Map<String, dynamic>? data,
+    String? cancelToken,
   }) {
     return _apiConsumer.streamRequest(
       path: Endpoints.streamMessage(conversationId),
       data: data,
+      cancelToken: cancelToken,
     );
+  }
+
+  @override
+  void cancelStream(String? cancelToken) {
+    if (cancelToken == null) return;
+    _apiConsumer.cancelRequest(cancelToken);
   }
 
   @override
@@ -236,16 +249,17 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   // ── Files ─────────────────────────────────────────────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> getFiles() async {
+  Future<List<FileModel>> getFiles() async {
     final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
       path: Endpoints.files,
       fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
     );
-    return _handleResponse(response);
+    final raw = _handleResponse(response);
+    return raw.map(FileModel.fromJson).toList(growable: false);
   }
 
   @override
-  Future<Map<String, dynamic>> uploadFile({
+  Future<FileModel> uploadFile({
     required String filePath,
     required String fileFieldName,
     Map<String, String>? additionalFields,
@@ -257,7 +271,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       additionalFields: additionalFields,
       fromJson: (json) => json as Map<String, dynamic>,
     );
-    return _handleResponse(response);
+    return FileModel.fromJson(_handleResponse(response));
   }
 
   @override
@@ -269,45 +283,49 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   // ── Notifications ─────────────────────────────────────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> getNotifications() async {
+  Future<List<NotificationModel>> getNotifications() async {
     final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
       path: Endpoints.notifications,
       fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
     );
-    return _handleResponse(response);
+    final raw = _handleResponse(response);
+    return raw.map(NotificationModel.fromJson).toList(growable: false);
   }
 
   // ── Agents ────────────────────────────────────────────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> getAgents() async {
+  Future<List<AgentModel>> getAgents() async {
     final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
       path: Endpoints.agents,
       fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
     );
-    return _handleResponse(response);
+    final raw = _handleResponse(response);
+    return raw.map(AgentModel.fromJson).toList(growable: false);
   }
 
   // ── Payments ──────────────────────────────────────────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> getPaymentHistory() async {
+  Future<List<PaymentModel>> getPaymentHistory() async {
     final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
       path: Endpoints.paymentHistory,
       fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
     );
-    return _handleResponse(response);
+    final raw = _handleResponse(response);
+    return raw.map(PaymentModel.fromJson).toList(growable: false);
   }
 
   // ── Subscriptions ─────────────────────────────────────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> getSubscriptionPlans() async {
+  Future<List<SubscriptionPlanModel>> getSubscriptionPlans() async {
     final response = await _apiConsumer.get<List<Map<String, dynamic>>>(
       path: Endpoints.subscriptionPlans,
       fromJson: (json) => (json as List).cast<Map<String, dynamic>>(),
     );
-    return _handleResponse(response);
+    final raw = _handleResponse(response);
+    return raw.map(SubscriptionPlanModel.fromJson).toList(growable: false);
   }
 
   @override
@@ -345,31 +363,34 @@ class RemoteDataSourceImpl implements RemoteDataSource {
 
   // ── Private Helpers ────────────────────────────────────────────────────
 
-  /// Unwraps [NetworkResponse] and maps [NetworkException] to [AppException].
-  T _handleResponse<T>(NetworkResponse<T> response) {
+  /// Unwraps [net.NetworkResponse] and maps [net.NetworkException] to
+  /// [AppException].
+  T _handleResponse<T>(net.NetworkResponse<T> response) {
     return response.fold(
       onSuccess: (data) => data,
       onError: (exception) => throw _mapToAppException(exception),
     );
   }
 
-  /// Maps [NetworkException] from the core network layer to [domain.AppException]
-  /// for the domain/repository layer.
-  domain.AppException _mapToAppException(NetworkException exception) {
+  /// Maps a network-layer [net.NetworkException] to the application-layer
+  /// [AppException] consumed by the repository/presentation layers. The
+  /// network hierarchy lives in `network_response.dart` (prefixed `net`);
+  /// the app hierarchy lives in `core/errors/exceptions.dart` (unqualified).
+  AppException _mapToAppException(net.NetworkException exception) {
     final message = exception.message;
 
     return switch (exception) {
-      NoConnectionException() => domain.NetworkException(message: message),
-      RequestTimeoutException() => domain.TimeoutException(message: message),
-      UnauthorizedException() => domain.UnauthorizedException(message: message),
-      ForbiddenException() => domain.ForbiddenException(message: message),
-      NotFoundException() => domain.NotFoundException(message: message),
-      UnprocessableEntityException() ||
-      BadRequestException() => domain.ValidationException(message: message),
-      RateLimitException() => domain.RateLimitException(message: message),
-      ServerException() => domain.ServerException(message: message),
-      RequestCancelledException() => domain.NetworkException(message: message),
-      _ => domain.UnknownException(message: message),
+      net.NoConnectionException() => NetworkException(message: message),
+      net.RequestTimeoutException() => TimeoutException(message: message),
+      net.UnauthorizedException() => UnauthorizedException(message: message),
+      net.ForbiddenException() => ForbiddenException(message: message),
+      net.NotFoundException() => NotFoundException(message: message),
+      net.UnprocessableEntityException() ||
+      net.BadRequestException() => ValidationException(message: message),
+      net.RateLimitException() => RateLimitException(message: message),
+      net.ServerException() => ServerException(message: message),
+      net.RequestCancelledException() => NetworkException(message: message),
+      _ => UnknownException(message: message),
     };
   }
 }

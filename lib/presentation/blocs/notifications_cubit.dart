@@ -1,4 +1,5 @@
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
+import 'package:ai_chat/data/models/notification_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,13 +7,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 final class NotificationsState extends Equatable {
   /// Creates a [NotificationsState].
   const NotificationsState({
-    this.items = const <Map<String, dynamic>>[],
+    this.items = const <NotificationModel>[],
     this.isLoading = false,
     this.error,
   });
 
-  /// Notification payloads (raw server maps).
-  final List<Map<String, dynamic>> items;
+  /// Notification feed.
+  final List<NotificationModel> items;
 
   /// `true` while the feed is being fetched.
   final bool isLoading;
@@ -22,7 +23,7 @@ final class NotificationsState extends Equatable {
 
   /// Returns a copy with the given fields replaced.
   NotificationsState copyWith({
-    List<Map<String, dynamic>>? items,
+    List<NotificationModel>? items,
     bool? isLoading,
     String? error,
   }) {

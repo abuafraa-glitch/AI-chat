@@ -1,4 +1,5 @@
 import 'package:ai_chat/data/models/subscription_model.dart';
+import 'package:ai_chat/data/models/subscription_plan_model.dart';
 import 'package:ai_chat/data/repositories/subscription_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,14 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 final class SubscriptionsState extends Equatable {
   /// Creates a [SubscriptionsState].
   const SubscriptionsState({
-    this.plans = const <Map<String, dynamic>>[],
+    this.plans = const <SubscriptionPlanModel>[],
     this.currentSubscription,
     this.isLoading = false,
     this.error,
   });
 
-  /// Available subscription plans (raw server payloads).
-  final List<Map<String, dynamic>> plans;
+  /// Available subscription plans.
+  final List<SubscriptionPlanModel> plans;
 
   /// The user's active subscription, or `null` when none exists.
   final SubscriptionModel? currentSubscription;
@@ -27,7 +28,7 @@ final class SubscriptionsState extends Equatable {
 
   /// Returns a copy with the given fields replaced.
   SubscriptionsState copyWith({
-    List<Map<String, dynamic>>? plans,
+    List<SubscriptionPlanModel>? plans,
     SubscriptionModel? currentSubscription,
     bool? isLoading,
     String? error,
