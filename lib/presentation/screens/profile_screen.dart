@@ -122,12 +122,12 @@ class ProfileScreen extends StatelessWidget {
                 _ProfileTile(
                   icon: Icons.folder_outlined,
                   title: localizedText(context, 'Files', 'الملفات'),
-                  onTap: () => context.pushTo<void>(RouteNames.files),
+                  onTap: () => context.pushTo(RouteNames.files),
                 ),
                 _ProfileTile(
                   icon: Icons.smart_toy_outlined,
                   title: localizedText(context, 'Agents', 'الوكلاء'),
-                  onTap: () => context.pushTo<void>(RouteNames.agents),
+                  onTap: () => context.pushTo(RouteNames.agents),
                 ),
               ],
             ),
@@ -138,7 +138,7 @@ class ProfileScreen extends StatelessWidget {
                 _ProfileTile(
                   icon: Icons.card_membership_outlined,
                   title: localizedText(context, 'Subscription', 'الاشتراك'),
-                  onTap: () => context.pushTo<void>(RouteNames.subscriptions),
+                  onTap: () => context.pushTo(RouteNames.subscriptions),
                 ),
                 _ProfileTile(
                   icon: Icons.receipt_outlined,
@@ -147,7 +147,7 @@ class ProfileScreen extends StatelessWidget {
                     'Payment history',
                     'سجل المدفوعات',
                   ),
-                  onTap: () => context.pushTo<void>(RouteNames.payments),
+                  onTap: () => context.pushTo(RouteNames.payments),
                 ),
               ],
             ),

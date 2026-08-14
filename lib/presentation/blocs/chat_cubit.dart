@@ -6,6 +6,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
+/// Sentinel used by [ChatState.copyWith] to distinguish "not provided"
+/// from an explicit `null` reset for nullable fields.
+const Object _sentinel = Object();
+
 /// Immutable state for a chat conversation.
 final class ChatState extends Equatable {
   /// Creates a [ChatState].
@@ -29,17 +33,23 @@ final class ChatState extends Equatable {
   final String? error;
 
   /// Returns a copy with the given fields replaced.
+  ///
+  /// Nullable fields ([streamingContent], [error]) use an explicit
+  /// optional wrapper so they can be reset to `null` — a plain `??`
+  /// default would prevent clearing them.
   ChatState copyWith({
     List<MessageModel>? messages,
     bool? isLoading,
-    String? streamingContent,
-    String? error,
+    Object? streamingContent = _sentinel,
+    Object? error = _sentinel,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      streamingContent: streamingContent ?? this.streamingContent,
-      error: error ?? this.error,
+      streamingContent: identical(streamingContent, _sentinel)
+          ? this.streamingContent
+          : streamingContent as String?,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
 
@@ -135,7 +145,6 @@ final class ChatCubit extends Cubit<ChatState> {
     _cancelToken = _newId();
 
     final completer = Completer<void>();
-    Object? caughtError;
 
     _streamSubscription = _repository
         .streamMessage(
@@ -202,21 +211,15 @@ final class ChatCubit extends Cubit<ChatState> {
             );
             _streamSubscription = null;
             _cancelToken = null;
-            if (!completer.isCompleted) {
-              caughtError = error;
-              completer.complete();
-            }
+            if (!completer.isCompleted) completer.complete();
           },
           cancelOnError: true,
         );
 
     await completer.future;
-    if (caughtError != null) {
-      // Re-throw so callers awaiting [sendMessage] can observe the
-      // failure; the state has already been updated above.
-      // ignore: only_throw_errors
-      throw caughtError!;
-    }
+    // Errors are surfaced via [ChatState.error]; the cubit does not
+    // re-throw so callers (and the UI) observe the failure through
+    // state, consistent with the Cubit pattern.
   }
 
   /// Cancels the in-flight stream (if any) without closing the cubit.

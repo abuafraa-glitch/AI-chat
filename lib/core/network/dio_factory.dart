@@ -43,6 +43,7 @@ abstract final class DioFactory {
     required TokenProvider tokenProvider,
     required NetworkInfo networkInfo,
     required LoggerService logger,
+    AuthSessionSink? authSessionSink,
   }) {
     final dio = Dio()
       ..options = BaseOptions(
@@ -62,6 +63,7 @@ abstract final class DioFactory {
         tokenProvider: tokenProvider,
         config: config,
         logger: logger,
+        authSessionSink: authSessionSink,
       ),
       RetryInterceptor(dio: dio, networkInfo: networkInfo),
       if (config.enableLogging) LoggingInterceptor(debugMode: config.debugMode),

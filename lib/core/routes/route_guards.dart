@@ -1,5 +1,6 @@
 import 'package:ai_chat/core/config/app_config.dart';
 import 'package:ai_chat/core/routes/route_names.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -57,8 +58,19 @@ abstract final class RouteGuard {
   static String? authGuard(
     GoRouterState state,
     AuthStatusProvider authProvider,
+  ) => authGuardForLocation(state.uri.toString(), authProvider);
+
+  /// Location-based, pure variant of [authGuard] exposed for unit testing.
+  ///
+  /// Returns the redirect path (or `null` to allow) for [location] given the
+  /// current [authProvider]. Splitting the [GoRouterState] out lets the guard
+  /// be tested without constructing a [GoRouterState] (whose constructor is
+  /// package-private to go_router).
+  @visibleForTesting
+  static String? authGuardForLocation(
+    String location,
+    AuthStatusProvider authProvider,
   ) {
-    final location = state.uri.toString();
     final status = authProvider.status;
 
     // Still resolving the session — hold at the splash screen.
@@ -95,10 +107,21 @@ abstract final class RouteGuard {
   ///
   /// Returns `null` when the feature is enabled or the location does not
   /// require a flag check.
-  static String? featureFlagGuard(GoRouterState state) {
-    final location = state.uri.toString();
-    final flags = AppConfig.instance.featureFlags;
+  static String? featureFlagGuard(GoRouterState state) =>
+      featureFlagGuardForLocation(
+        state.uri.toString(),
+        AppConfig.instance.featureFlags,
+      );
 
+  /// Location-based, pure variant of [featureFlagGuard] exposed for unit
+  /// testing. Reads the flags from [flags] instead of the global
+  /// [AppConfig.instance] so the guard can be exercised without initialising
+  /// the app configuration singleton.
+  @visibleForTesting
+  static String? featureFlagGuardForLocation(
+    String location,
+    FeatureFlags flags,
+  ) {
     if (location.startsWith(RouteNames.subscriptions) &&
         !flags.enableSubscriptions) {
       return RouteNames.chat;

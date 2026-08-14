@@ -16,12 +16,16 @@ class _FakeMessageRepository implements MessageRepository {
   Stream<String> streamMessage({
     required String conversationId,
     Map<String, dynamic>? data,
+    String? cancelToken,
   }) async* {
     lastStreamData = data;
     for (final chunk in chunks) {
       yield chunk;
     }
   }
+
+  @override
+  void cancelStream(String? cancelToken) {}
 
   @override
   Future<List<MessageModel>> getMessages(String conversationId) async {
@@ -72,9 +76,13 @@ class _ThrowingMessageRepository implements MessageRepository {
   Stream<String> streamMessage({
     required String conversationId,
     Map<String, dynamic>? data,
+    String? cancelToken,
   }) async* {
     throw Exception('network down');
   }
+
+  @override
+  void cancelStream(String? cancelToken) {}
 
   @override
   Future<List<MessageModel>> getMessages(String conversationId) async {
@@ -113,6 +121,7 @@ class _SlowMessageRepository implements MessageRepository {
   Stream<String> streamMessage({
     required String conversationId,
     Map<String, dynamic>? data,
+    String? cancelToken,
   }) {
     // A controller that stays open; the test relies on cancel() being
     // called, which we detect via the onListen/cancel callbacks.
@@ -121,6 +130,9 @@ class _SlowMessageRepository implements MessageRepository {
     );
     return controller.stream;
   }
+
+  @override
+  void cancelStream(String? cancelToken) {}
 
   @override
   Future<List<MessageModel>> getMessages(String conversationId) async {
@@ -223,6 +235,11 @@ void main() {
       unawaited(
         cubit.sendMessage(conversationId: 'c1', content: 'hi', modelId: 'gpt'),
       );
+
+      // Let sendMessage reach the point where the stream subscription
+      // is registered before we close, so close exercises the
+      // cancellation path rather than racing the setup.
+      await Future<void>.delayed(Duration.zero);
 
       // Close while streaming; no error should propagate.
       await cubit.close();

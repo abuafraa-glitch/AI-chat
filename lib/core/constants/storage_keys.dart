@@ -40,9 +40,6 @@ abstract final class StorageKeys {
   /// controller and profile screen.
   static const String currentUser = 'auth.current_user';
 
-  /// Expiration timestamp of the access token (milliseconds since epoch).
-  static const String accessTokenExpiresAt = 'auth.access_token_expires_at';
-
   // ---- User preferences -----------------------------------------------------
 
   /// Preferred text size for the chat surface (`small`, `normal`, `large`).

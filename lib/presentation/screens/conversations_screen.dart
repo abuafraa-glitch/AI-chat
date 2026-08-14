@@ -55,7 +55,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           .read<ConversationsCubit>()
           .createConversation();
       if (!context.mounted) return;
-      context.pushTo<void>(
+      context.pushTo(
         RouteNames.conversationPath(conversation.id),
         extra: const ChatLaunchData(),
       );

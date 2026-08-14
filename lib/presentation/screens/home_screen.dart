@@ -42,7 +42,7 @@ class HomeScreen extends StatelessWidget {
           .read<ConversationsCubit>()
           .createConversation(<String, dynamic>{'modelId': modelId});
       if (!context.mounted) return;
-      context.pushTo<void>(
+      context.pushTo(
         RouteNames.conversationPath(conversation.id),
         extra: ChatLaunchData(message: message, modelId: modelId),
       );

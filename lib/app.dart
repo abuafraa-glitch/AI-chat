@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:nested/nested.dart';
 
 /// Root widget of the Hajeen AI application.
 ///

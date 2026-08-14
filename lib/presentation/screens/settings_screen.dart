@@ -108,7 +108,7 @@ class SettingsScreen extends StatelessWidget {
                     'Manage Subscription',
                     'إدارة الاشتراك',
                   ),
-                  onTap: () => context.pushTo<void>(RouteNames.subscriptions),
+                  onTap: () => context.pushTo(RouteNames.subscriptions),
                 ),
                 _SettingsTile(
                   icon: Icons.receipt_outlined,
@@ -117,7 +117,7 @@ class SettingsScreen extends StatelessWidget {
                     'Billing History',
                     'سجل الفواتير',
                   ),
-                  onTap: () => context.pushTo<void>(RouteNames.payments),
+                  onTap: () => context.pushTo(RouteNames.payments),
                 ),
               ],
             ),

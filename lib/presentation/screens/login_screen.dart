@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextButton(
                 onPressed: () {
                   if (!_isLoading) {
-                    context.pushTo<void>(RouteNames.forgotPassword);
+                    context.pushTo(RouteNames.forgotPassword);
                   }
                 },
                 child: Text(

@@ -32,6 +32,25 @@ abstract interface class TokenProvider {
 }
 
 // ---------------------------------------------------------------------------
+// Auth session reconciliation contract
+// ---------------------------------------------------------------------------
+
+/// Sink used by the network layer to reconcile the auth *state* when a
+/// refresh fails unrecoverably.
+///
+/// [TokenProvider.clearTokens] erases the persisted secrets, but the auth
+/// *state* (the observable [AuthStatus] the router watches) lives in a
+/// separate layer. Without this sink, a failed refresh leaves the app in
+/// a "fake authenticated" state — tokens gone yet the UI still shows the
+/// user as signed in — until the process is restarted. Implementations
+/// flip the status to `unauthenticated` and notify listeners so the
+/// router redirects to the login surface.
+abstract interface class AuthSessionSink {
+  /// Marks the session as unauthenticated.
+  void markUnauthenticated();
+}
+
+// ---------------------------------------------------------------------------
 // Upload progress callback
 // ---------------------------------------------------------------------------
 

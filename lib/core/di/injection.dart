@@ -1,5 +1,4 @@
 import 'package:ai_chat/core/config/app_config.dart';
-import 'package:ai_chat/core/errors/error_handler.dart';
 import 'package:ai_chat/core/network/api_client.dart';
 import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:ai_chat/core/network/dio_factory.dart';
@@ -84,11 +83,6 @@ Future<void> initDependencies() async {
   // PermissionService: singleton.
   sl.registerLazySingleton<PermissionService>(PermissionService.new);
 
-  // ErrorHandler: singleton.
-  sl.registerLazySingleton<ErrorHandler>(
-    () => ErrorHandler(logger: sl<LoggerService>()),
-  );
-
   // ── Network ───────────────────────────────────────────────────────────────
 
   // NetworkInfo: singleton.
@@ -106,6 +100,7 @@ Future<void> initDependencies() async {
       tokenProvider: sl<TokenProvider>(),
       networkInfo: sl<NetworkInfo>(),
       logger: sl<LoggerService>(),
+      authSessionSink: sl<AuthSessionSink>(),
     ),
   );
 
@@ -191,6 +186,14 @@ Future<void> initDependencies() async {
       localStorage: sl<LocalStorageService>(),
     ),
   );
+
+  // AuthSessionSink: the AuthController exposes the network-layer sink so
+  // the AuthInterceptor can reconcile the auth state to `unauthenticated`
+  // when an unrecoverable token-refresh failure occurs. Registering it as
+  // a lazy alias over AuthController avoids a construction cycle: the Dio
+  // factory captures `sl<AuthSessionSink>()` but only resolves it on the
+  // first 401, long after `setup()` has finished registering everything.
+  sl.registerLazySingleton<AuthSessionSink>(sl<AuthController>);
 
   // Router page factory: maps every route to a concrete screen.
   sl.registerLazySingleton<AppRouterPageFactory>(RouterPageFactory.new);

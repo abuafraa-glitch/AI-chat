@@ -22,21 +22,27 @@ import 'package:uuid/uuid.dart';
 ///      the new access token.
 ///    — If refresh fails (bad token, network error, etc.), all tokens
 ///      are cleared and every waiting request receives the original 401.
+///      The [AuthSessionSink] (when provided) is then notified so the auth
+///      state reconciles to `unauthenticated` and the router redirects —
+///      otherwise the app would stay in a fake-authenticated state.
 final class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required Dio dio,
     required TokenProvider tokenProvider,
     required AppConfig config,
     required LoggerService logger,
+    AuthSessionSink? authSessionSink,
   }) : _dio = dio,
        _tokenProvider = tokenProvider,
        _config = config,
-       _logger = logger;
+       _logger = logger,
+       _authSessionSink = authSessionSink;
 
   final Dio _dio;
   final TokenProvider _tokenProvider;
   final AppConfig _config;
   final LoggerService _logger;
+  final AuthSessionSink? _authSessionSink;
 
   /// Guards concurrent 401 handling: only one refresh is performed
   /// at a time; all other 401s wait for the same [Completer].
@@ -127,10 +133,15 @@ final class AuthInterceptor extends Interceptor {
           handler.next(error);
         }
       } else {
+        // Refresh failed: tokens were cleared by `_performTokenRefresh`.
+        // Reconcile the auth state so the router redirects to login
+        // instead of staying in a fake-authenticated state.
+        _authSessionSink?.markUnauthenticated();
         handler.next(error);
       }
     } catch (_) {
       _refreshCompleter!.complete(false);
+      _authSessionSink?.markUnauthenticated();
       handler.next(error);
     } finally {
       _refreshCompleter = null;
