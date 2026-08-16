@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ai_chat/core/constants/api_constants.dart';
 import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:ai_chat/core/network/network_response.dart';
+import 'package:ai_chat/core/network/sse_parser.dart';
 import 'package:dio/dio.dart';
 
 /// Concrete [ApiConsumer] implementation backed by [Dio].
@@ -248,9 +249,7 @@ final class ApiClient implements ApiConsumer {
       final body = response.data;
       if (body == null) return;
 
-      await for (final chunk in body.stream) {
-        yield utf8.decode(chunk, allowMalformed: true);
-      }
+      yield* SseParser.parse(utf8.decoder.bind(body.stream));
     } on DioException catch (e) {
       if (e.type != DioExceptionType.cancel) {
         throw _mapDioException(e);

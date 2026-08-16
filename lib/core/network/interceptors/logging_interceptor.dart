@@ -33,7 +33,7 @@ final class LoggingInterceptor extends Interceptor {
 
     final buffer = StringBuffer()
       ..writeln('┌── REQUEST ─────────────────────────────────')
-      ..writeln('│ ${options.method}  ${options.uri}');
+      ..writeln('│ ${options.method}  ${_safeUri(options.uri)}');
 
     if (_debugMode) {
       _writeHeaders(buffer, options.headers);
@@ -58,7 +58,7 @@ final class LoggingInterceptor extends Interceptor {
       ..writeln(
         '│ ${response.statusCode}  '
         '${response.requestOptions.method}  '
-        '${response.requestOptions.uri}  '
+        '${_safeUri(response.requestOptions.uri)}  '
         '(${elapsed}ms)',
       );
 
@@ -81,7 +81,7 @@ final class LoggingInterceptor extends Interceptor {
       ..writeln(
         '│ ${err.response?.statusCode ?? err.type.name}  '
         '${err.requestOptions.method}  '
-        '${err.requestOptions.uri}  '
+        '${_safeUri(err.requestOptions.uri)}  '
         '(${elapsed}ms)',
       )
       ..writeln('│ ${err.message}');
@@ -104,24 +104,34 @@ final class LoggingInterceptor extends Interceptor {
     return watch?.elapsedMilliseconds ?? -1;
   }
 
+  String _safeUri(Uri uri) => uri.path;
+
   void _writeHeaders(StringBuffer buf, Map<String, dynamic> headers) {
     if (headers.isEmpty) return;
     buf.writeln('│ Headers:');
     for (final entry in headers.entries) {
-      final value = entry.key == 'Authorization'
+      final key = entry.key.toLowerCase();
+      final value = _sensitiveHeaderKeys.contains(key)
           ? '[REDACTED]'
           : entry.value.toString();
       buf.writeln('│   ${entry.key}: $value');
     }
   }
 
+  static const Set<String> _sensitiveHeaderKeys = <String>{
+    'authorization',
+    'cookie',
+    'set-cookie',
+    'x-api-key',
+    'x-auth-token',
+  };
+
   void _writeBody(StringBuffer buf, Object? body) {
     if (body == null) return;
+    // Bodies may contain passwords, tokens, payment data, or conversation
+    // content. Never serialize them into logs; only record their type/size.
     final raw = body.toString();
-    final truncated = raw.length > _maxBodyLength
-        ? '${raw.substring(0, _maxBodyLength)}…[TRUNCATED]'
-        : raw;
-    buf.writeln('│ Body: $truncated');
+    buf.writeln('│ Body: [REDACTED ${raw.length} chars]');
   }
 
   void _log(String message) {

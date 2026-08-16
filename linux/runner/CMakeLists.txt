@@ -24,3 +24,7 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
 
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
+
+# Install the Hajeen AI icon next to the executable for desktop launchers.
+install(FILES "${CMAKE_SOURCE_DIR}/runner/resources/hajeen_icon.png"
+  DESTINATION "${CMAKE_BINARY_DIR}/bundle")

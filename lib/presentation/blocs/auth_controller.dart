@@ -4,6 +4,7 @@ import 'package:ai_chat/core/routes/route_guards.dart';
 import 'package:ai_chat/core/services/local_storage_service.dart';
 import 'package:ai_chat/core/services/secure_storage_service.dart';
 import 'package:ai_chat/core/utils/jwt_decoder.dart';
+import 'package:ai_chat/data/datasources/local/local_data_source.dart';
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:flutter/foundation.dart';
 
@@ -28,13 +29,16 @@ final class AuthController extends ChangeNotifier
   /// Creates an [AuthController] wired to the data layer.
   AuthController({
     required RemoteDataSource remoteDataSource,
+    required LocalDataSource localDataSource,
     required SecureStorageService secureStorage,
     required LocalStorageService localStorage,
   }) : _remote = remoteDataSource,
+       _localDataSource = localDataSource,
        _secureStorage = secureStorage,
        _localStorage = localStorage;
 
   final RemoteDataSource _remote;
+  final LocalDataSource _localDataSource;
   final SecureStorageService _secureStorage;
   final LocalStorageService _localStorage;
 
@@ -124,13 +128,22 @@ final class AuthController extends ChangeNotifier
 
   /// Signs the user out, clearing the persisted session.
   Future<void> signOut() async {
-    await _secureStorage.clearTokens();
-    await _localStorage.remove(StorageKeys.currentUserId);
-    await _localStorage.remove(StorageKeys.currentUserDisplayName);
-    await _localStorage.remove(StorageKeys.currentUserEmail);
-    await _localStorage.remove(StorageKeys.currentUserAvatarUrl);
-    _status = AuthStatus.unauthenticated;
-    notifyListeners();
+    // Best effort server-side revocation. Local cleanup must still happen if
+    // the backend is unreachable, otherwise another account could observe
+    // stale persisted data on this device.
+    try {
+      await _remote.logout();
+    } finally {
+      await _localDataSource.clearCache();
+      await _localDataSource.deleteUser();
+      await _secureStorage.clearTokens();
+      await _localStorage.remove(StorageKeys.currentUserId);
+      await _localStorage.remove(StorageKeys.currentUserDisplayName);
+      await _localStorage.remove(StorageKeys.currentUserEmail);
+      await _localStorage.remove(StorageKeys.currentUserAvatarUrl);
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+    }
   }
 
   /// Reconciles the auth state to `unauthenticated` after the network

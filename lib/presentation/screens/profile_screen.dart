@@ -110,11 +110,6 @@ class ProfileScreen extends StatelessWidget {
               title: localizedText(context, 'Workspace', 'مساحة العمل'),
               children: <Widget>[
                 _ProfileTile(
-                  icon: Icons.search,
-                  title: localizedText(context, 'Search', 'البحث'),
-                  onTap: () => context.goToSearch(),
-                ),
-                _ProfileTile(
                   icon: Icons.notifications_outlined,
                   title: localizedText(context, 'Notifications', 'الإشعارات'),
                   onTap: () => context.goToNotifications(),

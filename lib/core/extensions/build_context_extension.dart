@@ -163,9 +163,12 @@ extension NavigationBuildContextExtension on BuildContext {
   /// Navigates to the chat list (main home tab).
   void goToChat() => GoRouter.of(this).go(RouteNames.chat);
 
-  /// Navigates to a specific conversation by [conversationId].
-  void goToConversation(String conversationId) =>
-      GoRouter.of(this).go(RouteNames.conversationPath(conversationId));
+  /// Opens a specific conversation while preserving the previous route.
+  ///
+  /// This is intentionally a push: conversations can be opened from the
+  /// list or global search, and Android back must return to that source.
+  Future<void> goToConversation(String conversationId) =>
+      GoRouter.of(this).push<void>(RouteNames.conversationPath(conversationId));
 
   /// Navigates to the model selection screen.
   void goToModels() => GoRouter.of(this).go(RouteNames.models);
@@ -176,11 +179,14 @@ extension NavigationBuildContextExtension on BuildContext {
   /// Navigates to the settings screen.
   void goToSettings() => GoRouter.of(this).go(RouteNames.settings);
 
-  /// Navigates to the notifications screen.
-  void goToNotifications() => GoRouter.of(this).go(RouteNames.notifications);
+  /// Opens notifications above the current screen so Android back returns
+  /// to the originating profile/settings screen.
+  Future<void> goToNotifications() =>
+      GoRouter.of(this).push<void>(RouteNames.notifications);
 
-  /// Navigates to the search screen.
-  void goToSearch() => GoRouter.of(this).go(RouteNames.search);
+  /// Opens search above the current screen so Android back returns to the
+  /// originating profile screen instead of exiting the application.
+  Future<void> goToSearch() => GoRouter.of(this).push<void>(RouteNames.search);
 }
 
 // ── Snackbar & overlay ─────────────────────────────────────────────────────

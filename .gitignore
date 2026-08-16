@@ -48,6 +48,11 @@ app.*.map.json
 # Environment variables
 .env*.local
 
+# Local Android release signing secrets
+/android/key.properties
+*.jks
+*.keystore
+
 # Freebuff sandbox internals
 __v0_runtime_loader.js
 __v0_devtools.tsx

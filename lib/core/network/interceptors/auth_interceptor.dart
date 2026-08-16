@@ -32,17 +32,23 @@ final class AuthInterceptor extends Interceptor {
     required AppConfig config,
     required LoggerService logger,
     AuthSessionSink? authSessionSink,
+    AuthSessionSink? Function()? authSessionSinkProvider,
   }) : _dio = dio,
        _tokenProvider = tokenProvider,
        _config = config,
        _logger = logger,
-       _authSessionSink = authSessionSink;
+       _authSessionSink = authSessionSink,
+       _authSessionSinkProvider = authSessionSinkProvider;
 
   final Dio _dio;
   final TokenProvider _tokenProvider;
   final AppConfig _config;
   final LoggerService _logger;
   final AuthSessionSink? _authSessionSink;
+  final AuthSessionSink? Function()? _authSessionSinkProvider;
+
+  AuthSessionSink? get _resolvedAuthSessionSink =>
+      _authSessionSink ?? _authSessionSinkProvider?.call();
 
   /// Guards concurrent 401 handling: only one refresh is performed
   /// at a time; all other 401s wait for the same [Completer].
@@ -136,7 +142,7 @@ final class AuthInterceptor extends Interceptor {
         // Refresh failed: tokens were cleared by `_performTokenRefresh`.
         // Reconcile the auth state so the router redirects to login
         // instead of staying in a fake-authenticated state.
-        _authSessionSink?.markUnauthenticated();
+        _resolvedAuthSessionSink?.markUnauthenticated();
         handler.next(error);
       }
     } catch (_) {

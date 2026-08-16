@@ -100,7 +100,8 @@ Future<void> initDependencies() async {
       tokenProvider: sl<TokenProvider>(),
       networkInfo: sl<NetworkInfo>(),
       logger: sl<LoggerService>(),
-      authSessionSink: sl<AuthSessionSink>(),
+      authSessionSinkProvider: () =>
+          sl.isRegistered<AuthSessionSink>() ? sl<AuthSessionSink>() : null,
     ),
   );
 
@@ -182,6 +183,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<AuthController>(
     () => AuthController(
       remoteDataSource: sl<RemoteDataSource>(),
+      localDataSource: sl<LocalDataSource>(),
       secureStorage: sl<SecureStorageService>(),
       localStorage: sl<LocalStorageService>(),
     ),

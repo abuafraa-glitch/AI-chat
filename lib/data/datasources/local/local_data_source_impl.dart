@@ -69,7 +69,7 @@ class LocalDataSourceImpl implements LocalDataSource {
         .map((model) => model.toJson())
         .toList();
     await _localStorageService.setString(
-      StorageKeys.modelCatalogCache,
+      _scopedKey(StorageKeys.modelCatalogCache),
       jsonEncode(jsonList),
     );
   }
@@ -77,7 +77,7 @@ class LocalDataSourceImpl implements LocalDataSource {
   @override
   Future<List<AIModel>> getAIModels() async {
     final String? jsonString = _localStorageService.getString(
-      StorageKeys.modelCatalogCache,
+      _scopedKey(StorageKeys.modelCatalogCache),
     );
     if (jsonString == null) return [];
     final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
@@ -88,7 +88,9 @@ class LocalDataSourceImpl implements LocalDataSource {
 
   @override
   Future<void> clearAIModelsCache() async {
-    await _localStorageService.remove(StorageKeys.modelCatalogCache);
+    await _localStorageService.remove(
+      _scopedKey(StorageKeys.modelCatalogCache),
+    );
   }
 
   // ── Conversations ─────────────────────────────────────────────────────────
@@ -99,7 +101,7 @@ class LocalDataSourceImpl implements LocalDataSource {
         .map((conv) => conv.toJson())
         .toList();
     await _localStorageService.setString(
-      StorageKeys.conversationsCache,
+      _scopedKey(StorageKeys.conversationsCache),
       jsonEncode(jsonList),
     );
   }
@@ -107,7 +109,7 @@ class LocalDataSourceImpl implements LocalDataSource {
   @override
   Future<List<ConversationModel>> getConversations() async {
     final String? jsonString = _localStorageService.getString(
-      StorageKeys.conversationsCache,
+      _scopedKey(StorageKeys.conversationsCache),
     );
     if (jsonString == null) return [];
     final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
@@ -148,7 +150,7 @@ class LocalDataSourceImpl implements LocalDataSource {
         .map((msg) => msg.toJson())
         .toList();
     await _localStorageService.setString(
-      CacheKeys.conversationMessages(conversationId),
+      _scopedKey(CacheKeys.conversationMessages(conversationId)),
       jsonEncode(jsonList),
     );
   }
@@ -156,7 +158,7 @@ class LocalDataSourceImpl implements LocalDataSource {
   @override
   Future<List<MessageModel>> getMessages(String conversationId) async {
     final String? jsonString = _localStorageService.getString(
-      CacheKeys.conversationMessages(conversationId),
+      _scopedKey(CacheKeys.conversationMessages(conversationId)),
     );
     if (jsonString == null) return [];
     final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
@@ -168,7 +170,7 @@ class LocalDataSourceImpl implements LocalDataSource {
   @override
   Future<void> deleteMessages(String conversationId) async {
     await _localStorageService.remove(
-      CacheKeys.conversationMessages(conversationId),
+      _scopedKey(CacheKeys.conversationMessages(conversationId)),
     );
   }
 
@@ -206,7 +208,7 @@ class LocalDataSourceImpl implements LocalDataSource {
   @override
   Future<void> saveSubscription(SubscriptionModel subscription) async {
     await _localStorageService.setString(
-      StorageKeys.subscriptionCache,
+      _scopedKey(StorageKeys.subscriptionCache),
       jsonEncode(subscription.toJson()),
     );
   }
@@ -214,7 +216,7 @@ class LocalDataSourceImpl implements LocalDataSource {
   @override
   Future<SubscriptionModel?> getSubscription() async {
     final String? jsonString = _localStorageService.getString(
-      StorageKeys.subscriptionCache,
+      _scopedKey(StorageKeys.subscriptionCache),
     );
     if (jsonString == null) return null;
     return SubscriptionModel.fromJson(
@@ -237,6 +239,20 @@ class LocalDataSourceImpl implements LocalDataSource {
   @override
   Future<void> clearCache() async {
     // Clear the well-known aggregate caches.
+    await _localStorageService.remove(
+      _scopedKey(StorageKeys.modelCatalogCache),
+    );
+    await _localStorageService.remove(
+      _scopedKey(StorageKeys.modelCatalogSyncedAt),
+    );
+    await _localStorageService.remove(
+      _scopedKey(StorageKeys.conversationsCache),
+    );
+    await _localStorageService.remove(
+      _scopedKey(StorageKeys.subscriptionCache),
+    );
+    // Remove legacy unscoped keys as well; otherwise data written by an older
+    // app version could remain visible after an account switch.
     await _localStorageService.remove(StorageKeys.modelCatalogCache);
     await _localStorageService.remove(StorageKeys.modelCatalogSyncedAt);
     await _localStorageService.remove(StorageKeys.conversationsCache);
@@ -251,10 +267,20 @@ class LocalDataSourceImpl implements LocalDataSource {
     // rather than silently leaving message threads behind.
     const messageThreadPrefix = 'memory.conversation.';
     for (final key in _localStorageService.allKeys) {
-      if (key.startsWith(messageThreadPrefix)) {
+      if (key.startsWith(messageThreadPrefix) ||
+          key.startsWith('user.') ||
+          key.startsWith('cache.')) {
         await _localStorageService.remove(key);
       }
     }
+  }
+
+  /// Prefixes persistent cache keys with the authenticated user id. The
+  /// anonymous namespace is deliberately separate from every account.
+  String _scopedKey(String key) {
+    final userId = _localStorageService.getString(StorageKeys.currentUserId);
+    final namespace = userId == null || userId.isEmpty ? 'anonymous' : userId;
+    return 'user.$namespace.$key';
   }
 
   @override

@@ -2,7 +2,6 @@ import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/presentation/blocs/conversations_cubit.dart';
 import 'package:ai_chat/presentation/blocs/data_sources.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
-import 'package:ai_chat/presentation/blocs/subscriptions_cubit.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,9 +12,9 @@ import 'package:go_router/go_router.dart';
 /// tabs.
 ///
 /// This widget is the composition root of the tab tree: it provides the
-/// shared feature cubits — AI model catalogue, conversations and
-/// subscriptions — to the whole branch tree, and switches branches
-/// through the [StatefulNavigationShell] handed in by go_router so tab
+/// shared feature cubits — AI model catalogue and conversations — to the
+/// whole branch tree, and switches branches through the
+/// [StatefulNavigationShell] handed in by go_router so tab
 /// state is preserved across switches.
 ///
 /// Theme and locale cubits are provided at the application root, not
@@ -48,11 +47,6 @@ class MainLayout extends StatelessWidget {
           create: (context) =>
               ConversationsCubit(repository: buildConversationRepository())
                 ..loadConversations(),
-        ),
-        BlocProvider<SubscriptionsCubit>(
-          create: (context) =>
-              SubscriptionsCubit(repository: buildSubscriptionRepository())
-                ..load(),
         ),
       ],
       child: Scaffold(
