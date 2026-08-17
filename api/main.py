@@ -426,8 +426,13 @@ async def on_startup():
     try:
         from brain.brain_v3 import get_brain_v3
         brain = await get_brain_v3()
+        brain.set_rag_pipeline(_search_state.get("rag_pipeline"))
         app.state.brain = brain
-        logger.info("startup: HajeenBrainV3 v%s جاهز ✓", getattr(brain, 'VERSION', 'unknown'))
+        logger.info(
+            "startup: HajeenBrainV3 v%s جاهز ✓ (rag=%s)",
+            getattr(brain, 'VERSION', 'unknown'),
+            brain.rag_pipeline is not None,
+        )
     except Exception as exc:
         logger.error("startup: فشل تهيئة HajeenBrainV3 — %s", exc)
         # Brain failure is critical but don't crash — lazy init will retry on first request

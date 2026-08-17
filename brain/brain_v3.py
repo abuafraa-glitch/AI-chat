@@ -43,7 +43,7 @@ from .cognitive_layer.reasoning_engine import (
     ReasoningResult,
     get_reasoning_engine,
 )
-from .decision_engine import DecisionEngine, get_decision_engine
+from .decision_engine import DecisionEngine, get_decision_engine_sync
 from .goal_manager import Goal, GoalManager, get_goal_manager
 from .graph_planner import GraphPlanner, get_graph_planner
 from .improvement.autonomous_improvement import (
@@ -63,6 +63,8 @@ from .knowledge.knowledge_graph import (
 from .memory.memory_fabric import MemoryFabric, get_memory_fabric
 from .metrics.model_performance_db import ModelPerformanceDB, get_performance_db
 from .model_router import ModelRouter, get_model_router
+from brain.prompts.unified_prompt_builder import PromptMode, UnifiedPromptBuilder
+from services.rag.rag_pipeline import RAGPipeline, RAGRequest
 from .multi_model import (
     CollaborationStrategy,
     MultiModelCollaborator,
@@ -200,6 +202,12 @@ class HajeenBrainV3:
         # الموجه الوحيد للنماذج
         self.model_router: ModelRouter = get_model_router()
 
+        # الباني الوحيد للـ prompts؛ لا يُستدعى أي PromptBuilder آخر من المسار المركزي
+        self.prompt_builder: UnifiedPromptBuilder = UnifiedPromptBuilder()
+
+        # يُحقن عند startup من RAGPipeline الرسمي؛ لا يوجد fallback وهمي
+        self.rag_pipeline: Optional[RAGPipeline] = None
+
         # طبقة السياسات
         self.policy: PolicyEngine = get_policy_engine()
 
@@ -208,13 +216,17 @@ class HajeenBrainV3:
         self.context_analyzer: ContextAnalyzer = get_context_analyzer(memory_fabric=self.memory)
         self.reasoning_engine: ReasoningEngine = get_reasoning_engine()
         self.goal_manager: GoalManager = get_goal_manager()
-        self.decision_engine: DecisionEngine = get_decision_engine()
+        self.decision_engine: DecisionEngine = get_decision_engine_sync()
 
         # الأداء والانعكاس
         self.performance_db: ModelPerformanceDB = get_performance_db()
 
         self._execution_traces: Dict[str, ExecutionTrace] = {}
         logger.info("HajeenBrain v%s: جاهز — Runtime الوحيد المعتمد ✓", self.VERSION)
+
+    def set_rag_pipeline(self, rag_pipeline: Optional[RAGPipeline]) -> None:
+        """حقن RAGPipeline المنشأ في startup باعتباره المصدر الوحيد للاسترجاع."""
+        self.rag_pipeline = rag_pipeline
 
     async def process(self, request: BrainRequest) -> BrainResponse:
         """
@@ -374,10 +386,41 @@ class HajeenBrainV3:
             logger.debug("Decision skipped: %s", exc)
             trace.record_layer("decision", {"skipped": True})
 
-        # ── 8. ModelRouter: التوجيه للنموذج الأنسب ─────────────────────
+        # ── 8. Prompt + RAG ثم ModelRouter: المسار الرسمي للنموذج ────────
+        rag_context = ""
+        rag_sources: List[Dict[str, Any]] = []
+        use_rag = bool(request.context.get("use_rag", False))
+        if use_rag:
+            if self.rag_pipeline is None:
+                raise RuntimeError("RAG requested but canonical RAGPipeline is not initialized")
+            rag_response = await self.rag_pipeline.run(RAGRequest(
+                query=request.user_message,
+                top_k=int(request.context.get("top_k", 5)),
+                language=str(request.context.get("language", "ar")),
+                max_context_tokens=2000,
+            ))
+            rag_context = rag_response.formatted.context_used
+            rag_sources = rag_response.formatted.citations
+
+        prompt_mode = PromptMode.RAG if use_rag else PromptMode.CHAT
+        prompt = self.prompt_builder.build(
+            request.user_message,
+            mode=prompt_mode,
+            history=conversation.get_window()[:-1],
+            context=rag_context,
+            language=str(request.context.get("language", "ar")),
+            system_prompt=request.context.get("system_prompt"),
+        )
+        trace.record_layer("execution", {
+            "prompt_builder": "UnifiedPromptBuilder",
+            "prompt_mode": prompt_mode.value,
+            "rag_pipeline": "RAGPipeline" if use_rag else None,
+            "rag_sources": rag_sources,
+        })
+
         try:
             route_result = await self.model_router.route(
-                messages=conversation.get_window(),
+                messages=prompt.messages,
                 capability="general",
                 budget_tokens=request.max_tokens,
                 prefer_local=True,
@@ -391,6 +434,8 @@ class HajeenBrainV3:
                 "provider": route_result.provider,
                 "latency_ms": route_result.latency_ms,
                 "success": True,
+                "prompt_builder": "UnifiedPromptBuilder",
+                "rag_sources": rag_sources,
             })
         except Exception as exc:
             logger.error("ModelRouter unavailable; failing closed: %s", exc)
@@ -418,7 +463,7 @@ class HajeenBrainV3:
             quality_score=0.9,
             policy_decision="allowed",
             used_local_model=route_result.provider in {"local", "ollama"},
-            used_rag=request.context.get("use_rag", False),
+            used_rag=use_rag,
         )
 
     async def stream(self, request: BrainRequest) -> AsyncGenerator[str, None]:

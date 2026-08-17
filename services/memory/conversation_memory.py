@@ -12,7 +12,7 @@ import logging
 from dataclasses import dataclass, field
 from time import time
 from typing import Any, Dict, List, Optional
-from hajeen_platform.brain.memory.unified_interface import get_unified_memory
+from brain.memory.unified_interface import get_unified_memory
 
 logger = logging.getLogger(__name__)
 

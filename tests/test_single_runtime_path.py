@@ -215,7 +215,7 @@ class TestUnifiedPromptBuilder(unittest.TestCase):
     def test_rag_prompt_builder_uses_abstract_base(self):
         """services/rag/prompt_builder.py يجب أن يرث AbstractPromptBuilder."""
         from services.rag.prompt_builder import PromptBuilder as RAGPromptBuilder
-        from hajeen_platform.core.prompts.base import AbstractPromptBuilder
+        from core.prompts.base import AbstractPromptBuilder
         self.assertTrue(
             issubclass(RAGPromptBuilder, AbstractPromptBuilder),
             "RAG PromptBuilder يجب أن يرث AbstractPromptBuilder"

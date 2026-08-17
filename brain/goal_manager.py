@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.brain.llm_analyzer import analyze_with_llm
+from .llm_analyzer import analyze_with_llm
 
 logger = logging.getLogger(__name__)
 

@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.monitoring.metrics.prometheus_metrics import (
+from monitoring.metrics.prometheus_metrics import (
     hajeen_reflection_latency_seconds,
     hajeen_reflection_reports_total,
     hajeen_reflection_score_overall,

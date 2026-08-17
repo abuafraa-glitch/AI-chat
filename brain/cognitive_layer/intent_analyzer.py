@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.core.llm import LLMManager
+from core.llm import LLMManager
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +228,7 @@ def get_intent_analyzer(llm_manager: Optional[LLMManager] = None) -> IntentAnaly
     global _intent_analyzer
     if _intent_analyzer is None:
         if llm_manager is None:
-            from hajeen_platform.core.llm import get_llm_manager
+            from core.llm import get_llm_manager
             llm_manager = get_llm_manager()
         _intent_analyzer = IntentAnalyzer(llm_manager)
     return _intent_analyzer

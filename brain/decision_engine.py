@@ -12,8 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.core.llm.base import LLMRequest, LLMResponse
-from hajeen_platform.core.llm.llm_manager import LLMManager, get_llm_manager
+from core.llm.base import LLMRequest, LLMResponse
+from core.llm.llm_manager import LLMManager, get_llm_manager
 
 from .goal_manager import ComplexityLevel, Goal, IntentType
 
@@ -256,7 +256,7 @@ class DecisionEngine:
         """ينفذ القرار المتخذ، ويرسل مهمة LLM إلى Celery إذا لزم الأمر."""
         if decision.resource_type in [ResourceType.CLOUD_MODEL, ResourceType.LOCAL_MODEL]:
             # Lazy import to avoid circular dependency
-            from hajeen_platform.workers.async_tasks import llm_inference_task
+            from workers.async_tasks import llm_inference_task
             
             logger.info(f"DecisionEngine: Dispatching LLM inference for task {decision.task_id} to Celery.")
 
@@ -292,7 +292,7 @@ class DecisionEngine:
 
                 if result.get("status") == "success":
                     # Reconstruct LLMResponse from the task result
-                    from hajeen_platform.core.llm.base import LLMResponse
+                    from core.llm.base import LLMResponse
                     llm_response = LLMResponse(
                         content=result["content"],
                         model=result["model"],
@@ -321,7 +321,7 @@ class DecisionEngine:
     ) -> LLMResponse:
         """ينفذ مهمة LLM باستخدام النموذج المحدد."""
         logger.info("DecisionEngine: Executing LLM task with model=%s", model_id)
-        from hajeen_platform.core.llm.base import LLMMessage
+        from core.llm.base import LLMMessage
         messages = [LLMMessage(role="user", content=prompt)]
         request = LLMRequest(
             messages=messages,
@@ -351,9 +351,20 @@ class DecisionEngine:
 _engine: Optional[DecisionEngine] = None
 
 
-async def get_decision_engine() -> DecisionEngine:
+def get_decision_engine_sync() -> DecisionEngine:
+    """Return the singleton without creating an unawaited coroutine.
+
+    BrainV3 is constructed synchronously, while worker/reflection callers may
+    use the async compatibility factory below.  Both paths resolve to the
+    same DecisionEngine instance.
+    """
     global _engine
     if _engine is None:
         llm_manager = get_llm_manager()
         _engine = DecisionEngine(llm_manager=llm_manager)
     return _engine
+
+
+async def get_decision_engine() -> DecisionEngine:
+    """Async compatibility factory for existing await-based callers."""
+    return get_decision_engine_sync()

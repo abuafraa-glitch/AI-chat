@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.core.prompts.base import AbstractPromptBuilder, BuiltPrompt as BaseBuiltPrompt
+from core.prompts.base import AbstractPromptBuilder, BuiltPrompt as BaseBuiltPrompt
 from services.rag.context_builder import BuiltContext
 
 logger = logging.getLogger(__name__)

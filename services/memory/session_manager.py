@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.brain.memory.unified_interface import get_unified_memory
+from brain.memory.unified_interface import get_unified_memory
 from .conversation_memory import ConversationMemory
 
 

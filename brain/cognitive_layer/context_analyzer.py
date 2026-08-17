@@ -22,9 +22,9 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.brain.memory.memory_fabric import MemoryFabric
-from hajeen_platform.core.embeddings import EmbeddingManager
-from hajeen_platform.core.llm import LLMManager
+from brain.memory.memory_fabric import MemoryFabric
+from core.embeddings import EmbeddingManager
+from core.llm import LLMManager
 
 logger = logging.getLogger(__name__)
 
@@ -574,13 +574,13 @@ def get_context_analyzer(
     global _context_analyzer
     if _context_analyzer is None:
         if llm_manager is None:
-            from hajeen_platform.core.llm import get_llm_manager
+            from core.llm import get_llm_manager
             llm_manager = get_llm_manager()
         if embedding_manager is None:
-            from hajeen_platform.core.embeddings import get_embedding_manager
+            from core.embeddings import get_embedding_manager
             embedding_manager = get_embedding_manager()
         if memory_fabric is None:
-            from hajeen_platform.brain.memory.memory_fabric import get_memory_fabric
+            from brain.memory.memory_fabric import get_memory_fabric
             memory_fabric = get_memory_fabric()
         
         _context_analyzer = ContextAnalyzer(llm_manager, embedding_manager, memory_fabric)
