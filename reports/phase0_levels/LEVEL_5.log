@@ -1,0 +1,67 @@
+LEVEL=5
+Mon Aug 17 18:34:51 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       898Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 96 items
+
+backend_Ai_review/hajeen_platform/tests/unit/test_pipeline_orchestrator.py . [  1%]
+............                                                             [ 13%]
+backend_Ai_review/hajeen_platform/tests/unit/test_pipeline_stages.py ... [ 16%]
+..........                                                               [ 27%]
+backend_Ai_review/hajeen_platform/tests/unit/test_cleaning_pipeline.py F [ 28%]
+FF.......................                                                [ 54%]
+backend_Ai_review/hajeen_platform/tests/unit/test_transformation_pipeline.py . [ 55%]
+...........................................                              [100%]
+
+=================================== FAILURES ===================================
+_________ TestBoilerplateRemoval.test_removes_newsletter_subscription __________
+
+self = <hajeen_platform.tests.unit.test_cleaning_pipeline.TestBoilerplateRemoval object at 0x7f05c5d84770>
+
+    def test_removes_newsletter_subscription(self):
+        text = "Real content here. Subscribe to our newsletter for more."
+        cleaned, removed = _remove_boilerplate_sentences(text, language="en")
+>       assert removed >= 1
+E       assert 0 >= 1
+
+backend_Ai_review/hajeen_platform/tests/unit/test_cleaning_pipeline.py:91: AssertionError
+______________ TestBoilerplateRemoval.test_removes_social_follow _______________
+
+self = <hajeen_platform.tests.unit.test_cleaning_pipeline.TestBoilerplateRemoval object at 0x7f05c5d86a50>
+
+    def test_removes_social_follow(self):
+        text = "Important news! Follow us on Twitter for updates."
+        cleaned, removed = _remove_boilerplate_sentences(text, language="en")
+>       assert removed >= 1
+E       assert 0 >= 1
+
+backend_Ai_review/hajeen_platform/tests/unit/test_cleaning_pipeline.py:97: AssertionError
+____________ TestBoilerplateRemoval.test_arabic_boilerplate_removal ____________
+
+self = <hajeen_platform.tests.unit.test_cleaning_pipeline.TestBoilerplateRemoval object at 0x7f05c5d7c920>
+
+    def test_arabic_boilerplate_removal(self):
+        text = "خبر مهم للغاية. اشترك في نشرتنا الإخبارية للمزيد."
+        cleaned, removed = _remove_boilerplate_sentences(text, language="ar")
+>       assert removed >= 1
+E       assert 0 >= 1
+
+backend_Ai_review/hajeen_platform/tests/unit/test_cleaning_pipeline.py:102: AssertionError
+=========================== short test summary info ============================
+FAILED backend_Ai_review/hajeen_platform/tests/unit/test_cleaning_pipeline.py::TestBoilerplateRemoval::test_removes_newsletter_subscription
+FAILED backend_Ai_review/hajeen_platform/tests/unit/test_cleaning_pipeline.py::TestBoilerplateRemoval::test_removes_social_follow
+FAILED backend_Ai_review/hajeen_platform/tests/unit/test_cleaning_pipeline.py::TestBoilerplateRemoval::test_arabic_boilerplate_removal
+=================== 3 failed, 93 passed, 1 warning in 0.77s ====================
+Mon Aug 17 18:34:52 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       884Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+DURATION_SECONDS=1
+RESULT=FAIL exit=1

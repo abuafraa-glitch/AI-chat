@@ -1,0 +1,18 @@
+=== git ===
+NO_LOCAL_GIT_REPOSITORY
+=== phase10 files ===
+BASELINE.md
+BRAIN_MATRIX.md
+FAILURE_MATRIX.md
+FINAL_REPORT.md
+=== key verification ===
+/home/ubuntu/backend_Ai_review/phase10_repair_verification.log:compile_exit=0
+/home/ubuntu/backend_Ai_review/phase10_repair_verification.log:MODEL_ROUTER_FAIL_CLOSED=PASS
+/home/ubuntu/backend_Ai_review/phase10_regression_after_repairs.log:PYTEST_EXIT=
+docs/recovery/phase10/FINAL_REPORT.md:تم إصلاح ModelRouter بإزالة المسار الإنتاجي الذي كان يعيد النص `استجابة محاكاة — النموذج غير متصل حالياً` عند provider غير معروف. أصبح المسار الآن يرفع خطأ واضحاً، وتعيد `route()` نتيجة `success=False` و`response=""` بعد فشل جميع النماذج. تحقق ذلك عبر `phase10_verify_model_router.py`، وكانت النتيجة `MODEL_ROUTER_FAIL_CLOSED=PASS`.
+docs/recovery/phase10/FINAL_REPORT.md:**BRAIN RUNTIME STATUS = NOT VERIFIED.** ملف BrainV3 موجود ويعرض مساراً موحداً يمر عبر MemoryFabric وPolicy وIntent وGoal وContext وReasoning وDecision وModelRouter ثم persistence. لكن الوحدات التي يستوردها BrainV3، مثل `decision_engine` و`goal_manager` و`memory.memory_fabric` وبعض cognitive modules، ليست قابلة للإثبات في الشجرة الحالية. لذلك لا يجوز إعلان runtime verified اعتماداً على الكود النظري أو التقرير السابق.
+docs/recovery/phase10/FINAL_REPORT.md:**REAL HAJEEN GENERATIVE MODEL = NOT AVAILABLE.** هذا blocker مستقل عن إصلاحات recovery، ولم يتم تنزيل Qwen أو Llama أو Mistral تلقائياً.
+docs/recovery/phase10/FINAL_REPORT.md:| **BACKEND RECOVERY STATUS** | **RECOVERY INCOMPLETE** |
+docs/recovery/phase10/FINAL_REPORT.md:| **BRAIN RUNTIME STATUS** | **NOT VERIFIED** |
+docs/recovery/phase10/FINAL_REPORT.md:| **REAL HAJEEN GENERATIVE MODEL STATUS** | **NOT AVAILABLE** |
+docs/recovery/phase10/FINAL_REPORT.md:> **RECOVERY INCOMPLETE**

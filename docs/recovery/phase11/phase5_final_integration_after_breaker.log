@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 2 items
+
+tests/test_final_integration.py ..                                       [100%]
+
+========================= 2 passed, 1 warning in 0.49s =========================

@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 26 items
+
+tests/ai/test_rag.py ...............                                     [ 57%]
+tests/ai/test_security.py ...........                                    [100%]
+
+======================== 26 passed, 1 warning in 1.21s =========================

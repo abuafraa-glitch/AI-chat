@@ -1,0 +1,14 @@
+=== Git directories ===
+/home/ubuntu/.nvm/.git
+=== Git metadata candidates ===
+/home/ubuntu/.nvm/.git/HEAD
+/home/ubuntu/.nvm/.git/config
+/home/ubuntu/.nvm/.git/refs/remotes/origin/HEAD
+/home/ubuntu/.nvm/.git/refs/tags/v0.40.1
+=== Target file copies ===
+/home/ubuntu/backend_Ai_review/hajeen_platform/brain/brain_v3.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/brain/model_router.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/core/prompts/prompt_builder.py
+=== Project-like roots ===
+/home/ubuntu/backend_Ai_review
+/home/ubuntu/backend_Ai_review/hajeen_platform

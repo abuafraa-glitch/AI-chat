@@ -1,0 +1,42 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 117 items
+
+tests/integration/test_pipeline.py .............                         [ 11%]
+tests/integration/test_rag_pipeline.py s.......s                         [ 18%]
+tests/integration/test_security.py ..................................... [ 50%]
+.....                                                                    [ 54%]
+tests/unit/test_pipeline_orchestrator.py .............                   [ 65%]
+tests/unit/test_pipeline_stages.py .............                         [ 76%]
+tests/unit/test_phase4_retrieval.py ....................                 [ 94%]
+tests/unit/test_channels.py ....F..                                      [100%]/usr/local/lib/python3.12/dist-packages/_pytest/unraisableexception.py:33: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+  gc.collect()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+
+
+=================================== FAILURES ===================================
+________________________ test_base_channel_run_pipeline ________________________
+
+    @pytest.mark.asyncio
+    async def test_base_channel_run_pipeline():
+        source_config = SourceConfig(url="https://example.com/feed", type="RSS")
+        config = ChannelConfig(id="test_channel_4", name="Test Channel", type="RSS", source=source_config)
+        channel = ConcreteChannel(config=config)
+        from datetime import datetime, timezone
+        article = Article(id="art1", title="Test Article", url="https://example.com/article1", content="content", published_at=datetime.now(timezone.utc), metadata=ArticleMetadata(source_id="test_source"))
+        articles = [article]
+        processed_articles = await channel.run_pipeline(articles)
+>       assert processed_articles == articles
+E       AssertionError: assert [] == [Article(id='....RAW: 'raw'>)]
+E         
+E         Right contains one more item: Article(id='art1', title='Test Article', content='content', url=HttpUrl('https://example.com/article1'), published_at=...st_source', author=None, language='ar', tags=[], entities=[], extra={}), processing_state=<ProcessingState.RAW: 'raw'>)
+E         Use -v to get more diff
+
+tests/unit/test_channels.py:70: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_channels.py::test_base_channel_run_pipeline - Assertio...
+============= 1 failed, 114 passed, 2 skipped, 2 warnings in 3.51s =============

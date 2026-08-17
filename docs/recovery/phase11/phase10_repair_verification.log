@@ -1,0 +1,12 @@
+=== compile ===
+compile_exit=0
+=== forbidden fallback scan ===
+=== router verification ===
+model_router: error for unknown/test: No verified provider implementation for model 'unknown/test' (provider='unknown-provider')
+model_router: error for openai/gpt-4o-mini: OpenAI error: 'choices'
+model_router: error for ollama/qwen2.5: Ollama error: All connection attempts failed
+model_router: error for ollama/llama3: Ollama error: All connection attempts failed
+model_router: error for hajeen-local: No verified provider implementation for model 'hajeen-local' (provider='local')
+model_router: error for openai/gpt-4o: OpenAI error: 'choices'
+model_router: error for ollama/qwen2.5-coder: Ollama error: All connection attempts failed
+MODEL_ROUTER_FAIL_CLOSED=PASS

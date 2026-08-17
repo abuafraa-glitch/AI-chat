@@ -1,0 +1,63 @@
+
+==================================== ERRORS ====================================
+___________ ERROR collecting tests/integration/test_full_pipeline.py ___________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/integration/test_full_pipeline.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_full_pipeline.py:26: in <module>
+    from shared.schemas.article import Article, ArticleMetadata
+E   ModuleNotFoundError: No module named 'shared'
+___ ERROR collecting tests/integration/test_learning_pipeline_integration.py ___
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/integration/test_learning_pipeline_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_learning_pipeline_integration.py:13: in <module>
+    from hajeen_platform.brain.learning.continuous_learning import (
+E   ModuleNotFoundError: No module named 'hajeen_platform'
+_________ ERROR collecting tests/production/security/test_security.py __________
+import file mismatch:
+imported module 'test_security' has this __file__ attribute:
+  /home/ubuntu/backend_Ai_review/hajeen_platform/tests/integration/test_security.py
+which is not the same as the test file we want to collect:
+  /home/ubuntu/backend_Ai_review/hajeen_platform/tests/production/security/test_security.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+______________________ ERROR collecting tests/test_api.py ______________________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_api.py:2: in <module>
+    from api.main import app
+api/main.py:24: in <module>
+    import yaml
+E   ModuleNotFoundError: No module named 'yaml'
+______________ ERROR collecting tests/unit/test_spam_detector.py _______________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_spam_detector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_spam_detector.py:5: in <module>
+    from data_engine.processing.filtering.spam_detector import (
+data_engine/processing/filtering/spam_detector.py:23: in <module>
+    from shared.schemas.article import Article
+E   ModuleNotFoundError: No module named 'shared'
+=========================== short test summary info ============================
+ERROR tests/integration/test_full_pipeline.py
+ERROR tests/integration/test_learning_pipeline_integration.py
+ERROR tests/production/security/test_security.py
+ERROR tests/test_api.py
+ERROR tests/unit/test_spam_detector.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!!
+1 skipped, 1 warning, 5 errors in 1.18s
+
+PYTEST_EXIT=

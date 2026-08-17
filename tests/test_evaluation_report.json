@@ -1,0 +1,62 @@
+{
+    "accuracy": 0.0,
+    "total_samples": 6,
+    "avg_consistency_score": 0.0,
+    "avg_response_quality_score": 0.0,
+    "results": [
+        {
+            "instruction": "ما هو عاصمة السعودية؟",
+            "expected": "الرياض",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "is_correct_accuracy": false,
+            "consistency_score": 0.0,
+            "response_quality_score": 0.0,
+            "language": "ar"
+        },
+        {
+            "instruction": "What is the capital of France?",
+            "expected": "Paris",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "is_correct_accuracy": false,
+            "consistency_score": 0.0,
+            "response_quality_score": 0.0,
+            "language": "en"
+        },
+        {
+            "instruction": "كيف حالك؟",
+            "expected": "أنا بخير، كيف يمكنني مساعدتك؟",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "is_correct_accuracy": false,
+            "consistency_score": 0.0,
+            "response_quality_score": 0.0,
+            "language": "ar"
+        },
+        {
+            "instruction": "Translate 'Hello' to Arabic.",
+            "expected": "مرحباً",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "is_correct_accuracy": false,
+            "consistency_score": 0.0,
+            "response_quality_score": 0.0,
+            "language": "en"
+        },
+        {
+            "instruction": "من هو مؤسس المملكة العربية السعودية؟",
+            "expected": "الملك عبد العزيز آل سعود",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "is_correct_accuracy": false,
+            "consistency_score": 0.0,
+            "response_quality_score": 0.0,
+            "language": "ar"
+        },
+        {
+            "instruction": "Who is the current CEO of Google?",
+            "expected": "Sundar Pichai",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "is_correct_accuracy": false,
+            "consistency_score": 0.0,
+            "response_quality_score": 0.0,
+            "language": "en"
+        }
+    ]
+}

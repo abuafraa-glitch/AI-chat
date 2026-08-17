@@ -1,0 +1,26 @@
+*** Error compiling './api/v1/ai/completion.py'...
+  File "./api/v1/ai/completion.py", line 124
+    yield f"data: {json.dumps({\'choices\': [{\'delta\': {\'content\': \'\'}, \'finish_reason\': \'stop\'}]})}\n\n"
+                                ^
+SyntaxError: unexpected character after line continuation character
+
+*** Error compiling './brain/cognitive_layer/expert_models_layer.py'...
+  File "./brain/cognitive_layer/expert_models_layer.py", line 187
+    prompt = f"حسّن الإجابة التالية:
+             ^
+SyntaxError: unterminated f-string literal (detected at line 187)
+
+*** Error compiling './brain/evolution/self_evolution.py'...
+  File "./brain/evolution/self_evolution.py", line 116
+    if not decision.primary_model:
+    ^^
+SyntaxError: expected 'except' or 'finally' block
+
+*** Error compiling './security/auth/revoked_tokens.py'...
+  File "./security/auth/revoked_tokens.py", line 28
+    }
+    ^
+SyntaxError: unmatched '}'
+
+*** Error compiling './services/prompts/prompt_builder.py'...
+Sorry: IndentationError: expected an indented block after function definition on line 74 (prompt_builder.py, line 75)

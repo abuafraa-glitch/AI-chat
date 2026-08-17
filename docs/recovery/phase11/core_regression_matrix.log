@@ -1,0 +1,86 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1, locust-2.46.3
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 127 items
+
+tests/ai/test_evaluation.py ......                                       [  4%]
+tests/ai/test_multi_agent.py ...                                         [  7%]
+tests/ai/test_rag.py ...............                                     [ 18%]
+tests/ai/test_security.py ...........                                    [ 27%]
+tests/ai/test_alignment.py ...........                                   [ 36%]
+tests/ai/test_data_intelligence.py ..........                            [ 44%]
+tests/integration/test_api_workflow.py .................                 [ 57%]
+tests/self_evolution/test_continuous_learning_loop.py ..                 [ 59%]
+tests/self_evolution/test_curiosity_engine.py ...                        [ 61%]
+tests/self_evolution/test_episodic_memory.py ..                          [ 62%]
+tests/self_evolution/test_self_reflection_engine.py ..                   [ 64%]
+tests/unit/test_storage_phase3.py ....                                   [ 67%]
+tests/unit/test_storage_phase3_part2.py ...                              [ 70%]
+tests/unit/test_rss_parser.py ................                           [ 82%]
+tests/unit/test_sitemap_parser.py ......................                 [100%]
+
+=============================== warnings summary ===============================
+tests/ai/test_evaluation.py::test_evaluation_engine_init
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/ai/test_multi_agent.py::test_shared_memory_bus
+tests/ai/test_multi_agent.py::test_collaborative_layer
+tests/ai/test_multi_agent.py::test_collaborative_layer
+  <string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_api_workflow.py::test_health_endpoint
+  /home/ubuntu/backend_Ai_review/hajeen_platform/api/main.py:315: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+tests/integration/test_api_workflow.py::test_health_endpoint
+tests/integration/test_api_workflow.py::test_health_endpoint
+  /usr/local/lib/python3.12/dist-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+tests/integration/test_api_workflow.py::test_health_endpoint
+  /home/ubuntu/backend_Ai_review/hajeen_platform/api/main.py:438: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_api_workflow.py::test_health_endpoint
+  /home/ubuntu/backend_Ai_review/hajeen_platform/api/v1/ai/router.py:53: PydanticDeprecatedSince20: `min_items` is deprecated and will be removed, use `min_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    messages: List[MessageSchema] = Field(..., min_items=1)
+
+tests/integration/test_api_workflow.py::test_health_endpoint
+  /usr/local/lib/python3.12/dist-packages/fastapi/routing.py:352: RuntimeWarning: coroutine 'get_llm_manager' was never awaited
+    return await dependant.call(**values)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/self_evolution/test_curiosity_engine.py::test_identify_and_index_gap
+tests/self_evolution/test_curiosity_engine.py::test_link_investigate_and_resolve_gap
+  <string>:16: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/self_evolution/test_curiosity_engine.py::test_link_investigate_and_resolve_gap
+  /home/ubuntu/backend_Ai_review/hajeen_platform/brain/cognitive_layer/curiosity_engine.py:264: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    gap.investigation_started = datetime.utcnow()
+
+tests/self_evolution/test_curiosity_engine.py::test_link_investigate_and_resolve_gap
+  /home/ubuntu/backend_Ai_review/hajeen_platform/brain/cognitive_layer/curiosity_engine.py:392: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    gap.resolved_at = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 127 passed, 14 warnings in 8.74s =======================

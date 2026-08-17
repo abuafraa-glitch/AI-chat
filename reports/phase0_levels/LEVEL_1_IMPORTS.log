@@ -1,0 +1,26 @@
+prometheus_client غير مثبّت — metrics disabled
+2026-08-17 18:18:03,881 [INFO] hajeen_platform.api.main: startup: Auth Middleware مفعّل ✓
+2026-08-17 18:18:04,134 [INFO] data_engine.processing.cleaning.html_cleaner: html_cleaner: trafilatura not available; using bs4-only extraction
+2026-08-17 18:18:04,147 [INFO] data_engine.processing.filtering.language_filter: language_filter: langdetect unavailable; using heuristic fallback
+2026-08-17 18:18:04,169 [INFO] data_engine.processing.enrichment.keyword_extractor: keyword_extractor: yake not available; using frequency fallback
+2026-08-17 18:18:04,171 [INFO] data_engine.processing.enrichment.entity_extractor: entity_extractor: spaCy not available; using regex fallback
+2026-08-17 18:18:04,176 [INFO] data_engine.processing.enrichment.sentiment_analyzer: sentiment_analyzer: vaderSentiment غير متاح — استخدام قاموس fallback
+2026-08-17 18:18:04,183 [INFO] data_engine.processing.transformation.tokenizer_wrapper: tokenizer_wrapper: tiktoken not available; using char-based fallback
+2026-08-17 18:18:04,542 [INFO] data_engine.ingestion.crawlers.playwright_crawler: playwright_crawler: Playwright متاح
+2026-08-17 18:18:04,740 [INFO] core.model.model_registry: ModelRegistry initialized with 3 defaults
+2026-08-17 18:18:04,781 [INFO] hajeen_platform.api.main: startup: Hajeen Model v1 router مسجّل ✓
+2026-08-17 18:18:04,794 [INFO] hajeen_platform.api.main: startup: Auth router مسجّل ✓
+2026-08-17 18:18:04,794 [INFO] hajeen_platform.api.main: Hajeen AI Platform API v1.1.0 — تمّ تسجيل جميع الـ routers
+PASS hajeen_platform
+PASS hajeen_platform.brain.brain_v3
+PASS hajeen_platform.brain.model_router
+PASS hajeen_platform.brain.memory.memory_fabric
+PASS hajeen_platform.brain.graph_planner
+PASS hajeen_platform.core.llm.llm_manager
+PASS hajeen_platform.services.rag.context_builder
+PASS hajeen_platform.services.security.policy_engine
+PASS hajeen_platform.api.main
+PASS hajeen_platform.hajeen_model.inference.hajeen_provider
+SUMMARY pass=10 fail=0
+
+RESULT=PASS exit=0

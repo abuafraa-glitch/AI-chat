@@ -1,0 +1,15 @@
+LEVEL=10
+Mon Aug 17 18:35:15 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       883Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+ERROR: file or directory not found: /home/ubuntu/backend_Ai_review/hajeen_platform/tests/operational
+
+
+no tests ran in 0.00s
+Mon Aug 17 18:35:16 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       897Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+DURATION_SECONDS=1
+RESULT=FAIL exit=4

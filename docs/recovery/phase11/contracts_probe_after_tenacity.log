@@ -1,0 +1,10 @@
+prometheus_client غير مثبّت — metrics disabled
+PASS brain.brain_v3
+PASS brain.model_router
+PASS brain.memory.memory_fabric
+PASS brain.goal_manager
+PASS brain.task_decomposer
+PASS brain.graph_planner
+PASS brain.decision_engine
+PASS brain.prompts.unified_prompt_builder
+FAIL_COUNT= 0

@@ -1,0 +1,29 @@
+LEVEL=4
+Mon Aug 17 18:34:48 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       889Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 87 items
+
+backend_Ai_review/hajeen_platform/tests/ai/test_rag.py ...............   [ 17%]
+backend_Ai_review/hajeen_platform/tests/ai/test_security.py ...........  [ 29%]
+backend_Ai_review/hajeen_platform/tests/unit/test_phase4_embeddings.py . [ 31%]
+...................                                                      [ 52%]
+backend_Ai_review/hajeen_platform/tests/unit/test_phase4_retrieval.py .. [ 55%]
+..................                                                       [ 75%]
+backend_Ai_review/hajeen_platform/tests/unit/test_phase4_vector_store.py . [ 77%]
+..ssssssssssssssss.s                                                     [100%]
+
+================== 70 passed, 17 skipped, 1 warning in 1.61s ===================
+Mon Aug 17 18:34:51 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       898Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+DURATION_SECONDS=3
+RESULT=PASS exit=0

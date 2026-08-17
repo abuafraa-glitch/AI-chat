@@ -1,0 +1,11 @@
+FAIL brain.brain_v3 ModuleNotFoundError No module named 'tenacity'
+FAIL brain.model_router ModuleNotFoundError No module named 'tenacity'
+FAIL brain.memory.memory_fabric ModuleNotFoundError No module named 'tenacity'
+FAIL brain.goal_manager ModuleNotFoundError No module named 'tenacity'
+FAIL brain.task_decomposer ModuleNotFoundError No module named 'tenacity'
+FAIL brain.graph_planner ModuleNotFoundError No module named 'tenacity'
+FAIL brain.decision_engine ModuleNotFoundError No module named 'tenacity'
+FAIL brain.prompts.unified_prompt_builder ModuleNotFoundError No module named 'tenacity'
+PASS hajeen_model.inference.hajeen_provider
+PASS api.v1.router
+FAIL_COUNT= 8

@@ -1,0 +1,79 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 37 items
+
+tests/test_api.py ...                                                    [  8%]
+tests/test_final_integration.py FF                                       [ 13%]
+tests/integration/test_full_pipeline.py ..........                       [ 40%]
+tests/integration/test_full_processing_pipeline.py ................      [ 83%]
+tests/integration/test_brain_v3_cognitive.py ......                      [100%]
+
+=================================== FAILURES ===================================
+________________________________ test_inference ________________________________
+
+    async def test_inference():
+        print("\n--- Testing Inference Engine ---")
+        engine = get_inference_engine()
+>       await engine.initialize()
+
+tests/test_final_integration.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <hajeen_platform.core.inference_engine.engine.InferenceEngine object at 0x7fba90f65cd0>
+
+    async def initialize(self) -> None:
+        """تهيئة المحرك وبدء العمال."""
+        if self._initialized:
+            return
+    
+>       await self.llm_manager.initialize()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'coroutine' object has no attribute 'initialize'
+
+core/inference_engine/engine.py:67: AttributeError
+----------------------------- Captured stdout call -----------------------------
+
+--- Testing Inference Engine ---
+_______________________________ test_evaluation ________________________________
+
+    async def test_evaluation():
+        print("\n--- Testing Evaluation Framework ---")
+        eval_framework = EvaluationFramework()
+        os.makedirs("tests", exist_ok=True)
+>       report = await eval_framework.evaluate_and_save_report("tests/test_evaluation_report.json")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_final_integration.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+hajeen_model/evaluation/evaluation_framework.py:94: in evaluate_and_save_report
+    report = await self.run_automatic_evaluation()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+hajeen_model/evaluation/evaluation_framework.py:40: in run_automatic_evaluation
+    await self.engine.initialize()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <hajeen_platform.core.inference_engine.engine.InferenceEngine object at 0x7fba90f65cd0>
+
+    async def initialize(self) -> None:
+        """تهيئة المحرك وبدء العمال."""
+        if self._initialized:
+            return
+    
+>       await self.llm_manager.initialize()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'coroutine' object has no attribute 'initialize'
+
+core/inference_engine/engine.py:67: AttributeError
+----------------------------- Captured stdout call -----------------------------
+
+--- Testing Evaluation Framework ---
+Warning: Benchmark dataset not found at hajeen_model/datasets/evaluation_benchmark.jsonl. Using default.
+Running automatic evaluation...
+=========================== short test summary info ============================
+FAILED tests/test_final_integration.py::test_inference - AttributeError: 'cor...
+FAILED tests/test_final_integration.py::test_evaluation - AttributeError: 'co...
+=================== 2 failed, 35 passed, 8 warnings in 4.59s ===================

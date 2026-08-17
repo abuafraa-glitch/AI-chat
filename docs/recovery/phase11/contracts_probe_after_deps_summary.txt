@@ -1,0 +1,1 @@
+contracts_after_deps_exit=1

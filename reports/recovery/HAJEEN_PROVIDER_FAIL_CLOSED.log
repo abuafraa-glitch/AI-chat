@@ -1,0 +1,7 @@
+## compile
+COMPILE=PASS
+## runtime fail-closed
+Hajeen checkpoint is unavailable or incomplete at /definitely/missing/hajeen-checkpoint; required config, tokenizer, and model weights were not found
+Hajeen checkpoint is unavailable or incomplete at /definitely/missing/hajeen-checkpoint; required config, tokenizer, and model weights were not found
+GENERATE_FAIL_CLOSED=PASS
+MODEL_INFO= {'provider': 'HajeenLocal', 'model_path': '/definitely/missing/hajeen-checkpoint', 'device': 'auto', 'is_loaded': False, 'available': False, 'load_error': 'Hajeen checkpoint is unavailable or incomplete at /definitely/missing/hajeen-checkpoint; required config, tokenizer, and model weights were not found'}

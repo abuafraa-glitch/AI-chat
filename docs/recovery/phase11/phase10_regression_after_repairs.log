@@ -1,0 +1,53 @@
+
+==================================== ERRORS ====================================
+___________ ERROR collecting tests/integration/test_full_pipeline.py ___________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/integration/test_full_pipeline.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_full_pipeline.py:26: in <module>
+    from shared.schemas.article import Article, ArticleMetadata
+E   ModuleNotFoundError: No module named 'shared'
+_________ ERROR collecting tests/production/security/test_security.py __________
+import file mismatch:
+imported module 'test_security' has this __file__ attribute:
+  /home/ubuntu/backend_Ai_review/hajeen_platform/tests/integration/test_security.py
+which is not the same as the test file we want to collect:
+  /home/ubuntu/backend_Ai_review/hajeen_platform/tests/production/security/test_security.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+______________________ ERROR collecting tests/test_api.py ______________________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_api.py:2: in <module>
+    from api.main import app
+api/main.py:484: in <module>
+    from api.v1.router import router as v1_router  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'api.v1.router'
+______________ ERROR collecting tests/unit/test_spam_detector.py _______________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_spam_detector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_spam_detector.py:5: in <module>
+    from data_engine.processing.filtering.spam_detector import (
+data_engine/processing/filtering/spam_detector.py:23: in <module>
+    from shared.schemas.article import Article
+E   ModuleNotFoundError: No module named 'shared'
+=========================== short test summary info ============================
+ERROR tests/integration/test_full_pipeline.py
+ERROR tests/production/security/test_security.py
+ERROR tests/test_api.py
+ERROR tests/unit/test_spam_detector.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 4 errors during collection !!!!!!!!!!!!!!!!!!!!
+1 skipped, 5 warnings, 4 errors in 1.15s
+
+PYTEST_EXIT=

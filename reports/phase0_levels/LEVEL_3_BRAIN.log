@@ -1,0 +1,78 @@
+Mon Aug 17 18:29:24 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       909Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_agents.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_alignment.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_chat.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_data_intelligence.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_embeddings.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_evaluation.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_inference.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_multi_agent.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_production.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_rag.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_security.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_training.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/integration/test_brain_v3_cognitive.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/load/test_brain_load.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/self_evolution/test_episodic_memory.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/stress/test_brain_stress.py
+/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_memory_unification_runtime.py
+--- pytest ---
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 191 items / 3 errors
+
+==================================== ERRORS ====================================
+________ ERROR collecting tests/unit/test_memory_unification_runtime.py ________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_memory_unification_runtime.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend_Ai_review/hajeen_platform/tests/unit/test_memory_unification_runtime.py:11: in <module>
+    from hajeen_platform.services.memory.session_manager import get_session_manager
+backend_Ai_review/hajeen_platform/services/memory/__init__.py:2: in <module>
+    from .conversation_memory import ConversationMemory, Message
+E   ImportError: cannot import name 'Message' from 'hajeen_platform.services.memory.conversation_memory' (/home/ubuntu/backend_Ai_review/hajeen_platform/services/memory/conversation_memory.py)
+_________________ ERROR collecting tests/ai/test_alignment.py __________________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_alignment.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend_Ai_review/hajeen_platform/tests/ai/test_alignment.py:5: in <module>
+    from hajeen_platform.core.alignment.reward_model import RewardModelPipeline
+backend_Ai_review/hajeen_platform/core/alignment/reward_model.py:5: in <module>
+    import torch
+E   ModuleNotFoundError: No module named 'torch'
+________ ERROR collecting tests/self_evolution/test_episodic_memory.py _________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/self_evolution/test_episodic_memory.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend_Ai_review/hajeen_platform/tests/self_evolution/test_episodic_memory.py:5: in <module>
+    from hajeen_platform.services.self_evolution.episodic_memory import EpisodicMemory
+E   ModuleNotFoundError: No module named 'hajeen_platform.services.self_evolution'
+=========================== short test summary info ============================
+ERROR backend_Ai_review/hajeen_platform/tests/unit/test_memory_unification_runtime.py
+ERROR backend_Ai_review/hajeen_platform/tests/ai/test_alignment.py
+ERROR backend_Ai_review/hajeen_platform/tests/self_evolution/test_episodic_memory.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+============================== 3 errors in 2.89s ===============================
+Mon Aug 17 18:29:28 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       915Mi       2.2Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+DURATION_SECONDS=4
+RESULT=FAIL exit=2
+exit

@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 117 items
+
+tests/integration/test_pipeline.py .............                         [ 11%]
+tests/integration/test_rag_pipeline.py s.......s                         [ 18%]
+tests/integration/test_security.py ..................................... [ 50%]
+.....                                                                    [ 54%]
+tests/unit/test_pipeline_orchestrator.py .............                   [ 65%]
+tests/unit/test_pipeline_stages.py .............                         [ 76%]
+tests/unit/test_phase4_retrieval.py ....................                 [ 94%]
+tests/unit/test_channels.py .......                                      [100%]
+
+================== 115 passed, 2 skipped, 3 warnings in 3.51s ==================

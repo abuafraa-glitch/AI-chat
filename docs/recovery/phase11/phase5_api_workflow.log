@@ -1,0 +1,339 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 17 items
+
+tests/integration/test_api_workflow.py EEEEEEEEEEEEEEEEE                 [100%]
+
+==================================== ERRORS ====================================
+____________________ ERROR at setup of test_health_endpoint ____________________
+ScopeMismatch: You tried to access the function scoped fixture _function_scoped_runner with a module scoped request object. Requesting fixture stack:
+tests/integration/test_api_workflow.py:31:  def api_client()
+Requested fixture:
+../../../../usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:1024:  def _scoped_runner(event_loop_policy, _asyncio_loop_factory, request: 'FixtureRequest') -> 'Iterator[Runner]'
+_____________________ ERROR at setup of test_ping_endpoint _____________________
+
+self = <Coroutine test_ping_endpoint>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+____________________ ERROR at setup of test_create_channel _____________________
+
+self = <Coroutine test_create_channel>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+_____________________ ERROR at setup of test_list_channels _____________________
+
+self = <Coroutine test_list_channels>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+___________________ ERROR at setup of test_get_channel_by_id ___________________
+
+self = <Coroutine test_get_channel_by_id>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+_________________ ERROR at setup of test_get_channel_not_found _________________
+
+self = <Coroutine test_get_channel_not_found>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+____________________ ERROR at setup of test_update_channel _____________________
+
+self = <Coroutine test_update_channel>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+________________ ERROR at setup of test_channel_status_endpoint ________________
+
+self = <Coroutine test_channel_status_endpoint>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+___________________ ERROR at setup of test_channel_audit_log ___________________
+
+self = <Coroutine test_channel_audit_log>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+_______________ ERROR at setup of test_pause_and_resume_channel ________________
+
+self = <Coroutine test_pause_and_resume_channel>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+____________________ ERROR at setup of test_trigger_channel ____________________
+
+self = <Coroutine test_trigger_channel>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+_________ ERROR at setup of test_trigger_inactive_channel_returns_400 __________
+
+self = <Coroutine test_trigger_inactive_channel_returns_400>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+__________ ERROR at setup of test_trigger_paused_channel_returns_400 ___________
+
+self = <Coroutine test_trigger_paused_channel_returns_400>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+____________ ERROR at setup of test_create_channel_invalid_request _____________
+
+self = <Coroutine test_create_channel_invalid_request>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+_____________ ERROR at setup of test_update_channel_invalid_status _____________
+
+self = <Coroutine test_update_channel_invalid_status>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+____________________ ERROR at setup of test_delete_channel _____________________
+
+self = <Coroutine test_delete_channel>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+______________ ERROR at setup of test_delete_nonexistent_channel _______________
+
+self = <Coroutine test_delete_nonexistent_channel>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:558: AssertionError
+=========================== short test summary info ============================
+ERROR tests/integration/test_api_workflow.py::test_health_endpoint - Failed: ...
+ERROR tests/integration/test_api_workflow.py::test_ping_endpoint - AssertionE...
+ERROR tests/integration/test_api_workflow.py::test_create_channel - Assertion...
+ERROR tests/integration/test_api_workflow.py::test_list_channels - AssertionE...
+ERROR tests/integration/test_api_workflow.py::test_get_channel_by_id - Assert...
+ERROR tests/integration/test_api_workflow.py::test_get_channel_not_found - As...
+ERROR tests/integration/test_api_workflow.py::test_update_channel - Assertion...
+ERROR tests/integration/test_api_workflow.py::test_channel_status_endpoint - ...
+ERROR tests/integration/test_api_workflow.py::test_channel_audit_log - Assert...
+ERROR tests/integration/test_api_workflow.py::test_pause_and_resume_channel
+ERROR tests/integration/test_api_workflow.py::test_trigger_channel - Assertio...
+ERROR tests/integration/test_api_workflow.py::test_trigger_inactive_channel_returns_400
+ERROR tests/integration/test_api_workflow.py::test_trigger_paused_channel_returns_400
+ERROR tests/integration/test_api_workflow.py::test_create_channel_invalid_request
+ERROR tests/integration/test_api_workflow.py::test_update_channel_invalid_status
+ERROR tests/integration/test_api_workflow.py::test_delete_channel - Assertion...
+ERROR tests/integration/test_api_workflow.py::test_delete_nonexistent_channel
+======================== 1 warning, 17 errors in 0.47s =========================

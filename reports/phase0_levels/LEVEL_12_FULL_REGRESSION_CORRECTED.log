@@ -1,0 +1,549 @@
+LEVEL=12 FULL REGRESSION CORRECTED ROOT
+Mon Aug 17 18:41:16 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       892Mi       2.2Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 1578 items / 24 errors / 1 skipped
+
+==================================== ERRORS ====================================
+_________________ ERROR collecting tests/ai/test_alignment.py __________________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/ai/test_alignment.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/ai/test_alignment.py:5: in <module>
+    from hajeen_platform.core.alignment.reward_model import RewardModelPipeline
+core/alignment/reward_model.py:5: in <module>
+    import torch
+E   ModuleNotFoundError: No module named 'torch'
+_________ ERROR collecting tests/distributed_messaging/test_celery.py __________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/distributed_messaging/test_celery.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/distributed_messaging/test_celery.py:3: in <module>
+    from hajeen_platform.services.distributed_messaging.celery_config import celery_app, process_data
+services/distributed_messaging/celery_config.py:1: in <module>
+    from celery import Celery
+E   ModuleNotFoundError: No module named 'celery'
+______ ERROR collecting tests/distributed_messaging/test_redis_streams.py ______
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/distributed_messaging/test_redis_streams.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/distributed_messaging/test_redis_streams.py:4: in <module>
+    from hajeen_platform.services.distributed_messaging.redis_streams_integration import RedisStreamsClient
+services/distributed_messaging/redis_streams_integration.py:1: in <module>
+    import redis
+E   ModuleNotFoundError: No module named 'redis'
+____ ERROR collecting tests/self_evolution/test_continuous_learning_loop.py ____
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/self_evolution/test_continuous_learning_loop.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/self_evolution/test_continuous_learning_loop.py:4: in <module>
+    from hajeen_platform.services.self_evolution.continuous_learning_loop import ContinuousLearningLoop
+E   ModuleNotFoundError: No module named 'hajeen_platform.services.self_evolution'
+________ ERROR collecting tests/self_evolution/test_curiosity_engine.py ________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/self_evolution/test_curiosity_engine.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/self_evolution/test_curiosity_engine.py:4: in <module>
+    from hajeen_platform.services.self_evolution.curiosity_engine import CuriosityEngine
+E   ModuleNotFoundError: No module named 'hajeen_platform.services.self_evolution'
+________ ERROR collecting tests/self_evolution/test_episodic_memory.py _________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/self_evolution/test_episodic_memory.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/self_evolution/test_episodic_memory.py:5: in <module>
+    from hajeen_platform.services.self_evolution.episodic_memory import EpisodicMemory
+E   ModuleNotFoundError: No module named 'hajeen_platform.services.self_evolution'
+_____ ERROR collecting tests/self_evolution/test_self_reflection_engine.py _____
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/self_evolution/test_self_reflection_engine.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/self_evolution/test_self_reflection_engine.py:4: in <module>
+    from hajeen_platform.services.self_evolution.self_reflection_engine import SelfReflectionEngine, MockLLM
+E   ModuleNotFoundError: No module named 'hajeen_platform.services.self_evolution'
+________________ ERROR collecting tests/test_dataset_manager.py ________________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_dataset_manager.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_dataset_manager.py:10: in <module>
+    from hajeen_model.datasets.dataset_manager import DatasetManager
+E   ModuleNotFoundError: No module named 'hajeen_model.datasets'
+____________________ ERROR collecting tests/test_phase7.py _____________________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_phase7.py:386: in <module>
+    _ENGINE = run(_build_search_engine(_CHUNKS))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_phase7.py:49: in run
+    return asyncio.run(coro)
+           ^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/asyncio/runners.py:194: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/asyncio/base_events.py:687: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_phase7.py:116: in _build_search_engine
+    emb_results = await manager.embed_batch(texts)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/embeddings/embedding_manager.py:72: in embed_batch
+    return await model.embed_batch(texts, chunk_ids=chunk_ids, article_id=article_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+core/embeddings/base.py:114: in embed_batch
+    self.ensure_loaded()
+core/embeddings/base.py:77: in ensure_loaded
+    self.load()
+core/embeddings/sentence_transformer.py:24: in load
+    from sentence_transformers import SentenceTransformer
+E   ModuleNotFoundError: No module named 'sentence_transformers'
+------------------------------- Captured stdout --------------------------------
+
+════════════════════════════════════════════════════════════
+  Phase 7 — Vector Search + RAG Foundation Tests
+════════════════════════════════════════════════════════════
+
+[7.1 Embedding Models Layer]
+  ✓ 7.1.1 EmbeddingConfig defaults
+2026-08-17 18:41:21 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+  ✗ FAIL: No module named 'sentence_transformers'
+2026-08-17 18:41:21 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+  ✗ FAIL: No module named 'sentence_transformers'
+  ✓ 7.1.4 EmbeddingRegistry.list_models()
+2026-08-17 18:41:21 [INFO] core.embeddings.embedding_manager: نموذج جديد أُنشئ: all-MiniLM-L6-v2
+2026-08-17 18:41:21 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+  ✗ FAIL: assert 'error' == 'ok'
+2026-08-17 18:41:21 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+  ✗ FAIL: No module named 'sentence_transformers'
+
+
+[7.2 Chunk Embedding Pipeline]
+2026-08-17 18:41:21 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:21 [ERROR] data_engine.pipelines.stages.embed_stage: embed_single فشل لـ chk_04963b57e7dd55bd: No module named 'sentence_transformers'
+  ✗ FAIL: assert None is not None
+2026-08-17 18:41:21 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:21 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 1/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:21 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:21 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 2/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:22 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:22 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 3/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:24 [ERROR] data_engine.pipelines.stages.embed_stage: batch embedding فشل: فشل embedding بعد 3 محاولات: No module named 'sentence_transformers'
+2026-08-17 18:41:24 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:24 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 1/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:24 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:24 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 2/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:25 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:25 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 3/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:27 [ERROR] data_engine.pipelines.stages.embed_stage: batch embedding فشل: فشل embedding بعد 3 محاولات: No module named 'sentence_transformers'
+2026-08-17 18:41:27 [INFO] data_engine.pipelines.stages.embed_stage: embed_stage: 0/10 chunks — 6011.7ms
+  ✗ FAIL: assert 0 == 10
+ +  where 0 = EmbedStageResult(article_id='article_batch', total_chunks=10, embedded=0, failed=10, records=[], total_ms=6011.6661550...لات: No module named 'sentence_transformers'", "فشل embedding بعد 3 محاولات: No module named 'sentence_transformers'"]).embedded
+2026-08-17 18:41:27 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:27 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 1/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:27 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:27 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 2/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:28 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+2026-08-17 18:41:28 [WARNING] data_engine.pipelines.stages.embed_stage: محاولة 3/3 فشلت: No module named 'sentence_transformers'
+2026-08-17 18:41:30 [ERROR] data_engine.pipelines.stages.embed_stage: batch embedding فشل: فشل embedding بعد 3 محاولات: No module named 'sentence_transformers'
+2026-08-17 18:41:30 [INFO] data_engine.pipelines.stages.embed_stage: embed_stage: 0/1 chunks — 3005.5ms
+  ✗ FAIL: list index out of range
+
+
+[7.3 Vector Storage Layer — FAISS]
+  ✗ FAIL: No module named 'faiss'
+  ✗ FAIL: No module named 'faiss'
+  ✗ FAIL: No module named 'faiss'
+  ✗ FAIL: No module named 'data_engine.storage.vector_store.sqlite_vector_index'
+  ✗ FAIL: No module named 'faiss'
+
+
+[7.4 Semantic Search Engine]
+2026-08-17 18:41:30 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: No module named 'sentence_transformers'
+------------------------------- Captured stderr --------------------------------
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 165, in test_st_embed
+    result = run(model.embed("اختبار النموذج الحقيقي"))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 49, in run
+    return asyncio.run(coro)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/base.py", line 88, in embed
+    self.ensure_loaded()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/base.py", line 77, in ensure_loaded
+    self.load()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/sentence_transformer.py", line 24, in load
+    from sentence_transformers import SentenceTransformer
+ModuleNotFoundError: No module named 'sentence_transformers'
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 177, in test_st_batch
+    results = run(model.embed_batch(texts))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 49, in run
+    return asyncio.run(coro)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/base.py", line 114, in embed_batch
+    self.ensure_loaded()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/base.py", line 77, in ensure_loaded
+    self.load()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/sentence_transformer.py", line 24, in load
+    from sentence_transformers import SentenceTransformer
+ModuleNotFoundError: No module named 'sentence_transformers'
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 200, in test_manager_health
+    assert health["status"] == "ok"
+AssertionError: assert 'error' == 'ok'
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 212, in test_embed_100
+    results = run(manager.embed_batch(texts))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 49, in run
+    return asyncio.run(coro)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/embedding_manager.py", line 72, in embed_batch
+    return await model.embed_batch(texts, chunk_ids=chunk_ids, article_id=article_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/base.py", line 114, in embed_batch
+    self.ensure_loaded()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/base.py", line 77, in ensure_loaded
+    self.load()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/core/embeddings/sentence_transformer.py", line 24, in load
+    from sentence_transformers import SentenceTransformer
+ModuleNotFoundError: No module named 'sentence_transformers'
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 231, in test_embed_stage_single
+    assert record is not None
+AssertionError: assert None is not None
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 243, in test_embed_stage_batch
+    assert result.embedded == 10
+AssertionError: assert 0 == 10
+ +  where 0 = EmbedStageResult(article_id='article_batch', total_chunks=10, embedded=0, failed=10, records=[], total_ms=6011.6661550...لات: No module named 'sentence_transformers'", "فشل embedding بعد 3 محاولات: No module named 'sentence_transformers'"]).embedded
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 256, in test_embed_record_fields
+    record = result.records[0]
+             ~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 277, in test_faiss_add
+    store = FAISSVectorStore(dimensions=64)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/storage/vector_store/faiss_client.py", line 36, in __init__
+    self._init_index()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/storage/vector_store/faiss_client.py", line 39, in _init_index
+    import faiss
+ModuleNotFoundError: No module named 'faiss'
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 300, in test_faiss_search
+    store = FAISSVectorStore(dimensions=32)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/storage/vector_store/faiss_client.py", line 36, in __init__
+    self._init_index()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/storage/vector_store/faiss_client.py", line 39, in _init_index
+    import faiss
+ModuleNotFoundError: No module named 'faiss'
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 322, in test_faiss_save_load
+    store = FAISSVectorStore(dimensions=16)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/storage/vector_store/faiss_client.py", line 36, in __init__
+    self._init_index()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/storage/vector_store/faiss_client.py", line 39, in _init_index
+    import faiss
+ModuleNotFoundError: No module named 'faiss'
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 343, in test_sqlite_vector
+    from data_engine.storage.vector_store.sqlite_vector_index import SQLiteVectorIndex
+ModuleNotFoundError: No module named 'data_engine.storage.vector_store.sqlite_vector_index'
+Traceback (most recent call last):
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 37, in wrapper
+    fn()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_phase7.py", line 366, in test_faiss_filter
+    store = FAISSVectorStore(dimensions=16)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/storage/vector_store/faiss_client.py", line 36, in __init__
+    self._init_index()
+  File "/home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/storage/vector_store/faiss_client.py", line 39, in _init_index
+    import faiss
+ModuleNotFoundError: No module named 'faiss'
+_____________ ERROR collecting tests/test_preparation_pipeline.py ______________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_preparation_pipeline.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_preparation_pipeline.py:8: in <module>
+    from data_engine.preparation.data_preparation_pipeline import DataPreparationPipeline
+data_engine/preparation/data_preparation_pipeline.py:4: in <module>
+    from .deduplicator import Deduplicator
+data_engine/preparation/deduplicator.py:3: in <module>
+    from datasketch import MinHash, MinHashLSH
+E   ModuleNotFoundError: No module named 'datasketch'
+____________________ ERROR collecting tests/test_worker.py _____________________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/test_worker.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_worker.py:2: in <module>
+    from workers.tasks.test_task import add, ping_worker
+workers/tasks/__init__.py:2: in <module>
+    from .ingestion_tasks import (
+workers/tasks/ingestion_tasks.py:17: in <module>
+    from celery import shared_task
+E   ModuleNotFoundError: No module named 'celery'
+______________ ERROR collecting tests/unit/test_base_connector.py ______________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_base_connector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_base_connector.py:12: in <module>
+    import respx
+E   ModuleNotFoundError: No module named 'respx'
+___________________ ERROR collecting tests/unit/test_cli.py ____________________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_cli.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_cli.py:2: in <module>
+    from typer.testing import CliRunner
+E   ModuleNotFoundError: No module named 'typer'
+_____________ ERROR collecting tests/unit/test_custom_connector.py _____________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_custom_connector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_custom_connector.py:10: in <module>
+    import respx
+E   ModuleNotFoundError: No module named 'respx'
+_____________ ERROR collecting tests/unit/test_github_connector.py _____________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_github_connector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_github_connector.py:10: in <module>
+    import respx
+E   ModuleNotFoundError: No module named 'respx'
+______________ ERROR collecting tests/unit/test_ingestion_http.py ______________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_ingestion_http.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_ingestion_http.py:2: in <module>
+    import respx
+E   ModuleNotFoundError: No module named 'respx'
+________ ERROR collecting tests/unit/test_memory_unification_runtime.py ________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_memory_unification_runtime.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_memory_unification_runtime.py:11: in <module>
+    from hajeen_platform.services.memory.session_manager import get_session_manager
+services/memory/__init__.py:2: in <module>
+    from .conversation_memory import ConversationMemory, Message
+E   ImportError: cannot import name 'Message' from 'hajeen_platform.services.memory.conversation_memory' (/home/ubuntu/backend_Ai_review/hajeen_platform/services/memory/conversation_memory.py)
+____________ ERROR collecting tests/unit/test_newsapi_connector.py _____________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_newsapi_connector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_newsapi_connector.py:12: in <module>
+    import respx
+E   ModuleNotFoundError: No module named 'respx'
+_____________ ERROR collecting tests/unit/test_reddit_connector.py _____________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_reddit_connector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_reddit_connector.py:10: in <module>
+    import respx
+E   ModuleNotFoundError: No module named 'respx'
+_____________ ERROR collecting tests/unit/test_requests_fetcher.py _____________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_requests_fetcher.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_requests_fetcher.py:6: in <module>
+    import respx
+E   ModuleNotFoundError: No module named 'respx'
+________________ ERROR collecting tests/unit/test_rss_parser.py ________________
+tests/unit/test_rss_parser.py:24: in <module>
+    SAMPLE_RSS = (FIXTURES_DIR / "sample_rss.xml").read_text(encoding="utf-8")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/pathlib.py:1029: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/pathlib.py:1015: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/fixtures/sample_rss.xml'
+______________ ERROR collecting tests/unit/test_sitemap_parser.py ______________
+tests/unit/test_sitemap_parser.py:21: in <module>
+    SITEMAP_XML = (FIXTURES_DIR / "sample_sitemap.xml").read_text(encoding="utf-8")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/pathlib.py:1029: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/pathlib.py:1015: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/fixtures/sample_sitemap.xml'
+______________ ERROR collecting tests/unit/test_storage_phase3.py ______________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_storage_phase3.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_storage_phase3.py:6: in <module>
+    from hajeen_ai_platform.data_engine.storage.raw_store.local_storage import LocalRawStorage
+E   ModuleNotFoundError: No module named 'hajeen_ai_platform'
+___________ ERROR collecting tests/unit/test_storage_phase3_part2.py ___________
+ImportError while importing test module '/home/ubuntu/backend_Ai_review/hajeen_platform/tests/unit/test_storage_phase3_part2.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_storage_phase3_part2.py:7: in <module>
+    from hajeen_ai_platform.data_engine.storage.processed_store.bronze_layer import BronzeLayer, BronzeSchema
+E   ModuleNotFoundError: No module named 'hajeen_ai_platform'
+=========================== short test summary info ============================
+ERROR tests/ai/test_alignment.py
+ERROR tests/distributed_messaging/test_celery.py
+ERROR tests/distributed_messaging/test_redis_streams.py
+ERROR tests/self_evolution/test_continuous_learning_loop.py
+ERROR tests/self_evolution/test_curiosity_engine.py
+ERROR tests/self_evolution/test_episodic_memory.py
+ERROR tests/self_evolution/test_self_reflection_engine.py
+ERROR tests/test_dataset_manager.py
+ERROR tests/test_phase7.py
+ERROR tests/test_preparation_pipeline.py
+ERROR tests/test_worker.py
+ERROR tests/unit/test_base_connector.py
+ERROR tests/unit/test_cli.py
+ERROR tests/unit/test_custom_connector.py
+ERROR tests/unit/test_github_connector.py
+ERROR tests/unit/test_ingestion_http.py
+ERROR tests/unit/test_memory_unification_runtime.py
+ERROR tests/unit/test_newsapi_connector.py
+ERROR tests/unit/test_reddit_connector.py
+ERROR tests/unit/test_requests_fetcher.py
+ERROR tests/unit/test_rss_parser.py - FileNotFoundError: [Errno 2] No such fi...
+ERROR tests/unit/test_sitemap_parser.py - FileNotFoundError: [Errno 2] No suc...
+ERROR tests/unit/test_storage_phase3.py
+ERROR tests/unit/test_storage_phase3_part2.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 24 errors during collection !!!!!!!!!!!!!!!!!!!
+================== 1 skipped, 6 warnings, 24 errors in 14.62s ==================
+Mon Aug 17 18:41:32 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       901Mi       2.2Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+DURATION_SECONDS=16
+RESULT=ERROR_COLLECTION exit=2
+exit

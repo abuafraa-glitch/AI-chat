@@ -1,0 +1,52 @@
+LEVEL=6
+Mon Aug 17 18:34:52 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       885Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 43 items
+
+backend_Ai_review/hajeen_platform/tests/ai/test_security.py ...........  [ 25%]
+backend_Ai_review/hajeen_platform/tests/unit/test_policy_filter.py ..... [ 37%]
+......                                                                   [ 51%]
+backend_Ai_review/hajeen_platform/tests/unit/test_pii_filter.py ..FF.... [ 69%]
+.............                                                            [100%]
+
+=================================== FAILURES ===================================
+______________ TestPIIRedactionPatterns.test_credit_card_redacted ______________
+
+self = <hajeen_platform.tests.unit.test_pii_filter.TestPIIRedactionPatterns object at 0x7f42650f0560>
+
+    def test_credit_card_redacted(self):
+        cfg = PIIFilterConfig(redact_credit_cards=True)
+        result = _redact_text("Card: 4111 1111 1111 1111 expired.", cfg)
+>       assert "[CREDIT_CARD]" in result
+E       AssertionError: assert '[CREDIT_CARD]' in 'Card: [PHONE] 1111 expired.'
+
+backend_Ai_review/hajeen_platform/tests/unit/test_pii_filter.py:54: AssertionError
+______________ TestPIIRedactionPatterns.test_national_id_redacted ______________
+
+self = <hajeen_platform.tests.unit.test_pii_filter.TestPIIRedactionPatterns object at 0x7f42650f07a0>
+
+    def test_national_id_redacted(self):
+        cfg = PIIFilterConfig(redact_national_ids=True)
+        result = _redact_text("ID: 1234567890 is registered.", cfg)
+>       assert "[NATIONAL_ID]" in result
+E       AssertionError: assert '[NATIONAL_ID]' in 'ID: [PHONE] is registered.'
+
+backend_Ai_review/hajeen_platform/tests/unit/test_pii_filter.py:59: AssertionError
+=========================== short test summary info ============================
+FAILED backend_Ai_review/hajeen_platform/tests/unit/test_pii_filter.py::TestPIIRedactionPatterns::test_credit_card_redacted
+FAILED backend_Ai_review/hajeen_platform/tests/unit/test_pii_filter.py::TestPIIRedactionPatterns::test_national_id_redacted
+========================= 2 failed, 41 passed in 0.70s =========================
+Mon Aug 17 18:34:54 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       887Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+DURATION_SECONDS=2
+RESULT=FAIL exit=1

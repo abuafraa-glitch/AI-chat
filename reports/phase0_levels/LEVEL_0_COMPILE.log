@@ -1,0 +1,3 @@
+LEVEL 0 compileall
+RESULT=PASS exit=0
+exit

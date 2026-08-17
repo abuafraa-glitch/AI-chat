@@ -1,0 +1,24 @@
+LEVEL=11
+Mon Aug 17 18:35:16 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       880Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/ubuntu/backend_Ai_review/hajeen_platform
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 12 items
+
+backend_Ai_review/hajeen_platform/tests/load/test_brain_load.py ss..     [ 33%]
+backend_Ai_review/hajeen_platform/tests/stress/test_brain_stress.py .... [ 66%]
+....                                                                     [100%]
+
+=================== 10 passed, 2 skipped, 1 warning in 1.84s ===================
+Mon Aug 17 18:35:19 UTC 2026
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       896Mi       2.3Gi        11Mi       1.1Gi       3.0Gi
+Swap:          2.0Gi          0B       2.0Gi
+DURATION_SECONDS=3
+RESULT=PASS exit=0

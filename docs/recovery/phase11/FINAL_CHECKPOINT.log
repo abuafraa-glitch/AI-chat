@@ -1,0 +1,13 @@
+=== PHASE 11 CHECKPOINT ===
+2026-08-17T14:04:24+00:00
+ROOT=/home/ubuntu/backend_Ai_review/hajeen_platform
+git_present=no
+fatal: not a git repository (or any of the parent directories): .git
+modified_key_files:
+6a38d456a4d744ae0c9085982c10ebc7999d79e4241842c8df75d5da3aa63586  /home/ubuntu/backend_Ai_review/hajeen_platform/services/security/policy_engine.py
+a47037c24b35e4aed68a632cbbb7d445f74b8e462b6aa208e62f451a14d8be4f  /home/ubuntu/backend_Ai_review/hajeen_platform/services/rag/context_builder.py
+3b3febe705af06ecdd458676fca725591fbc084020c0c4e2b68d55dbd84b7a9a  /home/ubuntu/backend_Ai_review/hajeen_platform/data_engine/channels/base.py
+c5ec9e94e538fcf7c7746f8eb843f83b5cf5b64aad042ada09e2a61f986ce822  /home/ubuntu/backend_Ai_review/hajeen_platform/core/llm/base.py
+b41c6c3346cafc644cb91822c753b65b7eb0d23e56462665a3cc19396ec9c7d8  /home/ubuntu/backend_Ai_review/hajeen_platform/core/llm/llm_manager.py
+b04ecc19a37354c27f391411bf8aff511dd4641ddc012f8cb4ca78161bf5dc16  /home/ubuntu/backend_Ai_review/hajeen_platform/brain/decision_engine.py
+e99fac918a2202af932b63bf90b4142e9faaa71cff652ad241badb0a88cb54ef  /home/ubuntu/backend_Ai_review/hajeen_platform/docs/recovery/phase11/FINAL_REPORT.md

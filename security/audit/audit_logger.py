@@ -1,0 +1,189 @@
+"""Audit Logger — tamper-evident structured audit trail for all API operations."""
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import time
+import uuid
+from enum import Enum
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class AuditAction(str, Enum):
+    LOGIN_SUCCESS     = "login:success"
+    LOGIN_FAILED      = "login:failed"
+    LOGOUT            = "logout"
+    APIKEY_CREATED    = "apikey:created"
+    APIKEY_VALIDATED  = "apikey:validated"
+    APIKEY_REVOKED    = "apikey:revoked"
+    PERMISSION_DENIED = "permission:denied"
+    RATE_LIMITED      = "rate:limited"
+    MODEL_INFERENCE   = "model:inference"
+    MODEL_TRAINING    = "model:training"
+    POLICY_UPDATE     = "policy:update"
+    SYSTEM_HEALTH     = "system:health"
+    CONFIG_CHANGE     = "config:change"
+
+
+@dataclass
+class AuditEvent:
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: float = field(default_factory=time.time)
+    tenant_id: str = ""
+    user_id: str = ""
+    action: str = ""
+    resource_type: str = ""
+    resource_id: str = ""
+    ip_address: str = ""
+    user_agent: str = ""
+    request_id: str = ""
+    status: str = "success"
+    error: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    previous_hash: str = ""
+    hash: str = ""
+
+    def compute_hash(self) -> str:
+        payload = json.dumps(
+            {k: v for k, v in asdict(self).items() if k != "hash"},
+            sort_keys=True,
+            default=str,
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+
+class _InMemoryAuditStore:
+    """Fallback store used only when no database adapter is configured.
+
+    It preserves the audit API during local startup/tests; production should
+    provide a durable adapter through the application composition root.
+    """
+
+    def __init__(self) -> None:
+        self.rows: List[Dict[str, Any]] = []
+
+    def execute(self, _query: str, params: tuple) -> None:
+        columns = [
+            "event_id", "timestamp", "tenant_id", "user_id", "action",
+            "resource_type", "resource_id", "ip_address", "user_agent",
+            "request_id", "status", "error", "metadata", "hash", "previous_hash",
+        ]
+        self.rows.append(dict(zip(columns, params)))
+
+    def fetchone(self, _query: str) -> Optional[Dict[str, Any]]:
+        return self.rows[-1] if self.rows else None
+
+    def fetchall(self, _query: str, _params: tuple = ()) -> List[Dict[str, Any]]:
+        return list(self.rows)
+
+
+_AUDIT_LOGGER: Optional["AuditLogger"] = None
+
+
+class AuditLogger:
+    """Writes tamper-evident audit logs to persistent storage."""
+
+    def __init__(self, db: Any, redis_client: Any) -> None:
+        self.db = db
+        self.redis = redis_client
+        self._last_hash = self._get_last_hash()
+
+    def log(
+        self,
+        action: AuditAction,
+        resource_type: str,
+        resource_id: str,
+        tenant_id: str,
+        user_id: str,
+        ip_address: str = "",
+        user_agent: str = "",
+        request_id: str = "",
+        status: str = "success",
+        error: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> AuditEvent:
+        event = AuditEvent(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            request_id=request_id,
+            status=status,
+            error=error,
+            metadata=metadata or {},
+            previous_hash=self._last_hash,
+        )
+        event.hash = event.compute_hash()
+        self._last_hash = event.hash
+
+        self._persist(event)
+        logger.info(
+            "AUDIT action=%s resource=%s/%s user=%s tenant=%s status=%s",
+            action, resource_type, resource_id, user_id, tenant_id, status,
+        )
+        return event
+
+    def _persist(self, event: AuditEvent) -> None:
+        self.db.execute(
+            """INSERT INTO audit_log
+               (event_id, timestamp, tenant_id, user_id, action,
+                resource_type, resource_id, ip_address, user_agent,
+                request_id, status, error, metadata, hash, previous_hash)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (
+                event.event_id, event.timestamp, event.tenant_id, event.user_id,
+                event.action, event.resource_type, event.resource_id,
+                event.ip_address, event.user_agent, event.request_id,
+                event.status, event.error,
+                json.dumps(event.metadata), event.hash, event.previous_hash,
+            ),
+        )
+
+    def _get_last_hash(self) -> str:
+        row = self.db.fetchone(
+            "SELECT hash FROM audit_log ORDER BY timestamp DESC LIMIT 1"
+        )
+        return row["hash"] if row else "genesis"
+
+    def verify_chain(self, limit: int = 1000) -> Dict[str, Any]:
+        rows = self.db.fetchall(
+            "SELECT * FROM audit_log ORDER BY timestamp ASC LIMIT %s", (limit,)
+        )
+        broken_at: List[str] = []
+        for row in rows:
+            event = AuditEvent(**{**row, "hash": "", "metadata": json.loads(row.get("metadata", "{}"))})
+            computed = event.compute_hash()
+            if computed != row["hash"]:
+                broken_at.append(row["event_id"])
+
+        return {
+            "verified": len(broken_at) == 0,
+            "total_events": len(rows),
+            "broken_events": broken_at,
+        }
+
+
+def get_audit_logger(
+    db: Any = None,
+    redis_client: Any = None,
+) -> AuditLogger:
+    """Return the process audit logger, creating an explicit local fallback.
+
+    A production composition root should pass durable ``db`` and ``redis``
+    adapters.  The fallback is intentionally observable and process-local; it
+    is not presented as durable audit storage.
+    """
+    global _AUDIT_LOGGER
+    if _AUDIT_LOGGER is None:
+        if db is None:
+            logger.warning("No durable audit DB configured; using process-local audit store")
+            db = _InMemoryAuditStore()
+        _AUDIT_LOGGER = AuditLogger(db=db, redis_client=redis_client)
+    return _AUDIT_LOGGER
