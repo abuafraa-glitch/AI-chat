@@ -8,8 +8,24 @@ ConversationMemory (Adapter) — ذاكرة المحادثة
 from __future__ import annotations
 
 import asyncio
+import logging
+from dataclasses import dataclass, field
+from time import time
 from typing import Any, Dict, List, Optional
 from hajeen_platform.brain.memory.unified_interface import get_unified_memory
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Message:
+    """Compatibility value object; persistence remains owned by MemoryFabric."""
+
+    role: str
+    content: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time)
+
 
 class ConversationMemory:
     """
@@ -20,21 +36,31 @@ class ConversationMemory:
         self.session_id = session_id
         self._unified_memory = get_unified_memory()
 
-    def add_user_message(self, content: str, metadata: Optional[Dict] = None) -> None:
-        self._add_sync("user", content, metadata)
+    def add_user_message(self, content: str, metadata: Optional[Dict] = None) -> Message:
+        return self._add_sync("user", content, metadata)
 
-    def add_assistant_message(self, content: str, metadata: Optional[Dict] = None) -> None:
-        self._add_sync("assistant", content, metadata)
+    def add_assistant_message(self, content: str, metadata: Optional[Dict] = None) -> Message:
+        return self._add_sync("assistant", content, metadata)
 
-    def _add_sync(self, role: str, content: str, metadata: Optional[Dict] = None):
+    def _add_sync(self, role: str, content: str, metadata: Optional[Dict] = None) -> Message:
+        message = Message(role=role, content=content, metadata=metadata or {})
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                loop.create_task(self._unified_memory.add_message(self.session_id, role, content, metadata))
+                loop.create_task(
+                    self._unified_memory.add_message(
+                        self.session_id, role, content, metadata
+                    )
+                )
             else:
-                asyncio.run(self._unified_memory.add_message(self.session_id, role, content, metadata))
+                asyncio.run(
+                    self._unified_memory.add_message(
+                        self.session_id, role, content, metadata
+                    )
+                )
         except Exception:
-            pass
+            logger.debug("ConversationMemory adapter write deferred/failed", exc_info=True)
+        return message
 
     def get_messages(self, **kwargs) -> List[Any]:
         """جلب الرسائل من المصدر الموحد."""

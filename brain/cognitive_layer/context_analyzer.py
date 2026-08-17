@@ -146,8 +146,8 @@ class ContextAnalyzer:
             
             # ── Step 3: استرجاع الأهداف والتفضيلات السابقة ──────────────────
             session = self.memory_fabric.get_session(session_id)
-            previous_goals = session.get_all("previous_goals", [])[-5:]  # آخر 5 أهداف
-            user_preferences = session.get_all("preferences", {})
+            previous_goals = (session.get("previous_goals") or [])[-5:]  # آخر 5 أهداف
+            user_preferences = session.get("preferences") or {}
             
             # ── Step 4: تحليل المجال والتخصص ────────────────────────────
             domain_analysis = await self._analyze_domain(

@@ -22,6 +22,14 @@ import sys
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+
+class _TestOnlyProvider:
+    """Test double only; production providers remain fail-closed."""
+
+    async def chat(self, prompt: str):
+        return {"content": "test provider response"}
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 
@@ -207,7 +215,7 @@ class TestUnifiedPromptBuilder(unittest.TestCase):
     def test_rag_prompt_builder_uses_abstract_base(self):
         """services/rag/prompt_builder.py يجب أن يرث AbstractPromptBuilder."""
         from services.rag.prompt_builder import PromptBuilder as RAGPromptBuilder
-        from core.prompts.base import AbstractPromptBuilder
+        from hajeen_platform.core.prompts.base import AbstractPromptBuilder
         self.assertTrue(
             issubclass(RAGPromptBuilder, AbstractPromptBuilder),
             "RAG PromptBuilder يجب أن يرث AbstractPromptBuilder"
@@ -216,6 +224,12 @@ class TestUnifiedPromptBuilder(unittest.TestCase):
 
 class TestBrainProcessPipeline(unittest.TestCase):
     """اختبار 5-6: Brain Pipeline والتحقق من عدم وجود LLM مباشر."""
+
+    @classmethod
+    def setUpClass(cls):
+        from brain.brain_v3 import get_brain_v3
+        brain = run_async(get_brain_v3())
+        brain.model_router.register_provider("hajeen-local", _TestOnlyProvider())
 
     def test_brain_process_returns_response(self):
         """brain.process() يجب أن يعيد BrainResponse."""

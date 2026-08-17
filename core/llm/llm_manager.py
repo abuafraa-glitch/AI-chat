@@ -123,6 +123,26 @@ class LLMManager:
 
         raise last_error or LLMError("All LLM providers failed after retries and fallbacks.")
 
+    async def generate(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        provider_name: Optional[str] = None,
+    ) -> str:
+        """Compatibility adapter for cognitive analyzers; delegates to complete()."""
+        from .base import LLMMessage
+
+        request = LLMRequest(
+            messages=[LLMMessage(role="user", content=prompt)],
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        response = await self.complete(request, provider_name=provider_name)
+        return response.content
+
     async def stream(
         self,
         request: LLMRequest,

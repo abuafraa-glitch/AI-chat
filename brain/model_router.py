@@ -155,9 +155,20 @@ class ModelRouter:
         budget_tokens: int = 4096,
         force_model: Optional[str] = None,
         timeout: float = 60.0,
+        prefer_local: Optional[bool] = None,
     ) -> RouteResult:
-        """توجيه الطلب وتنفيذه مع دعم Fallback."""
-        model_key = force_model or self.select_model(capability, budget_tokens)
+        """توجيه الطلب وتنفيذه مع دعم Fallback.
+
+        ``prefer_local`` is an explicit request-level policy.  When omitted,
+        the router's configured default is used.  The flag influences model
+        eligibility only; it never fabricates a local provider or checkpoint.
+        """
+        local_preference = self._prefer_local if prefer_local is None else prefer_local
+        model_key = force_model or self.select_model(
+            capability,
+            budget_tokens,
+            force_local=local_preference,
+        )
         tried: List[str] = []
 
         while model_key and model_key not in tried:
@@ -188,7 +199,12 @@ class ModelRouter:
                 logger.warning("model_router: error for %s: %s", model_key, e)
 
             # جرّب النموذج الاحتياطي
-            model_key = self.select_model(capability, budget_tokens, exclude=tried)
+            model_key = self.select_model(
+                capability,
+                budget_tokens,
+                force_local=local_preference,
+                exclude=tried,
+            )
 
         return RouteResult(
             model_id=model_key or "none",

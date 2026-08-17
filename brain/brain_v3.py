@@ -382,13 +382,15 @@ class HajeenBrainV3:
                 budget_tokens=request.max_tokens,
                 prefer_local=True,
             )
+            if not route_result.success:
+                raise RuntimeError(route_result.error or "ModelRouter returned an unsuccessful result")
             content = route_result.response
             model_used = route_result.model_id
             trace.record_layer("execution", {
                 "model": model_used,
                 "provider": route_result.provider,
                 "latency_ms": route_result.latency_ms,
-                "success": route_result.success,
+                "success": True,
             })
         except Exception as exc:
             logger.error("ModelRouter unavailable; failing closed: %s", exc)
@@ -415,7 +417,7 @@ class HajeenBrainV3:
             models_collaborated=[model_used],
             quality_score=0.9,
             policy_decision="allowed",
-            used_local_model=True,
+            used_local_model=route_result.provider in {"local", "ollama"},
             used_rag=request.context.get("use_rag", False),
         )
 
