@@ -1,18 +1,40 @@
-"""
-Model Router — الموجّه الذكي للنماذج
-======================================
-يوجّه كل طلب للنموذج الأنسب بناءً على:
-الجودة، السرعة، التكلفة، اللغة، نوع المهمة، نتائج الاستخدام السابقة.
-"""
+"""Central model selection and execution authority for Hajeen Platform."""
 from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
+
+from core.llm.base import LLMConfig, LLMMessage, LLMRequest, LLMResponse, LLMStreamChunk
+from core.llm.provider_registry import ProviderRegistry
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ModelConfig:
+    """Runtime model descriptor; metadata alone never implies availability."""
+
+    model_id: str
+    provider: str
+    base_url: Optional[str]
+    api_key: Optional[str]
+    capabilities: List[str]
+    context_limit: int
+    max_tokens: int
+    avg_latency_ms: float
+    cost_per_1k_tokens: float
+    quality_score: float
+    is_local: bool
+    available: bool = False
+    health: Optional[bool] = None
+
+    @property
+    def context_length(self) -> int:
+        return self.context_limit
 
 
 @dataclass
@@ -26,285 +48,190 @@ class RouteResult:
     error: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def prompt_tokens(self) -> int:
+        return int(self.metadata.get("prompt_tokens", 0))
 
-@dataclass
-class ModelConfig:
-    model_id: str
-    provider: str                  # ollama | openai | qwen | huggingface | local
-    base_url: Optional[str]
-    api_key: Optional[str]
-    capabilities: List[str]        # code, arabic, math, general, rag
-    max_tokens: int
-    avg_latency_ms: float
-    cost_per_1k_tokens: float      # 0.0 للنماذج المحلية
-    quality_score: float           # 0-1
-    is_local: bool
+    @property
+    def completion_tokens(self) -> int:
+        return int(self.metadata.get("completion_tokens", self.tokens_used))
 
 
-# قاموس النماذج المدعومة
 DEFAULT_MODELS: Dict[str, ModelConfig] = {
-    "ollama/llama3": ModelConfig(
-        model_id="llama3", provider="ollama",
-        base_url="http://localhost:11434",
-        api_key=None,
-        capabilities=["general", "rag", "conversation"],
-        max_tokens=4096, avg_latency_ms=800,
-        cost_per_1k_tokens=0.0, quality_score=0.78,
-        is_local=True,
-    ),
-    "ollama/qwen2.5": ModelConfig(
-        model_id="qwen2.5:7b", provider="ollama",
-        base_url="http://localhost:11434",
-        api_key=None,
-        capabilities=["arabic", "general", "code"],
-        max_tokens=8192, avg_latency_ms=1000,
-        cost_per_1k_tokens=0.0, quality_score=0.82,
-        is_local=True,
-    ),
-    "ollama/qwen2.5-coder": ModelConfig(
-        model_id="qwen2.5-coder:7b", provider="ollama",
-        base_url="http://localhost:11434",
-        api_key=None,
-        capabilities=["code"],
-        max_tokens=8192, avg_latency_ms=900,
-        cost_per_1k_tokens=0.0, quality_score=0.85,
-        is_local=True,
-    ),
-    "openai/gpt-4o": ModelConfig(
-        model_id="gpt-4o", provider="openai",
-        base_url=None, api_key="env:OPENAI_API_KEY",
-        capabilities=["general", "code", "math", "analysis", "creative"],
-        max_tokens=128000, avg_latency_ms=2000,
-        cost_per_1k_tokens=5.0, quality_score=0.97,
-        is_local=False,
-    ),
-    "openai/gpt-4o-mini": ModelConfig(
-        model_id="gpt-4o-mini", provider="openai",
-        base_url=None, api_key="env:OPENAI_API_KEY",
-        capabilities=["general", "code", "rag"],
-        max_tokens=128000, avg_latency_ms=800,
-        cost_per_1k_tokens=0.15, quality_score=0.88,
-        is_local=False,
-    ),
-    "hajeen-local": ModelConfig(
-        model_id="hajeen-v1", provider="local",
-        base_url=None, api_key=None,
-        capabilities=["arabic", "general"],
-        max_tokens=4096, avg_latency_ms=500,
-        cost_per_1k_tokens=0.0, quality_score=0.70,
-        is_local=True,
-    ),
+    "ollama/llama3": ModelConfig("llama3", "ollama", "http://localhost:11434", None, ["general", "rag", "conversation"], 8192, 4096, 800, 0.0, 0.78, True),
+    "ollama/qwen2.5": ModelConfig("qwen2.5:7b", "ollama", "http://localhost:11434", None, ["arabic", "general", "code", "rag"], 32768, 8192, 1000, 0.0, 0.82, True),
+    "ollama/qwen2.5-coder": ModelConfig("qwen2.5-coder:7b", "ollama", "http://localhost:11434", None, ["code"], 32768, 8192, 900, 0.0, 0.85, True),
+    "openai/gpt-4o": ModelConfig("gpt-4o", "openai", None, "env:OPENAI_API_KEY", ["general", "code", "math", "analysis", "creative", "rag"], 128000, 4096, 2000, 5.0, 0.97, False),
+    "openai/gpt-4o-mini": ModelConfig("gpt-4o-mini", "openai", None, "env:OPENAI_API_KEY", ["general", "code", "math", "analysis", "rag"], 128000, 4096, 800, 0.15, 0.88, False),
+    "hajeen-local": ModelConfig("hajeen-v1", "local", None, None, ["arabic", "general", "rag"], 4096, 4096, 500, 0.0, 0.70, True),
 }
 
-# معادلة الترتيب: القيم الأعلى تعني نموذج أفضل
-def _score_model(model: ModelConfig, capability: str, budget_tokens: int) -> float:
-    cap_score = 1.0 if capability in model.capabilities else 0.3
+
+def _score_model(model: ModelConfig, capability: str, budget_tokens: int, prefer_local: bool = False) -> float:
+    if budget_tokens > model.max_tokens or budget_tokens > model.context_limit:
+        return float("-inf")
+    cap_score = 1.0 if capability in model.capabilities else 0.0
+    if capability not in model.capabilities and capability not in {"general", "conversation"}:
+        return float("-inf")
+    local_bonus = 0.12 if prefer_local and model.is_local else 0.0
     cost_score = 1.0 if model.cost_per_1k_tokens == 0 else max(0.1, 1 - model.cost_per_1k_tokens / 10)
     speed_score = max(0.1, 1 - model.avg_latency_ms / 5000)
-    total = (model.quality_score * 0.4) + (cap_score * 0.3) + (cost_score * 0.2) + (speed_score * 0.1)
-    return total
+    return model.quality_score * 0.4 + cap_score * 0.3 + cost_score * 0.2 + speed_score * 0.1 + local_bonus
 
 
 class ModelRouter:
-    """
-    الموجّه الذكي — يختار النموذج الأنسب لكل طلب
-    ويدعم: Fallback، Multi-model، Local-first policy.
-    """
+    """The only authority allowed to select and execute a model provider."""
 
     def __init__(self, prefer_local: bool = True) -> None:
         self._models = dict(DEFAULT_MODELS)
         self._prefer_local = prefer_local
-        self._routing_history: List[Dict] = []
+        self._routing_history: List[Dict[str, Any]] = []
         self._provider_registry: Dict[str, Any] = {}
+        self._provider_init_lock = asyncio.Lock()
+
+    @property
+    def models(self) -> Dict[str, ModelConfig]:
+        return dict(self._models)
 
     def register_provider(self, model_key: str, provider_instance: Any) -> None:
+        """Register a real provider instance, primarily for application wiring/tests."""
+        if model_key not in self._models:
+            raise KeyError(f"Unknown model key: {model_key}")
         self._provider_registry[model_key] = provider_instance
-        logger.info("model_router: registered provider for %s", model_key)
 
     def add_model(self, key: str, config: ModelConfig) -> None:
         self._models[key] = config
-        logger.info("model_router: added model %s", key)
 
-    def select_model(
-        self, capability: str = "general", budget_tokens: int = 4096,
-        force_local: bool = False, exclude: Optional[List[str]] = None,
-    ) -> Optional[str]:
-        """اختيار أفضل نموذج متاح."""
-        exclude = exclude or []
-        candidates = {
-            k: v for k, v in self._models.items()
-            if k not in exclude
-        }
+    def _resolve_key(self, identifier: str) -> Optional[str]:
+        if identifier in self._models:
+            return identifier
+        for key, cfg in self._models.items():
+            if cfg.model_id == identifier or f"{cfg.provider}/{cfg.model_id}" == identifier:
+                return key
+        return None
 
+    def select_model(self, capability: str = "general", budget_tokens: int = 4096, force_local: bool = False, exclude: Optional[List[str]] = None) -> Optional[str]:
+        exclude_set = set(exclude or [])
+        candidates = [(key, cfg) for key, cfg in self._models.items() if key not in exclude_set and _score_model(cfg, capability, budget_tokens) != float("-inf")]
+        registered = [(key, cfg) for key, cfg in candidates if key in self._provider_registry]
+        if registered:
+            candidates = registered
         if force_local or self._prefer_local:
-            local_candidates = {k: v for k, v in candidates.items() if v.is_local}
-            if local_candidates:
-                candidates = local_candidates
-
+            local = [(key, cfg) for key, cfg in candidates if cfg.is_local]
+            if local:
+                candidates = local
         if not candidates:
-            candidates = self._models  # fallback لكل النماذج
+            return None
+        return max(candidates, key=lambda pair: _score_model(pair[1], capability, budget_tokens, force_local or self._prefer_local))[0]
 
-        best_key = max(candidates, key=lambda k: _score_model(candidates[k], capability, budget_tokens))
-        logger.info("model_router: selected %s for capability=%s", best_key, capability)
-        return best_key
+    async def _get_provider(self, key: str, cfg: ModelConfig) -> Any:
+        provider = self._provider_registry.get(key)
+        if provider is not None:
+            if not getattr(provider, "_initialized", False) and hasattr(provider, "initialize"):
+                await provider.initialize()
+            return provider
+        async with self._provider_init_lock:
+            provider = self._provider_registry.get(key)
+            if provider is not None:
+                return provider
+            ProviderRegistry.auto_register_defaults()
+            # `local` is the platform-level provider classification for the
+            # Hajeen local model; the concrete adapter remains Hajeen Model.
+            adapter_name = "hajeen" if key == "hajeen-local" else cfg.provider
+            provider_cls = ProviderRegistry.get(adapter_name)
+            if provider_cls is None:
+                raise RuntimeError(f"No registered provider adapter for {adapter_name!r}")
+            api_key = os.getenv("OPENAI_API_KEY") if cfg.api_key == "env:OPENAI_API_KEY" else cfg.api_key
+            provider = provider_cls(LLMConfig(provider=adapter_name, model=cfg.model_id, api_key=api_key, api_base=cfg.base_url, max_tokens=cfg.max_tokens))
+            await provider.initialize()
+            self._provider_registry[key] = provider
+            return provider
 
-    async def route(
-        self,
-        messages: List[Dict[str, str]],
-        capability: str = "general",
-        budget_tokens: int = 4096,
-        force_model: Optional[str] = None,
-        timeout: float = 60.0,
-        prefer_local: Optional[bool] = None,
-    ) -> RouteResult:
-        """توجيه الطلب وتنفيذه مع دعم Fallback.
+    @staticmethod
+    def _request(messages: List[Dict[str, str]], cfg: ModelConfig, budget_tokens: int, request_id: Optional[str] = None, stream: bool = False) -> LLMRequest:
+        return LLMRequest(messages=[LLMMessage(role=m["role"], content=m["content"]) for m in messages], model=cfg.model_id, max_tokens=min(budget_tokens, cfg.max_tokens), stream=stream, request_id=request_id)
 
-        ``prefer_local`` is an explicit request-level policy.  When omitted,
-        the router's configured default is used.  The flag influences model
-        eligibility only; it never fabricates a local provider or checkpoint.
-        """
+    async def route(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> RouteResult:
         local_preference = self._prefer_local if prefer_local is None else prefer_local
-        model_key = force_model or self.select_model(
-            capability,
-            budget_tokens,
-            force_local=local_preference,
-        )
+        forced_key = self._resolve_key(force_model) if force_model else None
+        if force_model and forced_key is None:
+            return RouteResult(force_model, "none", 0.0, 0, "", False, "Requested model is not registered", {"fail_closed": True})
         tried: List[str] = []
-
-        while model_key and model_key not in tried:
-            tried.append(model_key)
-            model_cfg = self._models.get(model_key)
-            if not model_cfg:
-                break
-
-            t0 = time.perf_counter()
+        key = forced_key or self.select_model(capability, budget_tokens, force_local=local_preference)
+        last_error = "No eligible model is registered"
+        while key and key not in tried:
+            tried.append(key)
+            cfg = self._models[key]
+            started = time.perf_counter()
             try:
-                response_text = await asyncio.wait_for(
-                    self._call_model(model_key, model_cfg, messages),
-                    timeout=timeout,
-                )
-                latency = (time.perf_counter() - t0) * 1000
-                self._record_routing(model_key, capability, latency, True)
-                return RouteResult(
-                    model_id=model_key,
-                    provider=model_cfg.provider,
-                    latency_ms=latency,
-                    tokens_used=len(response_text.split()),
-                    response=response_text,
-                    success=True,
-                )
-            except asyncio.TimeoutError:
-                logger.warning("model_router: timeout for %s", model_key)
-            except Exception as e:
-                logger.warning("model_router: error for %s: %s", model_key, e)
+                provider = await asyncio.wait_for(self._get_provider(key, cfg), timeout=timeout)
+                request = self._request(messages, cfg, budget_tokens, request_id=request_id)
+                if hasattr(provider, "complete"):
+                    response: LLMResponse = await asyncio.wait_for(provider.complete(request), timeout=timeout)
+                elif key in self._provider_registry and hasattr(provider, "chat"):
+                    # Explicitly registered test/application adapter compatibility.
+                    raw = await asyncio.wait_for(provider.chat(messages[-1]["content"] if messages else ""), timeout=timeout)
+                    text = raw.get("content", "") if isinstance(raw, dict) else str(raw)
+                    response = LLMResponse(content=text, model=cfg.model_id, provider=cfg.provider, completion_tokens=len(text.split()), total_tokens=len(text.split()))
+                else:
+                    raise RuntimeError("Provider adapter does not expose complete()")
+                if not response.content:
+                    raise RuntimeError("Provider returned an empty response")
+                latency = (time.perf_counter() - started) * 1000
+                self._record_routing(key, capability, latency, True)
+                return RouteResult(key, cfg.provider, latency, response.total_tokens or len(response.content.split()), response.content, True, metadata={"prompt_tokens": response.prompt_tokens, "completion_tokens": response.completion_tokens, "finish_reason": response.finish_reason})
+            except Exception as exc:
+                last_error = str(exc)
+                self._record_routing(key, capability, (time.perf_counter() - started) * 1000, False)
+                logger.warning("model_router: %s failed closed: %s", key, exc)
+                if forced_key:
+                    break
+                key = self.select_model(capability, budget_tokens, force_local=local_preference, exclude=tried)
+        return RouteResult(tried[-1] if tried else "none", "none", 0.0, 0, "", False, last_error, {"fail_closed": True, "tried": tried})
 
-            # جرّب النموذج الاحتياطي
-            model_key = self.select_model(
-                capability,
-                budget_tokens,
-                force_local=local_preference,
-                exclude=tried,
-            )
+    async def stream(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> AsyncGenerator[LLMStreamChunk, None]:
+        local_preference = self._prefer_local if prefer_local is None else prefer_local
+        key = self._resolve_key(force_model) if force_model else self.select_model(capability, budget_tokens, force_local=local_preference)
+        if force_model and key is None:
+            raise RuntimeError("Requested model is not registered")
+        if key is None:
+            raise RuntimeError("No eligible model is registered")
+        cfg = self._models[key]
+        provider = await asyncio.wait_for(self._get_provider(key, cfg), timeout=timeout)
+        request = self._request(messages, cfg, budget_tokens, request_id=request_id, stream=True)
+        if not hasattr(provider, "stream"):
+            raise RuntimeError(f"Provider {cfg.provider!r} does not expose native streaming")
+        async for chunk in provider.stream(request):
+            if not isinstance(chunk, LLMStreamChunk):
+                raise RuntimeError("Provider returned an invalid stream chunk")
+            yield chunk
 
-        return RouteResult(
-            model_id=model_key or "none",
-            provider="none",
-            latency_ms=0,
-            tokens_used=0,
-            response="",
-            success=False,
-            error="All models failed or timed out",
-        )
-
-    async def _call_model(
-        self, model_key: str, cfg: ModelConfig, messages: List[Dict[str, str]]
-    ) -> str:
-        """استدعاء النموذج الفعلي عبر المزود المسجّل."""
-        # إذا كان المزود مسجّلاً في الـ Registry، استخدمه
-        if model_key in self._provider_registry:
-            provider = self._provider_registry[model_key]
-            if hasattr(provider, "chat"):
-                resp = await provider.chat(messages[-1]["content"] if messages else "")
-                return resp.get("content", "") if isinstance(resp, dict) else str(resp)
-
-        # استدعاء Ollama مباشرةً للنماذج المحلية
-        if cfg.provider == "ollama":
-            return await self._call_ollama(cfg, messages)
-
-        # استدعاء OpenAI
-        if cfg.provider == "openai":
-            return await self._call_openai(cfg, messages)
-
-        # Unknown providers must fail closed. Production must never fabricate
-        # a successful textual response when no verified provider is available.
-        raise RuntimeError(
-            f"No verified provider implementation for model {model_key!r} "
-            f"(provider={cfg.provider!r})"
-        )
-
-    async def _call_ollama(self, cfg: ModelConfig, messages: List[Dict]) -> str:
-        try:
-            import httpx
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                resp = await client.post(
-                    f"{cfg.base_url}/api/chat",
-                    json={"model": cfg.model_id, "messages": messages, "stream": False},
-                )
-                data = resp.json()
-                return data.get("message", {}).get("content", "")
-        except Exception as e:
-            raise RuntimeError(f"Ollama error: {e}")
-
-    async def _call_openai(self, cfg: ModelConfig, messages: List[Dict]) -> str:
-        try:
-            import os
-
-            import httpx
-            api_key = os.getenv("OPENAI_API_KEY", "")
-            if not api_key:
-                raise RuntimeError("OPENAI_API_KEY not set")
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                resp = await client.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {api_key}"},
-                    json={"model": cfg.model_id, "messages": messages, "max_tokens": 2048},
-                )
-                data = resp.json()
-                return data["choices"][0]["message"]["content"]
-        except Exception as e:
-            raise RuntimeError(f"OpenAI error: {e}")
+    async def list_available_models(self, capability: str = "general", budget_tokens: int = 4096) -> List[Dict[str, Any]]:
+        result = []
+        for key, cfg in self._models.items():
+            entry = {"key": key, "model_id": cfg.model_id, "provider": cfg.provider, "capabilities": cfg.capabilities, "context_limit": cfg.context_limit, "max_tokens": cfg.max_tokens, "is_local": cfg.is_local, "available": key in self._provider_registry}
+            provider = self._provider_registry.get(key)
+            if provider is not None and hasattr(provider, "health_check"):
+                try:
+                    entry["health"] = await provider.health_check()
+                    entry["available"] = bool(entry["health"])
+                except Exception:
+                    entry["health"] = False
+                    entry["available"] = False
+            result.append(entry)
+        return result
 
     def _record_routing(self, model_key: str, capability: str, latency_ms: float, success: bool) -> None:
-        self._routing_history.append({
-            "model": model_key,
-            "capability": capability,
-            "latency_ms": latency_ms,
-            "success": success,
-            "at": time.time(),
-        })
-        # احتفظ بآخر 1000 سجل فقط
-        if len(self._routing_history) > 1000:
-            self._routing_history = self._routing_history[-1000:]
+        self._routing_history.append({"model": model_key, "capability": capability, "latency_ms": latency_ms, "success": success, "at": time.time()})
+        self._routing_history = self._routing_history[-1000:]
 
     def get_routing_stats(self) -> Dict[str, Any]:
         if not self._routing_history:
             return {"total": 0}
         total = len(self._routing_history)
-        success = sum(1 for r in self._routing_history if r["success"])
-        by_model: Dict[str, int] = {}
-        for r in self._routing_history:
-            by_model[r["model"]] = by_model.get(r["model"], 0) + 1
-        return {
-            "total": total,
-            "success_rate": round(success / total, 3),
-            "by_model": by_model,
-            "avg_latency_ms": round(
-                sum(r["latency_ms"] for r in self._routing_history) / total, 1
-            ),
-        }
+        return {"total": total, "success_rate": round(sum(r["success"] for r in self._routing_history) / total, 3), "by_model": {k: sum(1 for r in self._routing_history if r["model"] == k) for k in {r["model"] for r in self._routing_history}}, "avg_latency_ms": round(sum(r["latency_ms"] for r in self._routing_history) / total, 1)}
 
 
-# Singleton
 _router: Optional[ModelRouter] = None
 
 
@@ -313,3 +240,11 @@ def get_model_router() -> ModelRouter:
     if _router is None:
         _router = ModelRouter()
     return _router
+
+
+def set_model_router(router: ModelRouter) -> None:
+    global _router
+    _router = router
+
+
+__all__ = ["ModelConfig", "RouteResult", "ModelRouter", "get_model_router", "set_model_router"]

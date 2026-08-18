@@ -27,6 +27,15 @@ class BuiltPrompt:
         if self.metadata is None:
             self.metadata = {}
 
+    @property
+    def prompt(self) -> str:
+        """Compatibility alias; ``text`` remains the canonical field."""
+        return self.text
+
+    @property
+    def template_used(self) -> Optional[str]:
+        return self.metadata.get("template_used")
+
     def to_request(self) -> Dict[str, Any]:
         """تحويل لصيغة طلب OpenAI-compatible."""
         if self.messages:

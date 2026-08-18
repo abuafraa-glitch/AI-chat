@@ -4,7 +4,7 @@ Provides a unified Redis connection manager with:
 - Async and sync connection pools
 - Health checks
 - Retry connection logic with exponential backoff
-- Graceful degradation when Redis is unavailable (fakeredis fallback)
+- Fail-closed behavior when Redis is unavailable
 """
 from __future__ import annotations
 
@@ -70,8 +70,8 @@ class RedisConfig:
 class RedisManager:
     """Async-capable Redis connection manager.
 
-    Falls back to ``fakeredis`` when the real Redis server is unavailable,
-    so the platform runs correctly in local development without a running Redis.
+    Fails closed when the real Redis server is unavailable; no in-memory
+    substitute is used in the production path.
 
     Parameters
     ----------
@@ -83,7 +83,6 @@ class RedisManager:
         self.config = config or RedisConfig.from_env()
         self._client: Any = None
         self._async_client: Any = None
-        self._use_fake: bool = False
 
     # ------------------------------------------------------------------
     # Connection lifecycle
@@ -103,7 +102,7 @@ class RedisManager:
 
     def disconnect(self) -> None:
         """Close the synchronous connection."""
-        if self._client and not self._use_fake:
+        if self._client:
             try:
                 self._client.close()
             except Exception:
@@ -112,7 +111,7 @@ class RedisManager:
 
     async def async_disconnect(self) -> None:
         """Close the asynchronous connection."""
-        if self._async_client and not self._use_fake:
+        if self._async_client:
             try:
                 await self._async_client.aclose()
             except Exception:
@@ -157,7 +156,7 @@ class RedisManager:
                 }
             return {
                 "status": "ok" if alive else "error",
-                "backend": "fakeredis" if self._use_fake else "redis",
+                "backend": "redis",
                 "host": self.config.host,
                 "port": self.config.port,
                 "db": self.config.db,
@@ -221,8 +220,7 @@ class RedisManager:
                     time.sleep(delay)
                     delay *= cfg.retry_backoff_factor
 
-        logger.info("Redis unavailable — falling back to fakeredis (in-memory)")
-        return self._make_fake_client()
+        raise RuntimeError("Redis unavailable after all connection attempts")
 
     async def _async_connect_with_retry(self):
         """Attempt async Redis connection with exponential backoff."""
@@ -243,8 +241,7 @@ class RedisManager:
                     await asyncio.sleep(delay)
                     delay *= cfg.retry_backoff_factor
 
-        logger.info("Redis unavailable — falling back to async fakeredis")
-        return self._make_async_fake_client()
+        raise RuntimeError("Redis unavailable after all async connection attempts")
 
     def _make_sync_client(self):
         import redis
@@ -276,32 +273,6 @@ class RedisManager:
             decode_responses=True,
         )
         return client
-
-    def _make_fake_client(self):
-        try:
-            import fakeredis
-            self._use_fake = True
-            logger.info("Using fakeredis for in-memory Redis simulation")
-            return fakeredis.FakeRedis(decode_responses=True)
-        except ImportError:
-            raise RuntimeError(
-                "Neither Redis nor fakeredis is available. "
-                "Install: pip install fakeredis"
-            )
-
-    def _make_async_fake_client(self):
-        try:
-            import fakeredis
-            self._use_fake = True
-            logger.info("Using async fakeredis for in-memory Redis simulation")
-            return fakeredis.aioredis.FakeRedis(decode_responses=True)
-        except (ImportError, AttributeError):
-            try:
-                import fakeredis.aioredis as fakeredis_aio
-                self._use_fake = True
-                return fakeredis_aio.FakeRedis(decode_responses=True)
-            except ImportError:
-                raise RuntimeError("fakeredis with asyncio support not available. pip install fakeredis")
 
 
 # ---------------------------------------------------------------------------

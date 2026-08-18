@@ -19,7 +19,7 @@ import time
 import traceback
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import yaml
 from fastapi import FastAPI, HTTPException, Request, WebSocket
@@ -355,11 +355,12 @@ async def on_startup():
 
     # 4. تهيئة RAG Pipeline
     try:
-        from services.retrieval.vector_retriever import VectorRetriever
+        from brain.prompts.unified_prompt_builder import UnifiedPromptBuilder
         from services.rag.rag_pipeline import RAGPipeline
+        from services.retrieval.vector_retriever import VectorRetriever
 
         retriever = VectorRetriever(_search_state["engine"])
-        rag = RAGPipeline(retriever=retriever)
+        rag = RAGPipeline(retriever=retriever, unified_prompt_builder=UnifiedPromptBuilder())
         _search_state["rag_pipeline"] = rag
         app.state.rag_pipeline = rag
         logger.info("startup: RAG Pipeline جاهز ✓")
@@ -372,7 +373,9 @@ async def on_startup():
         from core.llm.provider_registry import ProviderRegistry
         ProviderRegistry.auto_register_defaults()
         try:
-            from core.llm.providers.mistral_finetuned_provider import MistralFinetunedProvider
+            from core.llm.providers.mistral_finetuned_provider import (
+                MistralFinetunedProvider,
+            )
             ProviderRegistry.register("mistral_finetuned", MistralFinetunedProvider)
             logger.info("startup: Mistral Fine-tuned provider مسجّل ✓")
         except Exception:
@@ -478,6 +481,7 @@ async def on_shutdown():
 
 # ── Auth Middleware (يحمي جميع الـ routes) ────────────────────────────────
 import os as _os
+
 if _os.getenv("ENABLE_AUTH", "true").lower() == "true":
     try:
         from security.middleware.auth_middleware import AuthMiddleware
@@ -487,6 +491,7 @@ if _os.getenv("ENABLE_AUTH", "true").lower() == "true":
         logger.warning("Auth Middleware غير متاح: %s", _e)
 
 from api.v1.router import router as v1_router  # noqa: E402
+
 app.include_router(v1_router, prefix="/api/v1")
 
 try:
@@ -495,12 +500,14 @@ try:
 except Exception as _e:
     logger.warning("tasks router غير متاح: %s", _e)
 
-from api.v1.search.router import router as search_router  # noqa: E402
 from api.v1.embeddings.router import router as embeddings_router  # noqa: E402
+from api.v1.search.router import router as search_router  # noqa: E402
+
 app.include_router(search_router, prefix="/api/v1")
 app.include_router(embeddings_router, prefix="/api/v1")
 
 from api.v1.ai.router import router as ai_router  # noqa: E402
+
 app.include_router(ai_router, prefix="/api/v1/ai")
 
 try:

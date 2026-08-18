@@ -1,22 +1,26 @@
 from __future__ import annotations
 
-import asyncio
-import logging
 import json
+import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from ..policy.policy_engine import PolicyEngine, get_policy_engine, DynamicPolicyRule
-from ..reflection.self_reflection import SelfReflection, get_self_reflection, ReflectionReport
-from ..decision_engine import DecisionEngine, get_decision_engine
-from ..goal_manager import Goal, IntentType, ComplexityLevel
-from hajeen_platform.monitoring.metrics.prometheus_metrics import (
-    hajeen_evolution_proposals_total,
-    hajeen_evolution_implementation_total,
+from monitoring.metrics.prometheus_metrics import (
     hajeen_evolution_evaluation_latency_seconds,
-    track_latency
+    hajeen_evolution_implementation_total,
+    hajeen_evolution_proposals_total,
+    track_latency,
+)
+
+from ..decision_engine import DecisionEngine, get_decision_engine
+from ..goal_manager import ComplexityLevel, Goal, IntentType
+from ..policy.policy_engine import PolicyEngine, get_policy_engine
+from ..reflection.self_reflection import (
+    ReflectionReport,
+    SelfReflection,
+    get_self_reflection,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,7 +74,7 @@ class SelfEvolution:
 
     async def analyze_and_propose_async(self, report: ReflectionReport) -> str:
         """يرسل مهمة اقتراح التطور إلى Celery worker."""
-        from hajeen_platform.workers.async_tasks import evolution_proposal_task
+        from workers.async_tasks import evolution_proposal_task
         logger.info(f"Dispatching evolution proposal generation for report {report.report_id} to Celery.")
         celery_result = evolution_proposal_task.delay(report.to_dict())
         return celery_result.id
@@ -144,7 +148,7 @@ class SelfEvolution:
 
     async def evaluate_and_implement_async(self, proposal: EvolutionProposal) -> str:
         """يرسل مهمة تقييم وتنفيذ الاقتراح إلى Celery worker."""
-        from hajeen_platform.workers.async_tasks import evolution_evaluation_task
+        from workers.async_tasks import evolution_evaluation_task
         logger.info(f"Dispatching evolution proposal evaluation for proposal {proposal.proposal_id} to Celery.")
         celery_result = evolution_evaluation_task.delay(proposal.to_dict())
         return celery_result.id

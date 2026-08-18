@@ -8,16 +8,14 @@ ChatService (Adapter) — خدمة الدردشة الرئيسية
 from __future__ import annotations
 
 import logging
-import time
 import uuid
-import asyncio
 from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from hajeen_platform.brain.brain_v3 import HajeenBrainV3, BrainRequest, BrainResponse, get_brain_v3
-from hajeen_platform.core.inference_engine.stream_handler import StreamEvent
-from hajeen_platform.brain.memory.unified_interface import get_unified_memory
-from .chat_session import TurnResult
+from brain.brain_v3 import BrainRequest, BrainResponse, HajeenBrainV3, get_brain_v3
+from brain.memory.unified_interface import get_unified_memory
+from core.inference_engine.stream_handler import StreamEvent
+
 from .citation_injector import CitationInjector
 
 logger = logging.getLogger(__name__)
@@ -79,8 +77,10 @@ class ChatService:
         brain: Optional[HajeenBrainV3] = None,
         rag_pipeline: Optional[Any] = None,
         citation_injector: Optional[CitationInjector] = None,
+        inference_engine: Optional[Any] = None,
     ):
         self._brain = brain
+        self._inference_engine = inference_engine
         self._rag = rag_pipeline
         self.citation_injector = citation_injector or CitationInjector()
         self._initialized = False
@@ -89,7 +89,10 @@ class ChatService:
     async def initialize(self) -> None:
         if self._initialized:
             return
-        self._brain = self._brain or await get_brain_v3()
+        if self._inference_engine is not None:
+            await self._inference_engine.initialize()
+        else:
+            self._brain = self._brain or await get_brain_v3()
         await self._unified_memory.initialize()
         self._initialized = True
         logger.info("ChatService initialized with UnifiedMemoryInterface (SSOT Mode)")
@@ -101,6 +104,30 @@ class ChatService:
 
         turn_id = str(uuid.uuid4())
         session_id = request.session_id or str(uuid.uuid4())
+
+        if self._inference_engine is not None:
+            history = await self._unified_memory.get_context(session_id, max_messages=20)
+            messages = history + [{"role": "user", "content": request.message}]
+            processed = await self._inference_engine.infer(
+                messages=messages,
+                model=request.model,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+                session_id=session_id,
+            )
+            await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
+            await self._unified_memory.add_message(session_id, "assistant", processed.cleaned_content, {"turn_id": turn_id})
+            return ChatResponse(
+                content=processed.cleaned_content,
+                session_id=session_id,
+                turn_id=turn_id,
+                model=processed.model,
+                provider=processed.provider,
+                sources=self.citation_injector.format_citations_for_api(processed.citations),
+                latency_ms=processed.latency_ms,
+                tokens_used=processed.total_tokens,
+                language=request.language,
+            )
 
         # 1. Prepare BrainRequest
         brain_request = BrainRequest(
@@ -164,6 +191,28 @@ class ChatService:
 
         session_id = request.session_id or str(uuid.uuid4())
         stream_id = str(uuid.uuid4())
+
+        if self._inference_engine is not None:
+            history = await self._unified_memory.get_context(session_id, max_messages=20)
+            messages = history + [{"role": "user", "content": request.message}]
+            chunks: List[str] = []
+            async for event in self._inference_engine.stream_infer(
+                messages=messages,
+                model=request.model,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+                session_id=session_id,
+                stream_id=stream_id,
+            ):
+                if event.event_type == "token":
+                    chunks.append(event.data)
+                    yield event
+                elif event.event_type in {"done", "error"}:
+                    yield event
+            if chunks:
+                await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
+                await self._unified_memory.add_message(session_id, "assistant", "".join(chunks), {"stream_id": stream_id})
+            return
 
         brain_request = BrainRequest(
             request_id=stream_id,

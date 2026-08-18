@@ -7,7 +7,7 @@
         {
             "instruction": "ما هو عاصمة السعودية؟",
             "expected": "الرياض",
-            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "response": "Error during inference: Hajeen checkpoint is unavailable or incomplete at hajeen_model/checkpoints/final; required config, tokenizer, and model weights were not found",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -16,7 +16,7 @@
         {
             "instruction": "What is the capital of France?",
             "expected": "Paris",
-            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "response": "Error during inference: Hajeen checkpoint is unavailable or incomplete at hajeen_model/checkpoints/final; required config, tokenizer, and model weights were not found",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -25,7 +25,7 @@
         {
             "instruction": "كيف حالك؟",
             "expected": "أنا بخير، كيف يمكنني مساعدتك؟",
-            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "response": "Error during inference: Hajeen checkpoint is unavailable or incomplete at hajeen_model/checkpoints/final; required config, tokenizer, and model weights were not found",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -34,7 +34,7 @@
         {
             "instruction": "Translate 'Hello' to Arabic.",
             "expected": "مرحباً",
-            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "response": "Error during inference: Hajeen checkpoint is unavailable or incomplete at hajeen_model/checkpoints/final; required config, tokenizer, and model weights were not found",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -43,7 +43,7 @@
         {
             "instruction": "من هو مؤسس المملكة العربية السعودية؟",
             "expected": "الملك عبد العزيز آل سعود",
-            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "response": "Error during inference: Hajeen checkpoint is unavailable or incomplete at hajeen_model/checkpoints/final; required config, tokenizer, and model weights were not found",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -52,7 +52,7 @@
         {
             "instruction": "Who is the current CEO of Google?",
             "expected": "Sundar Pichai",
-            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
+            "response": "Error during inference: Hajeen checkpoint is unavailable or incomplete at hajeen_model/checkpoints/final; required config, tokenizer, and model weights were not found",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,

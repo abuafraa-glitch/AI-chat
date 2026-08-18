@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from typing import AsyncGenerator, Dict, List, Optional
+
+from aiobreaker import CircuitBreakerError
 
 from .base import (
     BaseLLMProvider,
-    LLMConfig,
     LLMError,
     LLMRequest,
     LLMResponse,
@@ -43,6 +43,9 @@ class LLMManager:
         self._fallback_names = fallback_providers or []
         self._providers: Dict[str, BaseLLMProvider] = {}
         self._initialized = False
+        # Compatibility facade: ModelRouter remains the sole selection authority.
+        from brain.model_router import ModelRouter
+        self._router = ModelRouter(prefer_local=self.settings.provider in {"local", "hajeen"})
 
     async def initialize(self) -> None:
         """تهيئة المدير وتسجيل المزودين الافتراضيين."""
@@ -76,6 +79,28 @@ class LLMManager:
             provider = ProviderRegistry.create(name, config)
             await provider.initialize()
             self._providers[name] = provider
+            if name not in self._router.models:
+                # A caller-supplied provider is explicit; expose only that
+                # descriptor to the central router, never as an auto-default.
+                from brain.model_router import ModelConfig
+                self._router.add_model(
+                    name,
+                    ModelConfig(
+                        model_id=getattr(provider, "model_name", name),
+                        provider=name,
+                        base_url=None,
+                        api_key=None,
+                        capabilities=["general", "conversation", "rag"],
+                        context_limit=max(self.settings.max_tokens, 4096),
+                        max_tokens=self.settings.max_tokens,
+                        avg_latency_ms=0.0,
+                        cost_per_1k_tokens=0.0,
+                        quality_score=0.0,
+                        is_local=False,
+                        available=True,
+                    ),
+                )
+            self._router.register_provider(name, provider)
         return self._providers[name]
 
     @property
@@ -97,31 +122,26 @@ class LLMManager:
         if not self._initialized:
             await self.initialize()
 
-        providers_to_try = []
-        if provider_name:
-            providers_to_try.append(provider_name)
-        else:
-            providers_to_try.append(self._primary_name)
-            providers_to_try.extend(self._fallback_names)
-
-        last_error: Optional[Exception] = None
-        for p_name in providers_to_try:
-            try:
-                provider = await self._ensure_provider(p_name)
-                response = await provider.complete(request)
-                return response
-            except CircuitBreakerError:
-                logger.warning(
-                    "Provider '%s' circuit is open. Trying next provider.", p_name
-                )
-                last_error = LLMError(f"Circuit breaker open for {p_name}")
-                continue
-            except Exception as e:
-                logger.error("Provider '%s' failed: %s", p_name, e)
-                last_error = e
-                continue
-
-        raise last_error or LLMError("All LLM providers failed after retries and fallbacks.")
+        await self._ensure_provider(provider_name or self._primary_name)
+        result = await self._router.route(
+            messages=request.to_messages_list(),
+            capability="general",
+            budget_tokens=request.max_tokens or self.settings.max_tokens,
+            force_model=provider_name,
+            request_id=request.request_id,
+        )
+        if not result.success:
+            raise LLMError(result.error or "ModelRouter returned an unsuccessful result")
+        return LLMResponse(
+            content=result.response,
+            model=result.model_id or request.model or self.settings.model,
+            provider=result.provider,
+            prompt_tokens=result.prompt_tokens,
+            completion_tokens=result.completion_tokens,
+            total_tokens=result.tokens_used,
+            finish_reason="stop",
+            request_id=request.request_id,
+        )
 
     async def generate(
         self,
@@ -152,33 +172,16 @@ class LLMManager:
         if not self._initialized:
             await self.initialize()
 
-        providers_to_try = []
-        if provider_name:
-            providers_to_try.append(provider_name)
-        else:
-            providers_to_try.append(self._primary_name)
-            providers_to_try.extend(self._fallback_names)
-
-        last_error: Optional[Exception] = None
-        for p_name in providers_to_try:
-            try:
-                provider = await self._ensure_provider(p_name)
-                request.stream = True
-                async for chunk in provider.stream(request):
-                    yield chunk
-                return # Stream completed successfully
-            except CircuitBreakerError:
-                logger.warning(
-                    "Provider '%s' circuit is open for streaming. Trying next provider.", p_name
-                )
-                last_error = LLMError(f"Circuit breaker open for {p_name} streaming")
-                continue
-            except Exception as e:
-                logger.error("Provider '%s' failed for streaming: %s", p_name, e)
-                last_error = e
-                continue
-
-        raise last_error or LLMError("All LLM providers failed for streaming after retries and fallbacks.")
+        await self._ensure_provider(provider_name or self._primary_name)
+        request.stream = True
+        async for chunk in self._router.stream(
+            messages=request.to_messages_list(),
+            capability="general",
+            budget_tokens=request.max_tokens or self.settings.max_tokens,
+            force_model=provider_name,
+            request_id=request.request_id,
+        ):
+            yield chunk
 
     async def health_check_all(self) -> Dict[str, bool]:
         """فحص صحة جميع المزودين."""

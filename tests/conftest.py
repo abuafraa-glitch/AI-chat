@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
+
 import pytest
 
 # API integration fixtures are functional tests, not authentication tests.
@@ -30,6 +31,16 @@ def brain_mock():
 def pytest_configure(config):
     """إعداد pytest markers."""
     config.addinivalue_line("markers", "asyncio: mark test as async")
+
+
+@pytest.fixture(autouse=True)
+def ensure_default_event_loop():
+    """Keep legacy synchronous tests compatible with Python 3.12 loop lifecycle."""
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+    yield
 
 
 @pytest.fixture(scope="session")

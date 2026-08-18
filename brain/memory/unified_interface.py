@@ -38,7 +38,7 @@ class UnifiedMemoryInterface:
             if self._initialized:
                 return
             try:
-                from hajeen_platform.brain.memory.memory_fabric import get_memory_fabric
+                from brain.memory.memory_fabric import get_memory_fabric
                 self._fabric = get_memory_fabric()
                 logger.info("UnifiedMemoryInterface: MemoryFabric connected (SSOT Mode) ✓")
             except Exception as exc:
@@ -48,7 +48,7 @@ class UnifiedMemoryInterface:
 
     def _ensure_fabric(self):
         if not hasattr(self, "_fabric") or self._fabric is None:
-            from hajeen_platform.brain.memory.memory_fabric import get_memory_fabric
+            from brain.memory.memory_fabric import get_memory_fabric
             self._fabric = get_memory_fabric()
 
     # ── Core Operations (Routed to MemoryFabric) ───────────────────────────

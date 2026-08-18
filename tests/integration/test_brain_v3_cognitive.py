@@ -7,14 +7,10 @@ Integration Tests — Brain V3 Cognitive Pipeline (Phase 2 Complete)
 """
 from __future__ import annotations
 
-import asyncio
-import time
 import uuid
-from dataclasses import dataclass
-from typing import Any, Dict
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
-import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -83,10 +79,10 @@ class TestBrainV3CognitivePipeline:
 
     def _make_brain(self):
         """إنشاء Brain V3 مع mocks للمكونات الخارجية."""
-        from hajeen_platform.brain.brain_v3 import HajeenBrainV3, BrainRequest, RequestType
+        from brain.brain_v3 import BrainRequest, HajeenBrainV3, RequestType
 
         with patch.multiple(
-            "hajeen_platform.brain.brain_v3",
+            "brain.brain_v3",
             get_goal_manager=MagicMock(return_value=MagicMock(
                 analyze=AsyncMock(return_value=MagicMock(
                     goal_id="g1", final_objective="target",

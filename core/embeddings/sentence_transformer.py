@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import logging
+import os
+from pathlib import Path
 from typing import List, Optional
 
 from core.embeddings.base import BaseEmbeddingModel, EmbeddingConfig
@@ -22,10 +24,12 @@ class SentenceTransformerModel(BaseEmbeddingModel):
             return
         try:
             from sentence_transformers import SentenceTransformer
-            logger.info(f"تحميل نموذج: {self.config.model_name}")
+            configured_path = os.getenv("HAJEEN_EMBEDDING_MODEL_PATH")
+            model_source = configured_path if configured_path and Path(configured_path).is_dir() else self.config.model_name
+            logger.info(f"تحميل نموذج: {model_source}")
             model_kwargs = {"local_files_only": self.config.local_files_only}
             self._model = SentenceTransformer(
-                self.config.model_name,
+                model_source,
                 device=self.config.device,
                 cache_folder=self.config.cache_dir,
                 model_kwargs=model_kwargs,

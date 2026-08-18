@@ -1,23 +1,24 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
-import time
 import uuid
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from brain.brain_v3 import HajeenBrainV3, BrainRequest, BrainResponse, RequestType, get_brain_v3
-
 from api.v1.ai.embeddings import router as embeddings_router
-from api.v1.ai.rerank import router as rerank_router
-from api.v1.ai.models import router as models_router
 from api.v1.ai.health import router as health_router
-from hajeen_platform.hajeen_model.evaluation.evaluation_framework import EvaluationFramework
+from api.v1.ai.rerank import router as rerank_router
+from brain.brain_v3 import (
+    BrainRequest,
+    BrainResponse,
+    RequestType,
+)
+from core.llm.base import LLMStreamChunk
+from hajeen_model.evaluation.evaluation_framework import EvaluationFramework
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,6 @@ router = APIRouter()
 # ── Mount sub-routers (only those not directly handled by Brain) ────────────────
 router.include_router(embeddings_router, tags=["Embeddings"])
 router.include_router(rerank_router, tags=["Rerank"])
-router.include_router(models_router, tags=["Models"])
 router.include_router(health_router, tags=["Health"])
 
 
@@ -108,7 +108,8 @@ async def chat(
             "session_id": brain_response.session_id,
             "turn_id": brain_response.request_id,
             "model": brain_response.model_used,
-            "provider": brain_response.policy_decision, # Placeholder, adjust as needed
+            "provider": brain_response.trace.provider,
+
             "sources": brain_response.trace.execution.get("rag_sources", []), # Assuming RAG sources are in trace
             "latency_ms": brain_response.trace.total_latency_ms,
             "tokens_used": brain_response.trace.tokens_used,
@@ -157,26 +158,11 @@ async def chat_stream(
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
             async for chunk in brain.stream(brain_request):
-                # Brain stream yields dict strings like {'content': '...'} or {'brain_decision': '...'}
-                # We need to safely parse them and format as SSE
-                if chunk.startswith("data: "):
-                    data_str = chunk[6:].strip()
-                    if data_str == "[DONE]":
-                        yield f"data: {json.dumps({'choices': [{'delta': {'content': ''}, 'finish_reason': 'stop'}]})}\n\n"
-                        yield "data: [DONE]\n\n"
-                        break
-                    try:
-                        import ast
-                        data_dict = ast.literal_eval(data_str)
-                        if "content" in data_dict:
-                            yield f"data: {json.dumps({'choices': [{'delta': {'content': data_dict['content']}}]})}\n\n"
-                        elif "brain_decision" in data_dict:
-                            # Optionally send brain decision as a meta event
-                            yield f"data: {json.dumps({'meta': {'brain_decision': data_dict['brain_decision']}})}\n\n"
-                    except Exception as e:
-                        logger.debug("Failed to parse stream chunk from Brain: %s", e)
-                        # Fallback: just yield the raw string if it's not a dict
-                        yield f"data: {json.dumps({'choices': [{'delta': {'content': data_str}}]})}\n\n"
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Brain returned an invalid native stream chunk")
+                yield f"data: {json.dumps({'choices': [{'delta': {'content': chunk.delta}, 'finish_reason': chunk.finish_reason}]}, ensure_ascii=False)}\n\n"
+                if chunk.finish_reason:
+                    yield "data: [DONE]\n\n"
         except Exception as e:
             logger.error("Brain stream error: %s", e)
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
@@ -229,7 +215,8 @@ async def rag_query(
             "success": True,
             "response": brain_response.content,
             "model": brain_response.model_used,
-            "provider": brain_response.policy_decision, # Placeholder, adjust as needed
+            "provider": brain_response.trace.provider,
+
             "sources": brain_response.trace.execution.get("rag_sources", []), # Assuming RAG sources are in trace
             "tokens_used": brain_response.trace.tokens_used,
             "latency_ms": brain_response.trace.total_latency_ms,
@@ -242,36 +229,15 @@ async def rag_query(
 # ── GET /models ────────────────────────────────────────────────────────────────
 
 @router.get("/models", summary="النماذج المتاحة", tags=["AI"])
-async def list_models() -> Dict[str, Any]:
+async def list_models(request: Request) -> Dict[str, Any]:
     """
     قائمة النماذج والمزودين المتاحين.
     """
-    # This endpoint can remain as is, as it queries LLMManager directly
-    # or could be updated to query HajeenBrainV3 for its known models.
-    # For now, keeping it as is to avoid unnecessary changes.
-    from core.llm.llm_manager import get_llm_manager
-    from core.llm.provider_registry import ProviderRegistry
-
-    manager = get_llm_manager()
-    try:
-        if not manager._initialized:
-            await manager.initialize()
-        available_models = await manager.get_available_models()
-        health = await manager.health_check_all()
-    except Exception as e:
-        available_models = {}
-        health = {}
-        logger.warning("Models listing error: %s", e)
-
-    ProviderRegistry.auto_register_defaults()
-
-    return {
-        "active_provider": manager.settings.provider,
-        "active_model": manager.settings.model,
-        "registered_providers": ProviderRegistry.list_providers(),
-        "loaded_providers": available_models,
-        "health": health,
-    }
+    brain = request.app.state.brain
+    if brain is None:
+        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+    models = await brain.model_router.list_available_models()
+    return {"models": models, "routing_authority": "ModelRouter"}
 
 
 # ── GET /chat/sessions/{session_id} ───────────────────────────────────────────
@@ -325,7 +291,7 @@ async def ai_stats(request: Request) -> Dict[str, Any]:
     if brain is None:
         raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
 
-    return brain.get_status()
+    return brain.get_stats()
 
 @router.post("/evaluate", summary="تشغيل إطار التقييم", tags=["AI"])
 async def evaluate_model() -> Dict[str, Any]:

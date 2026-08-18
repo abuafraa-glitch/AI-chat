@@ -1,10 +1,15 @@
-import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock
 
-from hajeen_platform.services.evaluation.evaluation_engine import EvaluationEngine
-from hajeen_platform.services.evaluation.metrics import hallucination_metric, agent_success_rate_metric, latency_metric, tool_accuracy_metric
-from hajeen_platform.services.agents.base_agent import AgentResult, AgentContext, AgentStep
+import pytest
+
+from services.agents.base_agent import AgentContext, AgentResult, AgentStep
+from services.evaluation.evaluation_engine import EvaluationEngine
+from services.evaluation.metrics import (
+    agent_success_rate_metric,
+    hallucination_metric,
+    latency_metric,
+    tool_accuracy_metric,
+)
+
 
 @pytest.mark.asyncio
 async def test_evaluation_engine_init():

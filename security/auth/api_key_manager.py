@@ -1,11 +1,9 @@
-import os
-import secrets
 import hashlib
+import secrets
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from hajeen_platform.security.rbac.rbac import Permission, Role
 
 @dataclass
 class APIKey:

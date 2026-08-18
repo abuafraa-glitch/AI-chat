@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import jwt
-from hajeen_platform.security.auth.revoked_tokens import get_revoked_token_store
+
+from security.auth.revoked_tokens import get_revoked_token_store
 
 logger = logging.getLogger(__name__)
 

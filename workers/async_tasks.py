@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from typing import Any, Dict
 
-from hajeen_platform.services.distributed_messaging.celery_config import celery_app
-from hajeen_platform.brain.decision_engine import get_decision_engine
-from hajeen_platform.brain.goal_manager import Goal, IntentType, ComplexityLevel
+from brain.decision_engine import get_decision_engine
+from brain.goal_manager import Goal
+from services.distributed_messaging.celery_config import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ def reflection_task(self, task_id: str, goal_id: str, model_used: str, actual_la
         asyncio.set_event_loop(loop)
 
     async def _run_reflection():
-        from hajeen_platform.brain.reflection.self_reflection import get_self_reflection
+        from brain.reflection.self_reflection import get_self_reflection
         reflector = await get_self_reflection()
         report = await reflector.reflect(
             task_id=task_id,
@@ -96,7 +95,10 @@ def evolution_proposal_task(self, report_data: Dict[str, Any]) -> Dict[str, Any]
         asyncio.set_event_loop(loop)
 
     async def _run_proposal_generation():
-        from hajeen_platform.brain.evolution.self_evolution import get_self_evolution_engine, ReflectionReport
+        from brain.evolution.self_evolution import (
+            ReflectionReport,
+            get_self_evolution_engine,
+        )
         evolution_engine = await get_self_evolution_engine()
         report = ReflectionReport(**report_data)
         proposal = await evolution_engine.analyze_and_propose(report)
@@ -117,7 +119,10 @@ def evolution_evaluation_task(self, proposal_data: Dict[str, Any]) -> Dict[str, 
         asyncio.set_event_loop(loop)
 
     async def _run_proposal_evaluation():
-        from hajeen_platform.brain.evolution.self_evolution import get_self_evolution_engine, EvolutionProposal
+        from brain.evolution.self_evolution import (
+            EvolutionProposal,
+            get_self_evolution_engine,
+        )
         evolution_engine = await get_self_evolution_engine()
         proposal = EvolutionProposal(**proposal_data)
         implemented = await evolution_engine.evaluate_and_implement(proposal)

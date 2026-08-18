@@ -7,30 +7,72 @@ Streaming Response → Memory Storage → Citation Injection
 from __future__ import annotations
 
 import asyncio
-import pytest
 import time
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+
+from core.llm.base import LLMConfig, LLMMessage, LLMRequest, LLMResponse, LLMStreamChunk
+
+
+class _TestOnlyProvider:
+    """Deterministic provider double isolated to this test module."""
+
+    def __init__(self, config: LLMConfig):
+        self.config = config
+        self._initialized = False
+
+    @property
+    def provider_name(self):
+        return self.config.provider
+
+    @property
+    def model_name(self):
+        return self.config.model
+
+    async def initialize(self):
+        self._initialized = True
+
+    async def complete(self, request: LLMRequest) -> LLMResponse:
+        text = "test-only verified response"
+        return LLMResponse(
+            content=text,
+            model=request.model or self.model_name,
+            provider=self.provider_name,
+            prompt_tokens=sum(len(message.content.split()) for message in request.messages),
+            completion_tokens=len(text.split()),
+            total_tokens=sum(len(message.content.split()) for message in request.messages) + len(text.split()),
+        )
+
+    async def stream(self, request: LLMRequest):
+        text = "test-only verified response"
+        for index, token in enumerate(text.split()):
+            yield LLMStreamChunk(delta=(" " if index else "") + token, index=index, model=request.model)
+        yield LLMStreamChunk(delta="", index=len(text.split()), model=request.model, finish_reason="stop")
+
+    async def health_check(self):
+        return True
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 8.1 — LLM Provider Architecture Tests
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _register_test_provider():
+    from core.llm.provider_registry import ProviderRegistry
+    ProviderRegistry.register("test-double", _TestOnlyProvider)
+
+
 class TestBaseLLMProvider:
     def test_mock_provider_creation(self):
         from core.llm.base import LLMConfig
-        from core.llm.providers.mock_provider import MockProvider
         config = LLMConfig(provider="mock", model="mock-model")
-        provider = MockProvider(config)
+        provider = _TestOnlyProvider(config)
         assert provider.provider_name == "mock"
         assert provider.model_name == "mock-model"
 
     def test_mock_provider_complete(self):
-        from core.llm.base import LLMConfig, LLMMessage, LLMRequest
-        from core.llm.providers.mock_provider import MockProvider
+        from core.llm.base import LLMConfig, LLMRequest
         config = LLMConfig(provider="mock", model="mock-model")
-        provider = MockProvider(config)
+        provider = _TestOnlyProvider(config)
         request = LLMRequest(
             messages=[LLMMessage(role="user", content="ما هو الذكاء الاصطناعي؟")]
         )
@@ -38,13 +80,12 @@ class TestBaseLLMProvider:
         assert response.content
         assert response.provider == "mock"
         assert response.total_tokens > 0
-        print(f"✅ MockProvider complete: '{response.content[:60]}...'")
+        print(f"✅ _TestOnlyProvider complete: '{response.content[:60]}...'")
 
     def test_mock_provider_stream(self):
-        from core.llm.base import LLMConfig, LLMMessage, LLMRequest
-        from core.llm.providers.mock_provider import MockProvider
+        from core.llm.base import LLMConfig, LLMRequest
         config = LLMConfig(provider="mock")
-        provider = MockProvider(config)
+        provider = _TestOnlyProvider(config)
         request = LLMRequest(
             messages=[LLMMessage(role="user", content="اشرح التعلم الآلي")]
         )
@@ -57,16 +98,15 @@ class TestBaseLLMProvider:
         assert len(chunks) > 0
         full_text = "".join(chunks)
         assert len(full_text) > 10
-        print(f"✅ MockProvider stream: {len(chunks)} chunks → '{full_text[:60]}...'")
+        print(f"✅ _TestOnlyProvider stream: {len(chunks)} chunks → '{full_text[:60]}...'")
 
     def test_mock_provider_health_check(self):
         from core.llm.base import LLMConfig
-        from core.llm.providers.mock_provider import MockProvider
         config = LLMConfig(provider="mock")
-        provider = MockProvider(config)
+        provider = _TestOnlyProvider(config)
         healthy = asyncio.get_event_loop().run_until_complete(provider.health_check())
         assert healthy is True
-        print("✅ MockProvider health check passed")
+        print("✅ _TestOnlyProvider health check passed")
 
 
 class TestProviderRegistry:
@@ -74,7 +114,8 @@ class TestProviderRegistry:
         from core.llm.provider_registry import ProviderRegistry
         ProviderRegistry.auto_register_defaults()
         providers = ProviderRegistry.list_providers()
-        assert "mock" in providers
+        assert "mock" not in providers
+        assert {"hajeen", "ollama", "openai"}.issubset(providers)
         print(f"✅ Registered providers: {providers}")
 
     def test_create_provider(self):
@@ -82,30 +123,32 @@ class TestProviderRegistry:
         from core.llm.provider_registry import ProviderRegistry
         ProviderRegistry.auto_register_defaults()
         config = LLMConfig(provider="mock")
-        provider = ProviderRegistry.create("mock", config)
+        provider = _TestOnlyProvider(config)
         assert provider is not None
         print("✅ ProviderRegistry create: OK")
 
     def test_alias_lookup(self):
         from core.llm.provider_registry import ProviderRegistry
         ProviderRegistry.auto_register_defaults()
-        provider = ProviderRegistry.get("test")  # alias for mock
-        assert provider is not None
-        print("✅ Alias lookup 'test' → mock: OK")
+        assert ProviderRegistry.get("mock") is None
+        assert ProviderRegistry.get("local") is not None
+        print("✅ Production registry excludes mock and retains real aliases")
 
 
 class TestLLMManager:
     def test_initialize(self):
         from core.llm.llm_manager import LLMManager
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         asyncio.get_event_loop().run_until_complete(manager.initialize())
         assert manager._initialized
         print("✅ LLMManager initialized")
 
     def test_complete(self):
-        from core.llm.base import LLMMessage, LLMRequest
+        from core.llm.base import LLMRequest
         from core.llm.llm_manager import LLMManager
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         asyncio.get_event_loop().run_until_complete(manager.initialize())
         request = LLMRequest(
             messages=[LLMMessage(role="user", content="ما أحدث تطورات الذكاء الاصطناعي؟")]
@@ -116,10 +159,11 @@ class TestLLMManager:
 
     def test_switch_provider(self):
         from core.llm.llm_manager import LLMManager
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         asyncio.get_event_loop().run_until_complete(manager.initialize())
-        asyncio.get_event_loop().run_until_complete(manager.switch_primary("mock"))
-        assert manager._primary_name == "mock"
+        asyncio.get_event_loop().run_until_complete(manager.switch_primary("test-double"))
+        assert manager._primary_name == "test-double"
         print("✅ Provider switch: OK")
 
 
@@ -216,7 +260,8 @@ class TestInferenceEngine:
     def test_initialize(self):
         from core.inference_engine.engine import InferenceEngine
         from core.llm.llm_manager import LLMManager
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         engine = InferenceEngine(llm_manager=manager)
         asyncio.get_event_loop().run_until_complete(engine.initialize())
         assert engine._initialized
@@ -225,7 +270,8 @@ class TestInferenceEngine:
     def test_infer(self):
         from core.inference_engine.engine import InferenceEngine
         from core.llm.llm_manager import LLMManager
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         engine = InferenceEngine(llm_manager=manager)
         asyncio.get_event_loop().run_until_complete(engine.initialize())
 
@@ -241,7 +287,8 @@ class TestInferenceEngine:
     def test_stream_infer(self):
         from core.inference_engine.engine import InferenceEngine
         from core.llm.llm_manager import LLMManager
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         engine = InferenceEngine(llm_manager=manager)
         asyncio.get_event_loop().run_until_complete(engine.initialize())
 
@@ -262,7 +309,8 @@ class TestInferenceEngine:
     def test_engine_stats(self):
         from core.inference_engine.engine import InferenceEngine
         from core.llm.llm_manager import LLMManager
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         engine = InferenceEngine(llm_manager=manager)
         asyncio.get_event_loop().run_until_complete(engine.initialize())
         asyncio.get_event_loop().run_until_complete(
@@ -335,13 +383,11 @@ class TestSessionManager:
 class TestStreamHandler:
     def test_process_stream(self):
         from core.inference_engine.stream_handler import StreamHandler
-        from core.llm.base import LLMConfig
-        from core.llm.providers.mock_provider import MockProvider
-        from core.llm.base import LLMMessage, LLMRequest
+        from core.llm.base import LLMConfig, LLMRequest
 
         handler = StreamHandler()
         config = LLMConfig(provider="mock")
-        provider = MockProvider(config)
+        provider = _TestOnlyProvider(config)
         request = LLMRequest(
             messages=[LLMMessage(role="user", content="شرح الـ streaming")]
         )
@@ -375,11 +421,12 @@ class TestStreamHandler:
 
 class TestChatService:
     def test_chat_without_rag(self):
-        from services.chat.chat_service import ChatRequest, ChatService
         from core.inference_engine.engine import InferenceEngine
         from core.llm.llm_manager import LLMManager
+        from services.chat.chat_service import ChatRequest, ChatService
 
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         engine = InferenceEngine(llm_manager=manager)
         service = ChatService(inference_engine=engine)
 
@@ -398,11 +445,12 @@ class TestChatService:
         print(f"   session={response.session_id[:8]}... tokens={response.tokens_used}")
 
     def test_chat_with_session(self):
-        from services.chat.chat_service import ChatRequest, ChatService
         from core.inference_engine.engine import InferenceEngine
         from core.llm.llm_manager import LLMManager
+        from services.chat.chat_service import ChatRequest, ChatService
 
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         engine = InferenceEngine(llm_manager=manager)
         service = ChatService(inference_engine=engine)
         session_id = str(uuid.uuid4())
@@ -427,11 +475,12 @@ class TestChatService:
         print(f"✅ Chat with session: 2 turns in session {session_id[:8]}...")
 
     def test_moderation_blocking(self):
-        from services.chat.chat_service import ChatRequest, ChatService
         from core.inference_engine.engine import InferenceEngine
         from core.llm.llm_manager import LLMManager
+        from services.chat.chat_service import ChatRequest, ChatService
 
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         engine = InferenceEngine(llm_manager=manager)
         service = ChatService(inference_engine=engine)
 
@@ -443,7 +492,7 @@ class TestChatService:
         )
         # Either blocked or allowed (moderation may just warn)
         assert response.content
-        print(f"✅ Moderation check: response returned")
+        print("✅ Moderation check: response returned")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -516,7 +565,7 @@ class TestAIMetrics:
         report = metrics.get_full_report()
         assert report["tokens"]["total_requests"] == 1
         assert report["streaming"]["total_streams"] == 1
-        print(f"✅ AIMetricsCollector full report: OK")
+        print("✅ AIMetricsCollector full report: OK")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -548,7 +597,8 @@ class TestPhase8EndToEnd:
         from core.llm.provider_registry import ProviderRegistry
 
         ProviderRegistry.auto_register_defaults()
-        manager = LLMManager(primary_provider="mock")
+        _register_test_provider()
+        manager = LLMManager(primary_provider="test-double")
         asyncio.get_event_loop().run_until_complete(manager.initialize())
         print("✅ Step 1 — LLM Manager: initialized (provider=mock)")
 
@@ -586,7 +636,6 @@ class TestPhase8EndToEnd:
 
         # ── Step 3: Prompt Building ───────────────────────────────────
         from services.prompts.prompt_builder import PromptBuilder
-        from services.prompts.system_prompt_manager import SystemPromptManager
 
         builder = PromptBuilder()
         built_prompt = builder.build_rag_prompt(
@@ -594,7 +643,7 @@ class TestPhase8EndToEnd:
             context_chunks=simulated_chunks,
             language="ar",
         )
-        print(f"✅ Step 3 — Prompt Building:")
+        print("✅ Step 3 — Prompt Building:")
         print(f"   - Messages: {len(built_prompt.messages)}")
         print(f"   - Context injected: {built_prompt.context_injected}")
         print(f"   - Token estimate: ~{built_prompt.token_estimate}")
@@ -621,7 +670,7 @@ class TestPhase8EndToEnd:
         )
         inference_ms = (time.perf_counter() - t_start) * 1000
 
-        print(f"✅ Step 4 — LLM Inference:")
+        print("✅ Step 4 — LLM Inference:")
         print(f"   - Provider: {inference_result.provider}")
         print(f"   - Model: {inference_result.model}")
         print(f"   - Tokens: {inference_result.total_tokens}")
@@ -639,20 +688,19 @@ class TestPhase8EndToEnd:
                     stream_chunks.append(event.data)
         asyncio.get_event_loop().run_until_complete(collect_stream())
         full_streamed = "".join(stream_chunks)
-        print(f"✅ Step 5 — Streaming Response:")
+        print("✅ Step 5 — Streaming Response:")
         print(f"   - Chunks: {len(stream_chunks)}")
         print(f"   - Text: '{full_streamed[:60]}...'")
 
         # ── Step 6: Memory Storage ────────────────────────────────────
         from services.memory.session_manager import SessionManager
-        from services.memory.conversation_memory import ConversationMemory
 
         session_mgr = SessionManager()
         chat_session = session_mgr.get_or_create(session_id=session_id)
         chat_session.memory.add_user_message(query)
         chat_session.memory.add_assistant_message(inference_result.cleaned_content)
 
-        print(f"✅ Step 6 — Memory Storage:")
+        print("✅ Step 6 — Memory Storage:")
         print(f"   - Session ID: {session_id[:16]}...")
         print(f"   - Messages stored: {chat_session.memory.message_count}")
 
@@ -666,7 +714,7 @@ class TestPhase8EndToEnd:
         )
         citations_api = injector.format_citations_for_api(simulated_chunks)
 
-        print(f"✅ Step 7 — Citation Injection:")
+        print("✅ Step 7 — Citation Injection:")
         print(f"   - Citations formatted: {len(citations_api)}")
         for c in citations_api:
             print(f"   [{c['index']}] {c['title']}")
@@ -689,7 +737,7 @@ class TestPhase8EndToEnd:
             duration_ms=500.0,
         )
         dashboard = metrics.get_dashboard_metrics()
-        print(f"✅ Step 8 — AI Monitoring:")
+        print("✅ Step 8 — AI Monitoring:")
         print(f"   - Total requests: {dashboard['total_requests']}")
         print(f"   - Total tokens: {dashboard['total_tokens']}")
         print(f"   - Streams: {dashboard['stream_count']}")
@@ -698,7 +746,7 @@ class TestPhase8EndToEnd:
         print("\n" + "═" * 60)
         print("✅ Phase 8 End-to-End Test: PASSED")
         print("═" * 60)
-        print(f"📊 Pipeline Summary:")
+        print("📊 Pipeline Summary:")
         print(f"   Query: '{query}'")
         print(f"   RAG chunks: {len(simulated_chunks)}")
         print(f"   Prompt tokens: ~{built_prompt.token_estimate}")
@@ -716,7 +764,6 @@ class TestPhase8EndToEnd:
 
 
 if __name__ == "__main__":
-    import sys
 
     print("=" * 60)
     print("Running Phase 8 Tests Directly")

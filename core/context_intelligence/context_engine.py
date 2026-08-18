@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional
-from hajeen_platform.core.context_intelligence.context_scoring import ContextScoringSystem, DynamicContextRanker
-from hajeen_platform.core.context_intelligence.semantic_memory import SemanticMemoryRetrieval
+
+from core.context_intelligence.context_scoring import (
+    ContextScoringSystem,
+    DynamicContextRanker,
+)
+from core.context_intelligence.semantic_memory import SemanticMemoryRetrieval
 
 logger = logging.getLogger(__name__)
 

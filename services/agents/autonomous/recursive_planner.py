@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
-from hajeen_platform.services.agents.base_agent import AgentContext, AgentStep
+from services.agents.base_agent import AgentContext
 
 logger = logging.getLogger(__name__)
 

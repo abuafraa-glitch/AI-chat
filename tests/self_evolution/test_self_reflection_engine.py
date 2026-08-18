@@ -1,7 +1,9 @@
-import pytest
-import asyncio
 from unittest.mock import AsyncMock
-from hajeen_platform.services.self_evolution.self_reflection_engine import SelfReflectionEngine, MockLLM
+
+import pytest
+
+from services.self_evolution.self_reflection_engine import MockLLM, SelfReflectionEngine
+
 
 @pytest.mark.asyncio
 async def test_self_reflection_engine_init():

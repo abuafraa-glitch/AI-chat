@@ -5,11 +5,12 @@ import logging
 import os
 import time
 import uuid
-from hajeen_platform.security.auth.api_key_manager import get_api_key_manager, APIKey
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
-from pydantic import BaseModel, EmailStr, Field
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel, Field
+
+from security.auth.api_key_manager import get_api_key_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -85,9 +86,10 @@ def _verify_password(password: str, stored_hash: str) -> bool:
 
 
 def _get_jwt_auth():
-    from hajeen_platform.security.auth.jwt_auth import JWTAuthenticator
-    from hajeen_platform.security.auth.revoked_tokens import get_revoked_token_store
     import os
+
+    from security.auth.jwt_auth import JWTAuthenticator
+    from security.auth.revoked_tokens import get_revoked_token_store
     return JWTAuthenticator(secret=os.getenv("JWT_SECRET", JWT_SECRET), revoked_store=get_revoked_token_store())
 
 
@@ -256,7 +258,6 @@ async def create_api_key(body: CreateAPIKeyRequest, request: Request) -> Dict[st
     user_id = getattr(request.state, "user_id", "anonymous")
     tenant_id = getattr(request.state, "tenant_id", "default")
 
-    import secrets
     api_key_manager = get_api_key_manager()
     raw_key, api_key_obj = api_key_manager.generate_key(
         user_id=user_id,

@@ -1,15 +1,16 @@
-import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from hajeen_platform.services.data_intelligence.data_factory import AutonomousDataFactory
-from hajeen_platform.services.data_intelligence.components import (
-    synthetic_data_generator,
-    dataset_refiner,
-    vector_store_ingestion_pipeline,
+import pytest
+
+from services.data_intelligence.components import (
     MockLLM,
-    MockVectorDBClient
+    MockVectorDBClient,
+    dataset_refiner,
+    synthetic_data_generator,
+    vector_store_ingestion_pipeline,
 )
+from services.data_intelligence.data_factory import AutonomousDataFactory
+
 
 @pytest.mark.asyncio
 async def test_autonomous_data_factory_init():

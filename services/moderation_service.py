@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 _HARMFUL_PATTERNS = [
-    r"\b(how\s+to\s+make\s+(bomb|weapon|poison|drug))",
+    r"\b(how\s+to\s+make\s+(?:(?:a|an|the)\s+)?(bomb|weapon|poison|drug))",
     r"\b(kill\s+yourself|suicide\s+method)",
     r"\b(child\s+abuse|child\s+porn)",
     r"\b(hack\s+(bank|credit\s+card|password))",

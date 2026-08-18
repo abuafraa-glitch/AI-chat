@@ -5,8 +5,9 @@ import sys
 # Add the project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from hajeen_platform.core.inference_engine.engine import get_inference_engine
-from hajeen_platform.hajeen_model.evaluation.evaluation_framework import EvaluationFramework
+from core.inference_engine.engine import get_inference_engine
+from hajeen_model.evaluation.evaluation_framework import EvaluationFramework
+
 
 async def test_inference():
     print("\n--- Testing Inference Engine ---")

@@ -1,6 +1,9 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from hajeen_platform.services.distributed_messaging.celery_config import celery_app, process_data
+
+from services.distributed_messaging.celery_config import celery_app, process_data
+
 
 @pytest.fixture(scope="module")
 def celery_worker_session():
@@ -12,7 +15,7 @@ def test_celery_app_config():
     assert celery_app.conf.task_acks_late is True
     assert celery_app.conf.broker_url == "redis://localhost:6379/0"
 
-@patch("hajeen_platform.services.distributed_messaging.celery_config.process_data.delay")
+@patch("services.distributed_messaging.celery_config.process_data.delay")
 def test_process_data_task(mock_delay):
     mock_result = MagicMock()
     mock_result.get.return_value = {"status": "processed", "original_data": {"item": "test_data", "value": 123}, "processed_at": 12345}
@@ -25,7 +28,7 @@ def test_process_data_task(mock_delay):
     assert result["status"] == "processed"
     assert result["original_data"] == data
 
-@patch("hajeen_platform.services.distributed_messaging.celery_config.process_data.delay")
+@patch("services.distributed_messaging.celery_config.process_data.delay")
 def test_process_data_task_async(mock_delay):
     mock_result = MagicMock()
     mock_result.id = "mock_task_id"

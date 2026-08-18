@@ -8,10 +8,11 @@ MemoryManager (Adapter) — إدارة الذاكرة المركزية (Legacy)
 
 from __future__ import annotations
 
-import logging
 import asyncio
+import logging
 from typing import Any, Dict, List, Optional
-from hajeen_platform.brain.memory.unified_interface import get_unified_memory
+
+from brain.memory.unified_interface import get_unified_memory
 
 logger = logging.getLogger(__name__)
 

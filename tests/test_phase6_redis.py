@@ -2,7 +2,23 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock, patch
+
+
+@pytest.fixture
+def fake_redis_manager(monkeypatch):
+    """Test-only Redis double; production RedisManager never creates it."""
+    import fakeredis
+
+    from configs.redis import RedisConfig, RedisManager
+
+    cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
+    manager = RedisManager(config=cfg)
+    monkeypatch.setattr(
+        manager,
+        "_make_sync_client",
+        lambda: fakeredis.FakeRedis(decode_responses=True),
+    )
+    return manager
 
 
 class TestRedisConfig:
@@ -48,48 +64,31 @@ class TestRedisConfig:
 
 
 class TestRedisManager:
-    def test_sync_connect_uses_fakeredis(self):
-        from configs.redis import RedisManager, RedisConfig
-        cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
-        mgr = RedisManager(config=cfg)
-        mgr.connect()
-        assert mgr._use_fake is True
-        assert mgr._client is not None
+    def test_sync_connect_uses_test_only_redis_double(self, fake_redis_manager):
+        fake_redis_manager.connect()
+        assert fake_redis_manager._client is not None
 
-    def test_ping_returns_true_with_fakeredis(self):
-        from configs.redis import RedisManager, RedisConfig
-        cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
-        mgr = RedisManager(config=cfg)
-        assert mgr.ping() is True
+    def test_ping_returns_true_with_test_only_redis_double(self, fake_redis_manager):
+        assert fake_redis_manager.ping() is True
 
     def test_health_check_has_status(self):
-        from configs.redis import RedisManager, RedisConfig
+        from configs.redis import RedisConfig, RedisManager
         cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
         mgr = RedisManager(config=cfg)
         health = mgr.health_check()
         assert "status" in health
 
-    def test_health_check_ok_with_fakeredis(self):
-        from configs.redis import RedisManager, RedisConfig
-        cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
-        mgr = RedisManager(config=cfg)
-        mgr.connect()  # trigger fakeredis
-        health = mgr.health_check()
-        # fakeredis is active; status should be ok
-        assert health["status"] in ("ok", "error")  # fakeredis INFO may not be available
+    def test_health_check_ok_with_test_only_redis_double(self, fake_redis_manager):
+        fake_redis_manager.connect()
+        health = fake_redis_manager.health_check()
+        assert health["status"] in ("ok", "error")
 
-    def test_context_manager_sync(self):
-        from configs.redis import RedisManager, RedisConfig
-        cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
-        with RedisManager(config=cfg) as mgr:
+    def test_context_manager_sync(self, fake_redis_manager):
+        with fake_redis_manager as mgr:
             assert mgr._client is not None
 
-    def test_client_property_auto_connects(self):
-        from configs.redis import RedisManager, RedisConfig
-        cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
-        mgr = RedisManager(config=cfg)
-        client = mgr.client
-        assert client is not None
+    def test_client_property_auto_connects(self, fake_redis_manager):
+        assert fake_redis_manager.client is not None
 
     def test_get_singleton(self):
         from configs.redis import get_redis_manager
@@ -97,26 +96,17 @@ class TestRedisManager:
         mgr2 = get_redis_manager()
         assert mgr1 is mgr2
 
-    def test_disconnect_clears_client(self):
-        from configs.redis import RedisManager, RedisConfig
-        cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
-        mgr = RedisManager(config=cfg)
-        mgr.connect()
-        mgr.disconnect()
-        assert mgr._client is None
+    def test_disconnect_clears_client(self, fake_redis_manager):
+        fake_redis_manager.connect()
+        fake_redis_manager.disconnect()
+        assert fake_redis_manager._client is None
 
-    def test_use_fake_flag_set(self):
-        from configs.redis import RedisManager, RedisConfig
-        cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
-        mgr = RedisManager(config=cfg)
-        mgr.connect()
-        assert mgr._use_fake is True
+    def test_production_manager_has_no_fake_flag(self):
+        from configs.redis import RedisConfig, RedisManager
+        mgr = RedisManager(config=RedisConfig(retry_max_attempts=1))
+        assert not hasattr(mgr, "_use_fake")
 
-    def test_redis_operations_with_fakeredis(self):
-        from configs.redis import RedisManager, RedisConfig
-        cfg = RedisConfig(host="127.0.0.1", port=9999, retry_max_attempts=1)
-        mgr = RedisManager(config=cfg)
-        mgr.connect()
-        mgr.client.set("test_key", "test_value")
-        val = mgr.client.get("test_key")
-        assert val == "test_value"
+    def test_redis_operations_with_test_only_redis_double(self, fake_redis_manager):
+        fake_redis_manager.connect()
+        fake_redis_manager.client.set("test_key", "test_value")
+        assert fake_redis_manager.client.get("test_key") == "test_value"

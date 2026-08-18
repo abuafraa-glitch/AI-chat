@@ -1,7 +1,9 @@
+from unittest.mock import patch
+
 import pytest
-import asyncio
-from unittest.mock import MagicMock, patch
-from hajeen_platform.services.distributed_messaging.redis_streams_integration import RedisStreamsClient
+
+from services.distributed_messaging.redis_streams_integration import RedisStreamsClient
+
 
 @pytest.fixture
 def mock_redis_client():

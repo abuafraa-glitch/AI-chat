@@ -5,8 +5,8 @@ import logging
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from hajeen_platform.services.agents.base_agent import AgentResult
-from hajeen_platform.services.evaluation.metrics import (
+from services.agents.base_agent import AgentResult
+from services.evaluation.metrics import (
     agent_success_rate_metric,
     hallucination_metric,
     latency_metric,

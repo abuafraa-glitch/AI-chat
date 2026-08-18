@@ -1,9 +1,10 @@
 import argparse
 import logging
-from hajeen_platform.core.alignment.ppo_trainer import PPOTrainerWrapper, PPOConfig
-from hajeen_platform.core.alignment.reward_model import RewardModelPipeline
-from hajeen_platform.core.model.model_loader import ModelLoader
-from hajeen_platform.core.tokenizer.tokenizer_manager import TokenizerManager
+
+from core.alignment.ppo_trainer import PPOConfig, PPOTrainerWrapper
+from core.alignment.reward_model import RewardModelPipeline
+from core.model.model_loader import ModelLoader
+from core.tokenizer.tokenizer_manager import TokenizerManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

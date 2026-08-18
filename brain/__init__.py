@@ -1,21 +1,7 @@
-"""
-Hajeen Brain v3 — العقل المدبّر الموحّد لمنصة Hajeen AI
-=========================================================
-الطبقة العليا التي تحوّل المنصة من wrapper للنماذج إلى عقل رقمي مستقل.
+"""Public lazy exports for the Hajeen Brain package."""
+from __future__ import annotations
 
-لا يصل أي طلب مباشرةً إلى أي نموذج. كل شيء يمر عبر HajeenBrain أولاً.
-
-المصدرون الرسميون:
-- HajeenBrainV3 — العقل المركزي الوحيد
-- BrainRequest / BrainResponse — هياكل البيانات
-- get_brain / get_brain_v3 — Singleton accessor
-- UnifiedPromptBuilder — بناء الـ Prompts الوحيد
-"""
-
-from .brain_v3 import HajeenBrainV3, BrainRequest, BrainResponse, get_brain, get_brain_v3
-
-# Compatibility aliases — V2 is deprecated, يشير لـ V3
-HajeenBrain = HajeenBrainV3
+from importlib import import_module
 
 __all__ = [
     "HajeenBrain",
@@ -25,3 +11,12 @@ __all__ = [
     "get_brain",
     "get_brain_v3",
 ]
+
+
+def __getattr__(name: str):
+    if name in __all__:
+        module = import_module("brain.brain_v3")
+        if name == "HajeenBrain":
+            return module.HajeenBrainV3
+        return getattr(module, name)
+    raise AttributeError(name)

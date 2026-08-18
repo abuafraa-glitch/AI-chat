@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-import json
 import logging
 import time
 import uuid
@@ -32,50 +31,24 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
+from brain.prompts.unified_prompt_builder import PromptMode, UnifiedPromptBuilder
+from services.rag.rag_pipeline import RAGPipeline, RAGRequest
+
 from .cognitive_layer.context_analyzer import (
-    ContextAnalysis,
     ContextAnalyzer,
     get_context_analyzer,
 )
-from .cognitive_layer.intent_analyzer import Intent, IntentAnalyzer, get_intent_analyzer
+from .cognitive_layer.intent_analyzer import IntentAnalyzer, get_intent_analyzer
 from .cognitive_layer.reasoning_engine import (
     ReasoningEngine,
-    ReasoningResult,
     get_reasoning_engine,
 )
 from .decision_engine import DecisionEngine, get_decision_engine_sync
-from .goal_manager import Goal, GoalManager, get_goal_manager
-from .graph_planner import GraphPlanner, get_graph_planner
-from .improvement.autonomous_improvement import (
-    AutonomousImprovement,
-    get_autonomous_improvement,
-)
-from .knowledge.knowledge_distillation import (
-    KnowledgeDistillationPipeline,
-    get_distillation_pipeline,
-)
-from .knowledge.knowledge_graph import (
-    KnowledgeGraph,
-    NodeCategory,
-    RelationType,
-    get_knowledge_graph,
-)
+from .goal_manager import GoalManager, get_goal_manager
 from .memory.memory_fabric import MemoryFabric, get_memory_fabric
 from .metrics.model_performance_db import ModelPerformanceDB, get_performance_db
 from .model_router import ModelRouter, get_model_router
-from brain.prompts.unified_prompt_builder import PromptMode, UnifiedPromptBuilder
-from services.rag.rag_pipeline import RAGPipeline, RAGRequest
-from .multi_model import (
-    CollaborationStrategy,
-    MultiModelCollaborator,
-    get_multi_model_collaborator,
-)
 from .policy.policy_engine import PolicyEngine, get_policy_engine
-from .reflection.self_evolution import SelfEvolution, get_self_evolution
-from .reflection.self_reflection import SelfReflection, get_self_reflection
-from .sovereignty.sovereignty_layer import SovereigntyLayer, get_sovereignty_layer
-from .state_machine import StateMachine, TaskState, get_state_machine
-from .task_decomposer import TaskDecomposer, get_task_decomposer
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +96,8 @@ class ExecutionTrace:
     execution: Dict[str, Any] = field(default_factory=dict)
     memory_operations: Dict[str, Any] = field(default_factory=dict)
     reflection: Dict[str, Any] = field(default_factory=dict)
+    tokens_used: int = 0
+    provider: Optional[str] = None
 
     # مقاييس الأداء
     total_latency_ms: float = 0.0
@@ -222,6 +197,7 @@ class HajeenBrainV3:
         self.performance_db: ModelPerformanceDB = get_performance_db()
 
         self._execution_traces: Dict[str, ExecutionTrace] = {}
+        self._stream_queues: Dict[str, asyncio.Queue] = {}
         logger.info("HajeenBrain v%s: جاهز — Runtime الوحيد المعتمد ✓", self.VERSION)
 
     def set_rag_pipeline(self, rag_pipeline: Optional[RAGPipeline]) -> None:
@@ -403,14 +379,24 @@ class HajeenBrainV3:
             rag_sources = rag_response.formatted.citations
 
         prompt_mode = PromptMode.RAG if use_rag else PromptMode.CHAT
-        prompt = self.prompt_builder.build(
-            request.user_message,
-            mode=prompt_mode,
-            history=conversation.get_window()[:-1],
-            context=rag_context,
-            language=str(request.context.get("language", "ar")),
-            system_prompt=request.context.get("system_prompt"),
-        )
+        if use_rag and self.rag_pipeline is not None and self.rag_pipeline.unified_prompt_builder is not None:
+            prompt = self.rag_pipeline.unified_prompt_builder.build(
+                request.user_message,
+                mode=PromptMode.RAG,
+                history=conversation.get_window()[:-1],
+                context=rag_context,
+                language=str(request.context.get("language", "ar")),
+                system_prompt=request.context.get("system_prompt"),
+            )
+        else:
+            prompt = self.prompt_builder.build(
+                request.user_message,
+                mode=prompt_mode,
+                history=conversation.get_window()[:-1],
+                context=rag_context,
+                language=str(request.context.get("language", "ar")),
+                system_prompt=request.context.get("system_prompt"),
+            )
         trace.record_layer("execution", {
             "prompt_builder": "UnifiedPromptBuilder",
             "prompt_mode": prompt_mode.value,
@@ -419,24 +405,57 @@ class HajeenBrainV3:
         })
 
         try:
-            route_result = await self.model_router.route(
-                messages=prompt.messages,
-                capability="general",
-                budget_tokens=request.max_tokens,
-                prefer_local=True,
-            )
-            if not route_result.success:
-                raise RuntimeError(route_result.error or "ModelRouter returned an unsuccessful result")
-            content = route_result.response
-            model_used = route_result.model_id
-            trace.record_layer("execution", {
-                "model": model_used,
-                "provider": route_result.provider,
-                "latency_ms": route_result.latency_ms,
-                "success": True,
-                "prompt_builder": "UnifiedPromptBuilder",
-                "rag_sources": rag_sources,
-            })
+            if request.stream:
+                queue = self._stream_queues.get(request.request_id)
+                if queue is None:
+                    raise RuntimeError("Streaming queue is not initialized")
+                pieces: List[str] = []
+                async for chunk in self.model_router.stream(
+                    messages=prompt.messages,
+                    capability="general",
+                    budget_tokens=request.max_tokens,
+                    force_model=request.force_model,
+                    prefer_local=True,
+                    request_id=request.request_id,
+                ):
+                    pieces.append(chunk.delta)
+                    await queue.put(chunk)
+                content = "".join(pieces)
+                if not content:
+                    raise RuntimeError("Native provider stream completed without content")
+                route_result = None
+                model_used = request.force_model or "stream-provider"
+                trace.record_layer("execution", {
+                    "model": model_used,
+                    "provider": "native-stream",
+                    "success": True,
+                    "streaming": True,
+                    "prompt_builder": "UnifiedPromptBuilder",
+                    "rag_sources": rag_sources,
+                })
+            else:
+                route_result = await self.model_router.route(
+                    messages=prompt.messages,
+                    capability="general",
+                    budget_tokens=request.max_tokens,
+                    force_model=request.force_model,
+                    prefer_local=True,
+                    request_id=request.request_id,
+                )
+                if not route_result.success:
+                    raise RuntimeError(route_result.error or "ModelRouter returned an unsuccessful result")
+                content = route_result.response
+                model_used = route_result.model_id
+                trace.tokens_used = route_result.tokens_used
+                trace.provider = route_result.provider
+                trace.record_layer("execution", {
+                    "model": model_used,
+                    "provider": route_result.provider,
+                    "latency_ms": route_result.latency_ms,
+                    "success": True,
+                    "prompt_builder": "UnifiedPromptBuilder",
+                    "rag_sources": rag_sources,
+                })
         except Exception as exc:
             logger.error("ModelRouter unavailable; failing closed: %s", exc)
             trace.record_layer("execution", {
@@ -445,7 +464,14 @@ class HajeenBrainV3:
                 "success": False,
                 "fail_closed": True,
             })
+            queue = self._stream_queues.get(request.request_id)
+            if queue is not None:
+                await queue.put(exc)
             raise RuntimeError("No verified model route available") from exc
+        finally:
+            queue = self._stream_queues.get(request.request_id)
+            if queue is not None:
+                await queue.put(None)
 
         # ── 9. MemoryFabric: حفظ الاستجابة (SSOT) ──────────────────────
         conversation.add_message("assistant", content)
@@ -462,34 +488,44 @@ class HajeenBrainV3:
             models_collaborated=[model_used],
             quality_score=0.9,
             policy_decision="allowed",
-            used_local_model=route_result.provider in {"local", "ollama"},
+            used_local_model=(trace.provider or "") in {"local", "hajeen", "ollama"},
             used_rag=use_rag,
         )
 
-    async def stream(self, request: BrainRequest) -> AsyncGenerator[str, None]:
-        """
-        Streaming عبر Brain Pipeline.
-
-        يمر الطلب عبر نفس pipeline.process() ثم يُجزّأ الرد.
-        لا يوجد LLM call مباشر هنا.
-        """
+    async def stream(self, request: BrainRequest) -> AsyncGenerator[Any, None]:
+        """Run the normal Brain pipeline and expose provider-native chunks."""
+        if not request.stream:
+            request.stream = True
+        queue: asyncio.Queue = asyncio.Queue()
+        self._stream_queues[request.request_id] = queue
+        task = asyncio.create_task(self.process(request))
         try:
-            response = await self.process(request)
-            content = response.content
-
-            # محاكاة streaming بتقطيع الرد
-            words = content.split()
-            chunk_size = 3
-            for i in range(0, len(words), chunk_size):
-                chunk = " ".join(words[i:i + chunk_size])
-                if i + chunk_size < len(words):
-                    chunk += " "
-                yield chunk
-                await asyncio.sleep(0.01)
-
-        except Exception as exc:
-            logger.error("Brain streaming error: %s", exc)
-            yield f"[Error in HajeenBrainV3]: {exc}"
+            while True:
+                item = await queue.get()
+                if item is None:
+                    break
+                if isinstance(item, Exception):
+                    raise item
+                yield item
+            await task
+        finally:
+            self._stream_queues.pop(request.request_id, None)
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+            else:
+                # Retrieve an already-finished exception even when the queue
+                # delivered it first; otherwise asyncio reports an unhandled
+                # task exception after the stream consumer exits.
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+                except Exception:
+                    pass
 
     def get_trace(self, request_id: str) -> Optional[ExecutionTrace]:
         """جلب تتبع تنفيذ طلب معين."""

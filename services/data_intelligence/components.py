@@ -45,6 +45,9 @@ async def synthetic_data_generator(
         match = re.search(r"\[.*\]", raw, re.DOTALL)
         if match:
             samples = json.loads(match.group())
+            if not isinstance(samples, list):
+                raise ValueError("Synthetic generator response must be a JSON array")
+            samples = samples[:count]
             logger.info("Generated %d samples for domain '%s'.", len(samples), domain)
             return samples
     except Exception as exc:

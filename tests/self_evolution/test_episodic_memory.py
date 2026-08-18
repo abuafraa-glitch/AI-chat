@@ -1,8 +1,10 @@
-import pytest
-import os
 import json
-from unittest.mock import patch, mock_open
-from hajeen_platform.services.self_evolution.episodic_memory import EpisodicMemory
+import os
+
+import pytest
+
+from services.self_evolution.episodic_memory import EpisodicMemory
+
 
 @pytest.fixture
 def temp_memory_file(tmp_path):

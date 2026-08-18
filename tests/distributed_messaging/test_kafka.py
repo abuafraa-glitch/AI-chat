@@ -1,6 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from hajeen_platform.services.distributed_messaging.kafka_integration import KafkaProducer, KafkaConsumer
+
+from services.distributed_messaging.kafka_integration import (
+    KafkaConsumer,
+    KafkaProducer,
+)
+
 
 def test_kafka_producer_init():
     producer = KafkaProducer("localhost:9092")

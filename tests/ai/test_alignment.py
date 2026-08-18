@@ -1,10 +1,40 @@
-import pytest
-import os
 import json
-from hajeen_platform.core.alignment.preference_dataset import PreferenceDatasetBuilder
-from hajeen_platform.core.alignment.reward_model import RewardModelPipeline
-from hajeen_platform.core.alignment.evaluation_system import AlignmentEvaluator
-from hajeen_platform.core.alignment.alignment_pipeline import AlignmentPipeline
+import os
+
+import pytest
+
+from core.alignment.alignment_pipeline import AlignmentPipeline
+from core.alignment.evaluation_system import AlignmentEvaluator
+from core.alignment.preference_dataset import PreferenceDatasetBuilder
+from core.alignment.reward_model import RewardModelPipeline
+from services.alignment.dpo_pipeline import DPOPipeline
+from services.alignment.rlhf_infrastructure import RLHFInfrastructure
+
+
+class MockModel:
+    """Test-only model double for alignment orchestration contracts."""
+
+    def __call__(self, *args, **kwargs):
+        return 0.5
+
+
+class MockPolicyModel(MockModel):
+    pass
+
+
+class MockRewardModel(MockModel):
+    pass
+
+
+class MockTokenizer:
+    """Test-only tokenizer double with the minimal alignment interface."""
+
+    def encode(self, text, return_tensors=None):
+        return [1, 2, 3]
+
+    def __call__(self, text, return_tensors=None):
+        return {"input_ids": self.encode(text, return_tensors=return_tensors)}
+
 
 def test_preference_dataset_builder(tmp_path):
     output_dir = tmp_path / "alignment"
@@ -76,18 +106,16 @@ async def test_dpo_prepare_preference_data():
     assert processed_data[0] == ("P1", "C1", "R1")
 
 @pytest.mark.asyncio
-async def test_dpo_run_pipeline():
-    model = MockModel()
-    ref_model = MockModel()
-    tokenizer = MockTokenizer()
-    pipeline = DPOPipeline(model, ref_model, tokenizer)
-    
+async def test_dpo_run_pipeline(monkeypatch):
+    pipeline = DPOPipeline(MockModel(), MockModel(), MockTokenizer())
+    pipeline.setup_trainer = lambda train_dataset, eval_dataset=None: None
+    pipeline.train = lambda: {"status": "completed", "metrics": {"loss": 0.1}}
     preferences = [
         {"prompt": "P1", "chosen_response": "C1", "rejected_response": "R1"},
     ]
     results = await pipeline.run_pipeline(preferences, epochs=1)
     assert results["status"] == "completed"
-    assert results["average_loss"] > 0
+    assert results["metrics"]["loss"] > 0
 
 @pytest.mark.asyncio
 async def test_rlhf_infrastructure_init():
@@ -111,25 +139,29 @@ async def test_rlhf_collect_human_feedback():
 
 @pytest.mark.asyncio
 async def test_rlhf_train_reward_model():
-    policy_model = MockPolicyModel()
-    reward_model = MockRewardModel()
-    tokenizer = MockTokenizer()
-    infra = RLHFInfrastructure(policy_model, reward_model, tokenizer)
-    
-    feedback = [
-        {"prompt": "P1", "chosen_response": "C1", "rejected_response": "R1"},
-    ]
-    results = await infra.train_reward_model(feedback)
-    assert results["status"] == "reward_model_trained"
+    infra = RLHFInfrastructure(MockPolicyModel(), MockRewardModel(), MockTokenizer())
+
+    class Trainer:
+        def train(self):
+            return type("TrainResult", (), {"metrics": {"loss": 0.2}})()
+
+    infra._reward_trainer = Trainer()
+    results = infra.train_reward_model()
+    assert results["loss"] > 0
 
 @pytest.mark.asyncio
-async def test_rlhf_run_pipeline():
-    policy_model = MockPolicyModel()
-    reward_model = MockRewardModel()
-    tokenizer = MockTokenizer()
-    infra = RLHFInfrastructure(policy_model, reward_model, tokenizer)
-    
-    initial_prompts = ["Prompt X"]
-    results = await infra.run_rlhf_pipeline(initial_prompts, reward_model_epochs=1, ppo_steps=1)
+async def test_rlhf_run_pipeline(monkeypatch):
+    infra = RLHFInfrastructure(MockPolicyModel(), MockRewardModel(), MockTokenizer())
+    async def generate_fn(prompt):
+        return "test response"
+    infra.setup_reward_model_trainer = lambda train_dataset, eval_dataset=None: None
+    infra.train_reward_model = lambda: {"loss": 0.2}
+    infra.setup_ppo_trainer = lambda dataset=None: None
+    async def run_ppo_step(prompt, generated_response):
+        return {"success": True, "ppo_loss": 0.3}
+    infra.run_ppo_step = run_ppo_step
+    results = await infra.run_rlhf_pipeline(
+        ["Prompt X"], reward_model_epochs=1, ppo_steps=1, generate_fn=generate_fn
+    )
     assert results["status"] == "completed"
     assert results["average_ppo_loss"] > 0

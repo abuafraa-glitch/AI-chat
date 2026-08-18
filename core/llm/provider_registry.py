@@ -1,4 +1,8 @@
-"""Phase 8.1 — Provider Registry: سجل ديناميكي لمزودي النماذج."""
+"""Registry for real LLM provider adapters.
+
+Test doubles may be registered explicitly by tests, but are never auto-registered
+in the production registry.
+"""
 from __future__ import annotations
 
 import importlib
@@ -11,113 +15,66 @@ logger = logging.getLogger(__name__)
 
 
 class ProviderRegistry:
-    """
-    سجل ديناميكي لمزودي LLM.
-
-    يتيح تسجيل، تحميل، واسترجاع المزودين بشكل ديناميكي
-    دون الحاجة لتغيير الكود الأساسي.
-    """
-
     _providers: Dict[str, Type[BaseLLMProvider]] = {}
     _aliases: Dict[str, str] = {}
 
     @classmethod
-    def register(cls, name: str, provider_class: Type[BaseLLMProvider],
-                 aliases: Optional[List[str]] = None) -> None:
-        """تسجيل مزود جديد."""
+    def register(cls, name: str, provider_class: Type[BaseLLMProvider], aliases: Optional[List[str]] = None) -> None:
         cls._providers[name.lower()] = provider_class
-        if aliases:
-            for alias in aliases:
-                cls._aliases[alias.lower()] = name.lower()
-        logger.debug("Registered LLM provider: %s", name)
+        for alias in aliases or []:
+            cls._aliases[alias.lower()] = name.lower()
 
     @classmethod
     def get(cls, name: str) -> Optional[Type[BaseLLMProvider]]:
-        """استرجاع مزود بالاسم أو الاسم المستعار."""
         key = name.lower()
-        if key in cls._aliases:
-            key = cls._aliases[key]
-        return cls._providers.get(key)
+        return cls._providers.get(cls._aliases.get(key, key))
 
     @classmethod
     def get_or_raise(cls, name: str) -> Type[BaseLLMProvider]:
-        """استرجاع مزود أو رفع استثناء."""
         provider = cls.get(name)
         if provider is None:
-            available = ", ".join(cls.list_providers())
-            raise KeyError(
-                f"Provider '{name}' not found. Available: {available}"
-            )
+            raise KeyError(f"Provider {name!r} not found. Available: {', '.join(cls.list_providers())}")
         return provider
 
     @classmethod
     def create(cls, name: str, config: Optional[LLMConfig] = None) -> BaseLLMProvider:
-        """إنشاء instance من مزود باسمه."""
         provider_class = cls.get_or_raise(name)
-        cfg = config or LLMConfig(provider=name)
-        return provider_class(cfg)
+        return provider_class(config or LLMConfig(provider=name))
 
     @classmethod
     def list_providers(cls) -> List[str]:
-        """قائمة بجميع المزودين المسجلين."""
-        return sorted(cls._providers.keys())
+        return sorted(cls._providers)
 
     @classmethod
     def is_registered(cls, name: str) -> bool:
-        """هل المزود مسجل؟"""
-        key = name.lower()
-        return key in cls._providers or key in cls._aliases
+        return cls.get(name) is not None
 
     @classmethod
-    def load_from_module(cls, module_path: str, class_name: str,
-                         provider_name: str) -> bool:
-        """
-        تحميل ديناميكي لمزود من module path.
-
-        مثال:
-            registry.load_from_module(
-                "core.llm.providers.openai_provider",
-                "OpenAIProvider",
-                "openai"
-            )
-        """
+    def load_from_module(cls, module_path: str, class_name: str, provider_name: str, aliases: Optional[List[str]] = None) -> bool:
         try:
             module = importlib.import_module(module_path)
-            provider_class = getattr(module, class_name)
-            cls.register(provider_name, provider_class)
+            cls.register(provider_name, getattr(module, class_name), aliases)
             return True
-        except (ImportError, AttributeError) as e:
-            logger.warning(
-                "Failed to load provider '%s' from '%s': %s",
-                provider_name, module_path, e
-            )
+        except (ImportError, AttributeError) as exc:
+            logger.debug("Provider %s unavailable: %s", provider_name, exc)
             return False
 
     @classmethod
     def auto_register_defaults(cls) -> None:
-        """تسجيل تلقائي للمزودين الافتراضيين."""
-        default_providers = [
-            ("hajeen_platform.core.llm.providers.mock_provider", "MockProvider", "mock", ["test", "fake"]),
-            ("hajeen_platform.core.llm.providers.openai_provider", "OpenAIProvider", "openai", ["gpt", "chatgpt"]),
-            ("hajeen_platform.core.llm.providers.huggingface_provider", "HuggingFaceProvider", "huggingface", ["hf"]),
-            ("hajeen_platform.core.llm.providers.ollama_provider", "OllamaProvider", "ollama", ["local"]),
-            ("hajeen_platform.core.llm.providers.llama_cpp_provider", "LlamaCppProvider", "llama_cpp", ["llama", "gguf"]),
-            ("hajeen_platform.core.llm.providers.hajeen_provider", "HajeenLLMProvider", "hajeen", ["hajeen_local"]),
+        defaults = [
+            ("core.llm.providers.openai_provider", "OpenAIProvider", "openai", ["gpt", "chatgpt"]),
+            ("core.llm.providers.ollama_provider", "OllamaProvider", "ollama", ["local"]),
+            ("core.llm.providers.huggingface_provider", "HuggingFaceProvider", "huggingface", ["hf"]),
+            ("core.llm.providers.llama_cpp_provider", "LlamaCppProvider", "llama_cpp", ["llama", "gguf"]),
+            ("core.llm.providers.hajeen_provider", "HajeenLLMProvider", "hajeen", ["hajeen_local"]),
         ]
-        for module_path, class_name, name, aliases in default_providers:
-            try:
-                module = importlib.import_module(module_path)
-                provider_class = getattr(module, class_name)
-                cls.register(name, provider_class, aliases=aliases)
-
-
-            except (ImportError, AttributeError) as e:
-                logger.debug("Skipped auto-registering %s: %s", name, e)
-
-
+        for module_path, class_name, name, aliases in defaults:
+            cls.load_from_module(module_path, class_name, name, aliases)
 
     @classmethod
     def clear(cls) -> None:
-        """مسح جميع المزودين (للاختبار فقط)."""
         cls._providers.clear()
         cls._aliases.clear()
+
+
+__all__ = ["ProviderRegistry"]

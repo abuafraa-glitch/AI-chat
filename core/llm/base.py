@@ -3,19 +3,25 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import timedelta
-from abc import ABC, abstractmethod
-from aiobreaker import CircuitBreaker, CircuitBreakerError
-from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential, retry_if_exception_type
+from abc import ABC
 from dataclasses import dataclass, field
+from datetime import timedelta
 from typing import Any, AsyncGenerator, Dict, List, Optional
+
+from aiobreaker import CircuitBreaker
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 
 @dataclass
 class LLMConfig:
     """إعدادات مزود النموذج."""
-    provider: str = "mock"
-    model: str = "mock-model"
+    provider: str = "hajeen"
+    model: str = "hajeen-v1"
     api_key: Optional[str] = None
     api_base: Optional[str] = None
     temperature: float = 0.7
@@ -142,15 +148,14 @@ class BaseLLMProvider(ABC):
         """تهيئة المزود (اختياري)."""
         self._initialized = True
 
-    @abstractmethod
     async def _complete_implementation(self, request: LLMRequest) -> LLMResponse:
-        """تنفيذ inference وإرجاع استجابة كاملة (يتم تغليفه بـ CircuitBreaker)."""
-        ...
+        """Default hook; concrete adapters must override it or complete()."""
+        raise LLMProviderError(f"Provider '{self.provider_name}' does not implement completion")
 
-    @abstractmethod
     async def _stream_implementation(self, request: LLMRequest) -> AsyncGenerator[LLMStreamChunk, None]:
-        """تنفيذ streaming inference (يتم تغليفه بـ CircuitBreaker)."""
-        ...
+        """Default hook; concrete adapters must override it or stream()."""
+        raise LLMProviderError(f"Provider '{self.provider_name}' does not implement native streaming")
+        yield  # pragma: no cover
 
     async def complete(self, request: LLMRequest) -> LLMResponse:
         """تنفيذ inference مع Circuit Breaker و Retry."""
@@ -182,10 +187,9 @@ class BaseLLMProvider(ABC):
         async for chunk in self._circuit_breaker.call(self._stream_implementation, request):
             yield chunk
 
-    @abstractmethod
     async def health_check(self) -> bool:
-        """فحص صحة المزود."""
-        ...
+        """Fail closed unless a concrete adapter reports health."""
+        return False
 
 
 

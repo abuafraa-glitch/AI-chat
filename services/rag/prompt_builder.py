@@ -9,9 +9,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
-from core.prompts.base import AbstractPromptBuilder, BuiltPrompt as BaseBuiltPrompt
+from core.prompts.base import AbstractPromptBuilder
+from core.prompts.base import BuiltPrompt as BaseBuiltPrompt
 from services.rag.context_builder import BuiltContext
 
 logger = logging.getLogger(__name__)
@@ -105,7 +106,7 @@ class PromptBuilder(AbstractPromptBuilder):
 
     # ── AbstractPromptBuilder implementation ──────────────────────────────
 
-    def build(self, user_input: str, **kwargs: Any) -> BaseBuiltPrompt:
+    def build(self, user_input: Optional[str] = None, context: Optional[BuiltContext] = None, **kwargs: Any) -> BaseBuiltPrompt:
         """
         Implementation of abstract build() — delegates to RAG build.
 
@@ -114,7 +115,10 @@ class PromptBuilder(AbstractPromptBuilder):
           - template: Optional[PromptTemplate]
           - language: str = "ar"
         """
-        context = kwargs.get("context")
+        user_input = user_input or kwargs.pop("query", None)
+        if not user_input:
+            raise ValueError("PromptBuilder requires user_input or query")
+        context = context or kwargs.get("context")
         if context is None:
             # Fallback: treat user_input as query with empty context
             from services.rag.context_builder import BuiltContext

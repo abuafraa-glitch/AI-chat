@@ -4,13 +4,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-import uuid
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from core.llm.base import LLMMessage, LLMRequest, LLMResponse
+from core.llm.base import LLMRequest, LLMResponse
 from core.llm.llm_manager import LLMManager, get_llm_manager
+
 from .queue_manager import QueueManager
-from .request_handler import InferenceJob, JobStatus, RequestHandler
+from .request_handler import RequestHandler
 from .response_handler import ProcessedResponse, ResponseHandler
 from .stream_handler import StreamEvent, StreamHandler
 from .token_tracker import TokenTracker
@@ -66,11 +66,8 @@ class InferenceEngine:
 
         await self.llm_manager.initialize()
 
-        # بدء queue worker
-        self._worker_task = asyncio.create_task(
-            self.queue_manager.run_worker(self._execute_request)
-        )
-
+        # Queue worker is started lazily by queue_infer; ordinary infer/stream
+        # must not leave a background task bound to a transient event loop.
         self._initialized = True
         logger.info(
             "InferenceEngine initialized: provider=%s",
@@ -176,6 +173,11 @@ class InferenceEngine:
             **kwargs,
         )
 
+        if self._worker_task is None or self._worker_task.done():
+            self._worker_task = asyncio.create_task(
+                self.queue_manager.run_worker(self._execute_request)
+            )
+
         job_id = await self.queue_manager.submit(job)
         logger.debug("Queued job: %s", job_id)
         return job_id
@@ -221,6 +223,9 @@ class InferenceEngine:
                 await self._worker_task
             except asyncio.CancelledError:
                 pass
+            finally:
+                self._worker_task = None
+        self._initialized = False
         logger.info("InferenceEngine shut down")
 
 

@@ -65,18 +65,23 @@ class DPOPipeline:
             from trl import DPOTrainer
             from transformers import TrainingArguments
 
-            args = TrainingArguments(
-                output_dir=self.output_dir,
-                learning_rate=self.learning_rate,
-                num_train_epochs=self.num_train_epochs,
-                per_device_train_batch_size=self.per_device_batch_size,
-                gradient_accumulation_steps=self.gradient_accumulation_steps,
-                evaluation_strategy="steps" if eval_dataset else "no",
-                save_steps=500,
-                logging_steps=10,
-                report_to=[],
-                remove_unused_columns=False,
-            )
+            training_args = {
+                "output_dir": self.output_dir,
+                "learning_rate": self.learning_rate,
+                "num_train_epochs": self.num_train_epochs,
+                "per_device_train_batch_size": self.per_device_batch_size,
+                "gradient_accumulation_steps": self.gradient_accumulation_steps,
+                "save_steps": 500,
+                "logging_steps": 10,
+                "report_to": [],
+                "remove_unused_columns": False,
+            }
+            # Transformers 5 renamed evaluation_strategy to eval_strategy.
+            if "eval_strategy" in TrainingArguments.__dataclass_fields__:
+                training_args["eval_strategy"] = "steps" if eval_dataset else "no"
+            else:
+                training_args["evaluation_strategy"] = "steps" if eval_dataset else "no"
+            args = TrainingArguments(**training_args)
             self._trainer = DPOTrainer(
                 model=self.model,
                 ref_model=self.ref_model,
@@ -124,7 +129,13 @@ class DPOPipeline:
         records = [{"prompt": p, "chosen": c, "rejected": r} for p, c, r in processed]
         hf_dataset = Dataset.from_list(records)
 
-        split = hf_dataset.train_test_split(test_size=eval_split) if eval_split > 0 else None
+        # A one-record dataset cannot produce a non-empty train/test split.
+        # Keep the real dataset intact and let the trainer use it for training.
+        split = (
+            hf_dataset.train_test_split(test_size=eval_split)
+            if eval_split > 0 and len(hf_dataset) > 1
+            else None
+        )
         train_ds = split["train"] if split else hf_dataset
         eval_ds = split["test"] if split else None
 

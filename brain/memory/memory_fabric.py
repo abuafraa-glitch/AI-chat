@@ -53,6 +53,7 @@ class SessionMemory:
 
     def __init__(self, session_id: str, max_entries: int = 100) -> None:
         self.session_id = session_id
+        self.created_at = time.time()
         self._store: List[Dict] = []
         self._max = max_entries
 

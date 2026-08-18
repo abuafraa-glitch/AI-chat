@@ -1,9 +1,11 @@
+
 import pytest
-import asyncio
-from hajeen_platform.services.agents.multi_agent.shared_memory import SharedMemoryBus
-from hajeen_platform.services.agents.multi_agent.messenger import AgentMessenger
-from hajeen_platform.services.agents.multi_agent.collaborative_layer import CollaborativeIntelligence
-from hajeen_platform.services.agents.base_agent import BaseAgent, AgentContext, AgentResult
+
+from services.agents.base_agent import AgentContext, AgentResult, BaseAgent
+from services.agents.multi_agent.collaborative_layer import CollaborativeIntelligence
+from services.agents.multi_agent.messenger import AgentMessenger
+from services.agents.multi_agent.shared_memory import SharedMemoryBus
+
 
 class MockAgent(BaseAgent):
     async def _execute(self, context: AgentContext) -> AgentResult:

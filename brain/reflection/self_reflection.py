@@ -125,7 +125,7 @@ class SelfReflection:
         context: Optional[Dict] = None,
     ) -> str:
         """يرسل مهمة التقييم الذاتي إلى Celery worker."""
-        from hajeen_platform.workers.async_tasks import reflection_task
+        from workers.async_tasks import reflection_task
         logger.info(f"Dispatching self-reflection for task {task_id} to Celery.")
         celery_result = reflection_task.delay(
             task_id=task_id,

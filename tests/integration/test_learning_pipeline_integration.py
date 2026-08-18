@@ -5,15 +5,15 @@ Integration Tests — Learning Pipeline End-to-End (Phase 11)
 """
 from __future__ import annotations
 
-import asyncio
 import json
 from pathlib import Path
+
 import pytest
 
-from hajeen_platform.brain.learning.continuous_learning import (
+from brain.learning.continuous_learning import (
     ContinuousLearningPipeline,
-    PipelineStatus,
     PipelineStage,
+    PipelineStatus,
 )
 
 

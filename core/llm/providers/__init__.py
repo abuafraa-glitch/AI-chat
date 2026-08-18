@@ -1,4 +1,3 @@
-"""Phase 8.1 — LLM Providers."""
-from .mock_provider import MockProvider
+"""Concrete LLM provider adapters used by the production registry."""
 
-__all__ = ["MockProvider"]
+__all__: list[str] = []

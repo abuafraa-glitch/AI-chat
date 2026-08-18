@@ -1,5 +1,10 @@
-import pytest
-from hajeen_platform.services.security.policy_engine import PolicyEngine, prompt_injection_policy, tool_permission_policy, content_moderation_policy
+from services.security.policy_engine import (
+    PolicyEngine,
+    content_moderation_policy,
+    prompt_injection_policy,
+    tool_permission_policy,
+)
+
 
 def test_policy_engine_init():
     engine = PolicyEngine()

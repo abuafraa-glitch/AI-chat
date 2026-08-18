@@ -5,10 +5,8 @@ Stress Tests — Hajeen Brain (Phase 19)
 """
 from __future__ import annotations
 
-import asyncio
-import time
-import uuid
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 
@@ -18,8 +16,9 @@ class TestLearningPipelineStress:
     @pytest.mark.asyncio
     async def test_pipeline_with_all_low_quality(self, tmp_path):
         """يتحقق من رفض عينات منخفضة الجودة بالكامل."""
-        from hajeen_platform.brain.learning.continuous_learning import (
-            ContinuousLearningPipeline, PipelineStatus,
+        from brain.learning.continuous_learning import (
+            ContinuousLearningPipeline,
+            PipelineStatus,
         )
         p = ContinuousLearningPipeline(storage_path=str(tmp_path))
         raw = [
@@ -39,8 +38,8 @@ class TestLearningPipelineStress:
     @pytest.mark.asyncio
     async def test_pipeline_handles_malformed_data(self, tmp_path):
         """يتحقق من معالجة البيانات المشوهة بأمان."""
-        from hajeen_platform.brain.learning.continuous_learning import (
-            ContinuousLearningPipeline, PipelineStatus,
+        from brain.learning.continuous_learning import (
+            ContinuousLearningPipeline,
         )
         p = ContinuousLearningPipeline(storage_path=str(tmp_path))
         raw = [
@@ -59,7 +58,7 @@ class TestLearningPipelineStress:
     @pytest.mark.asyncio
     async def test_pipeline_with_very_long_text(self, tmp_path):
         """يتحقق من معالجة نصوص طويلة جداً."""
-        from hajeen_platform.brain.learning.continuous_learning import ContinuousLearningPipeline
+        from brain.learning.continuous_learning import ContinuousLearningPipeline
         p = ContinuousLearningPipeline(storage_path=str(tmp_path))
         long_text = "ذكاء اصطناعي " * 1000  # نص طويل جداً
         raw = [
@@ -80,8 +79,9 @@ class TestLearningPipelineStress:
     @pytest.mark.asyncio
     async def test_pipeline_duplicate_heavy_dataset(self, tmp_path):
         """يتحقق من معالجة dataset يحتوي على 95% تكرار."""
-        from hajeen_platform.brain.learning.continuous_learning import (
-            ContinuousLearningPipeline, PipelineStatus,
+        from brain.learning.continuous_learning import (
+            ContinuousLearningPipeline,
+            PipelineStatus,
         )
         p = ContinuousLearningPipeline(storage_path=str(tmp_path))
         unique_sample = {
@@ -108,7 +108,7 @@ class TestCognitiveLayerStress:
     @pytest.mark.asyncio
     async def test_intent_analyzer_empty_message(self):
         """يتحقق من معالجة الرسائل الفارغة."""
-        from hajeen_platform.brain.cognitive_layer.intent_analyzer import IntentAnalyzer
+        from brain.cognitive_layer.intent_analyzer import IntentAnalyzer
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='{"primary_intent":"غير محدد","category":"conversation","secondary_intents":[],"implicit_requirements":[],"confidence":0.3,"reasoning":"رسالة فارغة","alternative_interpretations":[]}')
         analyzer = IntentAnalyzer(llm_manager=llm_mock)
@@ -118,7 +118,7 @@ class TestCognitiveLayerStress:
     @pytest.mark.asyncio
     async def test_intent_analyzer_very_long_message(self):
         """يتحقق من معالجة الرسائل الطويلة جداً."""
-        from hajeen_platform.brain.cognitive_layer.intent_analyzer import IntentAnalyzer
+        from brain.cognitive_layer.intent_analyzer import IntentAnalyzer
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='{"primary_intent":"طلب طويل","category":"task_execution","secondary_intents":[],"implicit_requirements":[],"confidence":0.6,"reasoning":"","alternative_interpretations":[]}')
         analyzer = IntentAnalyzer(llm_manager=llm_mock)
@@ -129,7 +129,7 @@ class TestCognitiveLayerStress:
     @pytest.mark.asyncio
     async def test_reasoning_engine_malformed_llm_response(self):
         """يتحقق من معالجة ردود LLM المشوهة بأمان."""
-        from hajeen_platform.brain.cognitive_layer.reasoning_engine import ReasoningEngine
+        from brain.cognitive_layer.reasoning_engine import ReasoningEngine
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value="هذا ليس JSON صحيحاً!!!")
         engine = ReasoningEngine(llm_manager=llm_mock)
@@ -139,7 +139,7 @@ class TestCognitiveLayerStress:
     @pytest.mark.asyncio
     async def test_context_analyzer_memory_failure(self):
         """يتحقق من مرونة محلل السياق عند فشل الذاكرة."""
-        from hajeen_platform.brain.cognitive_layer.context_analyzer import ContextAnalyzer
+        from brain.cognitive_layer.context_analyzer import ContextAnalyzer
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='{"domain":"general","expertise_level":"intermediate","confidence":0.7,"reasoning":"","complexity":"simple","estimated_tokens":100,"required_capabilities":[],"constraints":[],"priorities":[],"time_sensitivity":"low","recommendations":[],"summary":""}')
         emb_mock = MagicMock()

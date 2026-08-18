@@ -259,7 +259,7 @@ class ContinuousLearningPipeline:
         # ── المرحلة 2: إزالة تكرار دلالي بـ cosine similarity ─────────
         if has_numpy and len(hash_unique) > 1:
             try:
-                from hajeen_platform.core.embeddings import get_embedding_manager
+                from core.embeddings import get_embedding_manager
                 emb_manager = get_embedding_manager()
 
                 # Encode the complete batch in one real model call.  Calling

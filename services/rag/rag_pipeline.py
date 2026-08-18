@@ -4,8 +4,9 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
+from brain.prompts.unified_prompt_builder import PromptMode, UnifiedPromptBuilder
 from services.rag.citation_manager import CitationManager
 from services.rag.context_builder import ContextBuilder
 from services.rag.prompt_builder import PromptBuilder, PromptTemplate
@@ -66,11 +67,13 @@ class RAGPipeline:
         context_builder: Optional[ContextBuilder] = None,
         prompt_builder: Optional[PromptBuilder] = None,
         response_formatter: Optional[ResponseFormatter] = None,
+        unified_prompt_builder: Optional[UnifiedPromptBuilder] = None,
     ):
         self.retriever = retriever
         self.assembler = context_assembler or ContextAssembler(max_context_chars=6000)
         self.ctx_builder = context_builder or ContextBuilder(max_tokens=2000)
         self.prompt_builder = prompt_builder or PromptBuilder()
+        self.unified_prompt_builder = unified_prompt_builder
         self.formatter = response_formatter or ResponseFormatter()
 
     async def run(self, request: RAGRequest) -> RAGResponse:
@@ -107,19 +110,29 @@ class RAGPipeline:
 
         # 5. Prompt Building
         t0 = time.perf_counter()
-        built_prompt = self.prompt_builder.build(
-            query=request.query,
-            context=built_context,
-            template=request.template,
-            language=request.language,
-        )
+        if self.unified_prompt_builder is not None:
+            canonical_prompt = self.unified_prompt_builder.build(
+                request.query,
+                mode=PromptMode.RAG,
+                context=built_context.formatted_text,
+                language=request.language,
+            )
+            prompt_text = canonical_prompt.text
+        else:
+            built_prompt = self.prompt_builder.build(
+                query=request.query,
+                context=built_context,
+                template=request.template,
+                language=request.language,
+            )
+            prompt_text = built_prompt.text
         timings["prompt_build_ms"] = (time.perf_counter() - t0) * 1000
 
         # 6. Response Formatting
         formatted = self.formatter.format(
             query=request.query,
             context_text=built_context.formatted_text,
-            prompt=built_prompt.prompt,
+            prompt=prompt_text,
             citations=citations,
             retrieval_ms=timings["retrieval_ms"],
         )

@@ -1,15 +1,15 @@
 import asyncio
 import os
-import shutil
 import sys
 
 # إضافة المسار للجذور المطلوبة
 sys.path.append("/home/ubuntu/Ai")
 sys.path.append("/home/ubuntu/Ai/hajeen_platform")
 
-from hajeen_platform.brain.memory.unified_interface import get_unified_memory
-from hajeen_platform.services.memory.session_manager import get_session_manager
-from hajeen_platform.core.memory.memory_manager import MemoryManager
+from brain.memory.unified_interface import get_unified_memory
+from core.memory.memory_manager import MemoryManager
+from services.memory.session_manager import get_session_manager
+
 
 async def test_memory_unification_ssot():
     """

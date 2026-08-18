@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from brain.memory.unified_interface import get_unified_memory
+
 from .conversation_memory import ConversationMemory
 
 
@@ -84,12 +85,24 @@ class SessionManager:
     لا يوجد تخزين محلي هنا؛ كل شيء في MemoryFabric.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, session_ttl_seconds: Optional[float] = None, **kwargs):
         self._unified_memory = get_unified_memory()
+        self._session_ttl_seconds = session_ttl_seconds
 
     def get_session(self, session_id: str) -> Optional[ChatSession]:
-        """استرجاع جلسة (Proxy)."""
-        return ChatSession(session_id=session_id)
+        """استرجاع جلسة موجودة من MemoryFabric، مع احترام TTL إن وُجد."""
+        try:
+            self._unified_memory._ensure_fabric()
+            fabric = self._unified_memory._fabric
+            session = fabric._sessions.get(session_id)
+            if session is None:
+                return None
+            if self._session_ttl_seconds is not None and time.time() - session.created_at >= self._session_ttl_seconds:
+                self.delete_session(session_id)
+                return None
+            return ChatSession(session_id=session_id)
+        except Exception:
+            return None
 
     def get_or_create(self, session_id: str, **kwargs) -> ChatSession:
         """استرجاع أو إنشاء جلسة (Proxy)."""
@@ -97,6 +110,9 @@ class SessionManager:
 
     def create_session(self, session_id: Optional[str] = None, **kwargs) -> ChatSession:
         sid = session_id or str(uuid.uuid4())
+        self._unified_memory._ensure_fabric()
+        self._unified_memory._fabric.get_session(sid)
+        self._unified_memory._fabric.get_conversation(sid)
         return ChatSession(session_id=sid)
 
     def delete_session(self, session_id: str) -> bool:

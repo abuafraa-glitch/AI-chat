@@ -8,12 +8,12 @@ import logging
 import time
 from typing import Callable, Optional, Tuple
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from hajeen_platform.security.rbac.rbac import ROUTE_PERMISSIONS, Permission, has_permission
-from hajeen_platform.security.audit.audit_logger import AuditAction, get_audit_logger
+from security.audit.audit_logger import AuditAction, get_audit_logger
+from security.rbac.rbac import ROUTE_PERMISSIONS, has_permission
 
 logger = logging.getLogger(__name__)
 
@@ -70,29 +70,30 @@ class AuthMiddleware(BaseHTTPMiddleware):
     def _lazy_init(self) -> None:
         if self._jwt_auth is None:
             try:
-                from hajeen_platform.security.auth.jwt_auth import JWTAuthenticator
+                from security.auth.jwt_auth import JWTAuthenticator
                 self._jwt_auth = JWTAuthenticator()
             except Exception as e:
                 logger.warning("JWT auth init failed: %s", e)
 
         if self._api_key_manager is None:
             try:
-                from hajeen_platform.security.auth.api_key_manager import get_api_key_manager
+                from security.auth.api_key_manager import get_api_key_manager
                 self._api_key_manager = get_api_key_manager()
             except Exception as e:
                 logger.warning("JWT auth init failed: %s", e)
 
         if self._rate_limiter is None and self._rate_limiting:
             try:
-                import redis as redis_lib
                 import os
+
+                import redis as redis_lib
                 r = redis_lib.from_url(
                     os.getenv("REDIS_URL", "redis://localhost:6379/0"),
                     decode_responses=True,
                     socket_connect_timeout=2,
                 )
                 r.ping()
-                from hajeen_platform.security.rate_limit.rate_limiter import RateLimiter
+                from security.rate_limit.rate_limiter import RateLimiter
                 self._rate_limiter = RateLimiter(r)
             except Exception as e:
                 logger.warning("Rate limiter Redis unavailable: %s — skipping", e)

@@ -20,7 +20,6 @@ from __future__ import annotations
 import asyncio
 import sys
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 class _TestOnlyProvider:
@@ -28,6 +27,11 @@ class _TestOnlyProvider:
 
     async def chat(self, prompt: str):
         return {"content": "test provider response"}
+
+    async def stream(self, request):
+        from core.llm.base import LLMStreamChunk
+        yield LLMStreamChunk(delta="test ", model="hajeen-v1")
+        yield LLMStreamChunk(delta="provider response", finish_reason="stop", model="hajeen-v1")
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -50,7 +54,7 @@ class TestBrainSingleton(unittest.TestCase):
 
     def test_brain_v3_singleton(self):
         """يجب أن تعيد get_brain_v3() نفس النسخة دائماً."""
-        from brain.brain_v3 import get_brain_v3, _brain_v3
+        from brain.brain_v3 import get_brain_v3
 
         brain1 = run_async(get_brain_v3())
         brain2 = run_async(get_brain_v3())
@@ -214,8 +218,8 @@ class TestUnifiedPromptBuilder(unittest.TestCase):
 
     def test_rag_prompt_builder_uses_abstract_base(self):
         """services/rag/prompt_builder.py يجب أن يرث AbstractPromptBuilder."""
-        from services.rag.prompt_builder import PromptBuilder as RAGPromptBuilder
         from core.prompts.base import AbstractPromptBuilder
+        from services.rag.prompt_builder import PromptBuilder as RAGPromptBuilder
         self.assertTrue(
             issubclass(RAGPromptBuilder, AbstractPromptBuilder),
             "RAG PromptBuilder يجب أن يرث AbstractPromptBuilder"
@@ -255,6 +259,7 @@ class TestBrainProcessPipeline(unittest.TestCase):
             request_id="test_stream_001",
             user_message="مرحبا بالعالم",
             session_id="test_session_002",
+            stream=True,
         )
 
         async def collect():
@@ -265,6 +270,7 @@ class TestBrainProcessPipeline(unittest.TestCase):
 
         chunks = run_async(collect())
         self.assertGreater(len(chunks), 0, "يجب أن ينتج Brain chunks أثناء Streaming")
+        self.assertTrue(all(hasattr(chunk, "delta") for chunk in chunks), "stream must expose native LLMStreamChunk objects")
 
     def test_chat_endpoint_no_direct_llm_import(self):
         """

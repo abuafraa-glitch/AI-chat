@@ -1,7 +1,9 @@
 import json
 import os
-from typing import List, Dict, Any
-from hajeen_platform.core.inference_engine.engine import get_inference_engine
+from typing import Dict, List
+
+from core.inference_engine.engine import get_inference_engine
+
 
 class EvaluationFramework:
     def __init__(self):

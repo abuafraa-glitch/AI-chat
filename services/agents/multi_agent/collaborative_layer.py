@@ -4,14 +4,14 @@ import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.services.agents.base_agent import (
+from services.agents.base_agent import (
     AgentContext,
     AgentResult,
     AgentStep,
     BaseAgent,
 )
-from hajeen_platform.services.agents.multi_agent.messenger import AgentMessenger
-from hajeen_platform.services.agents.multi_agent.shared_memory import SharedMemoryBus
+from services.agents.multi_agent.messenger import AgentMessenger
+from services.agents.multi_agent.shared_memory import SharedMemoryBus
 
 logger = logging.getLogger(__name__)
 

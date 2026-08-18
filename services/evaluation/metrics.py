@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict
 
-from hajeen_platform.services.agents.base_agent import AgentResult
+from services.agents.base_agent import AgentResult
 
 
 def hallucination_metric(agent_result: AgentResult) -> Dict[str, Any]:

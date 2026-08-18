@@ -9,9 +9,8 @@ Unit Tests — Cognitive Layer (Phase 2 Complete)
 from __future__ import annotations
 
 import asyncio
-import time
-import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 # ── IntentAnalyzer Tests ────────────────────────────────────────────────────
@@ -20,8 +19,9 @@ class TestIntentAnalyzer:
     """اختبارات محلل النية."""
 
     def _make_analyzer(self):
-        from hajeen_platform.brain.cognitive_layer.intent_analyzer import (
-            IntentAnalyzer, IntentCategory,
+        from brain.cognitive_layer.intent_analyzer import (
+            IntentAnalyzer,
+            IntentCategory,
         )
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='''
@@ -75,7 +75,7 @@ class TestIntentAnalyzer:
     @pytest.mark.asyncio
     async def test_analyze_fallback_on_llm_error(self):
         """يجب أن يعود بنتيجة حتى لو فشل LLM."""
-        from hajeen_platform.brain.cognitive_layer.intent_analyzer import IntentAnalyzer
+        from brain.cognitive_layer.intent_analyzer import IntentAnalyzer
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(side_effect=Exception("LLM error"))
         analyzer = IntentAnalyzer(llm_manager=llm_mock)
@@ -101,7 +101,7 @@ class TestContextAnalyzer:
     """اختبارات محلل السياق."""
 
     def _make_analyzer(self):
-        from hajeen_platform.brain.cognitive_layer.context_analyzer import ContextAnalyzer
+        from brain.cognitive_layer.context_analyzer import ContextAnalyzer
 
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='''
@@ -157,7 +157,7 @@ class TestContextAnalyzer:
     @pytest.mark.asyncio
     async def test_memory_retrieval_with_embedding(self):
         """يتحقق أن _retrieve_relevant_memories يستخدم embeddings."""
-        from hajeen_platform.brain.cognitive_layer.context_analyzer import ContextAnalyzer
+        from brain.cognitive_layer.context_analyzer import ContextAnalyzer
 
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='{"domain":"general","expertise_level":"intermediate","confidence":0.7,"reasoning":"","complexity":"simple","estimated_tokens":100,"required_capabilities":[],"constraints":[],"priorities":[],"time_sensitivity":"low","recommendations":[],"summary":""}')
@@ -208,7 +208,7 @@ class TestReasoningEngine:
     """اختبارات محرك الاستدلال."""
 
     def _make_engine(self):
-        from hajeen_platform.brain.cognitive_layer.reasoning_engine import ReasoningEngine
+        from brain.cognitive_layer.reasoning_engine import ReasoningEngine
 
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='''
@@ -274,7 +274,7 @@ class TestReasoningEngine:
     @pytest.mark.asyncio
     async def test_reason_fallback_on_error(self):
         """يجب أن يعود بنتيجة حتى لو فشل LLM."""
-        from hajeen_platform.brain.cognitive_layer.reasoning_engine import ReasoningEngine
+        from brain.cognitive_layer.reasoning_engine import ReasoningEngine
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(side_effect=Exception("LLM error"))
         engine = ReasoningEngine(llm_manager=llm_mock)

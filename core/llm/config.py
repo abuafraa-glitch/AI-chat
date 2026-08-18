@@ -13,8 +13,8 @@ class LLMSettings:
     """
     إعدادات LLM الكاملة من env vars أو config dict.
 
-    Variables:
-        LLM_PROVIDER        — المزود الافتراضي (default: mock)
+        Variables:
+        LLM_PROVIDER        — المزود الافتراضي (default: hajeen)
         LLM_MODEL           — النموذج الافتراضي
         LLM_API_KEY         — مفتاح API
         LLM_API_BASE        — Base URL مخصص
@@ -58,10 +58,9 @@ class LLMSettings:
             "huggingface": "microsoft/DialoGPT-medium",
             "ollama": "llama2",
             "llama_cpp": "llama-2-7b.gguf",
-            "mock": "mock-model",
         }
 
-        model = os.getenv("LLM_MODEL", default_models.get(provider, "mock-model"))
+        model = os.getenv("LLM_MODEL", default_models.get(provider, "hajeen-v1"))
 
         # API key — يدعم متغيرات متعددة
         api_key = (

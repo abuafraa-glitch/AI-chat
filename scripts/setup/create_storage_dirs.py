@@ -1,5 +1,7 @@
 import asyncio
-from hajeen_ai_platform.data_engine.storage.storage_manager import StorageManager
+
+from data_engine.storage.storage_manager import StorageManager
+
 
 async def create_storage_directories():
     """Ensures that all necessary storage directories are created."""

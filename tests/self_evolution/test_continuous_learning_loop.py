@@ -1,10 +1,12 @@
-import pytest
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
-from hajeen_platform.services.self_evolution.continuous_learning_loop import ContinuousLearningLoop
-from hajeen_platform.services.self_evolution.self_reflection_engine import SelfReflectionEngine
-from hajeen_platform.services.self_evolution.episodic_memory import EpisodicMemory
-from hajeen_platform.services.self_evolution.curiosity_engine import CuriosityEngine
+
+import pytest
+
+from services.self_evolution.continuous_learning_loop import ContinuousLearningLoop
+from services.self_evolution.curiosity_engine import CuriosityEngine
+from services.self_evolution.episodic_memory import EpisodicMemory
+from services.self_evolution.self_reflection_engine import SelfReflectionEngine
+
 
 @pytest.fixture
 def mock_llm_inference_function():

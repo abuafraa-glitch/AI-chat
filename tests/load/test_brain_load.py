@@ -11,15 +11,14 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
-import statistics
-import sys
+
 import pytest
 
 
 def _skip_if_no_brain():
     """تخطي الاختبار إن لم تكن المكونات متاحة."""
     try:
-        from hajeen_platform.brain.brain_v3 import HajeenBrainV3
+        from brain.brain_v3 import HajeenBrainV3
         return False
     except ImportError:
         return True
@@ -42,7 +41,7 @@ class TestBrainLoadHandling:
         async def single_request(i: int):
             t0 = time.perf_counter()
             try:
-                from hajeen_platform.brain.brain_v3 import BrainRequest
+                from brain.brain_v3 import BrainRequest
                 req = BrainRequest(
                     request_id=str(uuid.uuid4()),
                     user_message=f"طلب المستخدم {i}: ما هو الذكاء الاصطناعي؟",
@@ -64,7 +63,7 @@ class TestBrainLoadHandling:
             p50 = sorted_lat[len(sorted_lat) // 2]
             p95 = sorted_lat[int(len(sorted_lat) * 0.95)]
             p99 = sorted_lat[int(len(sorted_lat) * 0.99)]
-            print(f"\nLoad Test Results:")
+            print("\nLoad Test Results:")
             print(f"  Requests: {len(latencies)} successful, {len(errors)} failed")
             print(f"  P50: {p50:.1f}ms | P95: {p95:.1f}ms | P99: {p99:.1f}ms")
 
@@ -73,7 +72,7 @@ class TestBrainLoadHandling:
         """قياس معدل الطلبات في الثانية."""
         N = 20
         t0 = time.perf_counter()
-        from hajeen_platform.brain.brain_v3 import BrainRequest
+        from brain.brain_v3 import BrainRequest
 
         async def req():
             r = BrainRequest(
@@ -96,7 +95,7 @@ class TestLearningPipelineLoad:
     @pytest.mark.asyncio
     async def test_pipeline_with_large_dataset(self, tmp_path):
         """يتحقق من معالجة مجموعة بيانات كبيرة."""
-        from hajeen_platform.brain.learning.continuous_learning import ContinuousLearningPipeline
+        from brain.learning.continuous_learning import ContinuousLearningPipeline
         p = ContinuousLearningPipeline(storage_path=str(tmp_path))
         large_raw = [
             {
@@ -121,7 +120,8 @@ class TestLearningPipelineLoad:
     async def test_concurrent_pipeline_runs(self, tmp_path):
         """يتحقق من تشغيل pipelines متعددة بالتوازي."""
         import os
-        from hajeen_platform.brain.learning.continuous_learning import ContinuousLearningPipeline
+
+        from brain.learning.continuous_learning import ContinuousLearningPipeline
 
         async def single_run(i: int):
             sub_path = str(tmp_path / f"run_{i}")

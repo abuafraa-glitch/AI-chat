@@ -8,9 +8,9 @@ from __future__ import annotations
 import asyncio
 import statistics
 import time
-import uuid
 from typing import List
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 
@@ -33,7 +33,7 @@ class TestIntentAnalyzerBenchmark:
     MAX_ACCEPTABLE_AVG_MS = 500  # بحد أقصى 500ms متوسطاً
 
     def test_analyze_latency(self):
-        from hajeen_platform.brain.cognitive_layer.intent_analyzer import IntentAnalyzer
+        from brain.cognitive_layer.intent_analyzer import IntentAnalyzer
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='{"primary_intent":"test","category":"conversation","secondary_intents":[],"implicit_requirements":[],"confidence":0.8,"reasoning":"","alternative_interpretations":[]}')
         analyzer = IntentAnalyzer(llm_manager=llm_mock)
@@ -54,7 +54,7 @@ class TestReasoningEngineBenchmark:
     MAX_ACCEPTABLE_AVG_MS = 1000
 
     def test_reason_latency(self):
-        from hajeen_platform.brain.cognitive_layer.reasoning_engine import ReasoningEngine
+        from brain.cognitive_layer.reasoning_engine import ReasoningEngine
         llm_mock = MagicMock()
         llm_mock.generate = AsyncMock(return_value='{"strategy":"chain_of_thought","steps":[],"missing_information":[],"risks":[],"solution_options":[],"recommended_solution_index":null,"confidence":0.7,"summary":""}')
         engine = ReasoningEngine(llm_manager=llm_mock)
@@ -72,8 +72,12 @@ class TestReasoningEngineBenchmark:
 class TestContinuousLearningBenchmark:
     def test_deduplication_speed(self, tmp_path):
         """يقيس سرعة إزالة التكرار على مجموعة كبيرة."""
-        from hajeen_platform.brain.learning.continuous_learning import (
-            ContinuousLearningPipeline, DataSample, PipelineRun, PipelineStatus, PipelineStage,
+        from brain.learning.continuous_learning import (
+            ContinuousLearningPipeline,
+            DataSample,
+            PipelineRun,
+            PipelineStage,
+            PipelineStatus,
         )
         p = ContinuousLearningPipeline(storage_path=str(tmp_path))
         samples = [
@@ -98,8 +102,12 @@ class TestContinuousLearningBenchmark:
 
     def test_cleaning_speed(self, tmp_path):
         """يقيس سرعة مرحلة التنظيف."""
-        from hajeen_platform.brain.learning.continuous_learning import (
-            ContinuousLearningPipeline, DataSample, PipelineRun, PipelineStatus, PipelineStage,
+        from brain.learning.continuous_learning import (
+            ContinuousLearningPipeline,
+            DataSample,
+            PipelineRun,
+            PipelineStage,
+            PipelineStatus,
         )
         p = ContinuousLearningPipeline(storage_path=str(tmp_path))
         samples = [
@@ -124,7 +132,7 @@ class TestDecisionEngineBenchmark:
     def test_quality_lookup_speed(self, tmp_path):
         """يقيس سرعة البحث عن جودة النموذج."""
         try:
-            from hajeen_platform.brain.decision_engine_v3 import DecisionEngineV3
+            from brain.decision_engine_v3 import DecisionEngineV3
         except ImportError:
             pytest.skip("DecisionEngineV3 not available")
 

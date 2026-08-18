@@ -184,8 +184,14 @@ class RLHFInfrastructure:
                 {"prompt": f["prompt"], "chosen": f["chosen_response"], "rejected": f["rejected_response"]}
                 for f in feedback
             ])
-            split = reward_ds.train_test_split(test_size=0.1)
-            self.setup_reward_model_trainer(split["train"], split["test"])
+            split = (
+                reward_ds.train_test_split(test_size=0.1)
+                if len(reward_ds) > 1
+                else None
+            )
+            train_ds = split["train"] if split else reward_ds
+            eval_ds = split["test"] if split else None
+            self.setup_reward_model_trainer(train_ds, eval_ds)
             loop = asyncio.get_event_loop()
             reward_metrics = await loop.run_in_executor(None, self.train_reward_model)
         except ImportError:

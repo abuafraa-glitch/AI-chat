@@ -6,7 +6,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from hajeen_platform.services.agents.base_agent import AgentContext, AgentResult
+from services.agents.base_agent import AgentContext, AgentResult
 
 logger = logging.getLogger(__name__)
 

@@ -2,12 +2,12 @@ import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock
 
-from hajeen_platform.brain.evolution.self_evolution import (
+from brain.evolution.self_evolution import (
     SelfEvolution,
     get_self_evolution_engine,
 )
-from hajeen_platform.brain.reflection.self_reflection import ReflectionReport
-from hajeen_platform.core.llm.base import LLMResponse
+from brain.reflection.self_reflection import ReflectionReport
+from core.llm.base import LLMResponse
 
 
 async def main():
