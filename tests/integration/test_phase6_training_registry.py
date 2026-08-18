@@ -13,6 +13,13 @@ from brain.learning.phase6_lifecycle import (
 from core.model.model_registry import ModelArtifactRecord, ModelArtifactStatus, ModelRegistry
 
 
+def make_valid_artifact(path):
+    path.mkdir()
+    (path / "config.json").write_text(json.dumps({"model_type": "test", "architectures": ["TestForCausalLM"]}), encoding="utf-8")
+    (path / "pytorch_model.bin").write_bytes(b"test-only-artifact-fixture")
+    (path / "tokenizer.json").write_text("{}", encoding="utf-8")
+
+
 def test_training_gate_blocks_missing_dataset(tmp_path):
     lifecycle = TrainingPipelineLifecycle(storage_dir=str(tmp_path / "runs"))
     run = lifecycle.create_run(
@@ -77,7 +84,7 @@ def test_evaluation_does_not_run_when_blocked(tmp_path):
 def test_registry_requires_evaluation_before_approval(tmp_path):
     registry = ModelRegistry()
     artifact_dir = tmp_path / "artifact"
-    artifact_dir.mkdir()
+    make_valid_artifact(artifact_dir)
     model_id = "phase6-test-model"
     version = "v1"
     record = ModelArtifactRecord(
@@ -101,7 +108,7 @@ def test_registry_requires_evaluation_before_approval(tmp_path):
 def test_registry_rejects_failed_evaluation_and_no_promotion(tmp_path):
     registry = ModelRegistry()
     artifact_dir = tmp_path / "artifact"
-    artifact_dir.mkdir()
+    make_valid_artifact(artifact_dir)
     model_id = "phase6-rejected-model"
     version = "v1"
     registry.register_artifact(ModelArtifactRecord(
@@ -126,7 +133,7 @@ async def test_model_router_excludes_unapproved_registered_artifact(tmp_path):
     registry = ModelRegistry()
     model_id = "phase6-router-guard"
     artifact_dir = tmp_path / "artifact"
-    artifact_dir.mkdir()
+    make_valid_artifact(artifact_dir)
     registry.register_artifact(ModelArtifactRecord(
         model_id=model_id,
         model_version="v1",

@@ -8,6 +8,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Mapping, Optional
 
+from .artifact_validation import validate_artifact_directory
 from .model_config import ModelConfig
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,8 @@ class ModelArtifactRecord:
     status: ModelArtifactStatus = ModelArtifactStatus.CREATED
     created_at: float = field(default_factory=time.time)
     error: str = ""
+    artifact_checksum: str = ""
+    artifact_metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         value = asdict(self)
@@ -119,8 +122,11 @@ class ModelRegistry:
         """Register a trained artifact; evaluation/approval remain explicit gates."""
         if not record.model_id or not record.model_version:
             raise ValueError("model_id and model_version are required")
-        if not record.artifact_location or not Path(record.artifact_location).is_dir():
-            raise ValueError("artifact_location must be an existing directory")
+        valid, reasons, checksum, metadata = validate_artifact_directory(record.artifact_location)
+        if not valid:
+            raise ValueError("artifact_invalid:" + ",".join(reasons))
+        record.artifact_checksum = checksum
+        record.artifact_metadata = dict(metadata)
         if record.status not in {ModelArtifactStatus.CREATED, ModelArtifactStatus.TRAINED}:
             raise ValueError("new artifacts must start as CREATED or TRAINED")
         key = f"{record.model_id}:{record.model_version}"

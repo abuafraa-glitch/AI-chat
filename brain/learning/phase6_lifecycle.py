@@ -17,6 +17,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
+from core.model.artifact_validation import validate_artifact_directory
+
 
 class TrainingStatus(str, Enum):
     QUEUED = "QUEUED"
@@ -95,36 +97,8 @@ class ArtifactValidator:
     TOKENIZER_NAMES = ("tokenizer.json", "tokenizer.model", "tokenizer_config.json")
 
     def validate(self, location: str) -> ArtifactValidation:
-        root = Path(location)
-        reasons: list[str] = []
-        if not root.is_dir():
-            return ArtifactValidation(False, ("artifact_directory_missing",))
-        config_path = root / "config.json"
-        if not config_path.is_file():
-            reasons.append("config_missing")
-            config: dict[str, Any] = {}
-        else:
-            try:
-                config = json.loads(config_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                config = {}
-                reasons.append("config_invalid")
-        if not any((root / name).is_file() for name in self.WEIGHT_NAMES):
-            reasons.append("weights_missing")
-        if not any((root / name).is_file() for name in self.TOKENIZER_NAMES):
-            reasons.append("tokenizer_missing")
-        architectures = config.get("architectures", [])
-        if architectures and not any("CausalLM" in str(item) for item in architectures):
-            reasons.append("incompatible_model_architecture")
-        if not config.get("model_type"):
-            reasons.append("model_type_missing")
-        checksum = self._directory_checksum(root) if not reasons else ""
-        return ArtifactValidation(
-            valid=not reasons,
-            reasons=tuple(reasons),
-            checksum=checksum,
-            metadata={"model_type": config.get("model_type", ""), "architectures": architectures},
-        )
+        valid, reasons, checksum, metadata = validate_artifact_directory(location)
+        return ArtifactValidation(valid=valid, reasons=reasons, checksum=checksum, metadata=metadata)
 
     @staticmethod
     def _directory_checksum(root: Path) -> str:
