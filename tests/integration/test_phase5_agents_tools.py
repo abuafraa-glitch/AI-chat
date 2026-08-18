@@ -56,8 +56,9 @@ async def test_orchestrator_executes_typed_plan_and_records_lifecycle(runtime):
     assert result.output == "inspect:inspect"
     assert [event.event for event in result.events] == [
         "task_started", "plan_created", "step_started", "tool_requested",
-        "observation_received", "task_completed",
+        "observation_received", "task_completed", "memory_observation_recorded",
     ]
+    assert get_memory_fabric().get_agent_stats("agent_orchestrator")["success"] >= 1
 
 
 @pytest.mark.asyncio

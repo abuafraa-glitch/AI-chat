@@ -109,6 +109,24 @@ class AgentOrchestrator:
             self._record(events, context, "task_failed", {"error": str(exc)})
             return AgentRunResult(False, None, context, events, str(exc))
         finally:
+            # Agent observations belong to the central AgentMemory authority.
+            # This is task telemetry, not an assistant conversation message.
+            try:
+                self.memory_fabric.record_agent_experience(
+                    "agent_orchestrator",
+                    context.goal,
+                    context.status.value,
+                    context.status == TaskStatus.COMPLETED,
+                )
+                self._record(events, context, "memory_observation_recorded", {
+                    "memory": "MemoryFabric",
+                    "agent_id": "agent_orchestrator",
+                    "success": context.status == TaskStatus.COMPLETED,
+                })
+            except Exception as exc:
+                # Memory telemetry must never turn a completed task into a fake
+                # success or bypass the central runtime; retain the task result.
+                logger.warning("Agent memory observation failed: %s", exc)
             self._active.pop(context.task_id, None)
 
     async def _execute(
