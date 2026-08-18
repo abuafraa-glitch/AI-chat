@@ -190,3 +190,43 @@ async def test_evaluation_benchmark_dataset_is_validated_and_traced(tmp_path):
     assert result.passes_threshold is True
     assert result.metric_provenance["benchmark"]["source"] == "test-fixture"
     assert result.metric_provenance["evaluation"]["sample_count"] == 2
+
+
+def test_evaluation_thresholds_fail_closed_when_metric_is_missing(tmp_path):
+    lifecycle = EvaluationPipelineLifecycle(storage_dir=str(tmp_path / "eval"))
+    artifact = tmp_path / "artifact"
+    make_valid_artifact(artifact)
+    run = lifecycle.create_run(
+        model_id="missing-metric-model",
+        model_version="v1",
+        artifact_location=str(artifact),
+        benchmark_id="bench",
+        benchmark_version="v1",
+        sample_count=1,
+    )
+    result = lifecycle.run(run, lambda: {"accuracy": 0.9}, thresholds={"accuracy": 0.8, "safety": 0.8})
+    assert result.status is EvaluationStatus.COMPLETED
+    assert result.passes_threshold is False
+    assert "missing_metrics:safety" == result.error
+
+
+def test_registry_rejects_artifact_tampering_after_registration(tmp_path):
+    registry = ModelRegistry()
+    artifact_dir = tmp_path / "artifact"
+    make_valid_artifact(artifact_dir)
+    model_id = "tampered-model"
+    version = "v1"
+    registry.register_artifact(ModelArtifactRecord(
+        model_id=model_id,
+        model_version=version,
+        model_type="causal_lm",
+        artifact_location=str(artifact_dir),
+        base_model="base",
+        dataset_version="ds-v1",
+        training_run_id="train-tampered",
+    ))
+    registry.mark_evaluated(model_id, version, "eval-tampered", {"accuracy": 0.99}, True)
+    (artifact_dir / "pytorch_model.bin").write_bytes(b"changed-after-registration")
+    with pytest.raises(ValueError, match="integrity"):
+        registry.approve(model_id, version)
+    assert registry.get_artifact(model_id, version).status is ModelArtifactStatus.EVALUATED
