@@ -4,10 +4,13 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from types import SimpleNamespace
 
 from brain.brain_v3 import HajeenBrainV3
 from brain.memory.memory_fabric import get_memory_fabric
 from brain.model_router import get_model_router
+from brain.decision_engine import DecisionEngine
+from brain.goal_manager import ComplexityLevel, IntentType
 from brain.policy.policy_engine import get_policy_engine
 from brain.prompts.unified_prompt_builder import UnifiedPromptBuilder
 from services.agents.agent_orchestrator import AgentOrchestrator
@@ -130,6 +133,18 @@ async def test_orchestrator_propagates_cancellation(runtime):
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
+
+
+@pytest.mark.asyncio
+async def test_decision_engine_selects_agent_only_on_explicit_opt_in():
+    engine = DecisionEngine()
+    goal = SimpleNamespace(domain="general", intent=IntentType.TASK, complexity=ComplexityLevel.SIMPLE)
+    direct = await engine.decide("direct", goal, "simple request", context={})
+    selected = await engine.decide("agent", goal, "complex task", context={"use_agent": True})
+    assert direct.use_agent is False
+    assert direct.metadata["agent_selection"] == "direct_model_path"
+    assert selected.use_agent is True
+    assert selected.metadata["agent_selection"] == "explicit_request"
 
 
 def test_brain_injects_canonical_agent_authorities():

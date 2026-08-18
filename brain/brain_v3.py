@@ -362,6 +362,7 @@ class HajeenBrainV3:
             trace.record_layer("reasoning_result", {"skipped": True})
 
         # ── 7. Decision Engine ──────────────────────────────────────────
+        decision = None
         try:
             if goal is None:
                 raise RuntimeError("Goal analysis unavailable; decision denied")
@@ -377,6 +378,8 @@ class HajeenBrainV3:
                 "decision_id": getattr(decision, "decision_id", None),
                 "action": getattr(decision, "action", "generate"),
                 "model_preference": getattr(decision, "primary_model", None),
+                "use_agent": bool(getattr(decision, "use_agent", False)),
+                "agent_selection": getattr(decision, "metadata", {}).get("agent_selection", "unknown"),
             })
         except Exception as exc:
             logger.debug("Decision skipped: %s", exc)
@@ -384,7 +387,12 @@ class HajeenBrainV3:
 
         # ── 8. Optional Agent runtime through the central orchestrator ─────
         agent_output = ""
-        use_agent = bool(request.context.get("use_agent", False))
+        use_agent = bool(getattr(decision, "use_agent", False)) if decision is not None else False
+        trace.record_layer("agent_selection", {
+            "selected": use_agent,
+            "source": "DecisionEngine",
+            "path": "AgentOrchestrator" if use_agent else "ModelRouter",
+        })
         if use_agent:
             try:
                 agent_result = await self.agent_orchestrator.run(

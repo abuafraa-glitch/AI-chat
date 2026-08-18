@@ -40,6 +40,7 @@ class Decision:
     use_rag: bool
     use_web: bool
     use_multi_model: bool
+    use_agent: bool
     collaborating_models: List[str]
     estimated_cost_tokens: int
     confidence: float
@@ -56,6 +57,7 @@ class Decision:
             "use_rag": self.use_rag,
             "use_web": self.use_web,
             "use_multi_model": self.use_multi_model,
+            "use_agent": self.use_agent,
             "collaborating_models": self.collaborating_models,
             "estimated_cost_tokens": self.estimated_cost_tokens,
             "confidence": self.confidence,
@@ -149,6 +151,9 @@ class DecisionEngine:
         # 3. تطبيق السياسات
         use_web = await self._should_use_web(intent, task_name)
         use_multi_model = complexity in (ComplexityLevel.COMPLEX, ComplexityLevel.ENTERPRISE)
+        # Agent selection is explicit and deterministic. The API/request policy
+        # opts in; ordinary requests remain on the direct BrainV3->ModelRouter path.
+        use_agent = bool((context or {}).get("use_agent", False))
         collaborating = self._get_collaborating_models(intent, complexity, primary_model) if use_multi_model else []
 
         # 4. تحديد نوع المورد
@@ -172,6 +177,7 @@ class DecisionEngine:
             use_rag=use_rag,
             use_web=use_web,
             use_multi_model=use_multi_model,
+            use_agent=use_agent,
             collaborating_models=collaborating,
             estimated_cost_tokens=estimated_cost,
             confidence=0.88,
@@ -180,6 +186,8 @@ class DecisionEngine:
                 "domain": domain,
                 "intent": intent,
                 "complexity": complexity,
+                "use_agent": use_agent,
+                "agent_selection": "explicit_request" if use_agent else "direct_model_path",
             },
             decided_at=time.time(),
         )

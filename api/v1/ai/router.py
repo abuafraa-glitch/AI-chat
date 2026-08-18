@@ -43,6 +43,7 @@ class ChatRequestSchema(BaseModel):
     session_id: Optional[str] = None
     language: str = "ar"
     use_rag: bool = True
+    use_agent: bool = False
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(None, ge=1, le=4096)
     model: Optional[str] = None
@@ -91,6 +92,7 @@ async def chat(
         context={
             "language": body.language,
             "use_rag": body.use_rag,
+            "use_agent": body.use_agent,
             "temperature": body.temperature,
             "max_tokens": body.max_tokens,
             "model": body.model,
@@ -147,6 +149,7 @@ async def chat_stream(
         context={
             "language": body.language,
             "use_rag": body.use_rag,
+            "use_agent": body.use_agent,
             "temperature": body.temperature,
             "max_tokens": body.max_tokens,
             "model": body.model,
