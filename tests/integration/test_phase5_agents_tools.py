@@ -241,6 +241,10 @@ def test_brain_injects_canonical_agent_authorities():
     assert brain.agent_orchestrator.model_router is brain.model_router
     assert brain.agent_orchestrator.memory_fabric is brain.memory
     assert brain.agent_orchestrator.prompt_builder is brain.prompt_builder
+    rag = object()
+    brain.set_rag_pipeline(rag)
+    assert brain.rag_pipeline is rag
+    assert brain.agent_orchestrator.rag_pipeline is rag
     assert brain.agent_orchestrator.policy_engine is brain.policy
 
 

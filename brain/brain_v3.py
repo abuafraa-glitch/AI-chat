@@ -223,6 +223,9 @@ class HajeenBrainV3:
     def set_rag_pipeline(self, rag_pipeline: Optional[RAGPipeline]) -> None:
         """حقن RAGPipeline المنشأ في startup باعتباره المصدر الوحيد للاسترجاع."""
         self.rag_pipeline = rag_pipeline
+        # Keep the injected authority consistent for agent planning/execution;
+        # never create a second retrieval pipeline inside the agent layer.
+        self.agent_orchestrator.rag_pipeline = rag_pipeline
 
     async def process(self, request: BrainRequest) -> BrainResponse:
         """
@@ -387,6 +390,7 @@ class HajeenBrainV3:
 
         # ── 8. Optional Agent runtime through the central orchestrator ─────
         agent_output = ""
+        use_rag = bool(request.context.get("use_rag", False))
         use_agent = bool(getattr(decision, "use_agent", False)) if decision is not None else False
         trace.record_layer("agent_selection", {
             "selected": use_agent,
@@ -399,6 +403,9 @@ class HajeenBrainV3:
                     request.user_message,
                     session_id=request.session_id,
                     user_id=request.user_id,
+                    use_rag=use_rag,
+                    language=str(request.context.get("language", "ar")),
+                    retrieval_mode=str(request.context.get("retrieval_mode", "semantic")),
                 )
                 trace.record_layer("execution", {
                     "agent_runtime": True,
@@ -423,8 +430,10 @@ class HajeenBrainV3:
         # ── 9. Prompt + RAG ثم ModelRouter: المسار الرسمي للنموذج ────────
         rag_context = agent_output
         rag_sources: List[Dict[str, Any]] = []
-        use_rag = bool(request.context.get("use_rag", False))
-        if use_rag:
+        if use_agent and use_rag:
+            rag_context = str(agent_result.context.transient_state.get("rag_context", ""))
+            rag_sources = list(agent_result.context.transient_state.get("rag_sources", []))
+        elif use_rag:
             if self.rag_pipeline is None:
                 raise RuntimeError("RAG requested but canonical RAGPipeline is not initialized")
             rag_response = await self.rag_pipeline.run(RAGRequest(

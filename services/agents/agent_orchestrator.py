@@ -9,6 +9,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from brain.memory.memory_fabric import MemoryFabric
 from brain.policy.policy_engine import PolicyEngine
+from services.rag.rag_pipeline import RAGRequest
 
 from .contracts import (
     AgentExecutionContext,
@@ -76,6 +77,9 @@ class AgentOrchestrator:
         user_id: Optional[str] = None,
         plan: Optional[ExecutionPlan] = None,
         max_steps: Optional[int] = None,
+        use_rag: bool = False,
+        language: str = "ar",
+        retrieval_mode: str = "semantic",
     ) -> AgentRunResult:
         context = AgentExecutionContext(
             goal=goal,
@@ -92,7 +96,16 @@ class AgentOrchestrator:
         self._record(events, context, "task_started", {"goal": goal})
         try:
             result = await asyncio.wait_for(
-                self._execute(context, events, session_id=session_id, user_id=user_id, plan=plan),
+                self._execute(
+                    context,
+                    events,
+                    session_id=session_id,
+                    user_id=user_id,
+                    plan=plan,
+                    use_rag=use_rag,
+                    language=language,
+                    retrieval_mode=retrieval_mode,
+                ),
                 timeout=context.execution_timeout_seconds,
             )
             return result
@@ -137,7 +150,27 @@ class AgentOrchestrator:
         session_id: str,
         user_id: Optional[str],
         plan: Optional[ExecutionPlan],
+        use_rag: bool,
+        language: str,
+        retrieval_mode: str,
     ) -> AgentRunResult:
+        if use_rag:
+            if self.rag_pipeline is None:
+                raise RuntimeError("RAG requested but canonical RAGPipeline is not initialized")
+            rag_response = await self.rag_pipeline.run(RAGRequest(
+                query=context.goal,
+                top_k=5,
+                language=language,
+                max_context_tokens=2000,
+                retrieval_mode=retrieval_mode,
+            ))
+            context.transient_state["rag_context"] = rag_response.formatted.context_used
+            context.transient_state["rag_sources"] = rag_response.formatted.citations
+            self._record(events, context, "rag_retrieved", {
+                "pipeline": "RAGPipeline",
+                "citations": len(rag_response.formatted.citations),
+                "retrieval_mode": retrieval_mode,
+            })
         if plan is None:
             if self.plan_provider is None:
                 raise RuntimeError("No canonical planner configured")
