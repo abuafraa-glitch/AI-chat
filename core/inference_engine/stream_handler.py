@@ -138,6 +138,19 @@ class StreamHandler:
                 elif chunk.event_type == "error":
                     session.error = chunk.metadata.get("error", "stream failed")
                 yield chunk
+                if chunk.finish_reason and chunk.event_type != "finish":
+                    saw_finish = True
+                    session.completed = True
+                    yield LLMStreamChunk(
+                        delta="",
+                        finish_reason=chunk.finish_reason,
+                        event_type="finish",
+                        index=index + 1,
+                        model=chunk.model,
+                        provider=chunk.provider,
+                        request_id=chunk.request_id or session_id,
+                        metadata=dict(chunk.metadata),
+                    )
 
             if not saw_finish and session.error is None:
                 session.error = "Stream ended without finish event"

@@ -300,11 +300,11 @@ class TestInferenceEngine:
             return events
         events = asyncio.get_event_loop().run_until_complete(collect())
         assert len(events) > 0
-        token_events = [e for e in events if e.event_type == "token"]
-        done_events = [e for e in events if e.event_type == "done"]
-        assert len(token_events) > 0
-        assert len(done_events) > 0
-        print(f"✅ Stream infer: {len(token_events)} token events + {len(done_events)} done")
+        delta_events = [e for e in events if e.event_type == "delta"]
+        finish_events = [e for e in events if e.event_type == "finish"]
+        assert len(delta_events) > 0
+        assert len(finish_events) == 1
+        print(f"✅ Stream infer: {len(delta_events)} delta events + {len(finish_events)} finish")
 
     def test_engine_stats(self):
         from core.inference_engine.engine import InferenceEngine
@@ -400,11 +400,11 @@ class TestStreamHandler:
             return events
 
         events = asyncio.get_event_loop().run_until_complete(run())
-        token_events = [e for e in events if e.event_type == "token"]
-        done_events = [e for e in events if e.event_type == "done"]
-        assert len(token_events) > 0
-        assert len(done_events) == 1
-        print(f"✅ StreamHandler: {len(token_events)} tokens → done")
+        delta_events = [e for e in events if e.event_type == "delta"]
+        finish_events = [e for e in events if e.event_type == "finish"]
+        assert len(delta_events) > 0
+        assert len(finish_events) == 1
+        print(f"✅ StreamHandler: {len(delta_events)} deltas → finish")
 
     def test_sse_format(self):
         from core.inference_engine.stream_handler import StreamEvent
@@ -684,8 +684,8 @@ class TestPhase8EndToEnd:
                 messages=[{"role": "user", "content": query}],
                 session_id=session_id,
             ):
-                if event.event_type == "token":
-                    stream_chunks.append(event.data)
+                if event.event_type == "delta":
+                    stream_chunks.append(event.delta)
         asyncio.get_event_loop().run_until_complete(collect_stream())
         full_streamed = "".join(stream_chunks)
         print("✅ Step 5 — Streaming Response:")
