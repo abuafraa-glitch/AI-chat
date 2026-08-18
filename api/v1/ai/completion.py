@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
-import uuid
 from typing import AsyncIterator, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from core.inference_engine import InferenceConfig
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -43,6 +43,7 @@ class CompletionResponse(BaseModel):
 
 
 from brain.brain_v3 import BrainRequest, BrainResponse, RequestType
+
 
 @router.post("/completion", response_model=CompletionResponse, summary="Text Completion عبر HajeenBrainV3")
 async def text_completion(request: Request, body: CompletionRequest) -> CompletionResponse:

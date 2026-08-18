@@ -15,7 +15,6 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from brain.brain_v3 import BrainRequest, BrainResponse, HajeenBrainV3, get_brain_v3
 from brain.memory.unified_interface import get_unified_memory
-from core.inference_engine.stream_handler import StreamEvent
 from core.llm.base import LLMStreamChunk
 
 from .citation_injector import CitationInjector

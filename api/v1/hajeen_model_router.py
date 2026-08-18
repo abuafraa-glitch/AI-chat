@@ -26,7 +26,7 @@ import json
 import logging
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -113,8 +113,9 @@ async def model_health():
 @router.get("/info")
 async def model_info():
     """معلومات النموذج."""
-    import yaml
     from pathlib import Path
+
+    import yaml
     config_path = Path("hajeen_model/config/model_config.yaml")
     config = {}
     if config_path.exists():
@@ -136,7 +137,7 @@ async def chat(req: ChatRequest, request: Request):
     الضمان: الطلب يمر عبر HajeenBrainV3.process() كاملاً.
     لا يوجد LLM call مباشر هنا.
     """
-    from brain.brain_v3 import BrainRequest, get_brain_v3
+    from brain.brain_v3 import BrainRequest
 
     brain = await _get_brain_from_request(request)
 
@@ -175,7 +176,7 @@ async def complete(req: CompleteRequest, request: Request):
     """
     استدلال كامل عبر HajeenBrainV3.
     """
-    from brain.brain_v3 import BrainRequest, get_brain_v3
+    from brain.brain_v3 import BrainRequest
 
     brain = await _get_brain_from_request(request)
     last_user = next(
@@ -216,7 +217,7 @@ async def stream_chat(req: ChatRequest, request: Request):
     Streaming محادثة عبر HajeenBrainV3.stream().
     الضمان: كل chunk يمر عبر Brain — لا LLM مباشر.
     """
-    from brain.brain_v3 import BrainRequest, get_brain_v3
+    from brain.brain_v3 import BrainRequest
 
     brain = await _get_brain_from_request(request)
 
@@ -330,7 +331,7 @@ async def build_dataset(req: DatasetBuildRequest):
 async def simulate_training(req: TrainingRequest, background_tasks: BackgroundTasks):
     """محاكاة التدريب."""
     try:
-        from hajeen_model.training_pipeline import TrainingPipeline, TrainingConfig
+        from hajeen_model.training_pipeline import TrainingConfig, TrainingPipeline
         config = TrainingConfig(
             base_model=req.base_model,
             num_epochs=req.num_epochs,

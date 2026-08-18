@@ -33,7 +33,7 @@ import time
 import uuid
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -165,7 +165,7 @@ async def brain_stream(req: BrainChatRequest):
 @router.post("/analyze")
 async def brain_analyze(req: AnalyzeRequest):
     """تحليل طلب بدون تنفيذ كامل."""
-    from brain.brain_v3 import BrainRequest, get_brain_v3
+    from brain.brain_v3 import get_brain_v3
     brain = await get_brain_v3()
 
     return {
