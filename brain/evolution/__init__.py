@@ -12,16 +12,25 @@ from __future__ import annotations
 import warnings
 
 # Re-export everything from the unified implementation
+from .phase7_lifecycle import (
+    EvolutionHypothesis,
+    EvolutionLifecycle,
+    EvolutionLifecycleCoordinator,
+    EvolutionLifecycleError,
+    EvolutionObservation,
+    EvolutionRecord,
+    EvolutionState,
+    EvolutionTrace,
+    ExperimentResult,
+    make_phase6_evaluator,
+)
 from brain.reflection.self_evolution import (
-    EvolutionProposal,
     EvolutionStatus,
     EvolutionTarget,
-    SelfEvolution,
     get_self_evolution,
 )
+from .self_evolution import EvolutionProposal, SelfEvolution, get_self_evolution_engine
 
-# Backward compatibility aliases
-get_self_evolution_engine = get_self_evolution
 
 __all__ = [
     "EvolutionProposal",
@@ -30,6 +39,16 @@ __all__ = [
     "SelfEvolution",
     "get_self_evolution",
     "get_self_evolution_engine",  # legacy alias
+    "EvolutionLifecycle",
+    "EvolutionLifecycleCoordinator",
+    "EvolutionLifecycleError",
+    "EvolutionObservation",
+    "EvolutionHypothesis",
+    "ExperimentResult",
+    "EvolutionRecord",
+    "EvolutionState",
+    "EvolutionTrace",
+    "make_phase6_evaluator",
 ]
 
 warnings.warn(

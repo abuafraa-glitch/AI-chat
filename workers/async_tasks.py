@@ -86,48 +86,29 @@ def reflection_task(self, task_id: str, goal_id: str, model_used: str, actual_la
 
 @celery_app.task(name="hajeen.evolution_proposal_task", bind=True)
 def evolution_proposal_task(self, report_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Celery task to generate an evolution proposal from a reflection report."""
-    logger.info(f"[Celery Task] Starting evolution proposal generation for report: {report_data.get('report_id')}")
+    """Deprecated compatibility task; canonical Phase 7 is required."""
+    logger.warning(
+        "Legacy evolution proposal task rejected; submit an evidence-backed observation "
+        "through BrainV3/EvolutionLifecycle."
+    )
+    return {
+        "status": "rejected",
+        "error": "legacy_evolution_path_disabled",
+        "required_authority": "brain.evolution.phase7_lifecycle.EvolutionLifecycle",
+        "report_id": report_data.get("report_id"),
+    }
 
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    async def _run_proposal_generation():
-        from brain.evolution.self_evolution import (
-            ReflectionReport,
-            get_self_evolution_engine,
-        )
-        evolution_engine = await get_self_evolution_engine()
-        report = ReflectionReport(**report_data)
-        proposal = await evolution_engine.analyze_and_propose(report)
-        return proposal.to_dict() if proposal else {"status": "failed", "error": "No proposal generated"}
-
-    result = loop.run_until_complete(_run_proposal_generation())
-    logger.info(f"[Celery Task] Finished evolution proposal generation for report: {report_data.get('report_id')}")
-    return result
 
 @celery_app.task(name="hajeen.evolution_evaluation_task", bind=True)
 def evolution_evaluation_task(self, proposal_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Celery task to evaluate and implement an evolution proposal."""
-    logger.info(f"[Celery Task] Starting evolution proposal evaluation for proposal: {proposal_data.get('proposal_id')}")
-
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    async def _run_proposal_evaluation():
-        from brain.evolution.self_evolution import (
-            EvolutionProposal,
-            get_self_evolution_engine,
-        )
-        evolution_engine = await get_self_evolution_engine()
-        proposal = EvolutionProposal(**proposal_data)
-        implemented = await evolution_engine.evaluate_and_implement(proposal)
-        return {"status": "success" if implemented else "failed", "proposal": proposal.to_dict()}
-
-    result = loop.run_until_complete(_run_proposal_evaluation())
-    logger.info(f"[Celery Task] Finished evolution proposal evaluation for proposal: {proposal_data.get('proposal_id')}")
-    return result
+    """Deprecated compatibility task; never evaluates or mutates production."""
+    logger.warning(
+        "Legacy evolution evaluation task rejected; run an isolated canonical "
+        "EvolutionLifecycle experiment with real evidence and explicit approval."
+    )
+    return {
+        "status": "rejected",
+        "error": "legacy_evolution_path_disabled",
+        "required_authority": "brain.evolution.phase7_lifecycle.EvolutionLifecycle",
+        "proposal_id": proposal_data.get("proposal_id"),
+    }

@@ -45,6 +45,7 @@ from .cognitive_layer.reasoning_engine import (
 )
 from .decision_engine import DecisionEngine, get_decision_engine_sync
 from .goal_manager import GoalManager, get_goal_manager
+from .evolution.phase7_lifecycle import EvolutionLifecycle, EvolutionRecord
 from .memory.memory_fabric import MemoryFabric, get_memory_fabric
 from .metrics.model_performance_db import ModelPerformanceDB, get_performance_db
 from .model_router import ModelRouter, get_model_router
@@ -170,7 +171,7 @@ class HajeenBrainV3:
 
     VERSION = "3.0.0"
 
-    def __init__(self) -> None:
+    def __init__(self, evolution_lifecycle: Optional[EvolutionLifecycle] = None) -> None:
         logger.info("HajeenBrain v%s: تهيئة العقل المدبّر المركزي...", self.VERSION)
 
         # مصدر الحقيقة الوحيد للذاكرة
@@ -213,12 +214,53 @@ class HajeenBrainV3:
             execution_timeout_seconds=120.0,
         )
 
+        # سلطة التطور الاختيارية: لا تُنشئ مساراً بديلاً ولا تُطبق أي تغيير تلقائياً.
+        self.evolution_lifecycle: Optional[EvolutionLifecycle] = evolution_lifecycle
+
         # الأداء والانعكاس
         self.performance_db: ModelPerformanceDB = get_performance_db()
-
         self._execution_traces: Dict[str, ExecutionTrace] = {}
         self._stream_queues: Dict[str, asyncio.Queue] = {}
         logger.info("HajeenBrain v%s: جاهز — Runtime الوحيد المعتمد ✓", self.VERSION)
+
+    def set_evolution_lifecycle(self, lifecycle: Optional[EvolutionLifecycle]) -> None:
+        """حقن سلطة Phase 7؛ لا يُسمح بإنشاء lifecycle محلي داخل الطلب."""
+        if lifecycle is not None and lifecycle.memory is not self.memory:
+            raise ValueError("EvolutionLifecycle must use BrainV3's MemoryFabric")
+        self.evolution_lifecycle = lifecycle
+
+    def record_evolution_observation(
+        self,
+        *,
+        request: BrainRequest,
+        trace: ExecutionTrace,
+        quality_score: float,
+        evidence_refs: tuple[str, ...] = (),
+        hypothesis: Optional[str] = None,
+        expected_metrics: Optional[Dict[str, float]] = None,
+        proposed_change: Optional[Dict[str, Any]] = None,
+        idempotency_key: Optional[str] = None,
+    ) -> Optional[EvolutionRecord]:
+        """يسجل دليلاً حقيقياً في Phase 7 دون تشغيل تجربة أو تعديل إنتاجي."""
+        if self.evolution_lifecycle is None:
+            return None
+        payload = {
+            "request_id": request.request_id,
+            "session_id": request.session_id,
+            "quality_score": float(quality_score),
+            "layers_passed": tuple(trace.layers_passed),
+            "provider": trace.provider,
+            "execution": dict(trace.execution),
+        }
+        return self.evolution_lifecycle.observe(
+            "brain_v3_request",
+            payload,
+            evidence_refs=evidence_refs,
+            hypothesis=hypothesis,
+            expected_metrics=expected_metrics,
+            proposed_change=proposed_change,
+            idempotency_key=idempotency_key or f"brain-request:{request.request_id}",
+        )
 
     def set_rag_pipeline(self, rag_pipeline: Optional[RAGPipeline]) -> None:
         """حقن RAGPipeline المنشأ في startup باعتباره المصدر الوحيد للاسترجاع."""
