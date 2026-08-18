@@ -117,3 +117,43 @@ def test_registry_rejects_failed_evaluation_and_no_promotion(tmp_path):
     with pytest.raises(ValueError, match="APPROVED"):
         registry.promote(model_id, version, ModelArtifactStatus.PRODUCTION)
     assert registry.get_artifact(model_id, version).status is ModelArtifactStatus.REJECTED
+
+
+@pytest.mark.asyncio
+async def test_model_router_excludes_unapproved_registered_artifact(tmp_path):
+    from brain.model_router import ModelConfig, ModelRouter
+
+    registry = ModelRegistry()
+    model_id = "phase6-router-guard"
+    artifact_dir = tmp_path / "artifact"
+    artifact_dir.mkdir()
+    registry.register_artifact(ModelArtifactRecord(
+        model_id=model_id,
+        model_version="v1",
+        model_type="causal_lm",
+        artifact_location=str(artifact_dir),
+        base_model="base",
+        dataset_version="ds-v1",
+        training_run_id="train-router",
+        status=ModelArtifactStatus.TRAINED,
+    ))
+    registry.reject(model_id, "v1", "test_rejection")
+    router = ModelRouter(prefer_local=False, model_registry=registry)
+    router.add_model("phase6-router-key", ModelConfig(
+        model_id=model_id,
+        provider="test",
+        base_url=None,
+        api_key=None,
+        capabilities=["phase6-router"],
+        context_limit=128,
+        max_tokens=32,
+        avg_latency_ms=1,
+        cost_per_1k_tokens=0,
+        quality_score=1,
+        is_local=False,
+    ))
+    assert router.select_model("phase6-router", 8) is None
+    result = await router.route([], capability="phase6-router", budget_tokens=8, force_model="phase6-router-key")
+    assert result.success is False
+    assert result.metadata["fail_closed"] is True
+    assert "approved" in result.error.lower()

@@ -10,6 +10,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from core.llm.base import LLMConfig, LLMMessage, LLMRequest, LLMResponse, LLMStreamChunk
 from core.llm.provider_registry import ProviderRegistry
+from core.model.model_registry import ModelArtifactStatus, ModelRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +83,9 @@ def _score_model(model: ModelConfig, capability: str, budget_tokens: int, prefer
 class ModelRouter:
     """The only authority allowed to select and execute a model provider."""
 
-    def __init__(self, prefer_local: bool = True) -> None:
+    def __init__(self, prefer_local: bool = True, model_registry: Optional[ModelRegistry] = None) -> None:
         self._models = dict(DEFAULT_MODELS)
+        self._model_registry = model_registry or ModelRegistry()
         self._prefer_local = prefer_local
         self._routing_history: List[Dict[str, Any]] = []
         self._provider_registry: Dict[str, Any] = {}
@@ -102,6 +104,27 @@ class ModelRouter:
     def add_model(self, key: str, config: ModelConfig) -> None:
         self._models[key] = config
 
+    def set_model_registry(self, registry: ModelRegistry) -> None:
+        """Inject the lifecycle registry; selection remains owned by this router."""
+        self._model_registry = registry
+
+    def _registry_record_for(self, key: str, cfg: ModelConfig) -> Any:
+        getter = getattr(self._model_registry, "get_artifact", None)
+        if getter is None:
+            return None
+        return getter(cfg.model_id, "production") or getter(key, "production")
+
+    def _registry_eligible(self, key: str, cfg: ModelConfig) -> bool:
+        """Unregistered runtime providers remain compatible; registered artifacts need approval."""
+        records = getattr(self._model_registry, "list_artifacts", lambda: [])()
+        related = [
+            item for item in records
+            if item.get("model_id") in {key, cfg.model_id}
+        ]
+        if not related:
+            return True
+        return any(item.get("status") in {ModelArtifactStatus.STAGING.value, ModelArtifactStatus.PRODUCTION.value} for item in related)
+
     def _resolve_key(self, identifier: str) -> Optional[str]:
         if identifier in self._models:
             return identifier
@@ -112,7 +135,7 @@ class ModelRouter:
 
     def select_model(self, capability: str = "general", budget_tokens: int = 4096, force_local: bool = False, exclude: Optional[List[str]] = None) -> Optional[str]:
         exclude_set = set(exclude or [])
-        candidates = [(key, cfg) for key, cfg in self._models.items() if key not in exclude_set and _score_model(cfg, capability, budget_tokens) != float("-inf")]
+        candidates = [(key, cfg) for key, cfg in self._models.items() if key not in exclude_set and self._registry_eligible(key, cfg) and _score_model(cfg, capability, budget_tokens) != float("-inf")]
         registered = [(key, cfg) for key, cfg in candidates if key in self._provider_registry]
         if registered:
             candidates = registered
@@ -162,6 +185,13 @@ class ModelRouter:
         while key and key not in tried:
             tried.append(key)
             cfg = self._models[key]
+            if not self._registry_eligible(key, cfg):
+                last_error = "Model artifact is not approved for runtime"
+                self._record_routing(key, capability, 0.0, False)
+                if forced_key:
+                    break
+                key = self.select_model(capability, budget_tokens, force_local=local_preference, exclude=tried)
+                continue
             started = time.perf_counter()
             try:
                 provider = await asyncio.wait_for(self._get_provider(key, cfg), timeout=timeout)
@@ -199,6 +229,8 @@ class ModelRouter:
         if key is None:
             raise RuntimeError("No eligible model is registered")
         cfg = self._models[key]
+        if not self._registry_eligible(key, cfg):
+            raise RuntimeError("model artifact is not approved for runtime")
         provider = await asyncio.wait_for(self._get_provider(key, cfg), timeout=timeout)
         request = self._request(messages, cfg, budget_tokens, request_id=request_id, stream=True)
         if not hasattr(provider, "stream"):
@@ -277,7 +309,10 @@ class ModelRouter:
     async def list_available_models(self, capability: str = "general", budget_tokens: int = 4096) -> List[Dict[str, Any]]:
         result = []
         for key, cfg in self._models.items():
-            entry = {"key": key, "model_id": cfg.model_id, "provider": cfg.provider, "capabilities": cfg.capabilities, "context_limit": cfg.context_limit, "max_tokens": cfg.max_tokens, "is_local": cfg.is_local, "available": key in self._provider_registry}
+            entry = {"key": key, "model_id": cfg.model_id, "provider": cfg.provider, "capabilities": cfg.capabilities, "context_limit": cfg.context_limit, "max_tokens": cfg.max_tokens, "is_local": cfg.is_local, "available": key in self._provider_registry, "registry_eligible": self._registry_eligible(key, cfg)}
+            artifact_records = [item for item in self._model_registry.list_artifacts() if item.get("model_id") in {key, cfg.model_id}]
+            if artifact_records:
+                entry["artifacts"] = artifact_records
             provider = self._provider_registry.get(key)
             if provider is not None and hasattr(provider, "health_check"):
                 try:
