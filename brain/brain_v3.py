@@ -374,6 +374,7 @@ class HajeenBrainV3:
                 top_k=int(request.context.get("top_k", 5)),
                 language=str(request.context.get("language", "ar")),
                 max_context_tokens=2000,
+                retrieval_mode=str(request.context.get("retrieval_mode", "semantic")),
             ))
             rag_context = rag_response.formatted.context_used
             rag_sources = rag_response.formatted.citations
@@ -402,6 +403,7 @@ class HajeenBrainV3:
             "prompt_mode": prompt_mode.value,
             "rag_pipeline": "RAGPipeline" if use_rag else None,
             "rag_sources": rag_sources,
+            "rag_retrieval_mode": str(request.context.get("retrieval_mode", "semantic")) if use_rag else None,
         })
 
         try:
@@ -431,7 +433,9 @@ class HajeenBrainV3:
                     "success": True,
                     "streaming": True,
                     "prompt_builder": "UnifiedPromptBuilder",
+                    "rag_pipeline": "RAGPipeline" if use_rag else None,
                     "rag_sources": rag_sources,
+                    "rag_retrieval_mode": str(request.context.get("retrieval_mode", "semantic")) if use_rag else None,
                 })
             else:
                 route_result = await self.model_router.route(
@@ -454,7 +458,9 @@ class HajeenBrainV3:
                     "latency_ms": route_result.latency_ms,
                     "success": True,
                     "prompt_builder": "UnifiedPromptBuilder",
+                    "rag_pipeline": "RAGPipeline" if use_rag else None,
                     "rag_sources": rag_sources,
+                    "rag_retrieval_mode": str(request.context.get("retrieval_mode", "semantic")) if use_rag else None,
                 })
         except Exception as exc:
             logger.error("ModelRouter unavailable; failing closed: %s", exc)

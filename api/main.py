@@ -357,13 +357,27 @@ async def on_startup():
     try:
         from brain.prompts.unified_prompt_builder import UnifiedPromptBuilder
         from services.rag.rag_pipeline import RAGPipeline
+        from services.retrieval.hybrid_retriever import HybridRetriever
         from services.retrieval.vector_retriever import VectorRetriever
 
-        retriever = VectorRetriever(_search_state["engine"])
-        rag = RAGPipeline(retriever=retriever, unified_prompt_builder=UnifiedPromptBuilder())
+        engine = _search_state.get("engine")
+        if engine is None:
+            raise RuntimeError("RAG cannot start without the configured search engine")
+        retrieval_mode = os.getenv("RAG_RETRIEVAL_MODE", "semantic").strip().lower()
+        if retrieval_mode == "hybrid":
+            retriever = HybridRetriever(engine)
+        elif retrieval_mode == "semantic":
+            retriever = VectorRetriever(engine)
+        else:
+            raise RuntimeError(f"Unsupported RAG_RETRIEVAL_MODE: {retrieval_mode}")
+        rag = RAGPipeline(
+            retriever=retriever,
+            unified_prompt_builder=UnifiedPromptBuilder(),
+        )
+        _search_state["retrieval_mode"] = retrieval_mode
         _search_state["rag_pipeline"] = rag
         app.state.rag_pipeline = rag
-        logger.info("startup: RAG Pipeline جاهز ✓")
+        logger.info("startup: RAG Pipeline جاهز ✓ (mode=%s)", _search_state.get("retrieval_mode"))
     except Exception as exc:
         logger.error("startup: فشل تهيئة RAG Pipeline — %s", exc)
 

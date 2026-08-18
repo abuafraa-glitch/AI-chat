@@ -26,6 +26,7 @@ class RAGRequest:
     template: Optional[PromptTemplate] = None
     filter_metadata: Optional[Dict] = None
     max_context_tokens: int = 2000
+    retrieval_mode: str = "semantic"
 
 
 @dataclass
@@ -36,12 +37,19 @@ class RAGResponse:
     retrieval_result: Optional[object] = None
     total_ms: float = 0.0
     stage_timings: Dict = field(default_factory=dict)
+    retrieval_mode: str = "semantic"
 
     def to_dict(self) -> dict:
         return {
             "query": self.request.query,
             "total_ms": round(self.total_ms, 2),
             "stage_timings": {k: round(v, 2) for k, v in self.stage_timings.items()},
+            "retrieval": {
+                "mode": self.retrieval_mode,
+                "count": getattr(self.retrieval_result, "total_retrieved", 0),
+                "retriever": getattr(self.retrieval_result, "retriever_name", None),
+                "metadata": getattr(self.retrieval_result, "metadata", {}),
+            },
             **self.formatted.to_dict(),
         }
 
@@ -66,20 +74,40 @@ class RAGPipeline:
         context_assembler: Optional[ContextAssembler] = None,
         context_builder: Optional[ContextBuilder] = None,
         prompt_builder: Optional[PromptBuilder] = None,
-        response_formatter: Optional[ResponseFormatter] = None,
         unified_prompt_builder: Optional[UnifiedPromptBuilder] = None,
+        response_formatter: Optional[ResponseFormatter] = None,
+        retrieval_mode: Optional[str] = None,
     ):
         self.retriever = retriever
+        inferred_mode = (
+            "hybrid" if type(retriever).__name__ == "HybridRetriever" else "semantic"
+        )
+        self.retrieval_mode = retrieval_mode or inferred_mode
+        if self.retrieval_mode not in {"semantic", "hybrid"}:
+            raise ValueError(f"Unsupported retrieval mode: {self.retrieval_mode}")
         self.assembler = context_assembler or ContextAssembler(max_context_chars=6000)
         self.ctx_builder = context_builder or ContextBuilder(max_tokens=2000)
-        self.prompt_builder = prompt_builder or PromptBuilder()
-        self.unified_prompt_builder = unified_prompt_builder
+        # UnifiedPromptBuilder is the sole production prompt authority.
+        # prompt_builder remains accepted only for source compatibility.
+        self.prompt_builder = prompt_builder
+        self.unified_prompt_builder = unified_prompt_builder or UnifiedPromptBuilder()
         self.formatter = response_formatter or ResponseFormatter()
 
     async def run(self, request: RAGRequest) -> RAGResponse:
         """تنفيذ RAG pipeline كامل."""
         t_total = time.perf_counter()
         timings = {}
+
+        if not request.query or not request.query.strip():
+            raise ValueError("RAG query must not be empty")
+        if request.top_k < 1:
+            raise ValueError("RAG top_k must be positive")
+        if request.retrieval_mode not in {"semantic", "hybrid"}:
+            raise ValueError(f"Unsupported retrieval mode: {request.retrieval_mode}")
+
+        # The configured retriever is authoritative; request metadata cannot
+        # claim a mode that was not instantiated by startup/dependency injection.
+        effective_mode = self.retrieval_mode
 
         # 1. Retrieval
         t0 = time.perf_counter()
@@ -110,22 +138,13 @@ class RAGPipeline:
 
         # 5. Prompt Building
         t0 = time.perf_counter()
-        if self.unified_prompt_builder is not None:
-            canonical_prompt = self.unified_prompt_builder.build(
-                request.query,
-                mode=PromptMode.RAG,
-                context=built_context.formatted_text,
-                language=request.language,
-            )
-            prompt_text = canonical_prompt.text
-        else:
-            built_prompt = self.prompt_builder.build(
-                query=request.query,
-                context=built_context,
-                template=request.template,
-                language=request.language,
-            )
-            prompt_text = built_prompt.text
+        canonical_prompt = self.unified_prompt_builder.build(
+            request.query,
+            mode=PromptMode.RAG,
+            context=built_context.formatted_text,
+            language=request.language,
+        )
+        prompt_text = canonical_prompt.text
         timings["prompt_build_ms"] = (time.perf_counter() - t0) * 1000
 
         # 6. Response Formatting
@@ -136,6 +155,12 @@ class RAGPipeline:
             citations=citations,
             retrieval_ms=timings["retrieval_ms"],
         )
+        formatted.metadata.update({
+            "retrieval_mode": effective_mode,
+            "retriever": getattr(retrieval_result, "retriever_name", None),
+            "retrieval_count": getattr(retrieval_result, "total_retrieved", 0),
+            "retrieval_metadata": getattr(retrieval_result, "metadata", {}),
+        })
 
         total_ms = (time.perf_counter() - t_total) * 1000
         logger.info(
@@ -149,6 +174,7 @@ class RAGPipeline:
             retrieval_result=retrieval_result,
             total_ms=total_ms,
             stage_timings=timings,
+            retrieval_mode=effective_mode,
         )
 
     async def quick_context(self, query: str, top_k: int = 5) -> str:

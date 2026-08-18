@@ -46,6 +46,7 @@ class ChatRequestSchema(BaseModel):
     max_tokens: Optional[int] = Field(None, ge=1, le=4096)
     model: Optional[str] = None
     top_k: int = Field(5, ge=1, le=20)
+    retrieval_mode: str = Field("semantic", pattern="^(semantic|hybrid)$")
     system_prompt: Optional[str] = None # Added system_prompt to schema
 
 
@@ -65,6 +66,7 @@ class RAGQuerySchema(BaseModel):
     use_llm: bool = True
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(None, ge=1, le=2048)
+    retrieval_mode: str = Field("semantic", pattern="^(semantic|hybrid)$")
 
 
 # ── POST /chat ─────────────────────────────────────────────────────────────────
@@ -92,6 +94,7 @@ async def chat(
             "max_tokens": body.max_tokens,
             "model": body.model,
             "top_k": body.top_k,
+            "retrieval_mode": body.retrieval_mode,
             "system_prompt": body.system_prompt,
         },
         stream=False,
@@ -113,6 +116,7 @@ async def chat(
             "sources": brain_response.trace.execution.get("rag_sources", []), # Assuming RAG sources are in trace
             "latency_ms": brain_response.trace.total_latency_ms,
             "tokens_used": brain_response.trace.tokens_used,
+            "retrieval_mode": brain_response.trace.execution.get("rag_retrieval_mode"),
             "language": body.language,
         }
     except Exception as e:
@@ -146,6 +150,7 @@ async def chat_stream(
             "max_tokens": body.max_tokens,
             "model": body.model,
             "top_k": body.top_k,
+            "retrieval_mode": body.retrieval_mode,
             "system_prompt": body.system_prompt,
             "stream": True,
         },
@@ -203,6 +208,7 @@ async def rag_query(
             "temperature": body.temperature,
             "max_tokens": body.max_tokens,
             "top_k": body.top_k,
+            "retrieval_mode": body.retrieval_mode,
         },
         request_type=RequestType.ANALYSIS, # Or a more appropriate type for RAG
         max_tokens=body.max_tokens or 2048,
@@ -218,6 +224,7 @@ async def rag_query(
             "provider": brain_response.trace.provider,
 
             "sources": brain_response.trace.execution.get("rag_sources", []), # Assuming RAG sources are in trace
+            "retrieval_mode": brain_response.trace.execution.get("rag_retrieval_mode"),
             "tokens_used": brain_response.trace.tokens_used,
             "latency_ms": brain_response.trace.total_latency_ms,
         }

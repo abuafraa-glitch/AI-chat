@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 @dataclass
@@ -15,6 +15,8 @@ class Citation:
     source_title: str = ""
     text_preview: str = ""
     score: float = 0.0
+    rank: int = 0
+    metadata: Dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -25,6 +27,8 @@ class Citation:
             "source_title": self.source_title,
             "text_preview": self.text_preview[:150],
             "score": round(self.score, 4),
+            "rank": self.rank or self.index,
+            "metadata": dict(self.metadata),
         }
 
 
@@ -44,6 +48,8 @@ class CitationManager:
                 source_title=chunk.get("source_title", ""),
                 text_preview=chunk.get("text", "")[:150],
                 score=chunk.get("score", 0.0),
+                rank=int(chunk.get("rank", i)),
+                metadata=dict(chunk.get("metadata") or {}),
             )
             self._citations.append(citation)
 
