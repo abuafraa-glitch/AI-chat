@@ -93,11 +93,32 @@ class LLMResponse:
 
 @dataclass
 class LLMStreamChunk:
-    """قطعة من streaming response."""
+    """قطعة native من streaming response مع semantics ثابتة."""
     delta: str
     finish_reason: Optional[str] = None
     index: int = 0
     model: Optional[str] = None
+    event_type: str = "delta"  # start | delta | finish | error
+    provider: Optional[str] = None
+    request_id: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def sequence(self) -> int:
+        """اسم توافقـي واضح لترتيب القطع."""
+        return self.index
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "event": self.event_type,
+            "delta": self.delta,
+            "sequence": self.sequence,
+            "finish_reason": self.finish_reason,
+            "model": self.model,
+            "provider": self.provider,
+            "request_id": self.request_id,
+            "metadata": self.metadata,
+        }
 
 
 class LLMError(Exception):
