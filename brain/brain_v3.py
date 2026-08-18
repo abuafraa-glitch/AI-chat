@@ -49,6 +49,8 @@ from .memory.memory_fabric import MemoryFabric, get_memory_fabric
 from .metrics.model_performance_db import ModelPerformanceDB, get_performance_db
 from .model_router import ModelRouter, get_model_router
 from .policy.policy_engine import PolicyEngine, get_policy_engine
+from services.agents.agent_orchestrator import AgentOrchestrator
+from services.agents.planner_agent import PlannerAgent
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +194,24 @@ class HajeenBrainV3:
         self.reasoning_engine: ReasoningEngine = get_reasoning_engine()
         self.goal_manager: GoalManager = get_goal_manager()
         self.decision_engine: DecisionEngine = get_decision_engine_sync()
+
+        # Agent runtime: orchestration owns transient task lifecycle only; all
+        # model, memory, prompt, RAG, and policy authorities remain central.
+        self.agent_planner = PlannerAgent(
+            model_router=self.model_router,
+            prompt_builder=self.prompt_builder,
+            max_steps=10,
+        )
+        self.agent_orchestrator = AgentOrchestrator(
+            model_router=self.model_router,
+            memory_fabric=self.memory,
+            prompt_builder=self.prompt_builder,
+            policy_engine=self.policy,
+            rag_pipeline=self.rag_pipeline,
+            plan_provider=self.agent_planner.create_plan,
+            max_steps=10,
+            execution_timeout_seconds=120.0,
+        )
 
         # الأداء والانعكاس
         self.performance_db: ModelPerformanceDB = get_performance_db()
@@ -362,8 +382,38 @@ class HajeenBrainV3:
             logger.debug("Decision skipped: %s", exc)
             trace.record_layer("decision", {"skipped": True})
 
-        # ── 8. Prompt + RAG ثم ModelRouter: المسار الرسمي للنموذج ────────
-        rag_context = ""
+        # ── 8. Optional Agent runtime through the central orchestrator ─────
+        agent_output = ""
+        use_agent = bool(request.context.get("use_agent", False))
+        if use_agent:
+            try:
+                agent_result = await self.agent_orchestrator.run(
+                    request.user_message,
+                    session_id=request.session_id,
+                    user_id=request.user_id,
+                )
+                trace.record_layer("execution", {
+                    "agent_runtime": True,
+                    "agent_task_id": agent_result.context.task_id,
+                    "agent_success": agent_result.success,
+                    "agent_events": [event.event for event in agent_result.events],
+                })
+                if not agent_result.success:
+                    raise RuntimeError(agent_result.error or "Agent execution failed")
+                agent_output = str(agent_result.output or "")
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                trace.record_layer("execution", {
+                    "agent_runtime": True,
+                    "agent_success": False,
+                    "agent_error": str(exc),
+                    "fail_closed": True,
+                })
+                raise RuntimeError("Agent runtime unavailable") from exc
+
+        # ── 9. Prompt + RAG ثم ModelRouter: المسار الرسمي للنموذج ────────
+        rag_context = agent_output
         rag_sources: List[Dict[str, Any]] = []
         use_rag = bool(request.context.get("use_rag", False))
         if use_rag:
@@ -479,7 +529,7 @@ class HajeenBrainV3:
             if queue is not None:
                 await queue.put(None)
 
-        # ── 9. MemoryFabric: حفظ الاستجابة (SSOT) ──────────────────────
+        # ── 10. MemoryFabric: حفظ الاستجابة (SSOT) ──────────────────────
         conversation.add_message("assistant", content)
         trace.record_layer("reflection", {"stored_in_memory_fabric": True})
 

@@ -1,118 +1,221 @@
+"""Canonical Phase 5 agent orchestration runtime."""
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
-from typing import Any, Dict, List, Optional, Type
+import time
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from .base_agent import AgentContext, AgentResult, BaseAgent
-from .planner_agent import PlannerAgent
-from .retrieval_agent import RetrievalAgent
-from .execution_agent import ExecutionAgent
-from .memory_agent import MemoryAgent
-from .tool_agent import ToolAgent
-from .autonomous.autonomous_agent import AutonomousAgent
-from .multi_agent.collaborative_layer import CollaborativeIntelligence
+from brain.memory.memory_fabric import MemoryFabric
+from brain.policy.policy_engine import PolicyEngine
+
+from .contracts import (
+    AgentExecutionContext,
+    AgentRunResult,
+    AgentTraceEvent,
+    ExecutionPlan,
+    Observation,
+    PlanStep,
+    TaskStatus,
+    ToolCall,
+)
+from .tool_runtime import ToolExecutor, ToolRegistry
 
 logger = logging.getLogger(__name__)
 
 
+PlanProvider = Callable[[AgentExecutionContext], Awaitable[ExecutionPlan] | ExecutionPlan]
+Reasoner = Callable[[AgentExecutionContext, PlanStep, List[Observation]], Awaitable[Any] | Any]
+
+
 class AgentOrchestrator:
-    """Coordinates multiple agents in a pipeline to complete complex goals."""
+    """Single orchestration authority using central platform services.
+
+    The orchestrator owns only transient task lifecycle. Model selection, prompt
+    construction, retrieval, policy, and persistent memory remain injected
+    authorities owned by BrainV3/platform services.
+    """
 
     def __init__(
         self,
-        llm: Optional[Any] = None,
-        rag_service: Optional[Any] = None,
-        memory_service: Optional[Any] = None,
-        max_iterations: int = 10,
+        *,
+        model_router: Any,
+        memory_fabric: MemoryFabric,
+        prompt_builder: Any,
+        policy_engine: PolicyEngine,
+        rag_pipeline: Optional[Any] = None,
+        tool_registry: Optional[ToolRegistry] = None,
+        tool_executor: Optional[ToolExecutor] = None,
+        plan_provider: Optional[PlanProvider] = None,
+        reasoner: Optional[Reasoner] = None,
+        max_steps: int = 10,
+        execution_timeout_seconds: float = 120.0,
     ) -> None:
-        self._llm = llm
-        self._rag = rag_service
-        self._memory_svc = memory_service
-        self.max_iterations = max_iterations
-        self._agents: Dict[str, BaseAgent] = {}
-        self._pipeline: List[str] = []
-        self._build_default_pipeline()
-
-    def _build_default_pipeline(self) -> None:
-        self._agents["planner"] = PlannerAgent(llm=self._llm, max_iterations=self.max_iterations)
-        self._agents["retrieval"] = RetrievalAgent(rag_service=self._rag)
-        self._agents["execution"] = ExecutionAgent(llm=self._llm, max_iterations=self.max_iterations)
-        if self._memory_svc:
-            self._agents["memory"] = MemoryAgent(memory_service=self._memory_svc)
-        self._pipeline = ["planner", "retrieval", "execution"]
-        if self._llm:
-            self._agents["autonomous"] = AutonomousAgent(name="autonomous_agent", llm=self._llm, agent_manager=self, max_iterations=self.max_iterations)
-        
-        # Initialize Multi-Agent Collaborative Layer
-        self.collaborative_layer = CollaborativeIntelligence(agents=list(self._agents.values()))
-
-    def register_agent(self, name: str, agent: BaseAgent) -> None:
-        self._agents[name] = agent
-        logger.info("Agent registered in orchestrator: %s", name)
-
-    def set_pipeline(self, pipeline: List[str]) -> None:
-        unknown = [n for n in pipeline if n not in self._agents]
-        if unknown:
-            raise ValueError(f"Unknown agents in pipeline: {unknown}")
-        self._pipeline = pipeline
+        if max_steps <= 0 or execution_timeout_seconds <= 0:
+            raise ValueError("Agent limits must be positive")
+        self.model_router = model_router
+        self.memory_fabric = memory_fabric
+        self.prompt_builder = prompt_builder
+        self.policy_engine = policy_engine
+        self.rag_pipeline = rag_pipeline
+        self.tool_registry = tool_registry or ToolRegistry()
+        self.tool_executor = tool_executor or ToolExecutor(self.tool_registry, policy_engine)
+        self.plan_provider = plan_provider
+        self.reasoner = reasoner
+        self.max_steps = max_steps
+        self.execution_timeout_seconds = execution_timeout_seconds
+        self._active: Dict[str, asyncio.Task[Any]] = {}
+        self._traces: Dict[str, List[AgentTraceEvent]] = {}
 
     async def run(
         self,
         goal: str,
-        session_id: Optional[str] = None,
-        pipeline: Optional[List[str]] = None,
-    ) -> Dict:
-        active_pipeline = pipeline or self._pipeline
-        context = AgentContext(
+        *,
+        session_id: str,
+        user_id: Optional[str] = None,
+        plan: Optional[ExecutionPlan] = None,
+        max_steps: Optional[int] = None,
+    ) -> AgentRunResult:
+        context = AgentExecutionContext(
             goal=goal,
-            session_id=session_id or "",
-            max_iterations=self.max_iterations,
+            session_id=session_id,
+            max_steps=max_steps or self.max_steps,
+            execution_timeout_seconds=self.execution_timeout_seconds,
+            status=TaskStatus.RUNNING,
         )
+        events: List[AgentTraceEvent] = []
+        self._traces[context.task_id] = events
+        task = asyncio.current_task()
+        if task is not None:
+            self._active[context.task_id] = task
+        self._record(events, context, "task_started", {"goal": goal})
+        try:
+            result = await asyncio.wait_for(
+                self._execute(context, events, session_id=session_id, user_id=user_id, plan=plan),
+                timeout=context.execution_timeout_seconds,
+            )
+            return result
+        except asyncio.CancelledError:
+            context.status = TaskStatus.CANCELLED
+            self._record(events, context, "task_cancelled")
+            raise
+        except asyncio.TimeoutError:
+            context.status = TaskStatus.FAILED
+            self._record(events, context, "task_timeout", {"timeout_seconds": context.execution_timeout_seconds})
+            return AgentRunResult(False, None, context, events, "Agent execution timeout")
+        except Exception as exc:
+            context.status = TaskStatus.FAILED
+            self._record(events, context, "task_failed", {"error": str(exc)})
+            return AgentRunResult(False, None, context, events, str(exc))
+        finally:
+            self._active.pop(context.task_id, None)
 
-        results: List[AgentResult] = []
-        all_steps: List[Dict] = []
-        final_output = ""
+    async def _execute(
+        self,
+        context: AgentExecutionContext,
+        events: List[AgentTraceEvent],
+        *,
+        session_id: str,
+        user_id: Optional[str],
+        plan: Optional[ExecutionPlan],
+    ) -> AgentRunResult:
+        if plan is None:
+            if self.plan_provider is None:
+                raise RuntimeError("No canonical planner configured")
+            generated = self.plan_provider(context)
+            plan = await generated if inspect.isawaitable(generated) else generated
+        if not isinstance(plan, ExecutionPlan) or not plan.steps:
+            raise RuntimeError("Planner returned a malformed executable plan")
+        if len(plan.steps) > context.max_steps:
+            raise RuntimeError("Plan exceeds max_steps")
+        context.plan = plan
+        self._record(events, context, "plan_created", {"plan_id": plan.plan_id, "steps": len(plan.steps)})
 
-        for agent_name in active_pipeline:
-            agent = self._agents.get(agent_name)
-            if agent is None:
-                logger.warning("Agent '%s' not found, skipping", agent_name)
-                continue
-
-            logger.info("Running agent: %s", agent_name)
-            result = await agent.run(goal=goal, context=context)
-            results.append(result)
-
-            if result.output:
-                final_output = result.output
-                context.memory[f"{agent_name}_output"] = result.output
-
-            for step in result.steps:
-                all_steps.append(
-                    {
-                        "agent": agent_name,
-                        "action": step.action,
-                        "observation": step.observation,
-                        "tool": step.tool_used,
-                        "error": step.error,
-                    }
+        final_output: Any = None
+        for step in plan.steps:
+            if context.steps_completed >= context.max_steps:
+                raise RuntimeError("Maximum agent steps exceeded")
+            if any(
+                next((candidate.status for candidate in plan.steps if candidate.step_id == dep), TaskStatus.FAILED)
+                != TaskStatus.COMPLETED
+                for dep in step.dependencies
+            ):
+                step.status = TaskStatus.FAILED
+                step.error = "Step dependency is not completed"
+                raise RuntimeError(step.error)
+            step.status = TaskStatus.RUNNING
+            self._record(events, context, "step_started", {"step_id": step.step_id, "action": step.action})
+            try:
+                observation = await self._run_step(
+                    context,
+                    step,
+                    events,
+                    session_id=session_id,
+                    user_id=user_id,
                 )
+                context.observations.append(observation)
+                step.result = observation.output
+                if observation.status != TaskStatus.COMPLETED:
+                    step.status = TaskStatus.FAILED
+                    step.error = observation.error or "Tool execution failed"
+                    self._record(events, context, "step_failed", {"step_id": step.step_id, "error": step.error})
+                    return AgentRunResult(False, None, context, events, step.error)
+                step.status = TaskStatus.COMPLETED
+                final_output = observation.output
+                self._record(events, context, "observation_received", {
+                    "step_id": step.step_id,
+                    "tool_name": observation.tool_name,
+                    "status": observation.status.value,
+                })
+            except asyncio.CancelledError:
+                step.status = TaskStatus.CANCELLED
+                raise
+            except Exception as exc:
+                step.status = TaskStatus.FAILED
+                step.error = str(exc)
+                self._record(events, context, "step_failed", {"step_id": step.step_id, "error": str(exc)})
+                return AgentRunResult(False, None, context, events, str(exc))
+        context.status = TaskStatus.COMPLETED
+        self._record(events, context, "task_completed", {"steps": context.steps_completed})
+        return AgentRunResult(True, final_output, context, events)
 
-            if not result.success and result.error:
-                logger.error("Agent '%s' failed: %s", agent_name, result.error)
-                break
+    async def _run_step(
+        self,
+        context: AgentExecutionContext,
+        step: PlanStep,
+        events: List[AgentTraceEvent],
+        *,
+        session_id: str,
+        user_id: Optional[str],
+    ) -> Observation:
+        if self.reasoner is not None:
+            value = self.reasoner(context, step, context.observations)
+            value = await value if inspect.isawaitable(value) else value
+            if isinstance(value, Observation):
+                return value
+        call = ToolCall(tool_name=step.action, arguments={"goal": context.goal, "objective": step.objective})
+        self._record(events, context, "tool_requested", {"tool_name": call.tool_name, "execution_id": call.execution_id})
+        return await self.tool_executor.execute(call, session_id=session_id, user_id=user_id)
 
-        return {
-            "goal": goal,
-            "output": final_output,
-            "agents_run": [r.context.session_id if r.context else "" for r in results],
-            "total_steps": len(all_steps),
-            "steps": all_steps,
-            "success": all(r.success for r in results),
-            "elapsed_ms": round(context.elapsed() * 1000, 2),
-        }
+    def cancel(self, task_id: str) -> bool:
+        task = self._active.get(task_id)
+        if task is None or task.done():
+            return False
+        task.cancel()
+        return True
 
-    async def parallel_run(self, goals: List[str]) -> List[Dict]:
-        tasks = [self.run(goal) for goal in goals]
-        return await asyncio.gather(*tasks, return_exceptions=False)
+    def get_trace(self, task_id: str) -> List[AgentTraceEvent]:
+        return list(self._traces.get(task_id, []))
+
+    def active_count(self) -> int:
+        return len(self._active)
+
+    @staticmethod
+    def _record(
+        events: List[AgentTraceEvent],
+        context: AgentExecutionContext,
+        event: str,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        events.append(AgentTraceEvent(event=event, task_id=context.task_id, data=data or {}))
