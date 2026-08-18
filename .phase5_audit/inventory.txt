@@ -1,0 +1,183 @@
+# Phase 5 production candidate files
+./api/v1/ai/router.py
+./api/v1/auth/router.py
+./api/v1/channels/router.py
+./api/v1/embeddings/router.py
+./api/v1/hajeen_model_router.py
+./api/v1/router.py
+./api/v1/search/router.py
+./api/v1/tasks/__init__.py
+./api/v1/tasks/router.py
+./brain/api/brain_router.py
+./brain/cognitive_layer/experience_memory.py
+./brain/cognitive_layer/planning_engine.py
+./brain/cognitive_layer/reasoning_engine.py
+./brain/execution_trace.py
+./brain/goal_manager.py
+./brain/graph_planner.py
+./brain/improvement/autonomous_improvement.py
+./brain/memory/__init__.py
+./brain/memory/memory_fabric.py
+./brain/memory/unified_interface.py
+./brain/model_router.py
+./brain/state_machine.py
+./brain/task_decomposer.py
+./core/context_intelligence/semantic_memory.py
+./core/memory/__init__.py
+./core/memory/conversation_store.py
+./core/memory/long_term_memory.py
+./core/memory/memory_manager.py
+./core/memory/short_term_memory.py
+./data_engine/pipelines/pipeline_orchestrator.py
+./monitoring/task_monitor.py
+./multi_tenant/tenant_router.py
+./orchestration/runtime/__init__.py
+./orchestration/runtime/dynamic_executor.py
+./orchestration/runtime/intelligent_router.py
+./orchestration/runtime/runtime_decision_system.py
+./security/__init__.py
+./security/api_keys/__init__.py
+./security/api_keys/api_key_manager.py
+./security/audit/__init__.py
+./security/audit/audit_logger.py
+./security/auth/__init__.py
+./security/auth/api_key_manager.py
+./security/auth/jwt_auth.py
+./security/auth/revoked_tokens.py
+./security/config/__init__.py
+./security/config/secret_manager.py
+./security/encryption/__init__.py
+./security/encryption/encryptor.py
+./security/firewall/__init__.py
+./security/firewall/ip_filter.py
+./security/middleware/__init__.py
+./security/middleware/auth_middleware.py
+./security/middleware/security_middleware.py
+./security/permissions/__init__.py
+./security/permissions/rbac.py
+./security/rate_limit/__init__.py
+./security/rate_limit/rate_limiter.py
+./security/rbac/rbac.py
+./security/resource/__init__.py
+./security/resource/resource_guard.py
+./services/agent_frameworks/autogen_example.py
+./services/agent_frameworks/custom_orchestration_runtime.py
+./services/agent_frameworks/langgraph_example.py
+./services/agent_service.py
+./services/agents/__init__.py
+./services/agents/agent_orchestrator.py
+./services/agents/autonomous/__init__.py
+./services/agents/autonomous/autonomous_agent.py
+./services/agents/autonomous/recursive_planner.py
+./services/agents/autonomous/reflection_loop.py
+./services/agents/autonomous/task_executor.py
+./services/agents/base_agent.py
+./services/agents/execution_agent.py
+./services/agents/memory_agent.py
+./services/agents/multi_agent/collaborative_layer.py
+./services/agents/multi_agent/messenger.py
+./services/agents/multi_agent/shared_memory.py
+./services/agents/planner_agent.py
+./services/agents/retrieval_agent.py
+./services/agents/tool_agent.py
+./services/memory/__init__.py
+./services/memory/context_window_manager.py
+./services/memory/conversation_memory.py
+./services/memory/session_manager.py
+./services/memory/summarization_memory.py
+./services/memory/vector_memory.py
+./services/memory_service.py
+./services/security/policy_engine.py
+./services/self_evolution/episodic_memory.py
+./workers/async_tasks.py
+./workers/distributed/distributed_executor.py
+./workers/distributed/queue_router.py
+./workers/embedding_tasks.py
+./workers/tasks/__init__.py
+./workers/tasks/inference_tasks.py
+./workers/tasks/ingestion_tasks.py
+./workers/tasks/pipeline_tasks.py
+./workers/tasks/processing_tasks.py
+./workers/tasks/test_task.py
+
+# Production symbols
+./api/v1/tasks/router.py:40:class TaskStatusResponse(BaseModel):
+./brain/brain_v3.py:82:class ExecutionTrace:
+./brain/cognitive_layer/cognitive_evolution_protocol.py:39:class EvolutionGoal:
+./brain/cognitive_layer/planning_engine.py:25:class TaskPriority(Enum):
+./brain/cognitive_layer/planning_engine.py:33:class TaskStatus(Enum):
+./brain/cognitive_layer/planning_engine.py:43:class Task:
+./brain/cognitive_layer/reasoning_engine.py:25:class ReasoningStrategy(Enum):
+./brain/cognitive_layer/reasoning_engine.py:38:class ReasoningStep:
+./brain/cognitive_layer/reasoning_engine.py:48:class ReasoningResult:
+./brain/cognitive_layer/reasoning_engine.py:58:class ReasoningEngine:
+./brain/cognitive_layer/reasoning_engine.py:408:def get_reasoning_engine(llm_manager=None) -> ReasoningEngine:
+./brain/config.py:17:class ReasoningStrategyType(str, Enum):
+./brain/config.py:27:class ReasoningStrategyConfig(BaseModel):
+./brain/config.py:106:class ExecutionTraceConfig(BaseModel):
+./brain/config.py:116:class ReasoningEngineConfig(BaseModel):
+./brain/config.py:196:def get_default_config() -> ReasoningEngineConfig:
+./brain/execution_trace.py:24:class TraceEventType(str, Enum):
+./brain/execution_trace.py:42:class TraceLevel(str, Enum):
+./brain/execution_trace.py:50:class TraceEvent:
+./brain/execution_trace.py:92:class ExecutionTrace:
+./brain/execution_trace.py:215:class ExecutionTraceManager:
+./brain/goal_manager.py:81:class Goal:
+./brain/goal_manager.py:112:class GoalManager:
+./brain/goal_manager.py:172:def get_goal_manager() -> GoalManager:
+./brain/graph_planner.py:132:class GraphPlanner:
+./brain/graph_planner.py:258:def get_graph_planner() -> GraphPlanner:
+./brain/knowledge/knowledge_distillation.py:23:class ReasoningPattern(str, Enum):
+./brain/memory/memory_fabric.py:247:class AgentMemory:
+./brain/state_machine.py:19:class TaskState(str, Enum):
+./brain/state_machine.py:43:class TaskLifecycle:
+./brain/task_decomposer.py:20:class TaskPriority(int, Enum):
+./brain/task_decomposer.py:34:class MicroTask:
+./brain/task_decomposer.py:77:    def get_execution_order(self) -> List[List[MicroTask]]:
+./brain/task_decomposer.py:107:class TaskDecomposer:
+./brain/task_decomposer.py:248:def get_task_decomposer() -> TaskDecomposer:
+./core/distributed/gpu_scheduler.py:32:class TaskRequest:
+./core/distributed/kubernetes_runtime.py:219:class DistributedAgentRouter:
+./data_engine/pipelines/pipeline_orchestrator.py:79:class PipelineOrchestrator(BasePipeline):
+./data_engine/processing/processing_context.py:20:class StageTrace:
+./monitoring/task_monitor.py:28:class TaskStatus(str, Enum):
+./monitoring/task_monitor.py:39:class TaskRecord:
+./monitoring/task_monitor.py:76:class TaskMonitor:
+./orchestration/runtime/dynamic_executor.py:8:class DynamicExecutor:
+./services/agent_frameworks/custom_orchestration_runtime.py:16:class WorkflowStatus(Enum):
+./services/agent_frameworks/custom_orchestration_runtime.py:26:class WorkflowState:
+./services/agent_frameworks/custom_orchestration_runtime.py:54:class WorkflowDefinition:
+./services/agent_frameworks/custom_orchestration_runtime.py:67:class CustomOrchestrationRuntime:
+./services/agent_frameworks/langgraph_example.py:7:class AgentState(TypedDict):
+./services/agent_service.py:15:class AgentStatus(str, Enum):
+./services/agent_service.py:25:class ToolCall:
+./services/agent_service.py:35:class AgentStep:
+./services/agent_service.py:46:class AgentTrace:
+./services/agent_service.py:75:class ToolRegistry:
+./services/agent_service.py:122:class AgentMemory:
+./services/agent_service.py:154:class AgentService:
+./services/agents/agent_orchestrator.py:19:class AgentOrchestrator:
+./services/agents/autonomous/autonomous_agent.py:13:class AutonomousAgent(BaseAgent):
+./services/agents/autonomous/recursive_planner.py:85:class TaskNode:
+./services/agents/autonomous/recursive_planner.py:100:class RecursivePlanner:
+./services/agents/autonomous/task_executor.py:13:class TaskExecutor:
+./services/agents/base_agent.py:15:class AgentContext:
+./services/agents/base_agent.py:32:class AgentStep:
+./services/agents/base_agent.py:44:class AgentResult:
+./services/agents/base_agent.py:53:class BaseAgent(ABC):
+./services/agents/execution_agent.py:12:class ExecutionAgent(BaseAgent):
+./services/agents/memory_agent.py:11:class MemoryAgent(BaseAgent):
+./services/agents/multi_agent/messenger.py:8:class AgentMessenger:
+./services/agents/planner_agent.py:19:class PlannerAgent(BaseAgent):
+./services/agents/retrieval_agent.py:11:class RetrievalAgent(BaseAgent):
+./services/agents/tool_agent.py:19:class ToolAgent(BaseAgent):
+./workers/distributed/distributed_executor.py:16:class DistributedExecutor:
+./workers/distributed/queue_router.py:19:class TaskPriority(int, Enum):
+./workers/distributed/queue_router.py:38:class TaskRoute:
+./workers/distributed/scheduler_manager.py:20:class ScheduledTask:
+./workers/failure_handler.py:27:class TaskFailure:
+./workers/priority_queue.py:45:class PriorityTask:
+./workers/priority_queue.py:75:class PriorityTaskQueue:
+./workers/priority_queue.py:172:    def peek(self) -> Optional[PriorityTask]:
+./workers/priority_queue.py:229:    def __iter__(self) -> Iterator[PriorityTask]:
+./workers/priority_queue.py:241:    def _pop_ready(self) -> Optional[PriorityTask]:

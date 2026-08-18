@@ -1,0 +1,296 @@
+# Candidate imports/references
+./api/main.py:358:        from brain.prompts.unified_prompt_builder import UnifiedPromptBuilder
+./api/main.py:359:        from services.rag.rag_pipeline import RAGPipeline
+./api/main.py:373:        rag = RAGPipeline(
+./api/main.py:375:            unified_prompt_builder=UnifiedPromptBuilder(),
+./api/main.py:411:    # Chat Service is now an adapter, initialized implicitly when first used via HajeenBrainV3
+./api/main.py:444:        from brain.brain_v3 import get_brain_v3
+./api/main.py:445:        brain = await get_brain_v3()
+./api/main.py:449:            "startup: HajeenBrainV3 v%s جاهز ✓ (rag=%s)",
+./api/main.py:454:        logger.error("startup: فشل تهيئة HajeenBrainV3 — %s", exc)
+./api/v1/ai/chat.py:2:AI Chat Endpoints — موحّدة عبر HajeenBrainV3
+./api/v1/ai/chat.py:4:جميع طلبات المحادثة تمر عبر HajeenBrainV3 Pipeline الموحّد.
+./api/v1/ai/chat.py:7:  POST /ai/chat        → HajeenBrainV3.process() → JSON
+./api/v1/ai/chat.py:8:  POST /ai/chat/stream → HajeenBrainV3.stream()  → SSE
+./api/v1/ai/chat.py:72:            detail="HajeenBrainV3 not initialized — لا يمكن تنفيذ أي طلب خارج Brain"
+./api/v1/ai/chat.py:100:    محادثة AI موحّدة عبر HajeenBrainV3 Pipeline الكامل.
+./api/v1/ai/chat.py:107:      HajeenBrainV3.process()
+./api/v1/ai/chat.py:111:      ModelRouter → LLM Provider
+./api/v1/ai/chat.py:113:      MemoryFabric (SSOT)
+./api/v1/ai/chat.py:162:            detail=f"HajeenBrainV3 processing failed: {exc}"
+./api/v1/ai/chat.py:192:    محادثة متدفقة موحّدة عبر HajeenBrainV3.
+./api/v1/ai/chat.py:247:            error_payload = json.dumps({"event": "error", "error": str(exc), "source": "HajeenBrainV3"}, ensure_ascii=False)
+./api/v1/ai/completion.py:45:from brain.brain_v3 import BrainRequest, BrainResponse, RequestType
+./api/v1/ai/completion.py:48:@router.post("/completion", response_model=CompletionResponse, summary="Text Completion عبر HajeenBrainV3")
+./api/v1/ai/completion.py:52:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/ai/completion.py:95:@router.post("/completion/stream", summary="Streaming Text Completion عبر HajeenBrainV3")
+./api/v1/ai/completion.py:99:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/ai/completion.py:146:            payload = {"event": "error", "error": str(e), "source": "HajeenBrainV3"}
+./api/v1/ai/router.py:16:from brain.brain_v3 import (
+./api/v1/ai/router.py:75:@router.post("/chat", summary="محادثة AI موحدة عبر HajeenBrainV3", tags=["AI"])
+./api/v1/ai/router.py:81:    محادثة كاملة موحدة عبر HajeenBrainV3.
+./api/v1/ai/router.py:85:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/ai/router.py:130:@router.post("/chat/stream", summary="محادثة AI متدفقة عبر HajeenBrainV3", tags=["AI"])
+./api/v1/ai/router.py:136:    محادثة متدفقة موحدة عبر HajeenBrainV3.
+./api/v1/ai/router.py:140:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/ai/router.py:202:@router.post("/rag/query", summary="RAG Query عبر HajeenBrainV3", tags=["AI", "RAG"])
+./api/v1/ai/router.py:208:    استعلام RAG كامل عبر HajeenBrainV3.
+./api/v1/ai/router.py:212:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/ai/router.py:258:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/ai/router.py:260:    return {"models": models, "routing_authority": "ModelRouter"}
+./api/v1/ai/router.py:265:@router.get("/chat/sessions/{session_id}", summary="معلومات جلسة المحادثة عبر HajeenBrainV3", tags=["AI"])
+./api/v1/ai/router.py:268:    الحصول على معلومات جلسة محادثة عبر HajeenBrainV3.
+./api/v1/ai/router.py:272:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/ai/router.py:274:    # Assuming HajeenBrainV3 has a method to get session info from MemoryFabric
+./api/v1/ai/router.py:275:    # This method needs to be implemented in MemoryFabric or exposed via Brain
+./api/v1/ai/router.py:276:    session_info = brain.memory.get_session_overview(session_id) # This method needs to be implemented in MemoryFabric
+./api/v1/ai/router.py:284:@router.post("/chat/sessions/{session_id}/clear", summary="مسح جلسة محادثة عبر HajeenBrainV3", tags=["AI"])
+./api/v1/ai/router.py:287:    مسح سجل جلسة محادثة عبر HajeenBrainV3.
+./api/v1/ai/router.py:291:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/ai/router.py:293:    # Assuming HajeenBrainV3 has a method to clear session in MemoryFabric
+./api/v1/ai/router.py:294:    # This method needs to be implemented in MemoryFabric or exposed via Brain
+./api/v1/ai/router.py:295:    brain.memory.clear_session(session_id) # This method needs to be implemented in MemoryFabric
+./api/v1/ai/router.py:305:@router.get("/stats", summary="إحصائيات HajeenBrainV3", tags=["AI"])
+./api/v1/ai/router.py:308:    إحصائيات شاملة لـ HajeenBrainV3.
+./api/v1/ai/router.py:312:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+./api/v1/hajeen_model_router.py:5:- جميع طلبات AI تمر عبر HajeenBrainV3
+./api/v1/hajeen_model_router.py:12:  POST /api/v1/model/chat            — محادثة (موجهة عبر HajeenBrainV3)
+./api/v1/hajeen_model_router.py:13:  POST /api/v1/model/complete        — استدلال كامل (عبر HajeenBrainV3)
+./api/v1/hajeen_model_router.py:14:  POST /api/v1/model/stream          — streaming (SSE) (عبر HajeenBrainV3)
+./api/v1/hajeen_model_router.py:83:    """الحصول على HajeenBrainV3 من app state."""
+./api/v1/hajeen_model_router.py:86:        from brain.brain_v3 import get_brain_v3
+./api/v1/hajeen_model_router.py:87:        brain = await get_brain_v3()
+./api/v1/hajeen_model_router.py:98:        from brain.brain_v3 import get_brain_v3
+./api/v1/hajeen_model_router.py:99:        brain = await get_brain_v3()
+./api/v1/hajeen_model_router.py:103:            "model": "Hajeen Model v1 (via HajeenBrainV3)",
+./api/v1/hajeen_model_router.py:125:        "inference": config.get("inference", {"runtime": "HajeenBrainV3"}),
+./api/v1/hajeen_model_router.py:128:        "runtime": "HajeenBrainV3 (Unified Runtime)",
+./api/v1/hajeen_model_router.py:137:    الضمان: الطلب يمر عبر HajeenBrainV3.process() كاملاً.
+./api/v1/hajeen_model_router.py:140:    from brain.brain_v3 import BrainRequest
+./api/v1/hajeen_model_router.py:167:            "runtime": "HajeenBrainV3",
+./api/v1/hajeen_model_router.py:171:        raise HTTPException(status_code=500, detail=f"HajeenBrainV3 error: {e}")
+./api/v1/hajeen_model_router.py:177:    استدلال كامل عبر HajeenBrainV3.
+./api/v1/hajeen_model_router.py:179:    from brain.brain_v3 import BrainRequest
+./api/v1/hajeen_model_router.py:208:            "runtime": "HajeenBrainV3",
+./api/v1/hajeen_model_router.py:217:    Streaming محادثة عبر HajeenBrainV3.stream().
+./api/v1/hajeen_model_router.py:220:    from brain.brain_v3 import BrainRequest
+./api/v1/search/router.py:63:# ─── Dependency: الحصول على SearchEngine و RAGPipeline ────────────────────────
+./brain/__init__.py:8:    "HajeenBrainV3",
+./brain/__init__.py:12:    "get_brain_v3",
+./brain/__init__.py:18:        module = import_module("brain.brain_v3")
+./brain/__init__.py:20:            return module.HajeenBrainV3
+./brain/api/brain_router.py:2:Hajeen Brain API Router — واجهة REST لـ HajeenBrainV3
+./brain/api/brain_router.py:4:تم ترقية هذا الـ Router من Brain v2 إلى Adapter كامل لـ HajeenBrainV3.
+./brain/api/brain_router.py:7:- جميع الطلبات تمر عبر HajeenBrainV3.process() أو HajeenBrainV3.stream()
+./brain/api/brain_router.py:25:  GET  /api/v1/brain/memory/{session}  — ذاكرة الجلسة عبر MemoryFabric
+./brain/api/brain_router.py:75:    """الحصول على HajeenBrainV3 Singleton."""
+./brain/api/brain_router.py:76:    from brain.brain_v3 import get_brain_v3
+./brain/api/brain_router.py:77:    return await get_brain_v3()
+./brain/api/brain_router.py:86:    المسار الكامل لـ HajeenBrainV3:
+./brain/api/brain_router.py:88:    → ModelRouter → LLM → MemoryFabric → Reflection → Response
+./brain/api/brain_router.py:90:    from brain.brain_v3 import BrainRequest, get_brain_v3
+./brain/api/brain_router.py:91:    brain = await get_brain_v3()
+./brain/api/brain_router.py:119:    """محادثة متدفقة (Server-Sent Events) عبر HajeenBrainV3."""
+./brain/api/brain_router.py:120:    from brain.brain_v3 import BrainRequest, get_brain_v3
+./brain/api/brain_router.py:121:    brain = await get_brain_v3()
+./brain/api/brain_router.py:168:    from brain.brain_v3 import get_brain_v3
+./brain/api/brain_router.py:169:    brain = await get_brain_v3()
+./brain/api/brain_router.py:177:            "intent": "تحليل الطلب يتم عبر HajeenBrainV3 Pipeline",
+./brain/api/brain_router.py:180:                "Planning", "Decision", "ModelRouter", "MemoryFabric"
+./brain/api/brain_router.py:188:    """حالة شاملة لـ HajeenBrainV3."""
+./brain/api/brain_router.py:195:            "runtime": "HajeenBrainV3",
+./brain/api/brain_router.py:204:            "runtime": "HajeenBrainV3",
+./brain/api/brain_router.py:228:        "runtime": "HajeenBrainV3",
+./brain/api/brain_router.py:234:    """أداء النماذج عبر ModelRouter."""
+./brain/api/brain_router.py:239:        "runtime": "HajeenBrainV3",
+./brain/api/brain_router.py:245:    """عرض ذاكرة الجلسة من MemoryFabric (مصدر الحقيقة الوحيد)."""
+./brain/api/brain_router.py:253:            "source": "MemoryFabric",
+./brain/api/brain_router.py:265:    from brain.brain_v3 import get_brain_v3
+./brain/api/brain_router.py:266:    brain = await get_brain_v3()
+./brain/api/brain_router.py:287:            "note": "يمكن إضافة البيانات يدوياً عبر MemoryFabric",
+./brain/brain_v3.py:17:- HajeenBrainV3 هو Runtime الوحيد — لا يوجد مسار يتجاوزه
+./brain/brain_v3.py:18:- MemoryFabric هو مصدر الحقيقة الوحيد للذاكرة
+./brain/brain_v3.py:19:- ModelRouter هو الموجه الوحيد للنماذج
+./brain/brain_v3.py:20:- UnifiedPromptBuilder هو بناء الـ Prompts الوحيد
+./brain/brain_v3.py:34:from brain.prompts.unified_prompt_builder import PromptMode, UnifiedPromptBuilder
+./brain/brain_v3.py:35:from services.rag.rag_pipeline import RAGPipeline, RAGRequest
+./brain/brain_v3.py:48:from .memory.memory_fabric import MemoryFabric, get_memory_fabric
+./brain/brain_v3.py:50:from .model_router import ModelRouter, get_model_router
+./brain/brain_v3.py:82:class ExecutionTrace:
+./brain/brain_v3.py:128:    """استجابة HajeenBrainV3."""
+./brain/brain_v3.py:132:    trace: ExecutionTrace
+./brain/brain_v3.py:158:class HajeenBrainV3:
+./brain/brain_v3.py:164:      → ModelRouter → LLM → MemoryFabric → Reflection → Response
+./brain/brain_v3.py:175:        self.memory: MemoryFabric = get_memory_fabric()
+./brain/brain_v3.py:178:        self.model_router: ModelRouter = get_model_router()
+./brain/brain_v3.py:181:        self.prompt_builder: UnifiedPromptBuilder = UnifiedPromptBuilder()
+./brain/brain_v3.py:183:        # يُحقن عند startup من RAGPipeline الرسمي؛ لا يوجد fallback وهمي
+./brain/brain_v3.py:184:        self.rag_pipeline: Optional[RAGPipeline] = None
+./brain/brain_v3.py:199:        self._execution_traces: Dict[str, ExecutionTrace] = {}
+./brain/brain_v3.py:203:    def set_rag_pipeline(self, rag_pipeline: Optional[RAGPipeline]) -> None:
+./brain/brain_v3.py:204:        """حقن RAGPipeline المنشأ في startup باعتباره المصدر الوحيد للاسترجاع."""
+./brain/brain_v3.py:216:        trace = ExecutionTrace(request_id=request_id)
+./brain/brain_v3.py:219:        # ── 1. MemoryFabric: جلب سياق المحادثة (SSOT) ─────────────────
+./brain/brain_v3.py:365:        # ── 8. Prompt + RAG ثم ModelRouter: المسار الرسمي للنموذج ────────
+./brain/brain_v3.py:371:                raise RuntimeError("RAG requested but canonical RAGPipeline is not initialized")
+./brain/brain_v3.py:402:            "prompt_builder": "UnifiedPromptBuilder",
+./brain/brain_v3.py:404:            "rag_pipeline": "RAGPipeline" if use_rag else None,
+./brain/brain_v3.py:435:                    "prompt_builder": "UnifiedPromptBuilder",
+./brain/brain_v3.py:436:                    "rag_pipeline": "RAGPipeline" if use_rag else None,
+./brain/brain_v3.py:450:                    raise RuntimeError(route_result.error or "ModelRouter returned an unsuccessful result")
+./brain/brain_v3.py:460:                    "prompt_builder": "UnifiedPromptBuilder",
+./brain/brain_v3.py:461:                    "rag_pipeline": "RAGPipeline" if use_rag else None,
+./brain/brain_v3.py:466:            logger.error("ModelRouter unavailable; failing closed: %s", exc)
+./brain/brain_v3.py:482:        # ── 9. MemoryFabric: حفظ الاستجابة (SSOT) ──────────────────────
+./brain/brain_v3.py:536:    def get_trace(self, request_id: str) -> Optional[ExecutionTrace]:
+./brain/brain_v3.py:552:_brain_v3: Optional[HajeenBrainV3] = None
+./brain/brain_v3.py:555:async def get_brain_v3() -> HajeenBrainV3:
+./brain/brain_v3.py:556:    """الحصول على نسخة Singleton من HajeenBrainV3."""
+./brain/brain_v3.py:557:    global _brain_v3
+./brain/brain_v3.py:558:    if _brain_v3 is None:
+./brain/brain_v3.py:559:        _brain_v3 = HajeenBrainV3()
+./brain/brain_v3.py:560:    return _brain_v3
+./brain/brain_v3.py:563:# Alias للتوافقية — get_brain = get_brain_v3
+./brain/brain_v3.py:564:async def get_brain() -> HajeenBrainV3:
+./brain/brain_v3.py:566:    Alias لـ get_brain_v3 — للتوافقية مع الكود القديم.
+./brain/brain_v3.py:567:    كلاهما يعيد نفس Singleton من HajeenBrainV3.
+./brain/brain_v3.py:569:    return await get_brain_v3()
+./brain/cognitive_layer/__init__.py:10:5. Planner — المخطط الديناميكي
+./brain/cognitive_layer/context_analyzer.py:25:from brain.memory.memory_fabric import MemoryFabric
+./brain/cognitive_layer/context_analyzer.py:104:        memory_fabric: MemoryFabric,
+./brain/cognitive_layer/context_analyzer.py:571:    memory_fabric: Optional[MemoryFabric] = None,
+./brain/cognitive_layer/decision_engine.py:4:جزء من HajeenBrainV3 Pipeline الموحّد.
+./brain/cognitive_layer/decision_engine.py:86:    يستخدم ضمن HajeenBrainV3 Pipeline:
+./brain/cognitive_layer/expert_models_layer.py:4:جزء من HajeenBrainV3 Pipeline الموحّد.
+./brain/cognitive_layer/expert_models_layer.py:74:    يستخدم ضمن HajeenBrainV3 Pipeline:
+./brain/cognitive_layer/planning_engine.py:4:جزء من HajeenBrainV3 Pipeline الموحّد.
+./brain/cognitive_layer/planning_engine.py:83:    يستخدم ضمن HajeenBrainV3 Pipeline:
+./brain/cognitive_layer/reasoning_engine.py:4:جزء من HajeenBrainV3 Pipeline الموحّد.
+./brain/cognitive_layer/reasoning_engine.py:62:    يستخدم ضمن HajeenBrainV3 Pipeline:
+./brain/config.py:106:class ExecutionTraceConfig(BaseModel):
+./brain/config.py:141:    execution_trace: ExecutionTraceConfig = Field(default_factory=ExecutionTraceConfig)
+./brain/decision_engine.py:357:    BrainV3 is constructed synchronously, while worker/reflection callers may
+./brain/evolution/self_evolution.py:267:                # This would involve updating ModelRouter or LLMManager configurations
+./brain/evolution/self_evolution.py:272:                # This would involve updating Graph Planner or similar components
+./brain/execution_trace.py:92:class ExecutionTrace:
+./brain/execution_trace.py:215:class ExecutionTraceManager:
+./brain/execution_trace.py:230:        self._active_traces: Dict[str, ExecutionTrace] = {}
+./brain/execution_trace.py:231:        self._completed_traces: List[ExecutionTrace] = []
+./brain/execution_trace.py:240:    ) -> ExecutionTrace:
+./brain/execution_trace.py:242:        trace = ExecutionTrace(
+./brain/execution_trace.py:268:    ) -> Optional[ExecutionTrace]:
+./brain/execution_trace.py:462:        trace: ExecutionTrace,
+./brain/execution_trace.py:489:    def get_trace(self, reasoning_id: str) -> Optional[ExecutionTrace]:
+./brain/execution_trace.py:493:    def get_recent_traces(self, limit: int = 10) -> List[ExecutionTrace]:
+./brain/graph_planner.py:2:Graph Planner — محوّل المهام إلى Directed Acyclic Graph (DAG)
+./brain/graph_planner.py:132:class GraphPlanner:
+./brain/graph_planner.py:255:_planner: Optional[GraphPlanner] = None
+./brain/graph_planner.py:258:def get_graph_planner() -> GraphPlanner:
+./brain/graph_planner.py:261:        _planner = GraphPlanner()
+./brain/memory/__init__.py:3:    AgentMemory,
+./brain/memory/__init__.py:8:    MemoryFabric,
+./brain/memory/__init__.py:16:    "MemoryFabric", "MemoryEntry", "SessionMemory", "ConversationMemory",
+./brain/memory/__init__.py:18:    "AgentMemory", "get_memory_fabric",
+./brain/memory/memory_fabric.py:247:class AgentMemory:
+./brain/memory/memory_fabric.py:282:class MemoryFabric:
+./brain/memory/memory_fabric.py:294:        self._agent = AgentMemory()
+./brain/memory/memory_fabric.py:397:_fabric: Optional[MemoryFabric] = None
+./brain/memory/memory_fabric.py:400:def get_memory_fabric() -> MemoryFabric:
+./brain/memory/memory_fabric.py:403:        _fabric = MemoryFabric()
+./brain/memory/unified_interface.py:7:- MemoryFabric = مصدر الحقيقة الوحيد (SSOT)
+./brain/memory/unified_interface.py:8:- يمنع أي كتابة مباشرة للملفات أو قواعد البيانات من خارج MemoryFabric
+./brain/memory/unified_interface.py:43:                logger.info("UnifiedMemoryInterface: MemoryFabric connected (SSOT Mode) ✓")
+./brain/memory/unified_interface.py:45:                logger.warning("UnifiedMemoryInterface: MemoryFabric unavailable — %s", exc)
+./brain/memory/unified_interface.py:54:    # ── Core Operations (Routed to MemoryFabric) ───────────────────────────
+./brain/memory/unified_interface.py:67:                # الكتابة في MemoryFabric (التي تتولى التخزين الفعلي)
+./brain/memory/unified_interface.py:70:                logger.debug("Memory: added %s message to MemoryFabric for session %s", role, session_id)
+./brain/memory/unified_interface.py:72:                logger.error("CRITICAL: MemoryFabric write failed: %s", exc)
+./brain/memory/unified_interface.py:86:                logger.warning("MemoryFabric read failed: %s", exc)
+./brain/memory/unified_interface.py:90:        """جلب ملخّص السياق من MemoryFabric."""
+./brain/model_router.py:82:class ModelRouter:
+./brain/model_router.py:303:_router: Optional[ModelRouter] = None
+./brain/model_router.py:306:def get_model_router() -> ModelRouter:
+./brain/model_router.py:309:        _router = ModelRouter()
+./brain/model_router.py:313:def set_model_router(router: ModelRouter) -> None:
+./brain/model_router.py:318:__all__ = ["ModelConfig", "RouteResult", "ModelRouter", "get_model_router", "set_model_router"]
+./brain/prompts/__init__.py:4:UnifiedPromptBuilder هو المصدر الوحيد لبناء جميع الـ Prompts في المنصة.
+./brain/prompts/__init__.py:7:from .unified_prompt_builder import UnifiedPromptBuilder, get_unified_prompt_builder
+./brain/prompts/__init__.py:9:__all__ = ["UnifiedPromptBuilder", "get_unified_prompt_builder"]
+./brain/prompts/unified_prompt_builder.py:2:UnifiedPromptBuilder — بناء الـ Prompts الموحّد
+./brain/prompts/unified_prompt_builder.py:22:  UnifiedPromptBuilder
+./brain/prompts/unified_prompt_builder.py:24:  ModelRouter → LLM
+./brain/prompts/unified_prompt_builder.py:49:class UnifiedPromptBuilder(AbstractPromptBuilder):
+./brain/prompts/unified_prompt_builder.py:122:            "UnifiedPromptBuilder v%s initialized (lang=%s, format=%s)",
+./brain/prompts/unified_prompt_builder.py:411:_unified_builder: Optional[UnifiedPromptBuilder] = None
+./brain/prompts/unified_prompt_builder.py:417:) -> UnifiedPromptBuilder:
+./brain/prompts/unified_prompt_builder.py:418:    """الحصول على نسخة Singleton من UnifiedPromptBuilder."""
+./brain/prompts/unified_prompt_builder.py:421:        _unified_builder = UnifiedPromptBuilder(
+./brain/reflection/self_reflection.py:30:from ..model_router import ModelRouter, get_model_router
+./brain/reflection/self_reflection.py:100:        self._model_router: Optional[ModelRouter] = None
+./brain/reflection/self_reflection.py:276:            recs.append("راجع Graph Planner لتحسين ترتيب الخطوات")
+./core/llm/llm_manager.py:46:        # Compatibility facade: ModelRouter remains the sole selection authority.
+./core/llm/llm_manager.py:47:        from brain.model_router import ModelRouter
+./core/llm/llm_manager.py:48:        self._router = ModelRouter(prefer_local=self.settings.provider in {"local", "hajeen"})
+./core/llm/llm_manager.py:134:            raise LLMError(result.error or "ModelRouter returned an unsuccessful result")
+./core/llm/providers/hajeen_provider.py:1:"""Hajeen Model adapter used by the Platform ModelRouter."""
+./core/memory/memory_manager.py:6:جميع العمليات تمر عبر UnifiedMemoryInterface -> MemoryFabric.
+./core/memory/memory_manager.py:65:        """توجيه للذاكرة طويلة الأمد في MemoryFabric."""
+./core/memory/memory_manager.py:77:        """استرجاع من الذاكرة طويلة الأمد في MemoryFabric."""
+./core/memory/memory_manager.py:89:        # MemoryFabric حالياً لا يدعم الحذف الصريح في الواجهة البسيطة
+./core/memory/memory_manager.py:107:            "ssot": "MemoryFabric"
+./demo_rag.py:234:    from services.rag.rag_pipeline import RAGPipeline, RAGRequest
+./demo_rag.py:236:    rag = RAGPipeline(retriever=VectorRetriever(search_engine))
+./services/agent_service.py:46:class AgentTrace:
+./services/agent_service.py:75:class ToolRegistry:
+./services/agent_service.py:90:        logger.debug("ToolRegistry: registered '%s'", name)
+./services/agent_service.py:122:class AgentMemory:
+./services/agent_service.py:154:class AgentService:
+./services/agent_service.py:171:        tool_registry: Optional[ToolRegistry] = None,
+./services/agent_service.py:177:        self._tools = tool_registry or ToolRegistry()
+./services/agent_service.py:182:        self._active_agents: Dict[str, AgentTrace] = {}
+./services/agent_service.py:183:        self._sessions: Dict[str, AgentMemory] = {}
+./services/agent_service.py:185:        logger.info("AgentService initialized: max_steps=%d", max_steps)
+./services/agent_service.py:211:    ) -> AgentTrace:
+./services/agent_service.py:216:        trace = AgentTrace(
+./services/agent_service.py:225:        memory = self._sessions.setdefault(session_id, AgentMemory())
+./services/agent_service.py:251:        trace: AgentTrace,
+./services/agent_service.py:252:        memory: AgentMemory,
+./services/agent_service.py:340:    def get_session_memory(self, session_id: str) -> Optional[AgentMemory]:
+./services/agents/__init__.py:2:from .planner_agent import PlannerAgent
+./services/agents/__init__.py:7:from .agent_orchestrator import AgentOrchestrator
+./services/agents/__init__.py:11:    "PlannerAgent", "RetrievalAgent", "ExecutionAgent",
+./services/agents/__init__.py:12:    "MemoryAgent", "ToolAgent", "AgentOrchestrator",
+./services/agents/agent_orchestrator.py:8:from .planner_agent import PlannerAgent
+./services/agents/agent_orchestrator.py:19:class AgentOrchestrator:
+./services/agents/agent_orchestrator.py:38:        self._agents["planner"] = PlannerAgent(llm=self._llm, max_iterations=self.max_iterations)
+./services/agents/autonomous/__init__.py:2:from .recursive_planner import RecursivePlanner
+./services/agents/autonomous/autonomous_agent.py:6:from services.agents.autonomous.recursive_planner import RecursivePlanner
+./services/agents/autonomous/autonomous_agent.py:28:        self.planner = RecursivePlanner(llm)
+./services/agents/autonomous/recursive_planner.py:100:class RecursivePlanner:
+./services/agents/autonomous/recursive_planner.py:127:        logger.info("Planner produced %d tasks for: %s", len(task_tree), goal[:80])
+./services/agents/autonomous/recursive_planner.py:204:            logger.error("LLM call failed in RecursivePlanner: %s", exc)
+./services/agents/autonomous/task_executor.py:15:    Executes a task tree produced by RecursivePlanner.
+./services/agents/planner_agent.py:19:class PlannerAgent(BaseAgent):
+./services/chat/chat_service.py:16:from brain.brain_v3 import BrainRequest, BrainResponse, HajeenBrainV3, get_brain_v3
+./services/chat/chat_service.py:78:        brain: Optional[HajeenBrainV3] = None,
+./services/chat/chat_service.py:96:            self._brain = self._brain or await get_brain_v3()
+./services/chat/chat_service.py:102:        """تنفيذ محادثة كاملة عبر HajeenBrainV3."""
+./services/chat/chat_service.py:153:        # 2. Process through Brain (الذي يكتب بدوره في MemoryFabric)
+./services/chat/chat_service.py:165:        # الكتابة تمت بالفعل داخل Brain -> MemoryFabric.
+./services/chat/chat_service.py:189:        """محادثة مع native streaming عبر HajeenBrainV3."""
+./services/chat/chat_service.py:270:        return {"session_id": session_id, "source": "MemoryFabric", "stats": stats}
+./services/memory/conversation_memory.py:2:ConversationMemory — compatibility adapter over the unified MemoryFabric interface.
+./services/memory/conversation_memory.py:5:UnifiedMemoryInterface, whose backing store is MemoryFabric.
+./services/memory/conversation_memory.py:47:    """Synchronous compatibility view backed exclusively by MemoryFabric."""
+./services/memory/session_manager.py:6:جميع العمليات تمر عبر UnifiedMemoryInterface -> MemoryFabric.
+./services/memory/session_manager.py:25:    يعمل كواجهة للبيانات الموجودة في MemoryFabric.
+./services/memory/session_manager.py:85:    لا يوجد تخزين محلي هنا؛ كل شيء في MemoryFabric.
+./services/memory/session_manager.py:93:        """استرجاع جلسة موجودة من MemoryFabric، مع احترام TTL إن وُجد."""
+./services/prompts/context_injector.py:121:        """حقن من نتيجة RAGPipeline مباشرة."""
+./services/rag/__init__.py:1:from services.rag.rag_pipeline import RAGPipeline, RAGRequest, RAGResponse
+./services/rag/__init__.py:12:    "RAGPipeline",
+./services/rag/rag_pipeline.py:9:from brain.prompts.unified_prompt_builder import PromptMode, UnifiedPromptBuilder
+./services/rag/rag_pipeline.py:57:class RAGPipeline:
+./services/rag/rag_pipeline.py:77:        unified_prompt_builder: Optional[UnifiedPromptBuilder] = None,
+./services/rag/rag_pipeline.py:90:        # UnifiedPromptBuilder is the sole production prompt authority.
+./services/rag/rag_pipeline.py:93:        self.unified_prompt_builder = unified_prompt_builder or UnifiedPromptBuilder()
