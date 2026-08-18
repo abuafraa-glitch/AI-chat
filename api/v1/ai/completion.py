@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import json
 import time
 import uuid
 from typing import AsyncIterator, List, Optional
@@ -116,33 +118,32 @@ async def stream_completion(request: Request, body: CompletionRequest) -> Stream
     )
 
     async def event_generator() -> AsyncIterator[str]:
+        from core.llm.base import LLMStreamChunk
+
+        completed = False
         try:
             async for chunk in brain.stream(brain_request):
-                if chunk.startswith("data: "):
-                    data_str = chunk[6:].strip()
-                    if data_str == "[DONE]":
-                        payload = {"choices": [{"delta": {"content": ""}, "finish_reason": "stop"}]}
-                        yield f"data: {json.dumps(payload)}\n\n"
-                        yield "data: [DONE]\n\n"
-                        break
-                    try:
-                        import ast
-                        data_dict = ast.literal_eval(data_str)
-                        if "content" in data_dict:
-                            payload = {"choices": [{"delta": {"content": data_dict["content"]}}]}
-                            yield f"data: {json.dumps(payload)}\n\n"
-                        elif "brain_decision" in data_dict:
-                            payload = {"meta": {"brain_decision": data_dict["brain_decision"]}}
-                            yield f"data: {json.dumps(payload)}\n\n"
-                    except Exception as e:
-                        logger.debug("Failed to parse stream chunk from Brain: %s", e)
-                        payload = {"choices": [{"delta": {"content": data_str}}]}
-                        yield f"data: {json.dumps(payload)}\n\n"
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Brain returned a non-native stream chunk")
+                if chunk.event_type == "start":
+                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+                elif chunk.event_type == "finish" or chunk.finish_reason:
+                    payload = {"event": "finish", "choices": [{"delta": {}, "finish_reason": chunk.finish_reason or "stop"}], "metadata": chunk.metadata}
+                    completed = True
+                elif chunk.event_type == "delta":
+                    payload = {"event": "delta", "choices": [{"delta": {"content": chunk.delta}, "finish_reason": None}], "index": chunk.sequence}
+                else:
+                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            if not completed:
+                raise RuntimeError("Native stream ended without finish event")
+            yield "data: [DONE]\n\n"
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
             logger.error("Brain stream completion error: %s", e)
-            payload = {"error": str(e)}
-            yield f"data: {json.dumps(payload)}\n\n"
-            yield "data: [DONE]\n\n"
+            payload = {"event": "error", "error": str(e), "source": "HajeenBrainV3"}
+            yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
         event_generator(),

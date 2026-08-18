@@ -237,13 +237,30 @@ async def stream_chat(req: ChatRequest, request: Request):
     )
 
     async def event_generator():
+        from core.llm.base import LLMStreamChunk
+
+        completed = False
         try:
             async for chunk in brain.stream(brain_request):
-                yield f"data: {json.dumps({'content': chunk})}\n\n"
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Brain returned a non-native stream chunk")
+                if chunk.event_type == "start":
+                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+                elif chunk.event_type == "finish" or chunk.finish_reason:
+                    payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+                    completed = True
+                elif chunk.event_type == "delta":
+                    payload = {"event": "delta", "content": chunk.delta, "index": chunk.sequence}
+                else:
+                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            if not completed:
+                raise RuntimeError("Native stream ended without finish event")
             yield "data: [DONE]\n\n"
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            yield "data: [DONE]\n\n"
+            yield f"data: {json.dumps({'event': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import uuid
@@ -161,17 +162,29 @@ async def chat_stream(
     )
 
     async def event_generator() -> AsyncGenerator[str, None]:
+        completed = False
         try:
             async for chunk in brain.stream(brain_request):
                 if not isinstance(chunk, LLMStreamChunk):
                     raise RuntimeError("Brain returned an invalid native stream chunk")
-                yield f"data: {json.dumps({'choices': [{'delta': {'content': chunk.delta}, 'finish_reason': chunk.finish_reason}]}, ensure_ascii=False)}\n\n"
-                if chunk.finish_reason:
-                    yield "data: [DONE]\n\n"
+                if chunk.event_type == "start":
+                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+                elif chunk.event_type == "delta":
+                    payload = {"event": "delta", "choices": [{"delta": {"content": chunk.delta}, "index": chunk.sequence}]}
+                elif chunk.event_type == "finish" or chunk.finish_reason:
+                    payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+                    completed = True
+                else:
+                    raise RuntimeError(f"Unsupported native stream event: {chunk.event_type}")
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            if not completed:
+                raise RuntimeError("Native stream ended without finish event")
+            yield "data: [DONE]\n\n"
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
             logger.error("Brain stream error: %s", e)
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            yield "data: [DONE]\n\n"
+            yield f"data: {json.dumps({'event': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
         event_generator(),
