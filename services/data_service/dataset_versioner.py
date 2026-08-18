@@ -162,6 +162,50 @@ class DatasetVersioner:
         split_idx = int(len(data) * train_ratio)
         return data[:split_idx], data[split_idx:]
 
+    def split_three_way(
+        self,
+        records: List[Dict],
+        train_ratio: float = 0.8,
+        validation_ratio: float = 0.1,
+    ) -> tuple[List[Dict], List[Dict], List[Dict]]:
+        """Deterministic train/validation/test split with stable ordering."""
+        if not records:
+            raise ValueError("لا يمكن تقسيم dataset فارغ")
+        if train_ratio <= 0 or validation_ratio < 0 or train_ratio + validation_ratio >= 1:
+            raise ValueError("invalid split ratios")
+        keyed = [
+            (record, hashlib.sha256(json.dumps(record, ensure_ascii=False, sort_keys=True).encode()).hexdigest())
+            for record in records
+        ]
+        keyed.sort(key=lambda pair: pair[1])
+        data = [record for record, _ in keyed]
+        train_end = int(len(data) * train_ratio)
+        validation_end = train_end + int(len(data) * validation_ratio)
+        if len(data) >= 3:
+            train_end = max(1, min(train_end, len(data) - 2))
+            validation_end = max(train_end + 1, min(validation_end, len(data) - 1))
+        return data[:train_end], data[train_end:validation_end], data[validation_end:]
+
+    @staticmethod
+    def validate_split_integrity(
+        train: List[Dict], validation: List[Dict], test: List[Dict]
+    ) -> Dict[str, Any]:
+        def keys(rows: List[Dict]) -> set[str]:
+            return {
+                hashlib.sha256(json.dumps(row, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+                for row in rows
+            }
+        buckets = {"train": keys(train), "validation": keys(validation), "test": keys(test)}
+        overlap = {
+            f"{left}_{right}": sorted(buckets[left] & buckets[right])
+            for left, right in (("train", "validation"), ("train", "test"), ("validation", "test"))
+        }
+        return {
+            "valid": not any(overlap.values()),
+            "counts": {name: len(values) for name, values in buckets.items()},
+            "overlap": overlap,
+        }
+
     # ─── Export ───────────────────────────────────────────────────────────────
 
     def export_jsonl(self, records: List[Dict], path: str) -> str:

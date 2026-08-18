@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from data_engine.lifecycle import DataEngine, DatasetStatus, SourceMetadata
+from services.data_service.dataset_versioner import DatasetVersioner
 
 
 def sample(text: str, output: str | None = None) -> dict:
@@ -80,6 +81,17 @@ def test_pii_is_redacted_and_never_in_manifest(tmp_path):
     assert any(record["pii_status"] == "redacted" for record in run.records)
     manifest_text = (tmp_path / f"{run.run_id}.json").read_text()
     assert "alice@example.com" not in manifest_text
+
+
+def test_three_way_split_is_deterministic_and_disjoint(tmp_path):
+    versioner = DatasetVersioner(base_dir=str(tmp_path / "versions"))
+    records = [{"id": str(i), "text": f"record {i} with deterministic content"} for i in range(10)]
+    first = versioner.split_three_way(records)
+    second = versioner.split_three_way(list(reversed(records)))
+    assert first == second
+    report = versioner.validate_split_integrity(*first)
+    assert report["valid"] is True
+    assert all(value == [] for value in report["overlap"].values())
 
 
 def test_invalid_chunk_configuration_fails_closed(tmp_path):
