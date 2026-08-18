@@ -190,6 +190,8 @@ class ModelRouter:
         return RouteResult(tried[-1] if tried else "none", "none", 0.0, 0, "", False, last_error, {"fail_closed": True, "tried": tried})
 
     async def stream(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> AsyncGenerator[LLMStreamChunk, None]:
+        """Relay a provider-native stream without synthesizing chunks."""
+        started = time.perf_counter()
         local_preference = self._prefer_local if prefer_local is None else prefer_local
         key = self._resolve_key(force_model) if force_model else self.select_model(capability, budget_tokens, force_local=local_preference)
         if force_model and key is None:
@@ -201,10 +203,76 @@ class ModelRouter:
         request = self._request(messages, cfg, budget_tokens, request_id=request_id, stream=True)
         if not hasattr(provider, "stream"):
             raise RuntimeError(f"Provider {cfg.provider!r} does not expose native streaming")
-        async for chunk in provider.stream(request):
-            if not isinstance(chunk, LLMStreamChunk):
-                raise RuntimeError("Provider returned an invalid stream chunk")
-            yield chunk
+
+        stream = provider.stream(request)
+        sequence = 0
+        completed = False
+        try:
+            yield LLMStreamChunk(
+                delta="",
+                index=sequence,
+                model=cfg.model_id,
+                provider=cfg.provider,
+                request_id=request_id,
+                event_type="start",
+                metadata={"model": cfg.model_id, "provider": cfg.provider},
+            )
+            async for raw_chunk in self._iter_stream_with_timeout(stream, timeout):
+                if not isinstance(raw_chunk, LLMStreamChunk):
+                    raise RuntimeError("Provider returned an invalid stream chunk")
+                sequence += 1
+                event_type = raw_chunk.event_type or ("finish" if raw_chunk.finish_reason else "delta")
+                yield LLMStreamChunk(
+                    delta=raw_chunk.delta,
+                    finish_reason=raw_chunk.finish_reason,
+                    index=sequence,
+                    model=raw_chunk.model or cfg.model_id,
+                    event_type=event_type,
+                    provider=raw_chunk.provider or cfg.provider,
+                    request_id=raw_chunk.request_id or request_id,
+                    metadata=dict(raw_chunk.metadata),
+                )
+                if raw_chunk.finish_reason:
+                    completed = True
+            if not completed:
+                sequence += 1
+                yield LLMStreamChunk(
+                    delta="",
+                    finish_reason="stop",
+                    index=sequence,
+                    model=cfg.model_id,
+                    provider=cfg.provider,
+                    request_id=request_id,
+                    event_type="finish",
+                    metadata={"latency_ms": (time.perf_counter() - started) * 1000},
+                )
+            self._record_routing(key, capability, (time.perf_counter() - started) * 1000, True)
+        except asyncio.CancelledError:
+            self._record_routing(key, capability, (time.perf_counter() - started) * 1000, False)
+            raise
+        except Exception:
+            self._record_routing(key, capability, (time.perf_counter() - started) * 1000, False)
+            raise
+        finally:
+            close = getattr(stream, "aclose", None)
+            if close is not None:
+                await close()
+
+    @staticmethod
+    async def _iter_stream_with_timeout(stream: Any, timeout: float) -> AsyncGenerator[LLMStreamChunk, None]:
+        """Apply an idle/total guard while preserving provider-native chunks."""
+        iterator = stream.__aiter__()
+        try:
+            while True:
+                try:
+                    chunk = await asyncio.wait_for(iterator.__anext__(), timeout=timeout)
+                except StopAsyncIteration:
+                    break
+                yield chunk
+        finally:
+            close = getattr(iterator, "aclose", None)
+            if close is not None:
+                await close()
 
     async def list_available_models(self, capability: str = "general", budget_tokens: int = 4096) -> List[Dict[str, Any]]:
         result = []
