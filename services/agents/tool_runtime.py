@@ -44,6 +44,7 @@ class ToolRegistry:
                 "timeout_seconds": item.timeout_seconds,
                 "dangerous": item.dangerous,
                 "idempotent": item.idempotent,
+                "max_retries": item.max_retries,
             }
             for item in self._specs.values()
         ]
@@ -141,47 +142,63 @@ class ToolExecutor:
                     metadata={"security": "permission_denied"},
                 )
 
-        try:
-            if inspect.iscoroutinefunction(spec.handler):
-                result = await asyncio.wait_for(
-                    spec.handler(**dict(call.arguments)),
-                    timeout=spec.timeout_seconds,
-                )
-            else:
-                result = await asyncio.wait_for(
-                    asyncio.to_thread(spec.handler, **dict(call.arguments)),
-                    timeout=spec.timeout_seconds,
-                )
-            observation = Observation(
-                tool_name=spec.name,
-                execution_id=call.execution_id,
-                status=TaskStatus.COMPLETED,
-                output=result,
-                started_at=started,
-                finished_at=time.time(),
-                metadata={"policy": policy.to_dict()},
-            )
-            if call.idempotency_key:
-                self._completed_keys[call.idempotency_key] = observation
-            return observation
-        except asyncio.CancelledError:
-            raise
-        except asyncio.TimeoutError:
+        required = spec.input_schema.get("required", []) if isinstance(spec.input_schema, Mapping) else []
+        missing = [name for name in required if name not in call.arguments]
+        if missing:
             return Observation(
                 tool_name=spec.name,
                 execution_id=call.execution_id,
                 status=TaskStatus.FAILED,
-                error=f"Tool timeout after {spec.timeout_seconds}s",
+                error=f"Invalid tool input; missing: {', '.join(missing)}",
                 started_at=started,
                 finished_at=time.time(),
-                metadata={"timeout": True},
+                metadata={"validation": "failed"},
             )
-        except Exception as exc:
-            return Observation(
-                tool_name=spec.name,
-                execution_id=call.execution_id,
-                status=TaskStatus.FAILED,
-                error=str(exc),
-                started_at=started,
-                finished_at=time.time(),
-            )
+
+        attempts = 1 + (spec.max_retries if spec.idempotent else 0)
+        last_error: Optional[str] = None
+        last_metadata: Dict[str, Any] = {"policy": policy.to_dict()}
+        for attempt in range(attempts):
+            try:
+                if inspect.iscoroutinefunction(spec.handler):
+                    result = await asyncio.wait_for(
+                        spec.handler(**dict(call.arguments)),
+                        timeout=spec.timeout_seconds,
+                    )
+                else:
+                    result = await asyncio.wait_for(
+                        asyncio.to_thread(spec.handler, **dict(call.arguments)),
+                        timeout=spec.timeout_seconds,
+                    )
+                observation = Observation(
+                    tool_name=spec.name,
+                    execution_id=call.execution_id,
+                    status=TaskStatus.COMPLETED,
+                    output=result,
+                    started_at=started,
+                    finished_at=time.time(),
+                    metadata={**last_metadata, "attempt": attempt + 1},
+                )
+                if call.idempotency_key:
+                    self._completed_keys[call.idempotency_key] = observation
+                return observation
+            except asyncio.CancelledError:
+                raise
+            except asyncio.TimeoutError:
+                last_error = f"Tool timeout after {spec.timeout_seconds}s"
+                last_metadata = {"timeout": True, "attempt": attempt + 1}
+            except Exception as exc:
+                last_error = str(exc)
+                last_metadata = {"attempt": attempt + 1}
+            if attempt + 1 < attempts:
+                await asyncio.sleep(0)
+
+        return Observation(
+            tool_name=spec.name,
+            execution_id=call.execution_id,
+            status=TaskStatus.FAILED,
+            error=last_error or "Tool execution failed",
+            started_at=started,
+            finished_at=time.time(),
+            metadata=last_metadata,
+        )

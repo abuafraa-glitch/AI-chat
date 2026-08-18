@@ -14,7 +14,7 @@ from brain.goal_manager import ComplexityLevel, IntentType
 from brain.policy.policy_engine import get_policy_engine
 from brain.prompts.unified_prompt_builder import UnifiedPromptBuilder
 from services.agents.agent_orchestrator import AgentOrchestrator
-from services.agents.contracts import ExecutionPlan, PlanStep, TaskStatus, ToolSpec
+from services.agents.contracts import ExecutionPlan, PlanStep, TaskStatus, ToolCall, ToolSpec
 from services.agents.planner_agent import PlannerAgent
 from services.agents.tool_runtime import ToolExecutor, ToolRegistry
 
@@ -107,6 +107,64 @@ async def test_tool_timeout_is_fail_closed(runtime):
     assert result.success is False
     assert result.error == "Tool timeout after 0.01s"
     assert result.context.observations[0].metadata["timeout"] is True
+
+
+@pytest.mark.asyncio
+async def test_tool_retry_is_limited_to_idempotent_tools_and_replays_by_key(runtime):
+    registry, orchestrator = runtime
+    calls = {"count": 0}
+
+    def flaky(**_: object) -> str:
+        calls["count"] += 1
+        if calls["count"] < 3:
+            raise RuntimeError("transient")
+        return "ok"
+
+    registry.register(ToolSpec(
+        name="flaky",
+        description="Retry-safe test tool.",
+        input_schema={"type": "object"},
+        output_schema={"type": "string"},
+        idempotent=True,
+        max_retries=2,
+        handler=flaky,
+    ))
+    first = await orchestrator.tool_executor.execute(
+        ToolCall(tool_name="flaky", arguments={}, idempotency_key="same"),
+        session_id="phase5",
+    )
+    second = await orchestrator.tool_executor.execute(
+        ToolCall(tool_name="flaky", arguments={}, idempotency_key="same"),
+        session_id="phase5",
+    )
+    assert first.status == TaskStatus.COMPLETED
+    assert first.metadata["attempt"] == 3
+    assert second.metadata["idempotent_replay"] is True
+    assert calls["count"] == 3
+
+
+@pytest.mark.asyncio
+async def test_unknown_tool_invalid_input_and_max_steps_fail_closed(runtime):
+    registry, orchestrator = runtime
+    registry.register(ToolSpec(
+        name="requires_value",
+        description="Validation test tool.",
+        input_schema={"type": "object", "required": ["value"]},
+        output_schema={"type": "string"},
+        handler=lambda value: value,
+    ))
+    invalid = await orchestrator.tool_executor.execute(
+        ToolCall(tool_name="requires_value", arguments={}), session_id="phase5"
+    )
+    unknown = await orchestrator.tool_executor.execute(
+        ToolCall(tool_name="missing", arguments={}), session_id="phase5"
+    )
+    assert invalid.error.startswith("Invalid tool input")
+    assert unknown.error == "Unknown tool: missing"
+    plan = ExecutionPlan(goal="too many", steps=[PlanStep(objective="x", action="requires_value")] * 4, max_steps=3)
+    result = await orchestrator.run("too many", session_id="phase5", plan=plan)
+    assert result.success is False
+    assert result.error == "Plan exceeds max_steps"
 
 
 @pytest.mark.asyncio

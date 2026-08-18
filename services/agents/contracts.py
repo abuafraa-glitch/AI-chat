@@ -92,6 +92,7 @@ class ToolSpec:
     timeout_seconds: float = 30.0
     dangerous: bool = False
     idempotent: bool = False
+    max_retries: int = 0
     handler: ToolHandler = field(repr=False, compare=False, default=lambda **_: None)
 
 
