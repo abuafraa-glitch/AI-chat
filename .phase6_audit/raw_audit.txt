@@ -1,0 +1,2923 @@
+--- CANDIDATE FILES ---
+./brain/__pycache__/metrics_engine.cpython-312.pyc
+./brain/metrics_engine.py
+./cloud/dataset_manager.py
+./core/alignment/dpo_trainer.py
+./core/alignment/evaluation_system.py
+./core/alignment/ppo_trainer.py
+./core/alignment/preference_dataset.py
+./core/embeddings/__pycache__/embedding_registry.cpython-312.pyc
+./core/embeddings/embedding_registry.py
+./core/hf_integration/data_cleaner.py
+./core/llm/__pycache__/provider_registry.cpython-312.pyc
+./core/llm/provider_registry.py
+./core/llm/providers/mistral_finetuned_provider.py
+./core/model/model_registry.py
+./core/retrieval/retrieval_engine.py
+./core/training_engine/checkpoint_manager.py
+./core/training_engine/dataset_loader.py
+./core/training_engine/evaluator.py
+./core/training_engine/lora_trainer.py
+./core/training_engine/metrics.py
+./core/training_engine/trainer.py
+./data_engine/ai/embeddings/embedding_metadata.py
+./data_engine/ai/embeddings/embedding_storage.py
+./data_engine/channels/registry.py
+./data_engine/preparation/data_preparation_pipeline.py
+./data_engine/preparation/data_validator.py
+./data_engine/preparation/dataset_statistics.py
+./data_engine/preparation/quality_scorer.py
+./data_engine/processing/filtering/quality_scorer.py
+./data_engine/processing/transformation/chunker.py
+./data_engine/processing/transformation/chunking_engine.py
+./data_engine/processing/transformation/data_transformer.py
+./data_engine/storage/__pycache__/storage_manager.cpython-312.pyc
+./data_engine/storage/metadata_store/__pycache__/lineage_tracker.cpython-312.pyc
+./data_engine/storage/metadata_store/lineage_tracker.py
+./data_engine/storage/raw_store/__pycache__/local_storage.cpython-312.pyc
+./data_engine/storage/raw_store/local_storage.py
+./data_engine/storage/storage_manager.py
+./docs/recovery/phase11/FINAL_CHECKPOINT.log
+./docs/recovery/phase11/phase10_final_checkpoint.log
+./hajeen_model/configs/training_config.yaml
+./hajeen_model/datasets/dataset_manager.py
+./hajeen_model/datasets/test_manager/dataset_v1/data.jsonl
+./hajeen_model/evaluation/__pycache__/evaluation_framework.cpython-312.pyc
+./hajeen_model/evaluation/evaluation_framework.py
+./hajeen_model/hybrid_models/evaluation/evaluation_pipeline.py
+./hajeen_model/hybrid_models/tests/test_checkpoint.py
+./hajeen_model/hybrid_models/tests/test_datasets.py
+./hajeen_model/hybrid_models/tokenizer/cloud_tokenizer_trainer.py
+./hajeen_model/hybrid_models/tokenizer/train_tokenizer.py
+./hajeen_model/hybrid_models/training/cloud_trainer.py
+./hajeen_model/hybrid_models/training/training_pipeline.py
+./hajeen_model/training/checkpoint_manager.py
+./hajeen_model/training/training_pipeline.py
+./infra/docker/Dockerfile.training
+./monitoring/ai/evaluation_dashboard.py
+./monitoring/ai/inference_metrics.py
+./monitoring/ai/token_metrics.py
+./monitoring/ai_metrics/__pycache__/ai_metrics_collector.cpython-312.pyc
+./monitoring/ai_metrics/ai_metrics_collector.py
+./monitoring/grafana/datasources.yaml
+./monitoring/metrics/prometheus_metrics.py
+./monitoring/search_metrics/metrics_collector.py
+./monitoring/search_metrics/retrieval_evaluator.py
+./reports/checkpoints/RECOVERY_CHECKPOINT.md
+./reports/phase0_levels/FINAL_CHECKPOINT.log
+./reports/recovery/FINAL_CHECKPOINT.log
+./requirements/training.txt
+./scripts/deployment/retrain_v2.sh
+./scripts/evaluation/run_evaluation.py
+./scripts/expand_arabic_dataset.py
+./scripts/finetune_mistral.py
+./scripts/setup/create_storage_dirs.py
+./scripts/setup/init_database.py
+./scripts/sync_hf_data.py
+./scripts/training/run_training.py
+./services/agents/__pycache__/retrieval_agent.cpython-312.pyc
+./services/agents/retrieval_agent.py
+./services/data_intelligence/__pycache__/data_factory.cpython-312.pyc
+./services/data_intelligence/data_factory.py
+./services/data_service/__pycache__/dataset_builder.cpython-312.pyc
+./services/data_service/__pycache__/dataset_cleaner.cpython-312.pyc
+./services/data_service/__pycache__/dataset_exporter.cpython-312.pyc
+./services/data_service/__pycache__/dataset_formatter.cpython-312.pyc
+./services/data_service/__pycache__/dataset_versioner.cpython-312.pyc
+./services/data_service/dataset_builder.py
+./services/data_service/dataset_cleaner.py
+./services/data_service/dataset_exporter.py
+./services/data_service/dataset_formatter.py
+./services/data_service/dataset_versioner.py
+./services/evaluation/__pycache__/evaluation_engine.cpython-312.pyc
+./services/evaluation/__pycache__/metrics.cpython-312.pyc
+./services/evaluation/evaluation_engine.py
+./services/evaluation/metrics.py
+./shared/database.py
+./tests/__pycache__/test_dataset_manager.cpython-312.pyc
+./tests/ai/__pycache__/test_data_intelligence.cpython-312.pyc
+./tests/ai/__pycache__/test_evaluation.cpython-312.pyc
+./tests/ai/__pycache__/test_training.cpython-312.pyc
+./tests/ai/test_data_intelligence.py
+./tests/ai/test_evaluation.py
+./tests/ai/test_training.py
+./tests/benchmark/__pycache__/test_components_benchmark.cpython-312.pyc
+./tests/benchmark/test_components_benchmark.py
+./tests/integration/__pycache__/test_storage_persistence.cpython-312.pyc
+./tests/integration/test_storage_persistence.py
+./tests/test_dataset_manager.py
+./tests/test_evaluation_report.json
+./tests/unit/__pycache__/test_chunker.cpython-312.pyc
+./tests/unit/__pycache__/test_data_transformer.cpython-312.pyc
+./tests/unit/__pycache__/test_demo_storage_integration.cpython-312.pyc
+./tests/unit/__pycache__/test_ingestion_http.cpython-312.pyc
+./tests/unit/__pycache__/test_phase4_retrieval.cpython-312.pyc
+./tests/unit/__pycache__/test_quality_scorer.cpython-312.pyc
+./tests/unit/__pycache__/test_registry.cpython-312.pyc
+./tests/unit/__pycache__/test_storage_phase3.cpython-312.pyc
+./tests/unit/__pycache__/test_storage_phase3_part2.cpython-312.pyc
+./tests/unit/test_chunker.py
+./tests/unit/test_data_transformer.py
+./tests/unit/test_demo_storage_integration.py
+./tests/unit/test_ingestion_http.py
+./tests/unit/test_phase4_retrieval.py
+./tests/unit/test_quality_scorer.py
+./tests/unit/test_registry.py
+./tests/unit/test_storage_phase3.py
+./tests/unit/test_storage_phase3_part2.py
+./train_hajeen_cloud.py
+./train_rlhf_ppo.py
+./workers/tasks/ingestion_tasks.py
+--- DIRECTORY TREE (DEPTH 4) ---
+.
+./.gitignore
+./.phase6_audit
+./.phase6_audit/raw_audit.txt
+./.pytest_cache
+./.pytest_cache/.gitignore
+./.pytest_cache/CACHEDIR.TAG
+./.pytest_cache/README.md
+./.pytest_cache/v
+./.pytest_cache/v/cache
+./.pytest_cache/v/cache/lastfailed
+./.pytest_cache/v/cache/nodeids
+./Makefile
+./__init__.py
+./__pycache__
+./__pycache__/__init__.cpython-312.pyc
+./api
+./api/__init__.py
+./api/__pycache__
+./api/__pycache__/__init__.cpython-312.pyc
+./api/__pycache__/dependencies.cpython-312.pyc
+./api/__pycache__/main.cpython-312.pyc
+./api/dependencies.py
+./api/main.py
+./api/v1
+./api/v1/__init__.py
+./api/v1/__pycache__
+./api/v1/__pycache__/__init__.cpython-312.pyc
+./api/v1/__pycache__/hajeen_model_router.cpython-312.pyc
+./api/v1/__pycache__/router.cpython-312.pyc
+./api/v1/ai
+./api/v1/ai/__init__.py
+./api/v1/ai/__pycache__
+./api/v1/ai/chat.py
+./api/v1/ai/completion.py
+./api/v1/ai/embeddings.py
+./api/v1/ai/health.py
+./api/v1/ai/models.py
+./api/v1/ai/rerank.py
+./api/v1/ai/router.py
+./api/v1/ai/websocket.py
+./api/v1/auth
+./api/v1/auth/__init__.py
+./api/v1/auth/__pycache__
+./api/v1/auth/router.py
+./api/v1/channels
+./api/v1/channels/__init__.py
+./api/v1/channels/__pycache__
+./api/v1/channels/router.py
+./api/v1/embeddings
+./api/v1/embeddings/__init__.py
+./api/v1/embeddings/__pycache__
+./api/v1/embeddings/router.py
+./api/v1/hajeen_model_router.py
+./api/v1/ingestion
+./api/v1/ingestion/__init__.py
+./api/v1/ingestion/__pycache__
+./api/v1/router.py
+./api/v1/search
+./api/v1/search/__init__.py
+./api/v1/search/__pycache__
+./api/v1/search/router.py
+./api/v1/tasks
+./api/v1/tasks/__init__.py
+./api/v1/tasks/__pycache__
+./api/v1/tasks/router.py
+./api/v1/webhooks
+./api/v1/webhooks/__init__.py
+./api/v1/webhooks/__pycache__
+./brain
+./brain/README.md
+./brain/__init__.py
+./brain/__pycache__
+./brain/__pycache__/__init__.cpython-312.pyc
+./brain/__pycache__/brain_v3.cpython-312.pyc
+./brain/__pycache__/config.cpython-312.pyc
+./brain/__pycache__/decision_engine.cpython-312.pyc
+./brain/__pycache__/execution_trace.cpython-312.pyc
+./brain/__pycache__/goal_manager.cpython-312.pyc
+./brain/__pycache__/graph_planner.cpython-312.pyc
+./brain/__pycache__/llm_analyzer.cpython-312.pyc
+./brain/__pycache__/metrics_engine.cpython-312.pyc
+./brain/__pycache__/model_router.cpython-312.pyc
+./brain/__pycache__/multi_model.cpython-312.pyc
+./brain/__pycache__/state_machine.cpython-312.pyc
+./brain/__pycache__/task_decomposer.cpython-312.pyc
+./brain/api
+./brain/api/__init__.py
+./brain/api/__pycache__
+./brain/api/__pycache__/__init__.cpython-312.pyc
+./brain/api/__pycache__/brain_router.cpython-312.pyc
+./brain/api/brain_router.py
+./brain/brain_v3.py
+./brain/cognitive_layer
+./brain/cognitive_layer/__init__.py
+./brain/cognitive_layer/__pycache__
+./brain/cognitive_layer/__pycache__/__init__.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/cognitive_compiler.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/cognitive_constitution.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/cognitive_dna.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/cognitive_event_system.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/cognitive_evolution_protocol.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/cognitive_version_control.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/concept_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/context_analyzer.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/curiosity_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/decision_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/dream_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/evidence_court.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/experience_memory.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/experiment_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/expert_models_layer.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/hypothesis_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/intent_analyzer.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/knowledge_physics_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/meta_brain.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/model_society.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/planning_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/reasoning_engine.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/test_cognitive_components.cpython-312.pyc
+./brain/cognitive_layer/__pycache__/world_model.cpython-312.pyc
+./brain/cognitive_layer/cognitive_compiler.py
+./brain/cognitive_layer/cognitive_constitution.py
+./brain/cognitive_layer/cognitive_dna.py
+./brain/cognitive_layer/cognitive_event_system.py
+./brain/cognitive_layer/cognitive_evolution_protocol.py
+./brain/cognitive_layer/cognitive_version_control.py
+./brain/cognitive_layer/concept_engine.py
+./brain/cognitive_layer/context_analyzer.py
+./brain/cognitive_layer/curiosity_engine.py
+./brain/cognitive_layer/decision_engine.py
+./brain/cognitive_layer/dream_engine.py
+./brain/cognitive_layer/evidence_court.py
+./brain/cognitive_layer/experience_memory.py
+./brain/cognitive_layer/experiment_engine.py
+./brain/cognitive_layer/expert_models_layer.py
+./brain/cognitive_layer/hypothesis_engine.py
+./brain/cognitive_layer/intent_analyzer.py
+./brain/cognitive_layer/knowledge_physics_engine.py
+./brain/cognitive_layer/meta_brain.py
+./brain/cognitive_layer/model_society.py
+./brain/cognitive_layer/planning_engine.py
+./brain/cognitive_layer/reasoning_engine.py
+./brain/cognitive_layer/test_cognitive_components.py
+./brain/cognitive_layer/world_model.py
+./brain/config.py
+./brain/decision_engine.py
+./brain/evolution
+./brain/evolution/__init__.py
+./brain/evolution/__pycache__
+./brain/evolution/__pycache__/__init__.cpython-312.pyc
+./brain/evolution/__pycache__/self_evolution.cpython-312.pyc
+./brain/evolution/__pycache__/test_self_evolution.cpython-312.pyc
+./brain/evolution/self_evolution.py
+./brain/evolution/test_self_evolution.py
+./brain/execution_trace.py
+./brain/goal_manager.py
+./brain/graph_planner.py
+./brain/improvement
+./brain/improvement/__init__.py
+./brain/improvement/__pycache__
+./brain/improvement/__pycache__/__init__.cpython-312.pyc
+./brain/improvement/__pycache__/autonomous_improvement.cpython-312.pyc
+./brain/improvement/autonomous_improvement.py
+./brain/knowledge
+./brain/knowledge/__init__.py
+./brain/knowledge/__pycache__
+./brain/knowledge/__pycache__/__init__.cpython-312.pyc
+./brain/knowledge/__pycache__/knowledge_distillation.cpython-312.pyc
+./brain/knowledge/__pycache__/knowledge_graph.cpython-312.pyc
+./brain/knowledge/knowledge_distillation.py
+./brain/knowledge/knowledge_graph.py
+./brain/learning
+./brain/learning/__init__.py
+./brain/learning/__pycache__
+./brain/learning/__pycache__/__init__.cpython-312.pyc
+./brain/learning/__pycache__/continuous_learning.cpython-312.pyc
+./brain/learning/continuous_learning.py
+./brain/llm_analyzer.py
+./brain/memory
+./brain/memory/__init__.py
+./brain/memory/__pycache__
+./brain/memory/__pycache__/__init__.cpython-312.pyc
+./brain/memory/__pycache__/memory_fabric.cpython-312.pyc
+./brain/memory/__pycache__/unified_interface.cpython-312.pyc
+./brain/memory/memory_fabric.py
+./brain/memory/unified_interface.py
+./brain/metrics
+./brain/metrics/__init__.py
+./brain/metrics/__pycache__
+./brain/metrics/__pycache__/__init__.cpython-312.pyc
+./brain/metrics/__pycache__/model_performance_db.cpython-312.pyc
+./brain/metrics/model_performance_db.py
+./brain/metrics_engine.py
+./brain/model_router.py
+./brain/multi_model.py
+./brain/policy
+./brain/policy/__init__.py
+./brain/policy/__pycache__
+./brain/policy/__pycache__/__init__.cpython-312.pyc
+./brain/policy/__pycache__/policy_engine.cpython-312.pyc
+./brain/policy/policy_engine.py
+./brain/prompts
+./brain/prompts/__init__.py
+./brain/prompts/__pycache__
+./brain/prompts/__pycache__/__init__.cpython-312.pyc
+./brain/prompts/__pycache__/unified_prompt_builder.cpython-312.pyc
+./brain/prompts/unified_prompt_builder.py
+./brain/reflection
+./brain/reflection/__init__.py
+./brain/reflection/__pycache__
+./brain/reflection/__pycache__/__init__.cpython-312.pyc
+./brain/reflection/__pycache__/self_evolution.cpython-312.pyc
+./brain/reflection/__pycache__/self_reflection.cpython-312.pyc
+./brain/reflection/__pycache__/test_self_reflection.cpython-312.pyc
+./brain/reflection/self_evolution.py
+./brain/reflection/self_reflection.py
+./brain/reflection/test_self_reflection.py
+./brain/requirements.txt
+./brain/sovereignty
+./brain/sovereignty/__init__.py
+./brain/sovereignty/__pycache__
+./brain/sovereignty/__pycache__/__init__.cpython-312.pyc
+./brain/sovereignty/__pycache__/sovereignty_layer.cpython-312.pyc
+./brain/sovereignty/sovereignty_layer.py
+./brain/state_machine.py
+./brain/task_decomposer.py
+./brain/tests
+./brain/tests/__init__.py
+./brain/tests/__pycache__
+./brain/tests/__pycache__/__init__.cpython-312.pyc
+./brain/tests/__pycache__/test_brain_components.cpython-312.pyc
+./brain/tests/test_brain_components.py
+./cloud
+./cloud/__init__.py
+./cloud/cloud_sync.py
+./cloud/dataset_manager.py
+./cloud/hf_client.py
+./cloud/model_manager.py
+./configs
+./configs/__init__.py
+./configs/filters.yaml
+./configs/logging.yaml
+./configs/pipelines.yaml
+./configs/processing.yaml
+./configs/redis.py
+./core
+./core/__init__.py
+./core/__pycache__
+./core/__pycache__/__init__.cpython-312.pyc
+./core/alignment
+./core/alignment/__init__.py
+./core/alignment/alignment_pipeline.py
+./core/alignment/dpo_trainer.py
+./core/alignment/evaluation_system.py
+./core/alignment/ppo_trainer.py
+./core/alignment/preference_dataset.py
+./core/alignment/reward_model.py
+./core/context_intelligence
+./core/context_intelligence/context_engine.py
+./core/context_intelligence/context_scoring.py
+./core/context_intelligence/semantic_memory.py
+./core/distributed
+./core/distributed/gpu_scheduler.py
+./core/distributed/kubernetes_runtime.py
+./core/distributed/ray_runtime.py
+./core/embeddings
+./core/embeddings/__init__.py
+./core/embeddings/__pycache__
+./core/embeddings/__pycache__/__init__.cpython-312.pyc
+./core/embeddings/__pycache__/base.cpython-312.pyc
+./core/embeddings/__pycache__/batch_embedder.cpython-312.pyc
+./core/embeddings/__pycache__/embedding_cache.cpython-312.pyc
+./core/embeddings/__pycache__/embedding_engine.cpython-312.pyc
+./core/embeddings/__pycache__/embedding_manager.cpython-312.pyc
+./core/embeddings/__pycache__/embedding_models.cpython-312.pyc
+./core/embeddings/__pycache__/embedding_registry.cpython-312.pyc
+./core/embeddings/__pycache__/sentence_transformer.cpython-312.pyc
+./core/embeddings/__pycache__/similarity.cpython-312.pyc
+./core/embeddings/base.py
+./core/embeddings/batch_embedder.py
+./core/embeddings/embedding_cache.py
+./core/embeddings/embedding_engine.py
+./core/embeddings/embedding_manager.py
+./core/embeddings/embedding_models.py
+./core/embeddings/embedding_registry.py
+./core/embeddings/models
+./core/embeddings/models/__init__.py
+./core/embeddings/sentence_transformer.py
+./core/embeddings/similarity.py
+./core/hf_integration
+./core/hf_integration/__init__.py
+./core/hf_integration/data_cleaner.py
+./core/hf_integration/hub_manager.py
+./core/inference_engine
+./core/inference_engine/__init__.py
+./core/inference_engine/__pycache__
+./core/inference_engine/__pycache__/__init__.cpython-312.pyc
+./core/inference_engine/__pycache__/batching.cpython-312.pyc
+./core/inference_engine/__pycache__/context_manager.cpython-312.pyc
+./core/inference_engine/__pycache__/engine.cpython-312.pyc
+./core/inference_engine/__pycache__/generation.cpython-312.pyc
+./core/inference_engine/__pycache__/inference_config.cpython-312.pyc
+./core/inference_engine/__pycache__/queue_manager.cpython-312.pyc
+./core/inference_engine/__pycache__/request_handler.cpython-312.pyc
+./core/inference_engine/__pycache__/response_handler.cpython-312.pyc
+./core/inference_engine/__pycache__/response_parser.cpython-312.pyc
+./core/inference_engine/__pycache__/sampler.cpython-312.pyc
+./core/inference_engine/__pycache__/stopping.cpython-312.pyc
+./core/inference_engine/__pycache__/stream_handler.cpython-312.pyc
+./core/inference_engine/__pycache__/token_tracker.cpython-312.pyc
+./core/inference_engine/batching.py
+./core/inference_engine/context_manager.py
+./core/inference_engine/engine.py
+./core/inference_engine/generation.py
+./core/inference_engine/inference_config.py
+./core/inference_engine/queue_manager.py
+./core/inference_engine/request_handler.py
+./core/inference_engine/response_handler.py
+./core/inference_engine/response_parser.py
+./core/inference_engine/sampler.py
+./core/inference_engine/stopping.py
+./core/inference_engine/stream_handler.py
+./core/inference_engine/token_tracker.py
+./core/llm
+./core/llm/__init__.py
+./core/llm/__pycache__
+./core/llm/__pycache__/__init__.cpython-312.pyc
+./core/llm/__pycache__/base.cpython-312.pyc
+./core/llm/__pycache__/config.cpython-312.pyc
+./core/llm/__pycache__/llm_manager.cpython-312.pyc
+./core/llm/__pycache__/provider_registry.cpython-312.pyc
+./core/llm/base.py
+./core/llm/config.py
+./core/llm/llm_manager.py
+./core/llm/provider_registry.py
+./core/llm/providers
+./core/llm/providers/__init__.py
+./core/llm/providers/__pycache__
+./core/llm/providers/hajeen_provider.py
+./core/llm/providers/huggingface_provider.py
+./core/llm/providers/llama_cpp_provider.py
+./core/llm/providers/mistral_finetuned_provider.py
+./core/llm/providers/mock_provider.py
+./core/llm/providers/ollama_provider.py
+./core/llm/providers/openai_provider.py
+./core/memory
+./core/memory/__init__.py
+./core/memory/conversation_store.py
+./core/memory/long_term_memory.py
+./core/memory/memory_manager.py
+./core/memory/short_term_memory.py
+./core/model
+./core/model/__init__.py
+./core/model/model_config.py
+./core/model/model_loader.py
+./core/model/model_manager.py
+./core/model/model_registry.py
+./core/model/quantization.py
+./core/optimization
+./core/optimization/__init__.py
+./core/optimization/inference_optimizer.py
+./core/optimization/kv_cache_manager.py
+./core/optimization/prompt_cache.py
+./core/optimization/quantization_manager.py
+./core/optimization/speculative_decoding.py
+./core/optimization/tensor_parallel.py
+./core/prompts
+./core/prompts/__init__.py
+./core/prompts/__pycache__
+./core/prompts/__pycache__/__init__.cpython-312.pyc
+./core/prompts/__pycache__/base.cpython-312.pyc
+./core/prompts/__pycache__/conversation_formatter.cpython-312.pyc
+./core/prompts/__pycache__/prompt_builder.cpython-312.pyc
+./core/prompts/__pycache__/system_prompts.cpython-312.pyc
+./core/prompts/__pycache__/templates.cpython-312.pyc
+./core/prompts/base.py
+./core/prompts/conversation_formatter.py
+./core/prompts/prompt_builder.py
+./core/prompts/system_prompts.py
+./core/prompts/templates.py
+./core/retrieval
+./core/retrieval/__init__.py
+./core/retrieval/retrieval_engine.py
+./core/serving
+./core/serving/__init__.py
+./core/serving/batching_engine.py
+./core/serving/llama_cpp_server.py
+./core/serving/load_balancer.py
+./core/serving/model_pool.py
+./core/serving/model_server.py
+./core/serving/request_scheduler.py
+./core/serving/streaming_server.py
+./core/serving/vllm_server.py
+./core/tokenizer
+./core/tokenizer/__init__.py
+./core/tokenizer/models
+./core/tokenizer/models/__init__.py
+./core/tokenizer/models/generic_tokenizer.py
+./core/tokenizer/models/llama_tokenizer.py
+./core/tokenizer/models/mistral_tokenizer.py
+./core/tokenizer/token_counter.py
+./core/tokenizer/tokenizer_factory.py
+./core/tokenizer/tokenizer_manager.py
+./core/training_engine
+./core/training_engine/__init__.py
+./core/training_engine/checkpoint_manager.py
+./core/training_engine/collator.py
+./core/training_engine/dataset_loader.py
+./core/training_engine/evaluator.py
+./core/training_engine/finetuning.py
+./core/training_engine/lora_trainer.py
+./core/training_engine/metrics.py
+./core/training_engine/trainer.py
+./core/utils
+./core/utils/__init__.py
+./core/utils/__pycache__
+./core/utils/__pycache__/__init__.cpython-312.pyc
+./core/utils/__pycache__/device_manager.cpython-312.pyc
+./core/utils/__pycache__/gpu_utils.cpython-312.pyc
+./core/utils/__pycache__/model_cache.cpython-312.pyc
+./core/utils/device_manager.py
+./core/utils/gpu_utils.py
+./core/utils/model_cache.py
+./data_engine
+./data_engine/__init__.py
+./data_engine/__main__.py
+./data_engine/__pycache__
+./data_engine/__pycache__/__init__.cpython-312.pyc
+./data_engine/ai
+./data_engine/ai/__init__.py
+./data_engine/ai/embeddings
+./data_engine/ai/embeddings/__init__.py
+./data_engine/ai/embeddings/base_embedder.py
+./data_engine/ai/embeddings/embedding_cache.py
+./data_engine/ai/embeddings/embedding_metadata.py
+./data_engine/ai/embeddings/embedding_pipeline.py
+./data_engine/ai/embeddings/embedding_storage.py
+./data_engine/channels
+./data_engine/channels/__init__.py
+./data_engine/channels/base.py
+./data_engine/channels/builder.py
+./data_engine/channels/custom
+./data_engine/channels/custom/__init__.py
+./data_engine/channels/custom/user_defined
+./data_engine/channels/predefined
+./data_engine/channels/predefined/__init__.py
+./data_engine/channels/predefined/arabic_sources.py
+./data_engine/channels/predefined/demo_channel.py
+./data_engine/channels/predefined/finance_channel.py
+./data_engine/channels/predefined/news_channel.py
+./data_engine/channels/predefined/science_channel.py
+./data_engine/channels/predefined/tech_channel.py
+./data_engine/channels/registry.py
+./data_engine/cli.py
+./data_engine/config
+./data_engine/config/__init__.py
+./data_engine/config/channels.yaml
+./data_engine/config/filters.yaml
+./data_engine/config/sources.yaml
+./data_engine/embeddings
+./data_engine/embeddings/__init__.py
+./data_engine/embeddings/embedding_pipeline.py
+./data_engine/ingestion
+./data_engine/ingestion/__init__.py
+./data_engine/ingestion/connectors
+./data_engine/ingestion/connectors/__init__.py
+./data_engine/ingestion/connectors/arxiv_connector.py
+./data_engine/ingestion/connectors/base_connector.py
+./data_engine/ingestion/connectors/custom_connector.py
+./data_engine/ingestion/connectors/github_connector.py
+./data_engine/ingestion/connectors/newsapi_connector.py
+./data_engine/ingestion/connectors/reddit_connector.py
+./data_engine/ingestion/connectors/youtube_connector.py
+./data_engine/ingestion/crawlers
+./data_engine/ingestion/crawlers/__init__.py
+./data_engine/ingestion/crawlers/playwright_crawler.py
+./data_engine/ingestion/crawlers/requests_fetcher.py
+./data_engine/ingestion/crawlers/robots_checker.py
+./data_engine/ingestion/crawlers/rss_parser.py
+./data_engine/ingestion/crawlers/sitemap_parser.py
+./data_engine/ingestion/http_client.py
+./data_engine/ingestion/response_models.py
+./data_engine/ingestion/schedulers
+./data_engine/ingestion/schedulers/__init__.py
+./data_engine/ingestion/schedulers/cron_scheduler.py
+./data_engine/ingestion/schedulers/job_tracker.py
+./data_engine/ingestion/schedulers/priority_queue.py
+./data_engine/ingestion/streams
+./data_engine/ingestion/streams/__init__.py
+./data_engine/ingestion/streams/kafka_consumer.py
+./data_engine/ingestion/streams/webhook_receiver.py
+./data_engine/ingestion/streams/websocket_listener.py
+./data_engine/metadata
+./data_engine/metadata/__init__.py
+./data_engine/metadata/tracker.py
+./data_engine/monitoring
+./data_engine/monitoring/__init__.py
+./data_engine/pipelines
+./data_engine/pipelines/__init__.py
+./data_engine/pipelines/base_pipeline.py
+./data_engine/pipelines/definitions
+./data_engine/pipelines/definitions/__init__.py
+./data_engine/pipelines/pipeline_orchestrator.py
+./data_engine/pipelines/pipeline_result.py
+./data_engine/pipelines/stages
+./data_engine/pipelines/stages/__init__.py
+./data_engine/pipelines/stages/clean_stage.py
+./data_engine/pipelines/stages/embed_stage.py
+./data_engine/pipelines/stages/enrich_stage.py
+./data_engine/pipelines/stages/fetch_stage.py
+./data_engine/pipelines/stages/filter_stage.py
+./data_engine/pipelines/stages/store_stage.py
+./data_engine/pipelines/stages/transform_stage.py
+./data_engine/preparation
+./data_engine/preparation/__init__.py
+./data_engine/preparation/data_preparation_pipeline.py
+./data_engine/preparation/data_validator.py
+./data_engine/preparation/dataset_statistics.py
+./data_engine/preparation/deduplicator.py
+./data_engine/preparation/language_detector.py
+./data_engine/preparation/quality_scorer.py
+./data_engine/processing
+./data_engine/processing/__init__.py
+./data_engine/processing/base_processor.py
+./data_engine/processing/cleaning
+./data_engine/processing/cleaning/__init__.py
+./data_engine/processing/cleaning/cleaning_pipeline.py
+./data_engine/processing/cleaning/html_cleaner.py
+./data_engine/processing/cleaning/text_cleaner.py
+./data_engine/processing/cleaning/text_normalizer.py
+./data_engine/processing/enrichment
+./data_engine/processing/enrichment/__init__.py
+./data_engine/processing/enrichment/content_enricher.py
+./data_engine/processing/enrichment/enrichment_pipeline.py
+./data_engine/processing/enrichment/entity_extractor.py
+./data_engine/processing/enrichment/keyword_extractor.py
+./data_engine/processing/enrichment/sentiment_analyzer.py
+./data_engine/processing/enrichment/summarizer.py
+./data_engine/processing/enrichment/topic_classifier.py
+./data_engine/processing/filtering
+./data_engine/processing/filtering/__init__.py
+./data_engine/processing/filtering/content_filter.py
+./data_engine/processing/filtering/deduplication_engine.py
+./data_engine/processing/filtering/deduplicator.py
+./data_engine/processing/filtering/filtering_pipeline.py
+./data_engine/processing/filtering/language_filter.py
+./data_engine/processing/filtering/pii_filter.py
+./data_engine/processing/filtering/policy_filter.py
+./data_engine/processing/filtering/quality_scorer.py
+./data_engine/processing/filtering/spam_detector.py
+./data_engine/processing/processing_context.py
+./data_engine/processing/processing_result.py
+./data_engine/processing/transformation
+./data_engine/processing/transformation/__init__.py
+./data_engine/processing/transformation/chunker.py
+./data_engine/processing/transformation/chunking_engine.py
+./data_engine/processing/transformation/data_transformer.py
+./data_engine/processing/transformation/markdown_converter.py
+./data_engine/processing/transformation/tokenizer_wrapper.py
+./data_engine/processing/transformation/transformation_pipeline.py
+./data_engine/storage
+./data_engine/storage/__init__.py
+./data_engine/storage/__pycache__
+./data_engine/storage/__pycache__/__init__.cpython-312.pyc
+./data_engine/storage/__pycache__/base.cpython-312.pyc
+./data_engine/storage/__pycache__/interfaces.cpython-312.pyc
+./data_engine/storage/__pycache__/storage_manager.cpython-312.pyc
+./data_engine/storage/base.py
+./data_engine/storage/interfaces.py
+./data_engine/storage/metadata_store
+./data_engine/storage/metadata_store/__init__.py
+./data_engine/storage/metadata_store/__pycache__
+./data_engine/storage/metadata_store/job_store.py
+./data_engine/storage/metadata_store/lineage_tracker.py
+./data_engine/storage/metadata_store/sqlite_catalog.py
+./data_engine/storage/processed_store
+./data_engine/storage/processed_store/__init__.py
+./data_engine/storage/processed_store/__pycache__
+./data_engine/storage/processed_store/bronze_layer.py
+./data_engine/storage/processed_store/gold_layer.py
+./data_engine/storage/processed_store/silver_layer.py
+./data_engine/storage/raw_store
+./data_engine/storage/raw_store/__init__.py
+./data_engine/storage/raw_store/__pycache__
+./data_engine/storage/raw_store/local_storage.py
+./data_engine/storage/repositories
+./data_engine/storage/repositories/__init__.py
+./data_engine/storage/repositories/__pycache__
+./data_engine/storage/repositories/article_repository.py
+./data_engine/storage/repositories/channel_repository.py
+./data_engine/storage/repositories/pipeline_repository.py
+./data_engine/storage/storage_manager.py
+./data_engine/storage/vector_store
+./data_engine/storage/vector_store/__init__.py
+./data_engine/storage/vector_store/__pycache__
+./data_engine/storage/vector_store/base_vector_store.py
+./data_engine/storage/vector_store/chroma_client.py
+./data_engine/storage/vector_store/faiss_client.py
+./data_engine/storage/vector_store/qdrant_client.py
+./data_engine/storage/vector_store/sqlite_vector_index.py
+./data_engine/storage/vector_store/vector_store_manager.py
+./database
+./database/__init__.py
+./database/models.py
+./demo_pipeline.py
+./demo_rag.py
+./deployments
+./deployments/kubernetes_hajeen_ai.yaml
+./deployments/kubernetes_triton.yaml
+./deployments/kubernetes_vllm.yaml
+./diagnose_learning_hang.py
+./diagnose_pipeline.py
+./docs
+./docs/recovery
+./docs/recovery/phase0
+./docs/recovery/phase0/FINAL_REPORT.md
+./docs/recovery/phase10
+./docs/recovery/phase10/BASELINE.md
+./docs/recovery/phase10/BRAIN_MATRIX.md
+./docs/recovery/phase10/FAILURE_MATRIX.md
+./docs/recovery/phase10/FINAL_REPORT.md
+./docs/recovery/phase11
+./docs/recovery/phase11/ALTERNATE_COPIES.md
+./docs/recovery/phase11/BASELINE.md
+./docs/recovery/phase11/CURRENT_HASHES.txt
+./docs/recovery/phase11/CURRENT_TREE.txt
+./docs/recovery/phase11/ENVIRONMENT.md
+./docs/recovery/phase11/FINAL_CHECKPOINT.log
+./docs/recovery/phase11/FINAL_REPORT.md
+./docs/recovery/phase11/GIT_AND_COPIES_SCAN.txt
+./docs/recovery/phase11/GIT_FORENSICS.md
+./docs/recovery/phase11/RESTORED_COMPONENTS.md
+./docs/recovery/phase11/RESTORE_COPY_LOG.txt
+./docs/recovery/phase11/contracts_probe.log
+./docs/recovery/phase11/contracts_probe_after_deps.log
+./docs/recovery/phase11/contracts_probe_after_deps_summary.txt
+./docs/recovery/phase11/contracts_probe_after_tenacity.log
+./docs/recovery/phase11/contracts_probe_after_tenacity_summary.txt
+./docs/recovery/phase11/contracts_probe_parent_path.log
+./docs/recovery/phase11/contracts_probe_parent_path_summary.txt
+./docs/recovery/phase11/contracts_probe_summary.txt
+./docs/recovery/phase11/core_regression_matrix.log
+./docs/recovery/phase11/current_tree_relative.txt
+./docs/recovery/phase11/level0_compile.log
+./docs/recovery/phase11/level0_compile_after_repairs.log
+./docs/recovery/phase11/level0_compile_after_repairs_summary.txt
+./docs/recovery/phase11/level0_import.log
+./docs/recovery/phase11/level0_summary.txt
+./docs/recovery/phase11/phase10_current_regression.log
+./docs/recovery/phase11/phase10_final_checkpoint.log
+./docs/recovery/phase11/phase10_regression_after_repairs.log
+./docs/recovery/phase11/phase10_repair_verification.log
+./docs/recovery/phase11/phase5_api_workflow.log
+./docs/recovery/phase11/phase5_api_workflow_after_pytest_fix.log
+./docs/recovery/phase11/phase5_api_workflow_after_pytest_summary.txt
+./docs/recovery/phase11/phase5_api_workflow_summary.txt
+./docs/recovery/phase11/phase5_batch1.log
+./docs/recovery/phase11/phase5_batch1_summary.txt
+./docs/recovery/phase11/phase5_batch2.log
+./docs/recovery/phase11/phase5_batch2_after_fix.log
+./docs/recovery/phase11/phase5_batch2_after_fix_summary.txt
+./docs/recovery/phase11/phase5_batch2_summary.txt
+./docs/recovery/phase11/phase5_batch3.log
+./docs/recovery/phase11/phase5_batch3_after_fix_summary.txt
+./docs/recovery/phase11/phase5_batch3_summary.txt
+./docs/recovery/phase11/phase5_final_integration_after_breaker.log
+./docs/recovery/phase11/phase5_final_integration_after_breaker_summary.txt
+./docs/recovery/phase11/phase5_rag_security_after_fix.log
+./docs/recovery/phase11/phase5_rag_security_final.log
+./docs/recovery/phase11/phase5_rag_security_final_summary.txt
+./docs/recovery/phase11/phase5_rag_security_summary.txt
+./docs/recovery/phase11/source_tree_relative.txt
+./file_tree.txt
+./hajeen_model
+./hajeen_model/__init__.py
+./hajeen_model/__pycache__
+./hajeen_model/__pycache__/__init__.cpython-312.pyc
+./hajeen_model/adapters
+./hajeen_model/adapters/__init__.py
+./hajeen_model/configs
+./hajeen_model/configs/__init__.py
+./hajeen_model/configs/lora_config.yaml
+./hajeen_model/configs/model_config.yaml
+./hajeen_model/configs/training_config.yaml
+./hajeen_model/core
+./hajeen_model/core/__init__.py
+./hajeen_model/core/hajeen_model_v1.py
+./hajeen_model/core/local_inference_engine.py
+./hajeen_model/datasets
+./hajeen_model/datasets/__init__.py
+./hajeen_model/datasets/dataset_manager.py
+./hajeen_model/datasets/test_manager
+./hajeen_model/datasets/test_manager/dataset_v1
+./hajeen_model/datasets/test_manager/test.jsonl
+./hajeen_model/evaluation
+./hajeen_model/evaluation/__init__.py
+./hajeen_model/evaluation/__pycache__
+./hajeen_model/evaluation/__pycache__/__init__.cpython-312.pyc
+./hajeen_model/evaluation/__pycache__/evaluation_framework.cpython-312.pyc
+./hajeen_model/evaluation/evaluation_framework.py
+./hajeen_model/hybrid_models
+./hajeen_model/hybrid_models/__init__.py
+./hajeen_model/hybrid_models/attention
+./hajeen_model/hybrid_models/attention/__init__.py
+./hajeen_model/hybrid_models/attention/kv_cache.py
+./hajeen_model/hybrid_models/attention/multi_head_attention.py
+./hajeen_model/hybrid_models/attention/scaled_dot_product.py
+./hajeen_model/hybrid_models/config
+./hajeen_model/hybrid_models/config/__init__.py
+./hajeen_model/hybrid_models/config/hajeen_config.py
+./hajeen_model/hybrid_models/embeddings
+./hajeen_model/hybrid_models/embeddings/__init__.py
+./hajeen_model/hybrid_models/embeddings/position_embeddings.py
+./hajeen_model/hybrid_models/embeddings/rope.py
+./hajeen_model/hybrid_models/embeddings/token_embeddings.py
+./hajeen_model/hybrid_models/evaluation
+./hajeen_model/hybrid_models/evaluation/__init__.py
+./hajeen_model/hybrid_models/evaluation/evaluation_pipeline.py
+./hajeen_model/hybrid_models/export
+./hajeen_model/hybrid_models/export/__init__.py
+./hajeen_model/hybrid_models/export/exporter.py
+./hajeen_model/hybrid_models/inference
+./hajeen_model/hybrid_models/inference/__init__.py
+./hajeen_model/hybrid_models/inference/inference_engine.py
+./hajeen_model/hybrid_models/layers
+./hajeen_model/hybrid_models/layers/__init__.py
+./hajeen_model/hybrid_models/layers/feed_forward.py
+./hajeen_model/hybrid_models/layers/normalization.py
+./hajeen_model/hybrid_models/layers/residual.py
+./hajeen_model/hybrid_models/quantization
+./hajeen_model/hybrid_models/quantization/__init__.py
+./hajeen_model/hybrid_models/quantization/quantizer.py
+./hajeen_model/hybrid_models/serving
+./hajeen_model/hybrid_models/serving/__init__.py
+./hajeen_model/hybrid_models/serving/model_server.py
+./hajeen_model/hybrid_models/tests
+./hajeen_model/hybrid_models/tests/__init__.py
+./hajeen_model/hybrid_models/tests/test_attention.py
+./hajeen_model/hybrid_models/tests/test_checkpoint.py
+./hajeen_model/hybrid_models/tests/test_config.py
+./hajeen_model/hybrid_models/tests/test_datasets.py
+./hajeen_model/hybrid_models/tests/test_fine_tuning.py
+./hajeen_model/hybrid_models/tests/test_inference.py
+./hajeen_model/hybrid_models/tests/test_layers.py
+./hajeen_model/hybrid_models/tests/test_model.py
+./hajeen_model/hybrid_models/tests/test_quantization.py
+./hajeen_model/hybrid_models/tests/test_tokenizer.py
+./hajeen_model/hybrid_models/tokenizer
+./hajeen_model/hybrid_models/tokenizer/__init__.py
+./hajeen_model/hybrid_models/tokenizer/bpe_tokenizer.py
+./hajeen_model/hybrid_models/tokenizer/cloud_tokenizer_trainer.py
+./hajeen_model/hybrid_models/tokenizer/tokenizer_loader.py
+./hajeen_model/hybrid_models/tokenizer/tokenizer_validator.py
+./hajeen_model/hybrid_models/tokenizer/train_tokenizer.py
+./hajeen_model/hybrid_models/training
+./hajeen_model/hybrid_models/training/__init__.py
+./hajeen_model/hybrid_models/training/cloud_trainer.py
+./hajeen_model/hybrid_models/training/fine_tuning.py
+./hajeen_model/hybrid_models/training/training_pipeline.py
+./hajeen_model/hybrid_models/transformer
+./hajeen_model/hybrid_models/transformer/__init__.py
+./hajeen_model/hybrid_models/transformer/hajeen_model.py
+./hajeen_model/hybrid_models/transformer/transformer_block.py
+./hajeen_model/inference
+./hajeen_model/inference/__init__.py
+./hajeen_model/inference/__pycache__
+./hajeen_model/inference/__pycache__/__init__.cpython-312.pyc
+./hajeen_model/inference/__pycache__/base_provider.cpython-312.pyc
+./hajeen_model/inference/__pycache__/hajeen_provider.cpython-312.pyc
+./hajeen_model/inference/base_provider.py
+./hajeen_model/inference/hajeen_provider.py
+./hajeen_model/inference/inference_engine.py
+./hajeen_model/inference/ollama_manager.py
+./hajeen_model/inference/ollama_provider.py
+./hajeen_model/tests
+./hajeen_model/tests/__init__.py
+./hajeen_model/tests/test_phase_4_5.py
+./hajeen_model/tokenizer
+./hajeen_model/tokenizer/__init__.py
+./hajeen_model/training
+./hajeen_model/training/__init__.py
+./hajeen_model/training/checkpoint_manager.py
+./hajeen_model/training/training_pipeline.py
+./helm
+./helm/hajeen-platform
+./helm/hajeen-platform/Chart.yaml
+./helm/hajeen-platform/templates
+./helm/hajeen-platform/templates/_helpers.tpl
+./helm/hajeen-platform/templates/deployment-api.yaml
+./helm/hajeen-platform/values.yaml
+./infra
+./infra/__init__.py
+./infra/docker
+./infra/docker/Dockerfile.api
+./infra/docker/Dockerfile.inference
+./infra/docker/Dockerfile.nginx
+./infra/docker/Dockerfile.scheduler
+./infra/docker/Dockerfile.training
+./infra/docker/Dockerfile.worker
+./infra/docker/base
+./infra/docker/base/Dockerfile.cuda-base
+./infra/docker/base/Dockerfile.python-base
+./infra/k8s
+./infra/k8s/api
+./infra/k8s/api/deployment.yaml
+./infra/k8s/api/service.yaml
+./infra/k8s/autoscaling
+./infra/k8s/autoscaling/hpa.yaml
+./infra/k8s/configmaps
+./infra/k8s/configmaps/app-config.yaml
+./infra/k8s/inference
+./infra/k8s/inference/gpu-deployment.yaml
+./infra/k8s/ingress
+./infra/k8s/ingress/ingress.yaml
+./infra/k8s/namespace.yaml
+./infra/k8s/storage
+./infra/k8s/storage/persistent-volumes.yaml
+./infra/k8s/workers
+./infra/k8s/workers/deployment.yaml
+./measure_learning_similarity.py
+./monitoring
+./monitoring/__init__.py
+./monitoring/__pycache__
+./monitoring/__pycache__/__init__.cpython-312.pyc
+./monitoring/__pycache__/task_monitor.cpython-312.pyc
+./monitoring/ai
+./monitoring/ai/__init__.py
+./monitoring/ai/evaluation_dashboard.py
+./monitoring/ai/gpu_monitor.py
+./monitoring/ai/hallucination_tracker.py
+./monitoring/ai/inference_metrics.py
+./monitoring/ai/latency_tracker.py
+./monitoring/ai/token_metrics.py
+./monitoring/ai_metrics
+./monitoring/ai_metrics/__init__.py
+./monitoring/ai_metrics/__pycache__
+./monitoring/ai_metrics/__pycache__/__init__.cpython-312.pyc
+./monitoring/ai_metrics/__pycache__/ai_metrics_collector.cpython-312.pyc
+./monitoring/ai_metrics/__pycache__/latency_tracker.cpython-312.pyc
+./monitoring/ai_metrics/__pycache__/provider_monitor.cpython-312.pyc
+./monitoring/ai_metrics/__pycache__/token_usage_tracker.cpython-312.pyc
+./monitoring/ai_metrics/ai_metrics_collector.py
+./monitoring/ai_metrics/latency_tracker.py
+./monitoring/ai_metrics/provider_monitor.py
+./monitoring/ai_metrics/token_usage_tracker.py
+./monitoring/alerts
+./monitoring/alerts/alertmanager.yml
+./monitoring/dashboard
+./monitoring/dashboard/__init__.py
+./monitoring/dashboard/streamlit_dashboard.py
+./monitoring/dashboards
+./monitoring/dashboards/api-dashboard.json
+./monitoring/grafana
+./monitoring/grafana/datasources.yaml
+./monitoring/health
+./monitoring/health/__init__.py
+./monitoring/health/health_checker.py
+./monitoring/loki
+./monitoring/loki/loki-config.yaml
+./monitoring/metrics
+./monitoring/metrics/__init__.py
+./monitoring/metrics/prometheus_metrics.py
+./monitoring/prometheus
+./monitoring/prometheus/prometheus.yml
+./monitoring/prometheus/rules
+./monitoring/prometheus/rules/api.yml
+./monitoring/prometheus/rules/infrastructure.yml
+./monitoring/search_metrics
+./monitoring/search_metrics/__init__.py
+./monitoring/search_metrics/latency_tracker.py
+./monitoring/search_metrics/metrics_collector.py
+./monitoring/search_metrics/retrieval_evaluator.py
+./monitoring/task_monitor.py
+./monitoring/tempo
+./monitoring/tempo/tempo-config.yaml
+./multi_tenant
+./multi_tenant/__init__.py
+./multi_tenant/billing_tracker.py
+./multi_tenant/isolation.py
+./multi_tenant/quota_manager.py
+./multi_tenant/tenant_config.py
+./multi_tenant/tenant_manager.py
+./multi_tenant/tenant_router.py
+./orchestration
+./orchestration/runtime
+./orchestration/runtime/__init__.py
+./orchestration/runtime/dynamic_executor.py
+./orchestration/runtime/intelligent_router.py
+./orchestration/runtime/runtime_decision_system.py
+./pyproject.toml
+./reports
+./reports/DEPENDENCY_INVENTORY.md
+./reports/FORENSIC_INVENTORY.md
+./reports/MODEL_FORENSIC_AUDIT.md
+./reports/TEST_CONTRACT_ISSUES.md
+./reports/TEST_FILE_INVENTORY.txt
+./reports/TEST_INVENTORY.md
+./reports/checkpoints
+./reports/checkpoints/RECOVERY_CHECKPOINT.md
+./reports/phase0_levels
+./reports/phase0_levels/FINAL_CHECKPOINT.log
+./reports/phase0_levels/LEVEL_0_COMPILE.log
+./reports/phase0_levels/LEVEL_10.log
+./reports/phase0_levels/LEVEL_11.log
+./reports/phase0_levels/LEVEL_12_FULL_REGRESSION.log
+./reports/phase0_levels/LEVEL_12_FULL_REGRESSION_CORRECTED.log
+./reports/phase0_levels/LEVEL_1_IMPORTS.log
+./reports/phase0_levels/LEVEL_2_UNIT.log
+./reports/phase0_levels/LEVEL_3_BRAIN.log
+./reports/phase0_levels/LEVEL_4.log
+./reports/phase0_levels/LEVEL_5.log
+./reports/phase0_levels/LEVEL_6.log
+./reports/phase0_levels/LEVEL_7.log
+./reports/phase0_levels/LEVEL_8.log
+./reports/phase0_levels/LEVEL_9.log
+./reports/recovery
+./reports/recovery/BRAIN_AUTHORITY_AUDIT.md
+./reports/recovery/BRAIN_MATRIX.md
+./reports/recovery/DEPENDENCY_MATRIX.md
+./reports/recovery/FINAL_CHECKPOINT.log
+./reports/recovery/FINAL_RECOVERY_REPORT.md
+./reports/recovery/FIXTURE_INVENTORY.md
+./reports/recovery/FORENSIC_INVENTORY.md
+./reports/recovery/HAJEEN_PROVIDER_FAIL_CLOSED.log
+./reports/recovery/NAMESPACE_AUDIT.md
+./reports/recovery/SYSTEM_RECOVERY_MATRIX.md
+./requirements
+./requirements-prod.txt
+./requirements.txt
+./requirements/__init__.py
+./requirements/api.txt
+./requirements/base.txt
+./requirements/dev.txt
+./requirements/gpu.txt
+./requirements/inference.txt
+./requirements/scheduler.txt
+./requirements/test.txt
+./requirements/training.txt
+./requirements/worker.txt
+./run.sh
+./scripts
+./scripts/__init__.py
+./scripts/data_collectors
+./scripts/data_collectors/__init__.py
+./scripts/data_collectors/arabic_corpus_collector.py
+./scripts/data_collectors/books_collector.py
+./scripts/data_collectors/github_code_collector.py
+./scripts/data_collectors/qa_collector.py
+./scripts/data_collectors/web_crawler.py
+./scripts/data_collectors/wikipedia_collector.py
+./scripts/deployment
+./scripts/deployment/retrain_v2.sh
+./scripts/deployment/setup_ollama.sh
+./scripts/evaluation
+./scripts/evaluation/__init__.py
+./scripts/evaluation/run_evaluation.py
+./scripts/expand_arabic_dataset.py
+./scripts/finetune_mistral.py
+./scripts/setup
+./scripts/setup/__init__.py
+./scripts/setup/create_storage_dirs.py
+./scripts/setup/init_database.py
+./scripts/start_platform.sh
+./scripts/sync_hf_data.py
+./scripts/sync_hf_model.py
+./scripts/training
+./scripts/training/__init__.py
+./scripts/training/run_training.py
+./security
+./security/__init__.py
+./security/api_keys
+./security/api_keys/__init__.py
+./security/api_keys/api_key_manager.py
+./security/audit
+./security/audit/__init__.py
+./security/audit/audit_logger.py
+./security/auth
+./security/auth/__init__.py
+./security/auth/api_key_manager.py
+./security/auth/jwt_auth.py
+./security/auth/revoked_tokens.py
+./security/config
+./security/config/__init__.py
+./security/config/secret_manager.py
+./security/encryption
+./security/encryption/__init__.py
+./security/encryption/encryptor.py
+./security/firewall
+./security/firewall/__init__.py
+./security/firewall/ip_filter.py
+./security/middleware
+./security/middleware/__init__.py
+./security/middleware/auth_middleware.py
+./security/middleware/security_middleware.py
+./security/permissions
+./security/permissions/__init__.py
+./security/permissions/rbac.py
+./security/rate_limit
+./security/rate_limit/__init__.py
+./security/rate_limit/rate_limiter.py
+./security/rbac
+./security/rbac/rbac.py
+./security/resource
+./security/resource/__init__.py
+./security/resource/resource_guard.py
+./services
+./services/__init__.py
+./services/__pycache__
+./services/__pycache__/__init__.cpython-312.pyc
+./services/__pycache__/agent_service.cpython-312.pyc
+./services/__pycache__/completion_service.cpython-312.pyc
+./services/__pycache__/embedding_service.cpython-312.pyc
+./services/__pycache__/inference_service.cpython-312.pyc
+./services/__pycache__/memory_service.cpython-312.pyc
+./services/__pycache__/moderation_service.cpython-312.pyc
+./services/__pycache__/rag_service.cpython-312.pyc
+./services/agent_frameworks
+./services/agent_frameworks/__pycache__
+./services/agent_frameworks/__pycache__/autogen_example.cpython-312.pyc
+./services/agent_frameworks/__pycache__/custom_orchestration_runtime.cpython-312.pyc
+./services/agent_frameworks/__pycache__/langgraph_example.cpython-312.pyc
+./services/agent_frameworks/autogen_example.py
+./services/agent_frameworks/custom_orchestration_runtime.py
+./services/agent_frameworks/langgraph_example.py
+./services/agent_service.py
+./services/agents
+./services/agents/__init__.py
+./services/agents/__pycache__
+./services/agents/__pycache__/__init__.cpython-312.pyc
+./services/agents/__pycache__/agent_orchestrator.cpython-312.pyc
+./services/agents/__pycache__/base_agent.cpython-312.pyc
+./services/agents/__pycache__/contracts.cpython-312.pyc
+./services/agents/__pycache__/execution_agent.cpython-312.pyc
+./services/agents/__pycache__/memory_agent.cpython-312.pyc
+./services/agents/__pycache__/planner_agent.cpython-312.pyc
+./services/agents/__pycache__/retrieval_agent.cpython-312.pyc
+./services/agents/__pycache__/tool_agent.cpython-312.pyc
+./services/agents/__pycache__/tool_runtime.cpython-312.pyc
+./services/agents/agent_orchestrator.py
+./services/agents/autonomous
+./services/agents/autonomous/__init__.py
+./services/agents/autonomous/__pycache__
+./services/agents/autonomous/autonomous_agent.py
+./services/agents/autonomous/recursive_planner.py
+./services/agents/autonomous/reflection_loop.py
+./services/agents/autonomous/task_executor.py
+./services/agents/base_agent.py
+./services/agents/contracts.py
+./services/agents/execution_agent.py
+./services/agents/memory_agent.py
+./services/agents/multi_agent
+./services/agents/multi_agent/__pycache__
+./services/agents/multi_agent/collaborative_layer.py
+./services/agents/multi_agent/messenger.py
+./services/agents/multi_agent/shared_memory.py
+./services/agents/planner_agent.py
+./services/agents/retrieval_agent.py
+./services/agents/tool_agent.py
+./services/agents/tool_runtime.py
+./services/alignment
+./services/alignment/__pycache__
+./services/alignment/__pycache__/dpo_pipeline.cpython-312.pyc
+./services/alignment/__pycache__/rlhf_infrastructure.cpython-312.pyc
+./services/alignment/dpo_pipeline.py
+./services/alignment/rlhf_infrastructure.py
+./services/chat
+./services/chat/__init__.py
+./services/chat/__pycache__
+./services/chat/__pycache__/__init__.cpython-312.pyc
+./services/chat/__pycache__/chat_service.cpython-312.pyc
+./services/chat/__pycache__/chat_session.cpython-312.pyc
+./services/chat/__pycache__/citation_injector.cpython-312.pyc
+./services/chat/__pycache__/moderation_layer.cpython-312.pyc
+./services/chat/__pycache__/response_postprocessor.cpython-312.pyc
+./services/chat/chat_service.py
+./services/chat/chat_session.py
+./services/chat/citation_injector.py
+./services/chat/moderation_layer.py
+./services/chat/response_postprocessor.py
+./services/completion_service.py
+./services/data_intelligence
+./services/data_intelligence/__pycache__
+./services/data_intelligence/__pycache__/components.cpython-312.pyc
+./services/data_intelligence/__pycache__/data_factory.cpython-312.pyc
+./services/data_intelligence/components.py
+./services/data_intelligence/data_factory.py
+./services/data_service
+./services/data_service/__init__.py
+./services/data_service/__pycache__
+./services/data_service/__pycache__/__init__.cpython-312.pyc
+./services/data_service/__pycache__/conversation_builder.cpython-312.pyc
+./services/data_service/__pycache__/dataset_builder.cpython-312.pyc
+./services/data_service/__pycache__/dataset_cleaner.cpython-312.pyc
+./services/data_service/__pycache__/dataset_exporter.cpython-312.pyc
+./services/data_service/__pycache__/dataset_formatter.cpython-312.pyc
+./services/data_service/__pycache__/dataset_versioner.cpython-312.pyc
+./services/data_service/__pycache__/instruction_builder.cpython-312.pyc
+./services/data_service/conversation_builder.py
+./services/data_service/dataset_builder.py
+./services/data_service/dataset_cleaner.py
+./services/data_service/dataset_exporter.py
+./services/data_service/dataset_formatter.py
+./services/data_service/dataset_versioner.py
+./services/data_service/instruction_builder.py
+./services/distributed_inference
+./services/distributed_inference/__pycache__
+./services/distributed_inference/__pycache__/ray_serve_deployment.cpython-312.pyc
+./services/distributed_inference/ray_serve_deployment.py
+./services/distributed_messaging
+./services/distributed_messaging/__pycache__
+./services/distributed_messaging/__pycache__/celery_config.cpython-312.pyc
+./services/distributed_messaging/__pycache__/kafka_integration.cpython-312.pyc
+./services/distributed_messaging/__pycache__/redis_streams_integration.cpython-312.pyc
+./services/distributed_messaging/celery_config.py
+./services/distributed_messaging/kafka_integration.py
+./services/distributed_messaging/redis_streams_integration.py
+./services/embedding_service.py
+./services/evaluation
+./services/evaluation/__pycache__
+./services/evaluation/__pycache__/evaluation_engine.cpython-312.pyc
+./services/evaluation/__pycache__/metrics.cpython-312.pyc
+./services/evaluation/evaluation_engine.py
+./services/evaluation/metrics.py
+./services/inference_service.py
+./services/memory
+./services/memory/__init__.py
+./services/memory/__pycache__
+./services/memory/__pycache__/__init__.cpython-312.pyc
+./services/memory/__pycache__/context_window_manager.cpython-312.pyc
+./services/memory/__pycache__/conversation_memory.cpython-312.pyc
+./services/memory/__pycache__/session_manager.cpython-312.pyc
+./services/memory/__pycache__/summarization_memory.cpython-312.pyc
+./services/memory/__pycache__/vector_memory.cpython-312.pyc
+./services/memory/context_window_manager.py
+./services/memory/conversation_memory.py
+./services/memory/session_manager.py
+./services/memory/summarization_memory.py
+./services/memory/vector_memory.py
+./services/memory_service.py
+./services/moderation_service.py
+./services/production
+./services/production/__pycache__
+./services/production/__pycache__/production_manager.cpython-312.pyc
+./services/production/production_manager.py
+./services/prompts
+./services/prompts/__init__.py
+./services/prompts/__pycache__
+./services/prompts/__pycache__/__init__.cpython-312.pyc
+./services/prompts/__pycache__/context_injector.cpython-312.pyc
+./services/prompts/__pycache__/prompt_builder.cpython-312.pyc
+./services/prompts/__pycache__/prompt_validator.cpython-312.pyc
+./services/prompts/__pycache__/system_prompt_manager.cpython-312.pyc
+./services/prompts/__pycache__/template_engine.cpython-312.pyc
+./services/prompts/context_injector.py
+./services/prompts/prompt_builder.py
+./services/prompts/prompt_validator.py
+./services/prompts/system_prompt_manager.py
+./services/prompts/template_engine.py
+./services/rag
+./services/rag/__init__.py
+./services/rag/__pycache__
+./services/rag/__pycache__/__init__.cpython-312.pyc
+./services/rag/__pycache__/citation_builder.cpython-312.pyc
+./services/rag/__pycache__/citation_manager.cpython-312.pyc
+./services/rag/__pycache__/context_assembler.cpython-312.pyc
+./services/rag/__pycache__/context_builder.cpython-312.pyc
+./services/rag/__pycache__/hybrid_search.cpython-312.pyc
+./services/rag/__pycache__/mmr_retriever.cpython-312.pyc
+./services/rag/__pycache__/prompt_builder.cpython-312.pyc
+./services/rag/__pycache__/rag_pipeline.cpython-312.pyc
+./services/rag/__pycache__/reranker.cpython-312.pyc
+./services/rag/__pycache__/response_formatter.cpython-312.pyc
+./services/rag/__pycache__/retriever.cpython-312.pyc
+./services/rag/citation_builder.py
+./services/rag/citation_manager.py
+./services/rag/context_assembler.py
+./services/rag/context_builder.py
+./services/rag/hybrid_search.py
+./services/rag/mmr_retriever.py
+./services/rag/prompt_builder.py
+./services/rag/rag_pipeline.py
+./services/rag/reranker.py
+./services/rag/response_formatter.py
+./services/rag/retriever.py
+./services/rag_service.py
+./services/redis
+./services/redis/__init__.py
+./services/redis/__pycache__
+./services/redis/__pycache__/__init__.cpython-312.pyc
+./services/redis/__pycache__/redis_service.cpython-312.pyc
+./services/redis/redis_service.py
+./services/retrieval
+./services/retrieval/__init__.py
+./services/retrieval/__pycache__
+./services/retrieval/__pycache__/__init__.cpython-312.pyc
+./services/retrieval/__pycache__/base_retriever.cpython-312.pyc
+./services/retrieval/__pycache__/context_assembler.cpython-312.pyc
+./services/retrieval/__pycache__/hybrid_retriever.cpython-312.pyc
+./services/retrieval/__pycache__/multi_query_retriever.cpython-312.pyc
+./services/retrieval/__pycache__/vector_retriever.cpython-312.pyc
+./services/retrieval/base_retriever.py
+./services/retrieval/context_assembler.py
+./services/retrieval/hybrid_retriever.py
+./services/retrieval/multi_query_retriever.py
+./services/retrieval/vector_retriever.py
+./services/search
+./services/search/__init__.py
+./services/search/__pycache__
+./services/search/__pycache__/__init__.cpython-312.pyc
+./services/search/__pycache__/query_processor.cpython-312.pyc
+./services/search/__pycache__/reranker.cpython-312.pyc
+./services/search/__pycache__/search_response.cpython-312.pyc
+./services/search/__pycache__/semantic_search.cpython-312.pyc
+./services/search/query_processor.py
+./services/search/reranker.py
+./services/search/search_response.py
+./services/search/semantic_search.py
+./services/security
+./services/security/__pycache__
+./services/security/__pycache__/policy_engine.cpython-312.pyc
+./services/security/policy_engine.py
+./services/self_evolution
+./services/self_evolution/__init__.py
+./services/self_evolution/__pycache__
+./services/self_evolution/__pycache__/__init__.cpython-312.pyc
+./services/self_evolution/__pycache__/continuous_learning_loop.cpython-312.pyc
+./services/self_evolution/__pycache__/curiosity_engine.cpython-312.pyc
+./services/self_evolution/__pycache__/episodic_memory.cpython-312.pyc
+./services/self_evolution/__pycache__/self_reflection_engine.cpython-312.pyc
+./services/self_evolution/continuous_learning_loop.py
+./services/self_evolution/curiosity_engine.py
+./services/self_evolution/episodic_memory.py
+./services/self_evolution/self_reflection_engine.py
+./shared
+./shared/__init__.py
+./shared/database.py
+./shared/exceptions.py
+./shared/logging
+./shared/logging/__init__.py
+./shared/logging/structured_logger.py
+./shared/schemas
+./shared/schemas/__init__.py
+./shared/schemas/article.py
+./shared/schemas/channel.py
+./shared/schemas/pipeline.py
+./shared/schemas/unified_article.py
+./shared/utils
+./shared/utils/__init__.py
+./shared/utils/datetime_utils.py
+./shared/utils/id_generator.py
+./shared/utils/text_utils.py
+./shared/utils/validators.py
+./storage
+./storage/__init__.py
+./storage/distributed
+./storage/distributed/__init__.py
+./storage/distributed/backup_manager.py
+./storage/distributed/consistency_manager.py
+./storage/distributed/disaster_recovery.py
+./storage/distributed/distributed_cache.py
+./storage/distributed/replication.py
+./storage/distributed/shard_manager.py
+./storage_data
+./storage_data/brain
+./storage_data/brain/long_memory
+./storage_data/brain/model_performance
+./tests
+./tests/__init__.py
+./tests/__pycache__
+./tests/__pycache__/__init__.cpython-312.pyc
+./tests/__pycache__/conftest.cpython-312-pytest-8.4.2.pyc
+./tests/__pycache__/conftest.cpython-312.pyc
+./tests/__pycache__/integration_test.cpython-312.pyc
+./tests/__pycache__/test_api.cpython-312.pyc
+./tests/__pycache__/test_basic.cpython-312.pyc
+./tests/__pycache__/test_dataset_manager.cpython-312.pyc
+./tests/__pycache__/test_final_integration.cpython-312.pyc
+./tests/__pycache__/test_health.cpython-312.pyc
+./tests/__pycache__/test_phase65.cpython-312.pyc
+./tests/__pycache__/test_phase6_celery.cpython-312.pyc
+./tests/__pycache__/test_phase6_monitor.cpython-312.pyc
+./tests/__pycache__/test_phase6_priority_queue.cpython-312.pyc
+./tests/__pycache__/test_phase6_redis.cpython-312.pyc
+./tests/__pycache__/test_phase6_retry.cpython-312.pyc
+./tests/__pycache__/test_phase6_scheduler.cpython-312.pyc
+./tests/__pycache__/test_phase7.cpython-312.pyc
+./tests/__pycache__/test_phase8.cpython-312-pytest-8.4.2.pyc
+./tests/__pycache__/test_phase8.cpython-312.pyc
+./tests/__pycache__/test_preparation_pipeline.cpython-312.pyc
+./tests/__pycache__/test_single_runtime_path.cpython-312.pyc
+./tests/__pycache__/test_worker.cpython-312.pyc
+./tests/ai
+./tests/ai/__init__.py
+./tests/ai/__pycache__
+./tests/ai/__pycache__/__init__.cpython-312.pyc
+./tests/ai/__pycache__/test_agents.cpython-312.pyc
+./tests/ai/__pycache__/test_alignment.cpython-312.pyc
+./tests/ai/__pycache__/test_chat.cpython-312.pyc
+./tests/ai/__pycache__/test_data_intelligence.cpython-312.pyc
+./tests/ai/__pycache__/test_embeddings.cpython-312.pyc
+./tests/ai/__pycache__/test_evaluation.cpython-312.pyc
+./tests/ai/__pycache__/test_inference.cpython-312.pyc
+./tests/ai/__pycache__/test_multi_agent.cpython-312.pyc
+./tests/ai/__pycache__/test_production.cpython-312.pyc
+./tests/ai/__pycache__/test_rag.cpython-312.pyc
+./tests/ai/__pycache__/test_security.cpython-312.pyc
+./tests/ai/__pycache__/test_training.cpython-312.pyc
+./tests/ai/test_agents.py
+./tests/ai/test_alignment.py
+./tests/ai/test_chat.py
+./tests/ai/test_data_intelligence.py
+./tests/ai/test_embeddings.py
+./tests/ai/test_evaluation.py
+./tests/ai/test_inference.py
+./tests/ai/test_multi_agent.py
+./tests/ai/test_production.py
+./tests/ai/test_rag.py
+./tests/ai/test_security.py
+./tests/ai/test_training.py
+./tests/benchmark
+./tests/benchmark/__init__.py
+./tests/benchmark/__pycache__
+./tests/benchmark/__pycache__/__init__.cpython-312.pyc
+./tests/benchmark/__pycache__/test_components_benchmark.cpython-312.pyc
+./tests/benchmark/test_components_benchmark.py
+./tests/conftest.py
+./tests/distributed_messaging
+./tests/distributed_messaging/__pycache__
+./tests/distributed_messaging/__pycache__/test_celery.cpython-312.pyc
+./tests/distributed_messaging/__pycache__/test_kafka.cpython-312.pyc
+./tests/distributed_messaging/__pycache__/test_redis_streams.cpython-312.pyc
+./tests/distributed_messaging/test_celery.py
+./tests/distributed_messaging/test_kafka.py
+./tests/distributed_messaging/test_redis_streams.py
+./tests/fixtures
+./tests/fixtures/sample_robots.txt
+./tests/fixtures/sample_rss.xml
+./tests/fixtures/sample_rss_en.xml
+./tests/fixtures/sample_sitemap.xml
+./tests/fixtures/sample_sitemap_index.xml
+./tests/integration
+./tests/integration/__init__.py
+./tests/integration/__pycache__
+./tests/integration/__pycache__/__init__.cpython-312.pyc
+./tests/integration/__pycache__/test_api_workflow.cpython-312.pyc
+./tests/integration/__pycache__/test_brain_v3_cognitive.cpython-312.pyc
+./tests/integration/__pycache__/test_full_pipeline.cpython-312.pyc
+./tests/integration/__pycache__/test_full_processing_pipeline.cpython-312.pyc
+./tests/integration/__pycache__/test_learning_pipeline_integration.cpython-312.pyc
+./tests/integration/__pycache__/test_monitoring.cpython-312.pyc
+./tests/integration/__pycache__/test_phase2_runtime_contract.cpython-312-pytest-8.4.2.pyc
+./tests/integration/__pycache__/test_phase2_runtime_contract.cpython-312.pyc
+./tests/integration/__pycache__/test_phase3_rag_runtime.cpython-312-pytest-8.4.2.pyc
+./tests/integration/__pycache__/test_phase3_rag_runtime.cpython-312.pyc
+./tests/integration/__pycache__/test_phase4_native_streaming.cpython-312-pytest-8.4.2.pyc
+./tests/integration/__pycache__/test_phase4_native_streaming.cpython-312.pyc
+./tests/integration/__pycache__/test_phase5_agents_tools.cpython-312-pytest-8.4.2.pyc
+./tests/integration/__pycache__/test_phase5_agents_tools.cpython-312.pyc
+./tests/integration/__pycache__/test_pipeline.cpython-312.pyc
+./tests/integration/__pycache__/test_rag_pipeline.cpython-312.pyc
+./tests/integration/__pycache__/test_security.cpython-312.pyc
+./tests/integration/__pycache__/test_storage_persistence.cpython-312.pyc
+./tests/integration/test_api_workflow.py
+./tests/integration/test_brain_v3_cognitive.py
+./tests/integration/test_full_pipeline.py
+./tests/integration/test_full_processing_pipeline.py
+./tests/integration/test_learning_pipeline_integration.py
+./tests/integration/test_monitoring.py
+./tests/integration/test_phase2_runtime_contract.py
+./tests/integration/test_phase3_rag_runtime.py
+./tests/integration/test_phase4_native_streaming.py
+./tests/integration/test_phase5_agents_tools.py
+./tests/integration/test_pipeline.py
+./tests/integration/test_rag_pipeline.py
+./tests/integration/test_security.py
+./tests/integration/test_storage_persistence.py
+./tests/integration_test.py
+./tests/load
+./tests/load/__init__.py
+./tests/load/__pycache__
+./tests/load/__pycache__/__init__.cpython-312.pyc
+./tests/load/__pycache__/test_brain_load.cpython-312.pyc
+./tests/load/test_brain_load.py
+./tests/production
+./tests/production/__init__.py
+./tests/production/__pycache__
+./tests/production/__pycache__/__init__.cpython-312.pyc
+./tests/production/failover
+./tests/production/failover/__init__.py
+./tests/production/failover/__pycache__
+./tests/production/failover/test_failover.py
+./tests/production/gpu
+./tests/production/gpu/__init__.py
+./tests/production/gpu/__pycache__
+./tests/production/gpu/test_gpu.py
+./tests/production/load
+./tests/production/load/__init__.py
+./tests/production/load/__pycache__
+./tests/production/load/test_api_load.py
+./tests/production/security
+./tests/production/security/__init__.py
+./tests/production/security/__pycache__
+./tests/production/security/test_security.py
+./tests/production/stress
+./tests/production/stress/__init__.py
+./tests/production/stress/__pycache__
+./tests/production/stress/test_stress.py
+./tests/self_evolution
+./tests/self_evolution/__pycache__
+./tests/self_evolution/__pycache__/test_continuous_learning_loop.cpython-312.pyc
+./tests/self_evolution/__pycache__/test_curiosity_engine.cpython-312.pyc
+./tests/self_evolution/__pycache__/test_episodic_memory.cpython-312.pyc
+./tests/self_evolution/__pycache__/test_self_reflection_engine.cpython-312.pyc
+./tests/self_evolution/test_continuous_learning_loop.py
+./tests/self_evolution/test_curiosity_engine.py
+./tests/self_evolution/test_episodic_memory.py
+./tests/self_evolution/test_self_reflection_engine.py
+./tests/stress
+./tests/stress/__init__.py
+./tests/stress/__pycache__
+./tests/stress/__pycache__/__init__.cpython-312.pyc
+./tests/stress/__pycache__/test_brain_stress.cpython-312.pyc
+./tests/stress/test_brain_stress.py
+./tests/test_api.py
+./tests/test_basic.py
+./tests/test_dataset_manager.py
+./tests/test_evaluation_report.json
+./tests/test_final_integration.py
+./tests/test_health.py
+./tests/test_phase65.py
+./tests/test_phase6_celery.py
+./tests/test_phase6_monitor.py
+./tests/test_phase6_priority_queue.py
+./tests/test_phase6_redis.py
+./tests/test_phase6_retry.py
+./tests/test_phase6_scheduler.py
+./tests/test_phase7.py
+./tests/test_phase8.py
+./tests/test_preparation_pipeline.py
+./tests/test_single_runtime_path.py
+./tests/test_worker.py
+./tests/unit
+./tests/unit/__init__.py
+./tests/unit/__pycache__
+./tests/unit/__pycache__/__init__.cpython-312.pyc
+./tests/unit/__pycache__/test_article_schema_phase2.cpython-312.pyc
+./tests/unit/__pycache__/test_base_connector.cpython-312.pyc
+./tests/unit/__pycache__/test_base_processor.cpython-312.pyc
+./tests/unit/__pycache__/test_builder.cpython-312.pyc
+./tests/unit/__pycache__/test_channels.cpython-312.pyc
+./tests/unit/__pycache__/test_chunker.cpython-312.pyc
+./tests/unit/__pycache__/test_cleaning_pipeline.cpython-312.pyc
+./tests/unit/__pycache__/test_cli.cpython-312.pyc
+./tests/unit/__pycache__/test_cognitive_layer_complete.cpython-312.pyc
+./tests/unit/__pycache__/test_content_enricher.cpython-312.pyc
+./tests/unit/__pycache__/test_content_filter.cpython-312.pyc
+./tests/unit/__pycache__/test_continuous_learning_pipeline.cpython-312.pyc
+./tests/unit/__pycache__/test_custom_connector.cpython-312.pyc
+./tests/unit/__pycache__/test_data_transformer.cpython-312.pyc
+./tests/unit/__pycache__/test_deduplicator.cpython-312.pyc
+./tests/unit/__pycache__/test_demo_channel.cpython-312.pyc
+./tests/unit/__pycache__/test_demo_storage_integration.cpython-312.pyc
+./tests/unit/__pycache__/test_entity_extractor.cpython-312.pyc
+./tests/unit/__pycache__/test_github_connector.cpython-312.pyc
+./tests/unit/__pycache__/test_html_cleaner.cpython-312.pyc
+./tests/unit/__pycache__/test_ingestion_http.cpython-312.pyc
+./tests/unit/__pycache__/test_keyword_extractor.cpython-312.pyc
+./tests/unit/__pycache__/test_language_filter.cpython-312.pyc
+./tests/unit/__pycache__/test_memory_unification_runtime.cpython-312.pyc
+./tests/unit/__pycache__/test_news_channel.cpython-312.pyc
+./tests/unit/__pycache__/test_newsapi_connector.cpython-312.pyc
+./tests/unit/__pycache__/test_phase1_runtime_contract.cpython-312.pyc
+./tests/unit/__pycache__/test_phase3_channels.cpython-312.pyc
+./tests/unit/__pycache__/test_phase3_connectors.cpython-312.pyc
+./tests/unit/__pycache__/test_phase3_crawlers.cpython-312.pyc
+./tests/unit/__pycache__/test_phase3_scheduler.cpython-312.pyc
+./tests/unit/__pycache__/test_phase3_streams.cpython-312.pyc
+./tests/unit/__pycache__/test_phase4_embeddings.cpython-312.pyc
+./tests/unit/__pycache__/test_phase4_retrieval.cpython-312.pyc
+./tests/unit/__pycache__/test_phase4_vector_store.cpython-312.pyc
+./tests/unit/__pycache__/test_phase5_ai_core.cpython-312.pyc
+./tests/unit/__pycache__/test_pii_filter.cpython-312.pyc
+./tests/unit/__pycache__/test_pipeline_orchestrator.cpython-312.pyc
+./tests/unit/__pycache__/test_pipeline_stages.cpython-312.pyc
+./tests/unit/__pycache__/test_policy_filter.cpython-312.pyc
+./tests/unit/__pycache__/test_quality_scorer.cpython-312.pyc
+./tests/unit/__pycache__/test_reasoning_engine.cpython-312.pyc
+./tests/unit/__pycache__/test_reddit_connector.cpython-312.pyc
+./tests/unit/__pycache__/test_registry.cpython-312.pyc
+./tests/unit/__pycache__/test_requests_fetcher.cpython-312.pyc
+./tests/unit/__pycache__/test_robots_checker.cpython-312.pyc
+./tests/unit/__pycache__/test_rss_parser.cpython-312.pyc
+./tests/unit/__pycache__/test_schemas.cpython-312.pyc
+./tests/unit/__pycache__/test_sitemap_parser.cpython-312.pyc
+./tests/unit/__pycache__/test_spam_detector.cpython-312.pyc
+./tests/unit/__pycache__/test_storage_phase3.cpython-312.pyc
+./tests/unit/__pycache__/test_storage_phase3_part2.cpython-312.pyc
+./tests/unit/__pycache__/test_summarizer.cpython-312.pyc
+./tests/unit/__pycache__/test_text_cleaner.cpython-312.pyc
+./tests/unit/__pycache__/test_text_normalizer.cpython-312.pyc
+./tests/unit/__pycache__/test_tokenizer_wrapper.cpython-312.pyc
+./tests/unit/__pycache__/test_topic_sentiment.cpython-312.pyc
+./tests/unit/__pycache__/test_transformation_pipeline.cpython-312.pyc
+./tests/unit/__pycache__/test_utils.cpython-312.pyc
+./tests/unit/test_article_schema_phase2.py
+./tests/unit/test_base_connector.py
+./tests/unit/test_base_processor.py
+./tests/unit/test_builder.py
+./tests/unit/test_channels.py
+./tests/unit/test_chunker.py
+./tests/unit/test_cleaning_pipeline.py
+./tests/unit/test_cli.py
+./tests/unit/test_cognitive_layer_complete.py
+./tests/unit/test_content_enricher.py
+./tests/unit/test_content_filter.py
+./tests/unit/test_continuous_learning_pipeline.py
+./tests/unit/test_custom_connector.py
+./tests/unit/test_data_transformer.py
+./tests/unit/test_deduplicator.py
+./tests/unit/test_demo_channel.py
+./tests/unit/test_demo_storage_integration.py
+./tests/unit/test_entity_extractor.py
+./tests/unit/test_github_connector.py
+./tests/unit/test_html_cleaner.py
+./tests/unit/test_ingestion_http.py
+./tests/unit/test_keyword_extractor.py
+./tests/unit/test_language_filter.py
+./tests/unit/test_memory_unification_runtime.py
+./tests/unit/test_news_channel.py
+./tests/unit/test_newsapi_connector.py
+./tests/unit/test_phase1_runtime_contract.py
+./tests/unit/test_phase3_channels.py
+./tests/unit/test_phase3_connectors.py
+./tests/unit/test_phase3_crawlers.py
+./tests/unit/test_phase3_scheduler.py
+./tests/unit/test_phase3_streams.py
+./tests/unit/test_phase4_embeddings.py
+./tests/unit/test_phase4_retrieval.py
+./tests/unit/test_phase4_vector_store.py
+./tests/unit/test_phase5_ai_core.py
+./tests/unit/test_pii_filter.py
+./tests/unit/test_pipeline_orchestrator.py
+./tests/unit/test_pipeline_stages.py
+./tests/unit/test_policy_filter.py
+./tests/unit/test_quality_scorer.py
+./tests/unit/test_reasoning_engine.py
+./tests/unit/test_reddit_connector.py
+./tests/unit/test_registry.py
+./tests/unit/test_requests_fetcher.py
+./tests/unit/test_robots_checker.py
+./tests/unit/test_rss_parser.py
+./tests/unit/test_schemas.py
+./tests/unit/test_sitemap_parser.py
+./tests/unit/test_spam_detector.py
+./tests/unit/test_storage_phase3.py
+./tests/unit/test_storage_phase3_part2.py
+./tests/unit/test_summarizer.py
+./tests/unit/test_text_cleaner.py
+./tests/unit/test_text_normalizer.py
+./tests/unit/test_tokenizer_wrapper.py
+./tests/unit/test_topic_sentiment.py
+./tests/unit/test_transformation_pipeline.py
+./tests/unit/test_utils.py
+./train_hajeen_cloud.py
+./train_rlhf_ppo.py
+./workers
+./workers/__init__.py
+./workers/async_tasks.py
+./workers/backpressure.py
+./workers/celery_app.py
+./workers/celery_config.py
+./workers/distributed
+./workers/distributed/__init__.py
+./workers/distributed/cpu_worker.py
+./workers/distributed/distributed_executor.py
+./workers/distributed/gpu_worker.py
+./workers/distributed/queue_router.py
+./workers/distributed/scheduler_manager.py
+./workers/distributed/worker_monitor.py
+./workers/embedding_tasks.py
+./workers/failure_handler.py
+./workers/priority_queue.py
+./workers/retry_manager.py
+./workers/tasks
+./workers/tasks/__init__.py
+./workers/tasks/inference_tasks.py
+./workers/tasks/ingestion_tasks.py
+./workers/tasks/pipeline_tasks.py
+./workers/tasks/processing_tasks.py
+./workers/tasks/test_task.py
+--- REFERENCES ---
+./.gitignore:15:reports/checkpoints/
+./api/main.py:289:            chunk_id=f"chunk_{a.get('id', i)}_0",
+./api/v1/ai/chat.py:194:    الضمان: كل chunk يمر عبر Brain.stream() — لا يوجد مسار مباشر للـ LLM.
+./api/v1/ai/chat.py:220:            async for chunk in brain.stream(brain_req):
+./api/v1/ai/chat.py:221:                if not isinstance(chunk, LLMStreamChunk):
+./api/v1/ai/chat.py:222:                    raise RuntimeError("Brain returned a non-native stream chunk")
+./api/v1/ai/chat.py:223:                if chunk.event_type == "start":
+./api/v1/ai/chat.py:224:                    payload = {"event": "start", "id": brain_req.request_id, "model": chunk.model}
+./api/v1/ai/chat.py:225:                elif chunk.event_type == "finish" or chunk.finish_reason:
+./api/v1/ai/chat.py:228:                        "choices": [{"delta": {}, "finish_reason": chunk.finish_reason or "stop"}],
+./api/v1/ai/chat.py:229:                        "metadata": chunk.metadata,
+./api/v1/ai/chat.py:232:                elif chunk.event_type == "delta":
+./api/v1/ai/chat.py:235:                        "choices": [{"delta": {"content": chunk.delta}, "finish_reason": None}],
+./api/v1/ai/chat.py:236:                        "index": chunk.sequence,
+./api/v1/ai/chat.py:239:                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+./api/v1/ai/completion.py:126:            async for chunk in brain.stream(brain_request):
+./api/v1/ai/completion.py:127:                if not isinstance(chunk, LLMStreamChunk):
+./api/v1/ai/completion.py:128:                    raise RuntimeError("Brain returned a non-native stream chunk")
+./api/v1/ai/completion.py:129:                if chunk.event_type == "start":
+./api/v1/ai/completion.py:130:                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+./api/v1/ai/completion.py:131:                elif chunk.event_type == "finish" or chunk.finish_reason:
+./api/v1/ai/completion.py:132:                    payload = {"event": "finish", "choices": [{"delta": {}, "finish_reason": chunk.finish_reason or "stop"}], "metadata": chunk.metadata}
+./api/v1/ai/completion.py:134:                elif chunk.event_type == "delta":
+./api/v1/ai/completion.py:135:                    payload = {"event": "delta", "choices": [{"delta": {"content": chunk.delta}, "finish_reason": None}], "index": chunk.sequence}
+./api/v1/ai/completion.py:137:                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+./api/v1/ai/models.py:9:from core.model.model_registry import ModelRegistry
+./api/v1/ai/models.py:12:_registry = ModelRegistry()
+./api/v1/ai/router.py:22:from hajeen_model.evaluation.evaluation_framework import EvaluationFramework
+./api/v1/ai/router.py:170:            async for chunk in brain.stream(brain_request):
+./api/v1/ai/router.py:171:                if not isinstance(chunk, LLMStreamChunk):
+./api/v1/ai/router.py:172:                    raise RuntimeError("Brain returned an invalid native stream chunk")
+./api/v1/ai/router.py:173:                if chunk.event_type == "start":
+./api/v1/ai/router.py:174:                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+./api/v1/ai/router.py:175:                elif chunk.event_type == "delta":
+./api/v1/ai/router.py:176:                    payload = {"event": "delta", "choices": [{"delta": {"content": chunk.delta}, "index": chunk.sequence}]}
+./api/v1/ai/router.py:177:                elif chunk.event_type == "finish" or chunk.finish_reason:
+./api/v1/ai/router.py:178:                    payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+./api/v1/ai/router.py:181:                    raise RuntimeError(f"Unsupported native stream event: {chunk.event_type}")
+./api/v1/ai/router.py:324:    eval_framework = EvaluationFramework()
+./api/v1/ai/websocket.py:149:                        "chunks": index,
+./api/v1/hajeen_model_router.py:18:  POST /api/v1/model/training/build-dataset — بناء dataset
+./api/v1/hajeen_model_router.py:64:class DatasetBuildRequest(BaseModel):
+./api/v1/hajeen_model_router.py:218:    الضمان: كل chunk يمر عبر Brain — لا LLM مباشر.
+./api/v1/hajeen_model_router.py:245:            async for chunk in brain.stream(brain_request):
+./api/v1/hajeen_model_router.py:246:                if not isinstance(chunk, LLMStreamChunk):
+./api/v1/hajeen_model_router.py:247:                    raise RuntimeError("Brain returned a non-native stream chunk")
+./api/v1/hajeen_model_router.py:248:                if chunk.event_type == "start":
+./api/v1/hajeen_model_router.py:249:                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+./api/v1/hajeen_model_router.py:250:                elif chunk.event_type == "finish" or chunk.finish_reason:
+./api/v1/hajeen_model_router.py:251:                    payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+./api/v1/hajeen_model_router.py:253:                elif chunk.event_type == "delta":
+./api/v1/hajeen_model_router.py:254:                    payload = {"event": "delta", "content": chunk.delta, "index": chunk.sequence}
+./api/v1/hajeen_model_router.py:256:                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+./api/v1/hajeen_model_router.py:305:    checkpoints = list(Path("hajeen_model/checkpoints").glob("*.bin")) if Path("hajeen_model/checkpoints").exists() else []
+./api/v1/hajeen_model_router.py:308:        "checkpoints": len(checkpoints),
+./api/v1/hajeen_model_router.py:314:@router.post("/training/build-dataset")
+./api/v1/hajeen_model_router.py:315:async def build_dataset(req: DatasetBuildRequest):
+./api/v1/hajeen_model_router.py:316:    """بناء dataset للتدريب."""
+./api/v1/hajeen_model_router.py:318:        from hajeen_model.training_pipeline import DatasetBuilder
+./api/v1/hajeen_model_router.py:319:        builder = DatasetBuilder()
+./api/v1/hajeen_model_router.py:327:        return {"ok": False, "error": str(e), "note": "Dataset builder غير متاح في البيئة الحالية"}
+./api/v1/hajeen_model_router.py:334:        from hajeen_model.training_pipeline import TrainingConfig, TrainingPipeline
+./api/v1/hajeen_model_router.py:341:        pipeline = TrainingPipeline(config)
+./api/v1/hajeen_model_router.py:364:@router.get("/training/checkpoints")
+./api/v1/hajeen_model_router.py:365:async def list_checkpoints():
+./api/v1/hajeen_model_router.py:371:            "checkpoints": manager.list_checkpoints(),
+./api/v1/hajeen_model_router.py:372:            "best": manager.get_best_checkpoint(),
+./api/v1/hajeen_model_router.py:375:        return {"checkpoints": [], "best": None, "error": str(e)}
+./api/v1/search/router.py:35:    chunk_id: str
+./brain/api/brain_router.py:68:    quality_score: float = Field(default=0.9, ge=0.0, le=1.0)
+./brain/api/brain_router.py:140:            async for chunk in brain.stream(brain_req):
+./brain/api/brain_router.py:141:                if not isinstance(chunk, LLMStreamChunk):
+./brain/api/brain_router.py:142:                    raise RuntimeError("Brain returned a non-native stream chunk")
+./brain/api/brain_router.py:143:                if chunk.event_type == "start":
+./brain/api/brain_router.py:144:                    payload = {"event": "start", "session_id": req.session_id, "model": chunk.model}
+./brain/api/brain_router.py:145:                elif chunk.event_type == "finish" or chunk.finish_reason:
+./brain/api/brain_router.py:146:                    payload = {"event": "finish", "session_id": req.session_id, "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+./brain/api/brain_router.py:148:                elif chunk.event_type == "delta":
+./brain/api/brain_router.py:149:                    payload = {"event": "delta", "content": chunk.delta, "index": chunk.sequence, "session_id": req.session_id}
+./brain/api/brain_router.py:151:                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+./brain/api/brain_router.py:279:            "quality_score": knowledge.solution_quality,
+./brain/brain_v3.py:137:    quality_score: float
+./brain/brain_v3.py:151:            "quality_score": round(self.quality_score, 3),
+./brain/brain_v3.py:250:        # ── 2. Policy Evaluation ────────────────────────────────────────
+./brain/brain_v3.py:296:                quality_score=1.0,
+./brain/brain_v3.py:482:                async for chunk in self.model_router.stream(
+./brain/brain_v3.py:490:                    pieces.append(chunk.delta)
+./brain/brain_v3.py:491:                    await queue.put(chunk)
+./brain/brain_v3.py:562:            quality_score=0.9,
+./brain/brain_v3.py:569:        """Run the normal Brain pipeline and expose provider-native chunks."""
+./brain/cognitive_layer/cognitive_compiler.py:60:    # Error and Evaluation
+./brain/cognitive_layer/cognitive_dna.py:4:Each concept possesses a cognitive DNA that tracks its origin, quality, stability,
+./brain/cognitive_layer/cognitive_dna.py:23:    origin, quality, and evolutionary history.
+./brain/cognitive_layer/cognitive_dna.py:31:    source_quality: float = 0.5  # 0.0 to 1.0
+./brain/cognitive_layer/cognitive_dna.py:58:    def add_source(self, source: str, quality: float = 0.7) -> None:
+./brain/cognitive_layer/cognitive_dna.py:64:            # Update source quality
+./brain/cognitive_layer/cognitive_dna.py:66:                self.source_quality = (self.source_quality * (self.num_sources - 1) + quality) / self.num_sources
+./brain/cognitive_layer/cognitive_dna.py:145:    quality, stability, and evolutionary history.
+./brain/cognitive_layer/cognitive_dna.py:173:                quality = source_info.get('quality', 0.7)
+./brain/cognitive_layer/cognitive_dna.py:174:                dna.add_source(source_info['source'], quality)
+./brain/cognitive_layer/cognitive_dna.py:228:            'source_quality', 'num_sources'
+./brain/cognitive_layer/cognitive_dna.py:240:    def add_source_to_dna(self, dna_id: str, source: str, quality: float = 0.7) -> bool:
+./brain/cognitive_layer/cognitive_dna.py:247:            quality: The quality of the source (0.0 to 1.0)
+./brain/cognitive_layer/cognitive_dna.py:256:        dna.add_source(source, quality)
+./brain/cognitive_layer/cognitive_dna.py:308:            'average_source_quality': 0.0,
+./brain/cognitive_layer/cognitive_dna.py:319:        source_qualities = [dna.source_quality for dna in all_dna]
+./brain/cognitive_layer/cognitive_dna.py:323:        stats['average_source_quality'] = sum(source_qualities) / len(source_qualities) if source_qualities else 0.0
+./brain/cognitive_layer/cognitive_version_control.py:63:    Represents a checkpoint in the system's evolution.
+./brain/cognitive_layer/cognitive_version_control.py:65:    checkpoint_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+./brain/cognitive_layer/cognitive_version_control.py:102:        self.checkpoints: Dict[str, VersionCheckpoint] = {}
+./brain/cognitive_layer/cognitive_version_control.py:256:    def create_checkpoint(self, version_id: str, name: str,
+./brain/cognitive_layer/cognitive_version_control.py:260:        Create a checkpoint for a version.
+./brain/cognitive_layer/cognitive_version_control.py:264:            name: Name of the checkpoint
+./brain/cognitive_layer/cognitive_version_control.py:271:        checkpoint = VersionCheckpoint(
+./brain/cognitive_layer/cognitive_version_control.py:278:        self.checkpoints[checkpoint.checkpoint_id] = checkpoint
+./brain/cognitive_layer/cognitive_version_control.py:280:        self.logger.info(f"Created checkpoint {name} for version {version_id}")
+./brain/cognitive_layer/cognitive_version_control.py:281:        return checkpoint
+./brain/cognitive_layer/cognitive_version_control.py:283:    def get_checkpoint(self, checkpoint_id: str) -> Optional[VersionCheckpoint]:
+./brain/cognitive_layer/cognitive_version_control.py:285:        Retrieve a checkpoint by ID.
+./brain/cognitive_layer/cognitive_version_control.py:288:            checkpoint_id: The ID of the checkpoint
+./brain/cognitive_layer/cognitive_version_control.py:293:        return self.checkpoints.get(checkpoint_id)
+./brain/cognitive_layer/cognitive_version_control.py:322:    def rollback_to_checkpoint(self, checkpoint_id: str) -> Dict[str, Any]:
+./brain/cognitive_layer/cognitive_version_control.py:324:        Rollback to a specific checkpoint.
+./brain/cognitive_layer/cognitive_version_control.py:327:            checkpoint_id: The ID of the checkpoint
+./brain/cognitive_layer/cognitive_version_control.py:332:        checkpoint = self.checkpoints.get(checkpoint_id)
+./brain/cognitive_layer/cognitive_version_control.py:333:        if not checkpoint:
+./brain/cognitive_layer/cognitive_version_control.py:338:            'rolled_back_to_checkpoint': checkpoint.name,
+./brain/cognitive_layer/cognitive_version_control.py:342:            'state': checkpoint.system_state,
+./brain/cognitive_layer/cognitive_version_control.py:343:            'metrics': checkpoint.metrics
+./brain/cognitive_layer/cognitive_version_control.py:346:        self.logger.info(f"Rolled back to checkpoint {checkpoint.name}")
+./brain/cognitive_layer/cognitive_version_control.py:361:            'total_checkpoints': len(self.checkpoints),
+./brain/cognitive_layer/cognitive_version_control.py:385:            'checkpoints': [c.to_dict() for c in self.checkpoints.values()],
+./brain/cognitive_layer/evidence_court.py:31:    """Enumeration of evidence quality levels."""
+./brain/cognitive_layer/evidence_court.py:54:    # Evaluation
+./brain/cognitive_layer/evidence_court.py:55:    quality_score: float = 0.5
+./brain/cognitive_layer/evidence_court.py:87:    quality_assessment: Dict[str, Any] = field(default_factory=dict)
+./brain/cognitive_layer/evidence_court.py:108:    The Evidence Court ensures that only high-quality, credible, and consistent
+./brain/cognitive_layer/evidence_court.py:167:        # Assess quality
+./brain/cognitive_layer/evidence_court.py:168:        quality_assessment = self._assess_quality(evidence)
+./brain/cognitive_layer/evidence_court.py:169:        report.quality_assessment = quality_assessment
+./brain/cognitive_layer/evidence_court.py:178:            quality_assessment,
+./brain/cognitive_layer/evidence_court.py:218:    def _assess_quality(self, evidence: EvidenceItem) -> Dict[str, Any]:
+./brain/cognitive_layer/evidence_court.py:219:        """Assess the quality of the evidence."""
+./brain/cognitive_layer/evidence_court.py:221:            'quality_score': 0.5,
+./brain/cognitive_layer/evidence_court.py:225:        quality_score = 0.5
+./brain/cognitive_layer/evidence_court.py:229:            quality_score += 0.2
+./brain/cognitive_layer/evidence_court.py:234:            quality_score += 0.15
+./brain/cognitive_layer/evidence_court.py:239:            quality_score += 0.15
+./brain/cognitive_layer/evidence_court.py:242:        assessment['quality_score'] = min(1.0, quality_score)
+./brain/cognitive_layer/evidence_court.py:296:                             quality_assessment: Dict[str, Any],
+./brain/cognitive_layer/evidence_court.py:300:        quality_score = quality_assessment.get('quality_score', 0.5)
+./brain/cognitive_layer/evidence_court.py:304:        confidence = (source_credibility * 0.4 + quality_score * 0.4) * (1 - contradiction_severity * 0.2)
+./brain/cognitive_layer/evidence_court.py:321:        if report.quality_assessment.get('quality_score', 0.5) < 0.6:
+./brain/cognitive_layer/experience_memory.py:45:    # Evaluation
+./brain/cognitive_layer/expert_models_layer.py:167:        """تعاون متدفق — يُرسل chunks تدريجياً."""
+./brain/cognitive_layer/expert_models_layer.py:170:        # Stream the final answer in chunks
+./brain/cognitive_layer/expert_models_layer.py:172:        chunk_size = max(1, len(words) // 10)
+./brain/cognitive_layer/expert_models_layer.py:174:        for i in range(0, len(words), chunk_size):
+./brain/cognitive_layer/expert_models_layer.py:175:            chunk = " ".join(words[i:i+chunk_size])
+./brain/cognitive_layer/expert_models_layer.py:176:            yield chunk + " "
+./brain/cognitive_layer/hypothesis_engine.py:42:    # Evaluation
+./brain/evolution/test_self_evolution.py:72:        quality_can_increase=True,
+./brain/evolution/test_self_evolution.py:75:        quality_score=0.7,
+./brain/evolution/test_self_evolution.py:117:        quality_can_increase=False,
+./brain/evolution/test_self_evolution.py:120:        quality_score=0.9,
+./brain/goal_manager.py:44:    "data": ["بيانات", "dataset", "قاعدة بيانات", "تنظيف", "معالجة", "تحليل", "إحصاء", "csv", "sql"],
+./brain/goal_manager.py:59:    IntentType.DATA: ["معالجة بيانات", "تنظيف", "dataset", "csv", "sql", "استعلام"],
+./brain/improvement/autonomous_improvement.py:33:    QUALITY_IMPROVEMENT = "quality_improvement"
+./brain/improvement/autonomous_improvement.py:88:    quality_trend: str       # improving | stable | declining
+./brain/improvement/autonomous_improvement.py:103:            "quality_trend": self.quality_trend,
+./brain/improvement/autonomous_improvement.py:173:        quality_trend = self._analyze_quality_trend(reflection_data)
+./brain/improvement/autonomous_improvement.py:188:            quality_trend=quality_trend,
+./brain/improvement/autonomous_improvement.py:319:    def _analyze_quality_trend(self, reflections: List[Dict]) -> str:
+./brain/knowledge/knowledge_distillation.py:47:    solution_quality: float         # 0-1 تقدير جودة الحل
+./brain/knowledge/knowledge_distillation.py:66:                    "quality": self.solution_quality,
+./brain/knowledge/knowledge_distillation.py:79:                    "quality": self.solution_quality,
+./brain/knowledge/knowledge_distillation.py:92:            "solution_quality": self.solution_quality,
+./brain/knowledge/knowledge_distillation.py:140:        quality = self._assess_quality(response, query)
+./brain/knowledge/knowledge_distillation.py:154:            solution_quality=quality,
+./brain/knowledge/knowledge_distillation.py:158:            is_approved=quality >= self.QUALITY_THRESHOLD,
+./brain/knowledge/knowledge_distillation.py:185:            "distillation: model=%s domain=%s quality=%.2f approved=%s steps=%d",
+./brain/knowledge/knowledge_distillation.py:186:            source_model, domain, quality, knowledge.is_approved, len(steps)
+./brain/knowledge/knowledge_distillation.py:228:    def _assess_quality(self, response: str, query: str) -> float:
+./brain/knowledge/knowledge_distillation.py:286:    def get_training_dataset(self, min_quality: float = 0.6) -> List[Dict]:
+./brain/knowledge/knowledge_distillation.py:289:            if k.is_approved and k.solution_quality >= min_quality
+./brain/knowledge/knowledge_distillation.py:299:            "pending_training": len(self.get_training_dataset()),
+./brain/knowledge/knowledge_graph.py:28:    DATASET = "dataset"
+./brain/learning/continuous_learning.py:6:Filtering → Ranking → Human Approval → Dataset Builder →
+./brain/learning/continuous_learning.py:7:Training Queue → Fine-Tuning → Evaluation → Deployment → Rollback
+./brain/learning/continuous_learning.py:27:    DEDUPLICATION = "deduplication"
+./brain/learning/continuous_learning.py:28:    QUALITY_VALIDATION = "quality_validation"
+./brain/learning/continuous_learning.py:32:    DATASET_BUILDER = "dataset_builder"
+./brain/learning/continuous_learning.py:56:    quality_score: float
+./brain/learning/continuous_learning.py:68:    samples_after_dedup: int = 0
+./brain/learning/continuous_learning.py:69:    samples_after_quality: int = 0
+./brain/learning/continuous_learning.py:108:    يدعم: Human Approval، Rollback، Evaluation.
+./brain/learning/continuous_learning.py:114:    # deduplication.  A conservative threshold avoids collapsing distinct
+./brain/learning/continuous_learning.py:150:            samples = await self._stage_deduplication(run, samples)
+./brain/learning/continuous_learning.py:153:            samples = await self._stage_quality_validation(run, samples)
+./brain/learning/continuous_learning.py:169:            # المرحلة 8: بناء Dataset
+./brain/learning/continuous_learning.py:170:            dataset = await self._stage_build_dataset(run, samples)
+./brain/learning/continuous_learning.py:173:            await self._stage_training_queue(run, dataset)
+./brain/learning/continuous_learning.py:201:        approved = [s for s in self._pending_approval if s.quality_score >= self.MIN_QUALITY_SCORE]
+./brain/learning/continuous_learning.py:215:                quality_score=item.get("quality_score", 0.5),
+./brain/learning/continuous_learning.py:236:    async def _stage_deduplication(self, run: PipelineRun, samples: List[DataSample]) -> List[DataSample]:
+./brain/learning/continuous_learning.py:286:                            if hash_unique[i].quality_score >= hash_unique[j].quality_score:
+./brain/learning/continuous_learning.py:294:                logger.warning("learning_pipeline: semantic dedup failed, using hash only: %s", e)
+./brain/learning/continuous_learning.py:300:        run.samples_after_dedup = len(unique)
+./brain/learning/continuous_learning.py:307:    async def _stage_quality_validation(self, run: PipelineRun, samples: List[DataSample]) -> List[DataSample]:
+./brain/learning/continuous_learning.py:308:        valid = [s for s in samples if s.quality_score >= self.MIN_QUALITY_SCORE]
+./brain/learning/continuous_learning.py:309:        run.samples_after_quality = len(valid)
+./brain/learning/continuous_learning.py:324:        ranked = sorted(samples, key=lambda s: s.quality_score, reverse=True)
+./brain/learning/continuous_learning.py:328:    async def _stage_build_dataset(self, run: PipelineRun, samples: List[DataSample]) -> List[Dict]:
+./brain/learning/continuous_learning.py:329:        dataset = [
+./brain/learning/continuous_learning.py:333:        # حفظ الـ dataset
+./brain/learning/continuous_learning.py:334:        ds_path = self._path / f"dataset_{run.run_id}.jsonl"
+./brain/learning/continuous_learning.py:336:            for item in dataset:
+./brain/learning/continuous_learning.py:338:        run.samples_approved = len(dataset)
+./brain/learning/continuous_learning.py:339:        run.record_stage(PipelineStage.DATASET_BUILDER, len(dataset))
+./brain/learning/continuous_learning.py:340:        return dataset
+./brain/learning/continuous_learning.py:342:    async def _stage_training_queue(self, run: PipelineRun, dataset: List[Dict]) -> None:
+./brain/learning/continuous_learning.py:344:        if len(dataset) < self.MIN_SAMPLES_FOR_TRAINING:
+./brain/learning/continuous_learning.py:346:                f"عينات غير كافية: {len(dataset)} < {self.MIN_SAMPLES_FOR_TRAINING}. "
+./brain/learning/continuous_learning.py:351:        for item in dataset:
+./brain/learning/continuous_learning.py:354:        avg_quality = (
+./brain/learning/continuous_learning.py:355:            sum(s.quality_score for s in self._approved_samples) / len(self._approved_samples)
+./brain/learning/continuous_learning.py:363:            "sample_count": len(dataset),
+./brain/learning/continuous_learning.py:365:            "avg_quality_score": round(avg_quality, 3),
+./brain/learning/continuous_learning.py:368:            "priority": "high" if avg_quality > 0.8 else "normal",
+./brain/learning/continuous_learning.py:384:        run.training_config["sample_count"] = len(dataset)
+./brain/learning/continuous_learning.py:385:        run.training_config["avg_quality"] = round(avg_quality, 3)
+./brain/learning/continuous_learning.py:387:            PipelineStage.TRAINING_QUEUE, len(dataset),
+./brain/learning/continuous_learning.py:388:            f"مضاف بأولوية={job['priority']} | متوسط_الجودة={round(avg_quality, 3)}"
+./brain/learning/continuous_learning.py:390:        logger.info("learning_pipeline: job %s queued with %d samples", job["job_id"], len(dataset))
+./brain/learning/continuous_learning.py:394:        dataset_path = self._path / f"dataset_{run.run_id}.jsonl"
+./brain/learning/continuous_learning.py:395:        if not dataset_path.exists():
+./brain/learning/continuous_learning.py:396:            raise FileNotFoundError(f"Dataset not found: {dataset_path}")
+./brain/learning/continuous_learning.py:404:        # لا يبدأ إلا عند وجود checkpoint محلي كامل وقابل للقراءة.
+./brain/learning/continuous_learning.py:406:        has_local_checkpoint = model_path.is_dir() and (
+./brain/learning/continuous_learning.py:410:        if not has_local_checkpoint:
+./brain/learning/continuous_learning.py:415:                    "dataset_path": str(dataset_path),
+./brain/learning/continuous_learning.py:417:                    "error": f"local training checkpoint is unavailable: {base_model}",
+./brain/learning/continuous_learning.py:419:                    "status": "deferred_local_checkpoint_required",
+./brain/learning/continuous_learning.py:427:            run.record_stage(PipelineStage.FINE_TUNING, 0, "مؤجل: checkpoint محلي مطلوب")
+./brain/learning/continuous_learning.py:432:            from datasets import Dataset as HFDataset
+./brain/learning/continuous_learning.py:442:            with open(dataset_path, "r", encoding="utf-8") as f:
+./brain/learning/continuous_learning.py:448:                raise ValueError("Dataset فارغ")
+./brain/learning/continuous_learning.py:489:            hf_dataset = HFDataset.from_list(samples)
+./brain/learning/continuous_learning.py:490:            cols = hf_dataset.column_names
+./brain/learning/continuous_learning.py:491:            tokenized = hf_dataset.map(tokenize_fn, batched=True, remove_columns=cols)
+./brain/learning/continuous_learning.py:515:                train_dataset=tokenized["train"],
+./brain/learning/continuous_learning.py:516:                eval_dataset=tokenized["test"],
+./brain/learning/continuous_learning.py:544:                    "dataset_path": str(dataset_path),
+./brain/learning/continuous_learning.py:567:        dataset_path = self._path / f"dataset_{run.run_id}.jsonl"
+./brain/learning/continuous_learning.py:579:            # Evaluation is production-authoritative and must never pull a
+./brain/learning/continuous_learning.py:580:            # remote model implicitly.  A real checkpoint must already exist
+./brain/learning/continuous_learning.py:586:                    f"local evaluation checkpoint is unavailable: {model_path}"
+./brain/learning/continuous_learning.py:609:            if dataset_path.exists():
+./brain/learning/continuous_learning.py:610:                with open(dataset_path, "r", encoding="utf-8") as f:
+./brain/memory/memory_fabric.py:304:            "إعداد dataset",
+./brain/metrics/model_performance_db.py:31:    quality_scores: List[float] = field(default_factory=list)
+./brain/metrics/model_performance_db.py:50:    def avg_quality(self) -> float:
+./brain/metrics/model_performance_db.py:51:        if not self.quality_scores:
+./brain/metrics/model_performance_db.py:53:        return sum(self.quality_scores) / len(self.quality_scores)
+./brain/metrics/model_performance_db.py:80:            "avg_quality": round(self.avg_quality, 3),
+./brain/metrics/model_performance_db.py:118:        quality_score: float,
+./brain/metrics/model_performance_db.py:132:            m.quality_scores.append(quality_score)
+./brain/metrics/model_performance_db.py:133:            if len(m.quality_scores) > 1000:
+./brain/metrics/model_performance_db.py:134:                m.quality_scores = m.quality_scores[-500:]
+./brain/metrics/model_performance_db.py:149:            "perf_db: %s call #%d success=%s latency=%.0fms quality=%.2f",
+./brain/metrics/model_performance_db.py:150:            model_id, m.total_calls, success, latency_ms, quality_score
+./brain/metrics/model_performance_db.py:166:            score = (task_rate * 0.4) + (m.avg_quality * 0.4) + (
+./brain/metrics/model_performance_db.py:173:                "avg_quality": m.avg_quality,
+./brain/metrics/model_performance_db.py:193:    def get_leaderboard(self, by: str = "quality") -> List[Dict[str, Any]]:
+./brain/metrics/model_performance_db.py:196:            "quality": "avg_quality",
+./brain/metrics/model_performance_db.py:200:        sort_key = key_map.get(by, "avg_quality")
+./brain/metrics/model_performance_db.py:214:            "best_quality_model": (
+./brain/metrics/model_performance_db.py:215:                max(self._metrics.keys(), key=lambda k: self._metrics[k].avg_quality)
+./brain/metrics/model_performance_db.py:253:                    quality_scores=[md.get("avg_quality", 0)],
+./brain/model_router.py:30:    quality_score: float
+./brain/model_router.py:79:    return model.quality_score * 0.4 + cap_score * 0.3 + cost_score * 0.2 + speed_score * 0.1 + local_bonus
+./brain/model_router.py:193:        """Relay a provider-native stream without synthesizing chunks."""
+./brain/model_router.py:220:            async for raw_chunk in self._iter_stream_with_timeout(stream, timeout):
+./brain/model_router.py:221:                if not isinstance(raw_chunk, LLMStreamChunk):
+./brain/model_router.py:222:                    raise RuntimeError("Provider returned an invalid stream chunk")
+./brain/model_router.py:224:                event_type = raw_chunk.event_type or ("finish" if raw_chunk.finish_reason else "delta")
+./brain/model_router.py:226:                    delta=raw_chunk.delta,
+./brain/model_router.py:227:                    finish_reason=raw_chunk.finish_reason,
+./brain/model_router.py:229:                    model=raw_chunk.model or cfg.model_id,
+./brain/model_router.py:231:                    provider=raw_chunk.provider or cfg.provider,
+./brain/model_router.py:232:                    request_id=raw_chunk.request_id or request_id,
+./brain/model_router.py:233:                    metadata=dict(raw_chunk.metadata),
+./brain/model_router.py:235:                if raw_chunk.finish_reason:
+./brain/model_router.py:263:        """Apply an idle/total guard while preserving provider-native chunks."""
+./brain/model_router.py:268:                    chunk = await asyncio.wait_for(iterator.__anext__(), timeout=timeout)
+./brain/model_router.py:271:                yield chunk
+./brain/policy/__init__.py:5:    PolicyEvaluation,
+./brain/policy/__init__.py:9:__all__ = ["PolicyEngine", "PolicyDecision", "PolicyEvaluation", "get_policy_engine"]
+./brain/policy/policy_engine.py:84:    PII_PATTERNS = [
+./brain/policy/policy_engine.py:91:        for pattern in self.PII_PATTERNS:
+./brain/policy/policy_engine.py:189:class PolicyEvaluation:
+./brain/policy/policy_engine.py:216:        self._evaluation_log: List[PolicyEvaluation] = []
+./brain/policy/policy_engine.py:243:    async def evaluate(self, context: Dict[str, Any]) -> PolicyEvaluation:
+./brain/policy/policy_engine.py:278:        evaluation = PolicyEvaluation(
+./brain/reflection/self_evolution.py:111:                "local_quality_threshold": 0.75,
+./brain/reflection/self_evolution.py:116:                "quality": 0.4,
+./brain/reflection/self_evolution.py:177:        avg_quality = perf_data.get("avg_quality", 0.7)
+./brain/reflection/self_evolution.py:179:        if local_ratio > 0.8 and avg_quality < 0.7:
+./brain/reflection/self_evolution.py:185:                current_value=self._current_rules["model_selection"]["local_quality_threshold"],
+./brain/reflection/self_evolution.py:231:        avg_quality = sum(r.get("quality_score", 0) for r in reports) / len(reports)
+./brain/reflection/self_evolution.py:232:        if avg_quality < 0.65:
+./brain/reflection/self_evolution.py:258:                current_value={"quality_threshold": 0.6},
+./brain/reflection/self_evolution.py:259:                proposed_value={"quality_threshold": 0.7},
+./brain/reflection/self_reflection.py:46:    quality_can_increase: bool
+./brain/reflection/self_reflection.py:49:    quality_score: float         # 0-1
+./brain/reflection/self_reflection.py:71:            "quality_can_increase": self.quality_can_increase,
+./brain/reflection/self_reflection.py:74:            "quality_score": self.quality_score,
+./brain/reflection/self_reflection.py:122:        response_quality: float,  # 0-1 من تقييم خارجي
+./brain/reflection/self_reflection.py:137:            response_quality=response_quality,
+./brain/reflection/self_reflection.py:152:        response_quality: float,  # 0-1 من تقييم خارجي
+./brain/reflection/self_reflection.py:165:        correct_model = actual_latency_ms < self.GOOD_LATENCY_MS and response_quality >= 0.7
+./brain/reflection/self_reflection.py:172:        quality_can_increase = response_quality < 0.85
+./brain/reflection/self_reflection.py:177:        overall = (plan_score * 0.3 + efficiency_score * 0.3 + response_quality * 0.4)
+./brain/reflection/self_reflection.py:181:            was_plan_good, correct_model, cost_can_reduce, quality_can_increase,
+./brain/reflection/self_reflection.py:182:            actual_latency_ms, token_ratio, model_used, response_quality
+./brain/reflection/self_reflection.py:186:            model_used, response_quality, actual_latency_ms, context, estimated_tokens
+./brain/reflection/self_reflection.py:193:        elif response_quality < 0.6:
+./brain/reflection/self_reflection.py:208:            quality_can_increase=quality_can_increase,
+./brain/reflection/self_reflection.py:211:            quality_score=round(response_quality, 3),
+./brain/reflection/self_reflection.py:229:            "self_reflection: task=%s overall=%.2f plan=%.2f efficiency=%.2f quality=%.2f",
+./brain/reflection/self_reflection.py:230:            task_id, overall, plan_score, efficiency_score, response_quality
+./brain/reflection/self_reflection.py:240:        increase_quality: bool, latency_ms: float, token_ratio: float, model_used: str, quality: float
+./brain/reflection/self_reflection.py:249:        if increase_quality:
+./brain/reflection/self_reflection.py:260:                "quality_can_increase": increase_quality,
+./brain/reflection/self_reflection.py:264:                "response_quality": quality
+./brain/reflection/self_reflection.py:272:        reduce_cost: bool, model: str, quality: float, latency_ms: float, context: Dict[str, Any], estimated_tokens: int
+./brain/reflection/self_reflection.py:281:        if quality < 0.7:
+./brain/reflection/self_reflection.py:291:                "response_quality": quality
+./brain/reflection/self_reflection.py:305:            success = quality >= 0.7 # Assuming quality >= 0.7 means success
+./brain/reflection/self_reflection.py:314:                quality_score=quality,
+./brain/reflection/self_reflection.py:415:            return {"plan": 0, "efficiency": 0, "quality": 0, "overall": 0}
+./brain/reflection/self_reflection.py:420:            "quality": round(sum(r.quality_score for r in self._reports) / n, 3),
+./brain/reflection/test_self_reflection.py:18:        response_quality=0.9,
+./brain/reflection/test_self_reflection.py:36:        response_quality=0.5,
+./brain/reflection/test_self_reflection.py:54:        response_quality=0.8,
+./brain/sovereignty/sovereignty_layer.py:100:        quality_score: float = 0.7,
+./brain/sovereignty/sovereignty_layer.py:121:                "quality": quality_score,
+./brain/tests/test_brain_components.py:268:        assert knowledge.solution_quality > 0
+./brain/tests/test_brain_components.py:270:    def test_high_quality_approved(self):
+./brain/tests/test_brain_components.py:279:        assert knowledge.solution_quality >= 0.5
+./cloud/__init__.py:7:from .dataset_manager import DatasetManager
+./cloud/__init__.py:11:__all__ = ["HFClient", "DatasetManager", "ModelManager", "CloudSync"]
+./cloud/cloud_sync.py:237:    def sync_checkpoint_with_report(
+./cloud/cloud_sync.py:239:        checkpoint_path: str,
+./cloud/cloud_sync.py:245:        رفع checkpoint + metrics + report في عملية واحدة.
+./cloud/cloud_sync.py:249:        logger.info(f"🔄 مزامنة كاملة للـ checkpoint step={step}")
+./cloud/cloud_sync.py:251:        results["checkpoint"] = self.model_manager.upload_checkpoint(
+./cloud/cloud_sync.py:252:            checkpoint_path=checkpoint_path,
+./cloud/dataset_manager.py:2:dataset_manager.py — HuggingFace Dataset Manager
+./cloud/dataset_manager.py:3:إدارة تحميل ورفع وتقسيم وتحديث datasets من/إلى HuggingFace
+./cloud/dataset_manager.py:23:class DatasetManager:
+./cloud/dataset_manager.py:25:    مدير Datasets: تحميل، رفع، تقسيم، تحديث تلقائي.
+./cloud/dataset_manager.py:26:    يعمل مع HuggingFace Datasets Hub.
+./cloud/dataset_manager.py:40:        self.dataset_repo = self.client.dataset_repo
+./cloud/dataset_manager.py:42:            os.getenv("DATASET_CACHE_DIR", "./data/hf_datasets")
+./cloud/dataset_manager.py:45:        logger.info(f"DatasetManager جاهز. Cache: {self.local_cache_dir}")
+./cloud/dataset_manager.py:49:        dataset_name: str,
+./cloud/dataset_manager.py:56:        تحميل dataset من HuggingFace Hub.
+./cloud/dataset_manager.py:59:            dataset_name: اسم الـ dataset (مثلاً 'Raedthawaba/hajeen-datasets')
+./cloud/dataset_manager.py:66:            HuggingFace Dataset object
+./cloud/dataset_manager.py:68:        from datasets import load_dataset
+./cloud/dataset_manager.py:70:        logger.info(f"⬇️  تحميل dataset: {dataset_name} [{split}]")
+./cloud/dataset_manager.py:72:            "path": dataset_name,
+./cloud/dataset_manager.py:81:            dataset = load_dataset(**kwargs)
+./cloud/dataset_manager.py:83:                dataset = dataset.select(range(min(num_samples, len(dataset))))
+./cloud/dataset_manager.py:84:            logger.info(f"✅ تم تحميل {dataset_name}: {len(dataset) if not streaming else 'streaming'} عينة")
+./cloud/dataset_manager.py:85:            return dataset
+./cloud/dataset_manager.py:87:            logger.error(f"❌ فشل تحميل {dataset_name}: {e}")
+./cloud/dataset_manager.py:90:    def load_hajeen_datasets(
+./cloud/dataset_manager.py:96:        تحميل مجموعة datasets الحاجين من HuggingFace.
+./cloud/dataset_manager.py:103:                    dataset_name=self.dataset_repo,
+./cloud/dataset_manager.py:112:    def upload_dataset(
+./cloud/dataset_manager.py:120:        رفع dataset محلي إلى HuggingFace.
+./cloud/dataset_manager.py:129:            رابط الـ dataset المرفوع
+./cloud/dataset_manager.py:133:        msg = commit_message or f"[Hajeen] Upload dataset — {ts}"
+./cloud/dataset_manager.py:141:                repo_type="dataset",
+./cloud/dataset_manager.py:148:                repo_type="dataset",
+./cloud/dataset_manager.py:152:    def upload_cleaned_dataset(
+./cloud/dataset_manager.py:159:        رفع dataset منظف مباشرةً من الذاكرة.
+./cloud/dataset_manager.py:168:        logger.info(f"⬆️  رفع dataset منظف: {len(data)} سجل → {repo_path}")
+./cloud/dataset_manager.py:169:        url = self.upload_dataset(tmp_path, repo_path, commit_message=f"[Hajeen] Cleaned dataset: {name}")
+./cloud/dataset_manager.py:173:    def split_dataset(
+./cloud/dataset_manager.py:175:        dataset: Any,
+./cloud/dataset_manager.py:181:        تقسيم dataset إلى train/validation/test.
+./cloud/dataset_manager.py:183:        logger.info(f"تقسيم الـ dataset — train:{train_ratio} val:{val_ratio}")
+./cloud/dataset_manager.py:184:        split1 = dataset.train_test_split(test_size=(1 - train_ratio), seed=seed)
+./cloud/dataset_manager.py:195:    def get_dataset_versions(self) -> List[str]:
+./cloud/dataset_manager.py:196:        """جلب قائمة إصدارات الـ datasets المرفوعة."""
+./cloud/dataset_manager.py:198:            repo_id=self.dataset_repo, repo_type="dataset"
+./cloud/dataset_manager.py:206:        """تحميل Wikipedia dataset."""
+./cloud/dataset_manager.py:208:        from datasets import load_dataset
+./cloud/dataset_manager.py:209:        ds = load_dataset("wikipedia", f"20220301.{language}", split="train", streaming=True, trust_remote_code=True)
+./cloud/dataset_manager.py:217:        from datasets import load_dataset
+./cloud/dataset_manager.py:218:        ds = load_dataset("oscar-corpus/OSCAR-2301", "ar", split="train", streaming=True, trust_remote_code=True)
+./cloud/dataset_manager.py:221:    def auto_update_datasets(self) -> Dict[str, str]:
+./cloud/dataset_manager.py:222:        """تحديث datasets تلقائياً وإعادة رفعها."""
+./cloud/dataset_manager.py:223:        logger.info("🔄 بدء التحديث التلقائي للـ datasets")
+./cloud/dataset_manager.py:231:                url = self.upload_cleaned_dataset(records, name=name, source="wikipedia")
+./cloud/hf_client.py:29:        dataset_repo: Optional[str] = None,
+./cloud/hf_client.py:33:        self.dataset_repo = dataset_repo or os.getenv(
+./cloud/hf_client.py:34:            "HF_DATASET_REPO", "Raedthawaba/hajeen-datasets"
+./cloud/hf_client.py:90:            repo_type:  نوع الـ repo ('model' أو 'dataset')
+./cloud/hf_client.py:98:            self.dataset_repo if repo_type == "dataset" else self.model_repo
+./cloud/hf_client.py:130:            self.dataset_repo if repo_type == "dataset" else self.model_repo
+./cloud/hf_client.py:162:            self.dataset_repo if repo_type == "dataset" else self.model_repo
+./cloud/model_manager.py:3:رفع وتحميل model weights, checkpoints, tokenizer, config
+./cloud/model_manager.py:26:    مدير النموذج: رفع وتحميل الأوزان، الـ checkpoints، الـ tokenizer.
+./cloud/model_manager.py:46:        self.checkpoint_dir = Path(
+./cloud/model_manager.py:47:            os.getenv("CHECKPOINT_DIR", "./checkpoints")
+./cloud/model_manager.py:49:        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+./cloud/model_manager.py:50:        logger.info(f"ModelManager جاهز. Checkpoint dir: {self.checkpoint_dir}")
+./cloud/model_manager.py:52:    def upload_checkpoint(
+./cloud/model_manager.py:54:        checkpoint_path: str,
+./cloud/model_manager.py:60:        رفع checkpoint إلى HuggingFace.
+./cloud/model_manager.py:63:            checkpoint_path: مسار ملف أو مجلد الـ checkpoint
+./cloud/model_manager.py:69:            رابط الـ checkpoint المرفوع
+./cloud/model_manager.py:73:        repo_folder = f"checkpoints/{ep_str}step{step}_{ts}"
+./cloud/model_manager.py:75:        logger.info(f"⬆️  رفع checkpoint step={step} → {repo_folder}")
+./cloud/model_manager.py:77:        cp_path = Path(checkpoint_path)
+./cloud/model_manager.py:119:    def download_checkpoint(
+./cloud/model_manager.py:125:        تحميل checkpoint من HuggingFace.
+./cloud/model_manager.py:126:        إذا لم يُحدَّد step يتم تحميل آخر checkpoint.
+./cloud/model_manager.py:130:        local_dir = local_dir or str(self.checkpoint_dir / "resumed")
+./cloud/model_manager.py:133:        pattern = f"checkpoints/*step{step}*" if step else "checkpoints/*"
+./cloud/model_manager.py:134:        logger.info(f"⬇️  تحميل checkpoint — pattern: {pattern}")
+./cloud/model_manager.py:144:            logger.info(f"✅ تم تحميل checkpoint: {local_path}")
+./cloud/model_manager.py:147:            logger.error(f"❌ فشل تحميل checkpoint: {e}")
+./cloud/model_manager.py:229:    def list_checkpoints(self) -> List[Dict[str, str]]:
+./cloud/model_manager.py:230:        """عرض قائمة الـ checkpoints المتاحة في HuggingFace."""
+./cloud/model_manager.py:232:        checkpoints = []
+./cloud/model_manager.py:235:            if f.startswith("checkpoints/"):
+./cloud/model_manager.py:241:                        checkpoints.append({"name": name, "path": f"checkpoints/{name}"})
+./cloud/model_manager.py:242:        return checkpoints
+./cloud/model_manager.py:244:    def get_latest_checkpoint_step(self) -> Optional[int]:
+./cloud/model_manager.py:246:        checkpoints = self.list_checkpoints()
+./cloud/model_manager.py:247:        if not checkpoints:
+./cloud/model_manager.py:250:        for cp in checkpoints:
+./configs/filters.yaml:48:quality_filter:
+./configs/pipelines.yaml:26:        chunker:
+./configs/pipelines.yaml:28:          chunk_size: 512
+./configs/pipelines.yaml:53:        chunker:
+./configs/pipelines.yaml:55:          chunk_size: 256
+./configs/processing.yaml:24:deduplicator:
+./configs/processing.yaml:25:  deduplicate_urls: true
+./configs/processing.yaml:26:  deduplicate_exact_content: true
+./configs/processing.yaml:27:  deduplicate_similar_content: false
+./configs/processing.yaml:43:quality_scorer:
+./configs/processing.yaml:76:  deduplication_threshold: 0.7
+./configs/processing.yaml:98:chunker:
+./configs/processing.yaml:100:  chunk_size: 512
+./configs/processing.yaml:102:  min_chunk_length: 20
+./core/alignment/alignment_pipeline.py:10:from .preference_dataset import PreferenceDatasetBuilder
+./core/alignment/alignment_pipeline.py:21:    - Preference dataset construction
+./core/alignment/alignment_pipeline.py:29:        self.dataset_builder = PreferenceDatasetBuilder(
+./core/alignment/alignment_pipeline.py:30:            output_path=self.config.get("dataset_dir", "storage_data/alignment/datasets")
+./core/alignment/alignment_pipeline.py:39:    # ── Dataset ──────────────────────────────────────────────────────────
+./core/alignment/alignment_pipeline.py:41:    def build_preference_dataset(
+./core/alignment/alignment_pipeline.py:45:        Build and persist a JSONL preference dataset.
+./core/alignment/alignment_pipeline.py:50:        self.dataset_builder.clear()
+./core/alignment/alignment_pipeline.py:52:            self.dataset_builder.add_example(
+./core/alignment/alignment_pipeline.py:57:        path = self.dataset_builder.save(output_file)
+./core/alignment/alignment_pipeline.py:58:        logger.info("Preference dataset saved to %s (%d examples).", path, len(raw_data))
+./core/alignment/alignment_pipeline.py:68:        train_dataset: Any,
+./core/alignment/alignment_pipeline.py:70:        eval_dataset: Optional[Any] = None,
+./core/alignment/alignment_pipeline.py:80:        train_dataset: HuggingFace Dataset with columns: prompt, chosen, rejected
+./core/alignment/alignment_pipeline.py:82:        eval_dataset : optional validation split
+./core/alignment/alignment_pipeline.py:94:            train_dataset=train_dataset,
+./core/alignment/alignment_pipeline.py:95:            eval_dataset=eval_dataset,
+./core/alignment/alignment_pipeline.py:114:        dataset: Any,
+./core/alignment/alignment_pipeline.py:134:            dataset=dataset,
+./core/alignment/alignment_pipeline.py:145:    # ── Evaluation ───────────────────────────────────────────────────────
+./core/alignment/alignment_pipeline.py:153:        """Evaluate a single response for alignment quality."""
+./core/alignment/dpo_trainer.py:35:    def setup(self, model: Any, ref_model: Optional[Any], tokenizer: Any, train_dataset: Any, eval_dataset: Optional[Any] = None) -> None:
+./core/alignment/dpo_trainer.py:49:                evaluation_strategy="steps" if eval_dataset else "no",
+./core/alignment/dpo_trainer.py:60:                train_dataset=train_dataset,
+./core/alignment/dpo_trainer.py:61:                eval_dataset=eval_dataset,
+./core/alignment/evaluation_system.py:15:class SafetyEvaluationSystem:
+./core/alignment/evaluation_system.py:37:class QualityEvaluationSystem:
+./core/alignment/evaluation_system.py:38:    """System for evaluating response quality and hallucinations."""
+./core/alignment/evaluation_system.py:53:        self.safety = SafetyEvaluationSystem()
+./core/alignment/evaluation_system.py:54:        self.quality = QualityEvaluationSystem()
+./core/alignment/evaluation_system.py:59:        hallucination = self.quality.evaluate_hallucination(response, context)
+./core/alignment/evaluation_system.py:60:        helpfulness = self.quality.evaluate_helpfulness(prompt, response)
+./core/alignment/evaluation_system.py:64:            "quality": {
+./core/alignment/ppo_trainer.py:38:    def setup(self, model: Any, ref_model: Optional[Any] = None, tokenizer: Any = None, dataset: Any = None):
+./core/alignment/ppo_trainer.py:69:                dataset=dataset,
+./core/alignment/preference_dataset.py:18:class PreferenceDatasetBuilder:
+./core/alignment/preference_dataset.py:19:    """Builder for DPO/Preference optimization datasets."""
+./core/alignment/preference_dataset.py:21:    def __init__(self, output_path: str = "storage_data/alignment/preference_datasets") -> None:
+./core/alignment/preference_dataset.py:47:        """Save the dataset to a JSONL file."""
+./core/alignment/preference_dataset.py:58:        logger.info(f"Preference dataset saved to {dest}")
+./core/context_intelligence/context_engine.py:39:        context_chunks = [{
+./core/context_intelligence/context_engine.py:45:        ranked_context = self.ranker.rank_contexts(context_chunks, query)
+./core/context_intelligence/context_engine.py:46:        logger.info(f"Retrieved and ranked {len(ranked_context)} context chunks for query: {query}")
+./core/context_intelligence/context_engine.py:63:        context_str = "\n".join([chunk["content"] for chunk in retrieved_context])
+./core/context_intelligence/context_scoring.py:19:    System for scoring and prioritizing context chunks based on various metrics.
+./core/context_intelligence/context_scoring.py:24:    def score_context(self, context_chunk: Dict[str, Any], query: str) -> ContextScore:
+./core/context_intelligence/context_scoring.py:26:        Calculates a comprehensive score for a given context chunk.
+./core/context_intelligence/context_scoring.py:29:        relevance = self._calculate_relevance(context_chunk, query)
+./core/context_intelligence/context_scoring.py:30:        freshness = self._calculate_freshness(context_chunk)
+./core/context_intelligence/context_scoring.py:31:        importance = self._calculate_importance(context_chunk)
+./core/context_intelligence/context_scoring.py:44:            metadata={"chunk_id": context_chunk.get("id")}
+./core/context_intelligence/context_scoring.py:47:    def _calculate_relevance(self, context_chunk: Dict[str, Any], query: str) -> float:
+./core/context_intelligence/context_scoring.py:51:    def _calculate_freshness(self, context_chunk: Dict[str, Any]) -> float:
+./core/context_intelligence/context_scoring.py:52:        # Placeholder: Based on timestamp of the context chunk
+./core/context_intelligence/context_scoring.py:55:    def _calculate_importance(self, context_chunk: Dict[str, Any]) -> float:
+./core/context_intelligence/context_scoring.py:61:    Ranks a list of context chunks dynamically based on their scores.
+./core/context_intelligence/context_scoring.py:66:    def rank_contexts(self, context_chunks: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+./core/context_intelligence/context_scoring.py:68:        Scores and ranks context chunks.
+./core/context_intelligence/context_scoring.py:70:        scored_chunks = []
+./core/context_intelligence/context_scoring.py:71:        for chunk in context_chunks:
+./core/context_intelligence/context_scoring.py:72:            score = self.scoring_system.score_context(chunk, query)
+./core/context_intelligence/context_scoring.py:73:            scored_chunks.append({"chunk": chunk, "score_obj": score})
+./core/context_intelligence/context_scoring.py:76:        ranked_chunks = sorted(scored_chunks, key=lambda x: x["score_obj"].overall_score, reverse=True)
+./core/context_intelligence/context_scoring.py:77:        return [item["chunk"] for item in ranked_chunks]
+./core/embeddings/base.py:35:    chunk_id: Optional[str] = None
+./core/embeddings/base.py:40:            "chunk_id": self.chunk_id,
+./core/embeddings/base.py:84:    async def embed(self, text: str, chunk_id: Optional[str] = None,
+./core/embeddings/base.py:100:            chunk_id=chunk_id,
+./core/embeddings/base.py:107:        chunk_ids: Optional[List[str]] = None,
+./core/embeddings/base.py:121:            cid = chunk_ids[i] if chunk_ids else None
+./core/embeddings/base.py:129:                chunk_id=cid,
+./core/embeddings/embedding_manager.py:53:        chunk_id: Optional[str] = None,
+./core/embeddings/embedding_manager.py:59:        return await model.embed(text, chunk_id=chunk_id, article_id=article_id)
+./core/embeddings/embedding_manager.py:64:        chunk_ids: Optional[List[str]] = None,
+./core/embeddings/embedding_manager.py:72:        return await model.embed_batch(texts, chunk_ids=chunk_ids, article_id=article_id)
+./core/hf_integration/data_cleaner.py:4:from datasets import Dataset
+./core/hf_integration/data_cleaner.py:35:    def clean_dataset(self, dataset: Dataset, text_column: str = "text") -> Dataset:
+./core/hf_integration/data_cleaner.py:39:        logger.info(f"Cleaning dataset column: {text_column}...")
+./core/hf_integration/data_cleaner.py:44:        cleaned_ds = dataset.map(processing_func, batched=True)
+./core/hf_integration/data_cleaner.py:45:        logger.info("Dataset cleaning complete.")
+./core/hf_integration/hub_manager.py:5:from datasets import load_dataset, Dataset, concatenate_datasets
+./core/hf_integration/hub_manager.py:32:    def fetch_dataset(self, repo_id: str, split: str = "train") -> Dataset:
+./core/hf_integration/hub_manager.py:36:        logger.info(f"Loading dataset {repo_id} (split: {split})...")
+./core/hf_integration/hub_manager.py:37:        dataset = load_dataset(repo_id, split=split, token=self.token)
+./core/hf_integration/hub_manager.py:38:        return dataset
+./core/hf_integration/hub_manager.py:60:    def add_data_to_dataset(self, repo_id: str, new_data: List[Dict[str, Any]], split: str = "train"):
+./core/hf_integration/hub_manager.py:64:        current_ds = self.fetch_dataset(repo_id, split=split)
+./core/hf_integration/hub_manager.py:65:        new_ds = Dataset.from_list(new_data)
+./core/hf_integration/hub_manager.py:68:        updated_ds = concatenate_datasets([current_ds, new_ds])
+./core/hf_integration/hub_manager.py:70:        logger.info(f"Updating dataset {repo_id} with {len(new_data)} new records.")
+./core/hf_integration/hub_manager.py:72:        logger.info("Dataset updated on Hub.")
+./core/inference_engine/engine.py:153:        chunk_generator = self.llm_manager.stream(job.request)
+./core/inference_engine/engine.py:155:        async for chunk in self.stream_handler.process_stream(chunk_generator, sid):
+./core/inference_engine/engine.py:156:            yield chunk
+./core/inference_engine/generation.py:58:            for chunk in streamer:
+./core/inference_engine/generation.py:59:                if chunk:
+./core/inference_engine/generation.py:60:                    yield chunk
+./core/inference_engine/stream_handler.py:20:    chunks_received: int = 0
+./core/inference_engine/stream_handler.py:26:    def add_chunk(self, delta: str) -> None:
+./core/inference_engine/stream_handler.py:27:        self.chunks_received += 1
+./core/inference_engine/stream_handler.py:40:    chunk_index: int = 0
+./core/inference_engine/stream_handler.py:54:            "index": self.chunk_index,
+./core/inference_engine/stream_handler.py:65:    - تحويل chunks لـ SSE events
+./core/inference_engine/stream_handler.py:67:    - تجميع الـ chunks في buffer
+./core/inference_engine/stream_handler.py:74:        chunk_timeout: float = 30.0,
+./core/inference_engine/stream_handler.py:78:        self.chunk_timeout = chunk_timeout
+./core/inference_engine/stream_handler.py:101:        chunk_generator: AsyncGenerator[LLMStreamChunk, None],
+./core/inference_engine/stream_handler.py:104:        """تمرير native chunks مع التتبع والإلغاء دون تصنيع أحداث أو نصوص."""
+./core/inference_engine/stream_handler.py:117:            async for chunk in chunk_generator:
+./core/inference_engine/stream_handler.py:118:                if not isinstance(chunk, LLMStreamChunk):
+./core/inference_engine/stream_handler.py:119:                    raise RuntimeError("Stream provider returned a non-native chunk")
+./core/inference_engine/stream_handler.py:132:                if chunk.delta:
+./core/inference_engine/stream_handler.py:133:                    session.add_chunk(chunk.delta)
+./core/inference_engine/stream_handler.py:134:                index = max(index, chunk.index)
+./core/inference_engine/stream_handler.py:135:                if chunk.event_type == "finish":
+./core/inference_engine/stream_handler.py:138:                elif chunk.event_type == "error":
+./core/inference_engine/stream_handler.py:139:                    session.error = chunk.metadata.get("error", "stream failed")
+./core/inference_engine/stream_handler.py:140:                yield chunk
+./core/inference_engine/stream_handler.py:141:                if chunk.finish_reason and chunk.event_type != "finish":
+./core/inference_engine/stream_handler.py:146:                        finish_reason=chunk.finish_reason,
+./core/inference_engine/stream_handler.py:149:                        model=chunk.model,
+./core/inference_engine/stream_handler.py:150:                        provider=chunk.provider,
+./core/inference_engine/stream_handler.py:151:                        request_id=chunk.request_id or session_id,
+./core/inference_engine/stream_handler.py:152:                        metadata=dict(chunk.metadata),
+./core/inference_engine/stream_handler.py:180:                "Stream %s ended: chunks=%d chars=%d ms=%.1f",
+./core/inference_engine/stream_handler.py:182:                session.chunks_received,
+./core/inference_engine/stream_handler.py:190:        chunk_generator: AsyncGenerator[LLMStreamChunk, None],
+./core/inference_engine/stream_handler.py:194:        async for chunk in chunk_generator:
+./core/inference_engine/stream_handler.py:195:            if chunk.delta:
+./core/inference_engine/stream_handler.py:196:                parts.append(chunk.delta)
+./core/llm/base.py:208:        async for chunk in self._circuit_breaker.call(self._stream_implementation, request):
+./core/llm/base.py:209:            yield chunk
+./core/llm/config.py:45:    hf_dataset_repo: str = os.getenv("HF_DATASET_REPO", "Raedthawaba/hajeen-datasets")
+./core/llm/llm_manager.py:98:                        quality_score=0.0,
+./core/llm/llm_manager.py:177:        async for chunk in self._router.stream(
+./core/llm/llm_manager.py:184:            yield chunk
+./core/llm/providers/hajeen_provider.py:22:    """Adapter for a real local Hajeen checkpoint; never fabricates output."""
+./core/llm/providers/hajeen_provider.py:30:        # does not claim a checkpoint exists when it does not.
+./core/llm/providers/hajeen_provider.py:45:        raise LLMProviderError("Hajeen checkpoint adapter does not expose native streaming")
+./core/llm/providers/hajeen_provider.py:52:            logger.warning("Hajeen checkpoint unavailable: %s", exc)
+./core/llm/providers/huggingface_provider.py:115:        converted into synthetic word chunks in the production path.
+./core/llm/providers/llama_cpp_provider.py:127:            for chunk in stream_iter:
+./core/llm/providers/llama_cpp_provider.py:128:                token = chunk["choices"][0]["text"]
+./core/llm/providers/llama_cpp_provider.py:129:                finish = chunk["choices"][0].get("finish_reason")
+./core/llm/providers/mistral_finetuned_provider.py:213:            async for chunk in self._ollama_stream(messages, cfg):
+./core/llm/providers/mistral_finetuned_provider.py:214:                yield chunk
+./core/llm/providers/mistral_finetuned_provider.py:218:            "Mistral local backend does not expose native token streaming; refusing synthesized chunks"
+./core/llm/providers/openai_provider.py:90:            async for chunk in stream:
+./core/llm/providers/openai_provider.py:91:                delta = chunk.choices[0].delta if chunk.choices else None
+./core/llm/providers/openai_provider.py:95:                        finish_reason=chunk.choices[0].finish_reason,
+./core/llm/providers/openai_provider.py:97:                        model=chunk.model,
+./core/model/model_manager.py:51:    - model registry
+./core/model/model_registry.py:12:class ModelRegistry:
+./core/model/model_registry.py:15:    _instance: Optional["ModelRegistry"] = None
+./core/model/model_registry.py:18:    def __new__(cls) -> "ModelRegistry":
+./core/model/model_registry.py:31:        logger.info("ModelRegistry initialized with %d defaults", len(self._configs))
+./core/optimization/quantization_manager.py:196:            "Large language models are trained on vast datasets.",
+./core/optimization/tensor_parallel.py:53:        chunk_size = weight.shape[dim] // dist.get_world_size()
+./core/optimization/tensor_parallel.py:55:        start = rank * chunk_size
+./core/optimization/tensor_parallel.py:56:        end = start + chunk_size
+./core/prompts/prompt_builder.py:50:        context_chunks: List[str],
+./core/prompts/prompt_builder.py:55:            f"[{i + 1}] {chunk}" for i, chunk in enumerate(context_chunks)
+./core/retrieval/retrieval_engine.py:16:    chunk_id: str
+./core/retrieval/retrieval_engine.py:27:            "chunk_id": self.chunk_id,
+./core/retrieval/retrieval_engine.py:134:        # Deduplicate by chunk_id
+./core/retrieval/retrieval_engine.py:135:        seen_chunks: set = set()
+./core/retrieval/retrieval_engine.py:136:        deduped = []
+./core/retrieval/retrieval_engine.py:138:            if h.chunk_id not in seen_chunks:
+./core/retrieval/retrieval_engine.py:139:                seen_chunks.add(h.chunk_id)
+./core/retrieval/retrieval_engine.py:140:                deduped.append(h)
+./core/retrieval/retrieval_engine.py:143:        for i, h in enumerate(deduped):
+./core/retrieval/retrieval_engine.py:148:            hits=deduped[:k],
+./core/retrieval/retrieval_engine.py:150:            total=len(deduped),
+./core/retrieval/retrieval_engine.py:200:            key = hit.chunk_id
+./core/retrieval/retrieval_engine.py:205:            key = hit.chunk_id
+./core/retrieval/retrieval_engine.py:251:                chunk_id=r.chunk_id,
+./core/retrieval/retrieval_engine.py:297:                    chunk_id=r.chunk_id,
+./core/serving/llama_cpp_server.py:95:        for chunk in stream:
+./core/serving/llama_cpp_server.py:96:            token = chunk["choices"][0].get("text", "")
+./core/serving/model_server.py:140:            async for chunk in STREAMING_SERVER.stream(
+./core/serving/model_server.py:147:                yield f"data: {chunk}\n\n"
+./core/serving/streaming_server.py:86:                    chunk = {
+./core/serving/streaming_server.py:88:                        "object": "chat.completion.chunk",
+./core/serving/streaming_server.py:96:                    yield json.dumps(chunk)
+./core/serving/streaming_server.py:102:            final_chunk = {
+./core/serving/streaming_server.py:104:                "object": "chat.completion.chunk",
+./core/serving/streaming_server.py:113:            yield json.dumps(final_chunk)
+./core/training_engine/__init__.py:2:from .dataset_loader import DatasetLoader
+./core/training_engine/__init__.py:3:from .checkpoint_manager import CheckpointManager
+./core/training_engine/__init__.py:12:    "DatasetLoader",
+./core/training_engine/checkpoint_manager.py:14:    """Save, load, and list training checkpoints."""
+./core/training_engine/checkpoint_manager.py:16:    def __init__(self, checkpoint_dir: str = "storage_data/checkpoints") -> None:
+./core/training_engine/checkpoint_manager.py:17:        self.checkpoint_dir = Path(checkpoint_dir)
+./core/training_engine/checkpoint_manager.py:18:        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+./core/training_engine/checkpoint_manager.py:28:        name = tag or f"checkpoint-step-{step}"
+./core/training_engine/checkpoint_manager.py:29:        dest = self.checkpoint_dir / name
+./core/training_engine/checkpoint_manager.py:45:        (dest / "checkpoint_meta.json").write_text(
+./core/training_engine/checkpoint_manager.py:52:        checkpoints = self._list_checkpoints()
+./core/training_engine/checkpoint_manager.py:53:        if not checkpoints:
+./core/training_engine/checkpoint_manager.py:55:        return max(checkpoints, key=lambda p: self._step_from_name(p.name))
+./core/training_engine/checkpoint_manager.py:63:    def list_checkpoints(self) -> List[Dict]:
+./core/training_engine/checkpoint_manager.py:65:        for p in self.checkpoint_dir.iterdir():
+./core/training_engine/checkpoint_manager.py:67:                meta_file = p / "checkpoint_meta.json"
+./core/training_engine/checkpoint_manager.py:79:        p = self.checkpoint_dir / name
+./core/training_engine/checkpoint_manager.py:86:    def _list_checkpoints(self) -> List[Path]:
+./core/training_engine/checkpoint_manager.py:87:        return [p for p in self.checkpoint_dir.iterdir() if p.is_dir()]
+./core/training_engine/collator.py:7:    """Custom data collator for instruction-following datasets."""
+./core/training_engine/dataset_loader.py:11:class DatasetLoader:
+./core/training_engine/dataset_loader.py:12:    """Load datasets from JSONL, JSON, Parquet, or HuggingFace Hub."""
+./core/training_engine/dataset_loader.py:17:            raise FileNotFoundError(f"Dataset file not found: {path}")
+./core/training_engine/dataset_loader.py:43:    def load_hf_dataset(
+./core/training_engine/dataset_loader.py:45:        dataset_name: str,
+./core/training_engine/dataset_loader.py:51:            from datasets import load_dataset  # type: ignore
+./core/training_engine/dataset_loader.py:52:            ds = load_dataset(dataset_name, subset, split=split, streaming=max_samples is None)
+./core/training_engine/dataset_loader.py:55:            logger.info("Loaded HF dataset: %s/%s [%s]", dataset_name, subset or "", split)
+./core/training_engine/dataset_loader.py:58:            raise RuntimeError("datasets library required") from exc
+./core/training_engine/dataset_loader.py:60:    def to_hf_dataset(self, records: List[Dict]) -> Any:
+./core/training_engine/dataset_loader.py:62:            from datasets import Dataset  # type: ignore
+./core/training_engine/dataset_loader.py:63:            return Dataset.from_list(records)
+./core/training_engine/dataset_loader.py:65:            raise RuntimeError("datasets library required") from exc
+./core/training_engine/evaluator.py:11:    """Evaluate LLM quality: perplexity, BLEU, and generation benchmarks."""
+./core/training_engine/finetuning.py:8:from .dataset_loader import DatasetLoader
+./core/training_engine/finetuning.py:9:from .checkpoint_manager import CheckpointManager
+./core/training_engine/finetuning.py:33:        self.checkpoint_manager = CheckpointManager(f"{output_dir}/checkpoints")
+./core/training_engine/finetuning.py:34:        self.dataset_loader = DatasetLoader()
+./core/training_engine/finetuning.py:56:    def prepare_dataset(
+./core/training_engine/finetuning.py:63:        records = self.dataset_loader.load_jsonl(data_path)
+./core/training_engine/finetuning.py:67:            from datasets import Dataset  # type: ignore
+./core/training_engine/finetuning.py:69:            ds = Dataset.from_dict({"text": texts})
+./core/training_engine/finetuning.py:81:            raise RuntimeError("datasets library required") from exc
+./core/training_engine/finetuning.py:93:        train_ds = self.prepare_dataset(train_data_path, tokenizer, text_field)
+./core/training_engine/finetuning.py:96:            eval_ds = self.prepare_dataset(eval_data_path, tokenizer, text_field)
+./core/training_engine/lora_trainer.py:63:        train_dataset: Any,
+./core/training_engine/lora_trainer.py:64:        eval_dataset: Optional[Any] = None,
+./core/training_engine/lora_trainer.py:68:        self._trainer.setup(peft_model, tokenizer, train_dataset, eval_dataset, data_collator)
+./core/training_engine/trainer.py:33:    resume_from_checkpoint: Optional[str] = None
+./core/training_engine/trainer.py:53:        train_dataset: Any,
+./core/training_engine/trainer.py:54:        eval_dataset: Optional[Any] = None,
+./core/training_engine/trainer.py:78:                evaluation_strategy="steps" if eval_dataset is not None else "no",
+./core/training_engine/trainer.py:84:                train_dataset=train_dataset,
+./core/training_engine/trainer.py:85:                eval_dataset=eval_dataset,
+./core/training_engine/trainer.py:97:        checkpoint = self.config.resume_from_checkpoint if resume else None
+./core/training_engine/trainer.py:98:        result = self._trainer.train(resume_from_checkpoint=checkpoint)
+./data_engine/ai/embeddings/base_embedder.py:45:    source_id: str           # معرّف المصدر (article_id أو chunk_id)
+./data_engine/ai/embeddings/base_embedder.py:46:    source_type: str = "chunk"    # "article" | "chunk"
+./data_engine/ai/embeddings/base_embedder.py:139:        source_type: str = "chunk",
+./data_engine/ai/embeddings/embedding_metadata.py:6:  - per-chunk stats
+./data_engine/ai/embeddings/embedding_metadata.py:43:                chunk_count  INTEGER DEFAULT 0,
+./data_engine/ai/embeddings/embedding_metadata.py:53:                chunk_count   INTEGER DEFAULT 0,
+./data_engine/ai/embeddings/embedding_metadata.py:62:            CREATE TABLE IF NOT EXISTS chunk_embedding_meta (
+./data_engine/ai/embeddings/embedding_metadata.py:63:                chunk_id      TEXT PRIMARY KEY,
+./data_engine/ai/embeddings/embedding_metadata.py:68:                chunk_order   INTEGER DEFAULT 0,
+./data_engine/ai/embeddings/embedding_metadata.py:83:            CREATE INDEX IF NOT EXISTS idx_chunk_article ON chunk_embedding_meta(article_id);
+./data_engine/ai/embeddings/embedding_metadata.py:91:        chunk_count: int,
+./data_engine/ai/embeddings/embedding_metadata.py:101:                  (run_id, article_id, chunk_count, embed_count, model_name, duration_ms, errors)
+./data_engine/ai/embeddings/embedding_metadata.py:103:            """, (run_id, article_id, chunk_count, embedding_count,
+./data_engine/ai/embeddings/embedding_metadata.py:112:        chunk_count: int,
+./data_engine/ai/embeddings/embedding_metadata.py:122:                  (article_id, chunk_count, embed_count, total_tokens, model_name, last_run_id, updated_at)
+./data_engine/ai/embeddings/embedding_metadata.py:124:            """, (article_id, chunk_count, embed_count, total_tokens, model_name, run_id))
+./data_engine/ai/embeddings/embedding_metadata.py:129:    def record_chunk_embedding(
+./data_engine/ai/embeddings/embedding_metadata.py:131:        chunk_id: str,
+./data_engine/ai/embeddings/embedding_metadata.py:136:        chunk_order: int,
+./data_engine/ai/embeddings/embedding_metadata.py:138:        """تسجيل embedding لـ chunk."""
+./data_engine/ai/embeddings/embedding_metadata.py:141:                INSERT OR REPLACE INTO chunk_embedding_meta
+./data_engine/ai/embeddings/embedding_metadata.py:142:                  (chunk_id, article_id, embedding_id, model_name, token_count, chunk_order)
+./data_engine/ai/embeddings/embedding_metadata.py:144:            """, (chunk_id, article_id, embedding_id, model_name, token_count, chunk_order))
+./data_engine/ai/embeddings/embedding_metadata.py:147:            logger.warning("EmbeddingMeta: خطأ في تسجيل chunk — %s", exc)
+./data_engine/ai/embeddings/embedding_metadata.py:183:        total_chunks = self._db.execute(
+./data_engine/ai/embeddings/embedding_metadata.py:184:            "SELECT COUNT(*) FROM chunk_embedding_meta"
+./data_engine/ai/embeddings/embedding_metadata.py:193:            "chunks_embedded": total_chunks,
+./data_engine/ai/embeddings/embedding_pipeline.py:98:    async def process_chunks(
+./data_engine/ai/embeddings/embedding_pipeline.py:100:        chunks: List[Any],
+./data_engine/ai/embeddings/embedding_pipeline.py:108:        chunks:
+./data_engine/ai/embeddings/embedding_pipeline.py:119:        from data_engine.processing.transformation.chunking_engine import DocumentChunk
+./data_engine/ai/embeddings/embedding_pipeline.py:126:            total_requested=len(chunks),
+./data_engine/ai/embeddings/embedding_pipeline.py:130:        if not chunks:
+./data_engine/ai/embeddings/embedding_pipeline.py:137:        for chunk in chunks:
+./data_engine/ai/embeddings/embedding_pipeline.py:138:            if isinstance(chunk, DocumentChunk):
+./data_engine/ai/embeddings/embedding_pipeline.py:139:                chunk_id = chunk.chunk_id
+./data_engine/ai/embeddings/embedding_pipeline.py:140:                text = chunk.text
+./data_engine/ai/embeddings/embedding_pipeline.py:141:                order = chunk.order
+./data_engine/ai/embeddings/embedding_pipeline.py:142:            elif isinstance(chunk, dict):
+./data_engine/ai/embeddings/embedding_pipeline.py:143:                chunk_id = str(chunk.get("chunk_id", ""))
+./data_engine/ai/embeddings/embedding_pipeline.py:144:                text = str(chunk.get("text", ""))
+./data_engine/ai/embeddings/embedding_pipeline.py:145:                order = int(chunk.get("order", 0))
+./data_engine/ai/embeddings/embedding_pipeline.py:154:                    embedding_id="emb_" + chunk_id[:16],
+./data_engine/ai/embeddings/embedding_pipeline.py:155:                    source_id=chunk_id,
+./data_engine/ai/embeddings/embedding_pipeline.py:156:                    source_type="chunk",
+./data_engine/ai/embeddings/embedding_pipeline.py:158:                    chunk_order=order,
+./data_engine/ai/embeddings/embedding_pipeline.py:168:                cached_ids.append(chunk_id)
+./data_engine/ai/embeddings/embedding_pipeline.py:173:                    source_id=chunk_id,
+./data_engine/ai/embeddings/embedding_pipeline.py:174:                    source_type="chunk",
+./data_engine/ai/embeddings/embedding_pipeline.py:177:                to_compute.append((chunk, req))
+./data_engine/ai/embeddings/embedding_pipeline.py:198:                for (chunk, req), emb_res in zip(batch, emb_results):
+./data_engine/ai/embeddings/embedding_pipeline.py:213:                    # استخراج chunk_order
+./data_engine/ai/embeddings/embedding_pipeline.py:214:                    from data_engine.processing.transformation.chunking_engine import DocumentChunk
+./data_engine/ai/embeddings/embedding_pipeline.py:215:                    if isinstance(chunk, DocumentChunk):
+./data_engine/ai/embeddings/embedding_pipeline.py:216:                        order = chunk.order
+./data_engine/ai/embeddings/embedding_pipeline.py:218:                        order = int(chunk.get("order", 0)) if isinstance(chunk, dict) else 0
+./data_engine/ai/embeddings/embedding_pipeline.py:224:                        source_type="chunk",
+./data_engine/ai/embeddings/embedding_pipeline.py:226:                        chunk_order=order,
+./data_engine/ai/embeddings/embedding_pipeline.py:247:            chunk_count=len(chunks),
+./data_engine/ai/embeddings/embedding_pipeline.py:254:            "EmbeddingPipeline: run=%s chunks=%d computed=%d cached=%d errors=%d",
+./data_engine/ai/embeddings/embedding_pipeline.py:255:            run_id, len(chunks), result.total_computed,
+./data_engine/ai/embeddings/embedding_pipeline.py:263:        chunking_config: Optional[Any] = None,
+./data_engine/ai/embeddings/embedding_pipeline.py:266:        """معالجة مقال كامل: chunking → embedding.
+./data_engine/ai/embeddings/embedding_pipeline.py:272:        chunking_config:
+./data_engine/ai/embeddings/embedding_pipeline.py:277:        from data_engine.processing.transformation.chunking_engine import (
+./data_engine/ai/embeddings/embedding_pipeline.py:292:        engine = ChunkingEngine(config=chunking_config or ChunkingConfig())
+./data_engine/ai/embeddings/embedding_pipeline.py:293:        chunks = engine.chunk_article(article)
+./data_engine/ai/embeddings/embedding_pipeline.py:295:        if not chunks:
+./data_engine/ai/embeddings/embedding_pipeline.py:297:                "EmbeddingPipeline: لا توجد chunks للمقال %s", article_id
+./data_engine/ai/embeddings/embedding_pipeline.py:305:        return await self.process_chunks(
+./data_engine/ai/embeddings/embedding_pipeline.py:306:            chunks=chunks,
+./data_engine/ai/embeddings/embedding_storage.py:31:    source_type: str         # "article" | "chunk"
+./data_engine/ai/embeddings/embedding_storage.py:39:    chunk_order: Optional[int] = None
+./data_engine/ai/embeddings/embedding_storage.py:56:            "chunk_order": self.chunk_order,
+./data_engine/ai/embeddings/embedding_storage.py:93:                source_type   TEXT NOT NULL DEFAULT 'chunk',
+./data_engine/ai/embeddings/embedding_storage.py:95:                chunk_order   INTEGER,
+./data_engine/ai/embeddings/embedding_storage.py:125:                embedding_id, source_id, source_type, article_id, chunk_order,
+./data_engine/ai/embeddings/embedding_storage.py:134:            record.chunk_order,
+./data_engine/ai/embeddings/embedding_storage.py:170:            "SELECT * FROM embeddings WHERE source_id=? ORDER BY chunk_order",
+./data_engine/ai/embeddings/embedding_storage.py:178:            "SELECT * FROM embeddings WHERE article_id=? ORDER BY chunk_order",
+./data_engine/ai/embeddings/embedding_storage.py:243:            chunk_order=row["chunk_order"],
+./data_engine/channels/predefined/demo_channel.py:40:                title="Demo Article 2: Data Engineering Basics",
+./data_engine/channels/predefined/news_channel.py:147:        3. Filter (dedup + language + quality + spam + policy)
+./data_engine/channels/predefined/news_channel.py:149:        5. Transform (chunk + tokenize)
+./data_engine/cli.py:1:"""واجهة سطر الأوامر — Data Engine CLI.
+./data_engine/cli.py:42:    help="Hajeen AI Platform — Data Engine CLI",
+./data_engine/embeddings/embedding_pipeline.py:18:    chunk_id: str
+./data_engine/embeddings/embedding_pipeline.py:26:    chunk_id: str
+./data_engine/embeddings/embedding_pipeline.py:136:                    chunk_id=job.chunk_id,
+./data_engine/embeddings/embedding_pipeline.py:150:                    chunk_id=job.chunk_id,
+./data_engine/embeddings/embedding_pipeline.py:161:                chunk_id=job.chunk_id,
+./data_engine/embeddings/embedding_pipeline.py:172:            logger.error("Embedding error chunk_id=%s: %s", job.chunk_id, exc)
+./data_engine/ingestion/schedulers/priority_queue.py:5:- Task deduplication (منع التكرار)
+./data_engine/ingestion/schedulers/priority_queue.py:91:    total_deduplicated: int = 0
+./data_engine/ingestion/schedulers/priority_queue.py:102:            "total_deduplicated": self.total_deduplicated,
+./data_engine/ingestion/schedulers/priority_queue.py:223:        self._seen_ids: set = set()  # deduplication
+./data_engine/ingestion/schedulers/priority_queue.py:253:        IngestionJob إذا نجحت الإضافة، None إذا رُفضت (dedup/backpressure).
+./data_engine/ingestion/schedulers/priority_queue.py:260:                self.metrics.total_deduplicated += 1
+./data_engine/metadata/tracker.py:47:    chunk_count: int = 0
+./data_engine/metadata/tracker.py:62:    """سجل البيانات الوصفية لـ chunk."""
+./data_engine/metadata/tracker.py:64:    chunk_id: str
+./data_engine/metadata/tracker.py:84:    source_type: str      # "article" | "chunk"
+./data_engine/metadata/tracker.py:119:    - تسجيل البيانات الوصفية لكل مستوى (article/chunk/embedding/stage)
+./data_engine/metadata/tracker.py:152:                chunk_count      INTEGER DEFAULT 0,
+./data_engine/metadata/tracker.py:165:            -- بيانات الـ chunks
+./data_engine/metadata/tracker.py:166:            CREATE TABLE IF NOT EXISTS chunk_metadata (
+./data_engine/metadata/tracker.py:167:                chunk_id      TEXT PRIMARY KEY,
+./data_engine/metadata/tracker.py:185:                source_type   TEXT DEFAULT 'chunk',
+./data_engine/metadata/tracker.py:215:            CREATE INDEX IF NOT EXISTS idx_chk_article ON chunk_metadata(article_id);
+./data_engine/metadata/tracker.py:232:                    chunk_count, embedding_id, processing_stage, content_hash, url_hash,
+./data_engine/metadata/tracker.py:239:                record.keyword_count, record.entity_count, record.chunk_count,
+./data_engine/metadata/tracker.py:286:    def track_chunk(self, record: ChunkMetadataRecord) -> None:
+./data_engine/metadata/tracker.py:287:        """تسجيل بيانات chunk."""
+./data_engine/metadata/tracker.py:290:                INSERT OR REPLACE INTO chunk_metadata (
+./data_engine/metadata/tracker.py:291:                    chunk_id, article_id, ord, char_count, token_count,
+./data_engine/metadata/tracker.py:295:                record.chunk_id, record.article_id, record.order,
+./data_engine/metadata/tracker.py:302:            logger.warning("MetadataTracker.track_chunk: %s — %s", record.chunk_id, exc)
+./data_engine/metadata/tracker.py:304:    def track_chunks_bulk(self, records: List[ChunkMetadataRecord]) -> int:
+./data_engine/metadata/tracker.py:308:                self.track_chunk(rec)
+./data_engine/metadata/tracker.py:314:    def get_chunks_for_article(self, article_id: str) -> List[Dict[str, Any]]:
+./data_engine/metadata/tracker.py:316:            "SELECT * FROM chunk_metadata WHERE article_id=? ORDER BY ord",
+./data_engine/metadata/tracker.py:402:        chunk_total = self._db.execute(
+./data_engine/metadata/tracker.py:403:            "SELECT COUNT(*) FROM chunk_metadata"
+./data_engine/metadata/tracker.py:438:            "chunks": {"total": chunk_total},
+./data_engine/pipelines/pipeline_orchestrator.py:25:from data_engine.processing.filtering.deduplicator import DeduplicatorConfig
+./data_engine/pipelines/pipeline_orchestrator.py:27:from data_engine.processing.filtering.quality_scorer import QualityScorerConfig
+./data_engine/pipelines/pipeline_orchestrator.py:34:from data_engine.processing.transformation.chunker import ChunkerConfig
+./data_engine/pipelines/pipeline_orchestrator.py:109:        dedup_config: Optional[DeduplicatorConfig] = None,
+./data_engine/pipelines/pipeline_orchestrator.py:111:        quality_config: Optional[QualityScorerConfig] = None,
+./data_engine/pipelines/pipeline_orchestrator.py:118:        chunker_config: Optional[ChunkerConfig] = None,
+./data_engine/pipelines/pipeline_orchestrator.py:132:                dedup_config=dedup_config,
+./data_engine/pipelines/pipeline_orchestrator.py:134:                quality_config=quality_config,
+./data_engine/pipelines/pipeline_orchestrator.py:151:        self.add_stage(TransformStage(chunker_config=chunker_config, tokenizer_config=tokenizer_config))
+./data_engine/pipelines/stages/embed_stage.py:15:    """سجل embedding كامل لـ chunk واحد."""
+./data_engine/pipelines/stages/embed_stage.py:16:    chunk_id: str
+./data_engine/pipelines/stages/embed_stage.py:29:            "chunk_id": self.chunk_id,
+./data_engine/pipelines/stages/embed_stage.py:43:    total_chunks: int
+./data_engine/pipelines/stages/embed_stage.py:52:        if self.total_chunks == 0:
+./data_engine/pipelines/stages/embed_stage.py:54:        return self.embedded / self.total_chunks
+./data_engine/pipelines/stages/embed_stage.py:59:            "total_chunks": self.total_chunks,
+./data_engine/pipelines/stages/embed_stage.py:70:    مرحلة توليد الـ embeddings للـ chunks.
+./data_engine/pipelines/stages/embed_stage.py:74:          ↓ chunking (يُفترض أنه تمّ مسبقاً)
+./data_engine/pipelines/stages/embed_stage.py:75:          ↓ ChunkEmbeddingStage.process(chunks)
+./data_engine/pipelines/stages/embed_stage.py:101:        chunk_ids: List[str],
+./data_engine/pipelines/stages/embed_stage.py:111:                    chunk_ids=chunk_ids,
+./data_engine/pipelines/stages/embed_stage.py:123:    async def process(self, chunks, article_id: str) -> EmbedStageResult:
+./data_engine/pipelines/stages/embed_stage.py:125:        يستقبل قائمة DocumentChunk أو أي كائن يحمل (chunk_id, text).
+./data_engine/pipelines/stages/embed_stage.py:129:        total = len(chunks)
+./data_engine/pipelines/stages/embed_stage.py:130:        result = EmbedStageResult(article_id=article_id, total_chunks=total, embedded=0, failed=0)
+./data_engine/pipelines/stages/embed_stage.py:132:        if not chunks:
+./data_engine/pipelines/stages/embed_stage.py:137:            batch = chunks[batch_start : batch_start + self.batch_size]
+./data_engine/pipelines/stages/embed_stage.py:139:            ids = [c.chunk_id for c in batch]
+./data_engine/pipelines/stages/embed_stage.py:143:                for chunk, emb in zip(batch, embeddings):
+./data_engine/pipelines/stages/embed_stage.py:145:                        chunk_id=chunk.chunk_id,
+./data_engine/pipelines/stages/embed_stage.py:147:                        text=chunk.text,
+./data_engine/pipelines/stages/embed_stage.py:163:            f"embed_stage: {result.embedded}/{total} chunks — {result.total_ms:.1f}ms"
+./data_engine/pipelines/stages/embed_stage.py:167:    async def process_single(self, chunk, article_id: str) -> Optional[ChunkEmbeddingRecord]:
+./data_engine/pipelines/stages/embed_stage.py:168:        """تضمين chunk واحد."""
+./data_engine/pipelines/stages/embed_stage.py:172:                chunk.text,
+./data_engine/pipelines/stages/embed_stage.py:173:                chunk_id=chunk.chunk_id,
+./data_engine/pipelines/stages/embed_stage.py:178:                chunk_id=chunk.chunk_id,
+./data_engine/pipelines/stages/embed_stage.py:180:                text=chunk.text,
+./data_engine/pipelines/stages/embed_stage.py:188:            logger.error(f"embed_single فشل لـ {chunk.chunk_id}: {exc}")
+./data_engine/pipelines/stages/filter_stage.py:3:Applies deduplication, language filtering, quality scoring, spam detection,
+./data_engine/pipelines/stages/filter_stage.py:12:from data_engine.processing.filtering.deduplicator import Deduplicator, DeduplicatorConfig
+./data_engine/pipelines/stages/filter_stage.py:14:from data_engine.processing.filtering.quality_scorer import QualityScorer, QualityScorerConfig
+./data_engine/pipelines/stages/filter_stage.py:22:    """Full filtering pipeline: dedup → language → quality → spam → policy.
+./data_engine/pipelines/stages/filter_stage.py:26:    dedup_config / lang_config / quality_config / spam_config / policy_config:
+./data_engine/pipelines/stages/filter_stage.py:38:        dedup_config: Optional[DeduplicatorConfig] = None,
+./data_engine/pipelines/stages/filter_stage.py:40:        quality_config: Optional[QualityScorerConfig] = None,
+./data_engine/pipelines/stages/filter_stage.py:48:        self._dedup = Deduplicator(config=dedup_config)
+./data_engine/pipelines/stages/filter_stage.py:55:        self._quality = QualityScorer(config=quality_config)
+./data_engine/pipelines/stages/filter_stage.py:69:        dedup_result = self._dedup.deduplicate(articles)
+./data_engine/pipelines/stages/filter_stage.py:70:        after_dedup = dedup_result.unique_articles
+./data_engine/pipelines/stages/filter_stage.py:71:        context.set("dedup_removed", dedup_result.duplicate_count)
+./data_engine/pipelines/stages/filter_stage.py:74:        lang_result = self._lang.filter_batch(after_dedup)
+./data_engine/pipelines/stages/filter_stage.py:79:        after_quality, quality_scores = self._quality.filter_batch(after_lang)
+./data_engine/pipelines/stages/filter_stage.py:80:        context.set("quality_rejected", len(after_lang) - len(after_quality))
+./data_engine/pipelines/stages/filter_stage.py:83:        after_spam, _ = self._spam.filter_batch(after_quality)
+./data_engine/pipelines/stages/filter_stage.py:84:        context.set("spam_rejected", len(after_quality) - len(after_spam))
+./data_engine/pipelines/stages/filter_stage.py:91:            "%s: in=%d dedup=%d lang=%d quality=%d spam=%d policy=%d out=%d",
+./data_engine/pipelines/stages/filter_stage.py:94:            dedup_result.duplicate_count,
+./data_engine/pipelines/stages/filter_stage.py:96:            len(after_lang) - len(after_quality),
+./data_engine/pipelines/stages/filter_stage.py:97:            len(after_quality) - len(after_spam),
+./data_engine/pipelines/stages/transform_stage.py:3:Chunks articles and estimates token counts. Stores chunk metadata in
+./data_engine/pipelines/stages/transform_stage.py:12:from data_engine.processing.transformation.chunker import TextChunker, ChunkerConfig
+./data_engine/pipelines/stages/transform_stage.py:19:    """Transforms articles by chunking and estimating token counts.
+./data_engine/pipelines/stages/transform_stage.py:23:    chunker_config:
+./data_engine/pipelines/stages/transform_stage.py:33:        chunker_config: Optional[ChunkerConfig] = None,
+./data_engine/pipelines/stages/transform_stage.py:38:        self._chunker = TextChunker(config=chunker_config)
+./data_engine/pipelines/stages/transform_stage.py:47:        total_chunks = 0
+./data_engine/pipelines/stages/transform_stage.py:50:            chunks = self._chunker.chunk_article(article)
+./data_engine/pipelines/stages/transform_stage.py:52:            total_chunks += len(chunks)
+./data_engine/pipelines/stages/transform_stage.py:55:            new_extra["chunk_count"] = len(chunks)
+./data_engine/pipelines/stages/transform_stage.py:57:            new_extra["chunks"] = [
+./data_engine/pipelines/stages/transform_stage.py:65:                for c in chunks
+./data_engine/pipelines/stages/transform_stage.py:71:        context.set("total_chunks", total_chunks)
+./data_engine/pipelines/stages/transform_stage.py:74:            "%s: transformed %d articles → %d chunks",
+./data_engine/pipelines/stages/transform_stage.py:75:            self.name, len(result), total_chunks,
+./data_engine/preparation/data_preparation_pipeline.py:4:from .deduplicator import Deduplicator
+./data_engine/preparation/data_preparation_pipeline.py:5:from .quality_scorer import QualityScorer
+./data_engine/preparation/data_preparation_pipeline.py:7:from .dataset_statistics import DatasetStatistics
+./data_engine/preparation/data_preparation_pipeline.py:10:    def __init__(self, deduplication_threshold: float = 0.8):
+./data_engine/preparation/data_preparation_pipeline.py:12:        self.deduplicator = Deduplicator(threshold=deduplication_threshold)
+./data_engine/preparation/data_preparation_pipeline.py:15:        self.stats_generator = DatasetStatistics()
+./data_engine/preparation/data_preparation_pipeline.py:17:    def run(self, dataset: List[Dict], min_quality_score: int = 0) -> List[Dict]:
+./data_engine/preparation/data_preparation_pipeline.py:22:        validated_dataset = self.validator.validate_dataset(dataset)
+./data_engine/preparation/data_preparation_pipeline.py:23:        print(f"Validated {len(validated_dataset)} samples.")
+./data_engine/preparation/data_preparation_pipeline.py:27:        lang_filtered_dataset = self.lang_detector.filter_unsupported_languages(validated_dataset)
+./data_engine/preparation/data_preparation_pipeline.py:28:        print(f"Filtered to {len(lang_filtered_dataset)} samples after language detection.")
+./data_engine/preparation/data_preparation_pipeline.py:31:        print("Scoring data quality...")
+./data_engine/preparation/data_preparation_pipeline.py:32:        scored_dataset = self.scorer.score_dataset(lang_filtered_dataset)
+./data_engine/preparation/data_preparation_pipeline.py:33:        print(f"Scored {len(scored_dataset)} samples.")
+./data_engine/preparation/data_preparation_pipeline.py:35:        # Filter by minimum quality score
+./data_engine/preparation/data_preparation_pipeline.py:36:        quality_filtered_dataset = [sample for sample in scored_dataset if sample.get("quality_score", 0) >= min_quality_score]
+./data_engine/preparation/data_preparation_pipeline.py:37:        print(f"Filtered to {len(quality_filtered_dataset)} samples with quality score >= {min_quality_score}.")
+./data_engine/preparation/data_preparation_pipeline.py:40:        print("Running deduplication...")
+./data_engine/preparation/data_preparation_pipeline.py:41:        deduplicated_dataset = self.deduplicator.deduplicate_dataset(quality_filtered_dataset)
+./data_engine/preparation/data_preparation_pipeline.py:42:        print(f"Deduplicated to {len(deduplicated_dataset)} unique samples.")
+./data_engine/preparation/data_preparation_pipeline.py:45:        return deduplicated_dataset
+./data_engine/preparation/data_preparation_pipeline.py:47:    def generate_and_save_statistics(self, dataset: List[Dict], filepath: str):
+./data_engine/preparation/data_preparation_pipeline.py:48:        print("Generating dataset statistics...")
+./data_engine/preparation/data_preparation_pipeline.py:49:        stats = self.stats_generator.generate_statistics(dataset)
+./data_engine/preparation/data_validator.py:39:    def validate_dataset(self, dataset: list[dict]) -> list[dict]:
+./data_engine/preparation/data_validator.py:40:        validated_dataset = [self.validate_sample(sample) for sample in dataset]
+./data_engine/preparation/data_validator.py:41:        return validated_dataset
+./data_engine/preparation/dataset_statistics.py:5:class DatasetStatistics:
+./data_engine/preparation/dataset_statistics.py:9:    def generate_statistics(self, dataset: List[Dict]) -> Dict:
+./data_engine/preparation/dataset_statistics.py:11:            "num_samples": len(dataset),
+./data_engine/preparation/dataset_statistics.py:16:            "quality_score_distribution": {},
+./data_engine/preparation/dataset_statistics.py:21:        for sample in dataset:
+./data_engine/preparation/dataset_statistics.py:36:            quality_score = sample.get("quality_score")
+./data_engine/preparation/dataset_statistics.py:37:            if quality_score is not None:
+./data_engine/preparation/dataset_statistics.py:38:                score_range = f"{int(quality_score / 10) * 10}-{(int(quality_score / 10) * 10) + 9}"
+./data_engine/preparation/dataset_statistics.py:39:                stats["quality_score_distribution"][score_range] = stats["quality_score_distribution"].get(score_range, 0) + 1
+./data_engine/preparation/deduplicator.py:18:    def deduplicate_dataset(self, dataset: List[Dict]) -> List[Dict]:
+./data_engine/preparation/deduplicator.py:23:        for i, sample in enumerate(dataset):
+./data_engine/preparation/language_detector.py:18:    def filter_unsupported_languages(self, dataset: List[Dict]) -> List[Dict]:
+./data_engine/preparation/language_detector.py:19:        filtered_dataset = []
+./data_engine/preparation/language_detector.py:20:        for sample in dataset:
+./data_engine/preparation/language_detector.py:32:                filtered_dataset.append(sample)
+./data_engine/preparation/language_detector.py:33:        return filtered_dataset
+./data_engine/preparation/quality_scorer.py:26:        sample['quality_score'] = max(0, min(100, int(score)))
+./data_engine/preparation/quality_scorer.py:29:    def score_dataset(self, dataset: list[dict]) -> list[dict]:
+./data_engine/preparation/quality_scorer.py:30:        scored_dataset = [self.score_sample(sample) for sample in dataset]
+./data_engine/preparation/quality_scorer.py:31:        return scored_dataset
+./data_engine/processing/__init__.py:16:    PIIFilter, PIIFilterConfig,
+./data_engine/processing/__init__.py:53:    "PIIFilter",
+./data_engine/processing/__init__.py:54:    "PIIFilterConfig",
+./data_engine/processing/enrichment/keyword_extractor.py:68:    deduplication_threshold: float = 0.7
+./data_engine/processing/enrichment/keyword_extractor.py:100:    dedup_threshold: float = 0.7,
+./data_engine/processing/enrichment/keyword_extractor.py:114:    dedup_threshold:
+./data_engine/processing/enrichment/keyword_extractor.py:115:        YAKE deduplication threshold.
+./data_engine/processing/enrichment/keyword_extractor.py:127:        dedupLim=dedup_threshold,
+./data_engine/processing/enrichment/keyword_extractor.py:247:                    dedup_threshold=cfg.deduplication_threshold,
+./data_engine/processing/filtering/__init__.py:9:    compute_quality_score,
+./data_engine/processing/filtering/__init__.py:13:from .deduplicator import (
+./data_engine/processing/filtering/__init__.py:30:from .quality_scorer import (
+./data_engine/processing/filtering/__init__.py:53:# Phase 2 — PII filter + unified pipeline
+./data_engine/processing/filtering/__init__.py:55:    PIIFilter,
+./data_engine/processing/filtering/__init__.py:56:    PIIFilterConfig,
+./data_engine/processing/filtering/__init__.py:57:    PIIRedactionResult,
+./data_engine/processing/filtering/__init__.py:58:    PIIMatch,
+./data_engine/processing/filtering/__init__.py:74:    "compute_quality_score",
+./data_engine/processing/filtering/__init__.py:75:    # Phase 5 — deduplicator
+./data_engine/processing/filtering/__init__.py:88:    # Phase 5 — quality_scorer
+./data_engine/processing/filtering/__init__.py:107:    # Phase 2 — PII + pipeline
+./data_engine/processing/filtering/__init__.py:108:    "PIIFilter",
+./data_engine/processing/filtering/__init__.py:109:    "PIIFilterConfig",
+./data_engine/processing/filtering/__init__.py:110:    "PIIRedactionResult",
+./data_engine/processing/filtering/__init__.py:111:    "PIIMatch",
+./data_engine/processing/filtering/content_filter.py:3:Filters articles based on configurable quality, language, keyword, and
+./data_engine/processing/filtering/content_filter.py:10:- Duplicate URL deduplication within a batch
+./data_engine/processing/filtering/content_filter.py:48:    deduplicate_urls: bool = True
+./data_engine/processing/filtering/content_filter.py:49:    deduplicate_content: bool = False
+./data_engine/processing/filtering/content_filter.py:50:    min_quality_score: float = 0.0
+./data_engine/processing/filtering/content_filter.py:98:def compute_quality_score(article: Article) -> float:
+./data_engine/processing/filtering/content_filter.py:99:    """Compute a simple quality score in [0.0, 1.0].
+./data_engine/processing/filtering/content_filter.py:180:        """Clear deduplication state (seen URLs and content hashes)."""
+./data_engine/processing/filtering/content_filter.py:191:        reset_dedup: bool = False,
+./data_engine/processing/filtering/content_filter.py:199:        reset_dedup:
+./data_engine/processing/filtering/content_filter.py:200:            If ``True`` clear deduplication state before filtering.
+./data_engine/processing/filtering/content_filter.py:206:        if reset_dedup:
+./data_engine/processing/filtering/content_filter.py:232:        Note: does NOT update deduplication state.
+./data_engine/processing/filtering/content_filter.py:289:        if self.config.min_quality_score > 0:
+./data_engine/processing/filtering/content_filter.py:290:            score = compute_quality_score(article)
+./data_engine/processing/filtering/content_filter.py:291:            if score < self.config.min_quality_score:
+./data_engine/processing/filtering/content_filter.py:292:                return f"quality_too_low ({score:.4f} < {self.config.min_quality_score})"
+./data_engine/processing/filtering/content_filter.py:295:        if self.config.deduplicate_urls:
+./data_engine/processing/filtering/content_filter.py:301:        if self.config.deduplicate_content:
+./data_engine/processing/filtering/deduplication_engine.py:5:  2. Chunk Deduplication    — منع تكرار الـ chunks
+./data_engine/processing/filtering/deduplication_engine.py:11:  - URL-based deduplication
+./data_engine/processing/filtering/deduplication_engine.py:29:_DB_PATH = Path("storage_data/metadata/dedup_state.db")
+./data_engine/processing/filtering/deduplication_engine.py:78:    deduplicate_urls: bool = True
+./data_engine/processing/filtering/deduplication_engine.py:79:    deduplicate_content: bool = True
+./data_engine/processing/filtering/deduplication_engine.py:80:    deduplicate_similar: bool = True
+./data_engine/processing/filtering/deduplication_engine.py:86:    deduplicate_chunks: bool = True
+./data_engine/processing/filtering/deduplication_engine.py:87:    chunk_similarity_threshold: float = 0.90
+./data_engine/processing/filtering/deduplication_engine.py:90:    deduplicate_embeddings: bool = True
+./data_engine/processing/filtering/deduplication_engine.py:127:    """نتيجة إزالة التكرار من دُفعة chunks."""
+./data_engine/processing/filtering/deduplication_engine.py:128:    unique_chunks: List[Any] = field(default_factory=list)
+./data_engine/processing/filtering/deduplication_engine.py:133:        return len(self.unique_chunks)
+./data_engine/processing/filtering/deduplication_engine.py:167:            CREATE TABLE IF NOT EXISTS chunk_hashes (
+./data_engine/processing/filtering/deduplication_engine.py:169:                chunk_id TEXT NOT NULL,
+./data_engine/processing/filtering/deduplication_engine.py:199:    def has_chunk_hash(self, h: str) -> bool:
+./data_engine/processing/filtering/deduplication_engine.py:201:            "SELECT 1 FROM chunk_hashes WHERE hash=?", (h,)
+./data_engine/processing/filtering/deduplication_engine.py:205:    def add_chunk_hash(self, h: str, chunk_id: str, article_id: str) -> None:
+./data_engine/processing/filtering/deduplication_engine.py:208:                "INSERT OR IGNORE INTO chunk_hashes (hash, chunk_id, article_id) VALUES (?,?,?)",
+./data_engine/processing/filtering/deduplication_engine.py:209:                (h, chunk_id, article_id),
+./data_engine/processing/filtering/deduplication_engine.py:213:            logger.warning("DedupStore: خطأ في حفظ هاش الـ chunk — %s", exc)
+./data_engine/processing/filtering/deduplication_engine.py:236:    def chunk_count(self) -> int:
+./data_engine/processing/filtering/deduplication_engine.py:238:            "SELECT COUNT(*) FROM chunk_hashes"
+./data_engine/processing/filtering/deduplication_engine.py:247:            "DELETE FROM article_hashes; DELETE FROM chunk_hashes; DELETE FROM embedding_hashes;"
+./data_engine/processing/filtering/deduplication_engine.py:268:        self._chunk_hashes: Set[str] = set()
+./data_engine/processing/filtering/deduplication_engine.py:284:    def deduplicate_articles(
+./data_engine/processing/filtering/deduplication_engine.py:326:        if cfg.deduplicate_similar and len(unique) > 1:
+./data_engine/processing/filtering/deduplication_engine.py:327:            result = self._similarity_dedup(result)
+./data_engine/processing/filtering/deduplication_engine.py:350:    def deduplicate_chunks(
+./data_engine/processing/filtering/deduplication_engine.py:352:        chunks: List[Any],
+./data_engine/processing/filtering/deduplication_engine.py:355:        """إزالة تكرار الـ chunks.
+./data_engine/processing/filtering/deduplication_engine.py:357:        يقبل DocumentChunk أو dict مع حقول chunk_id وtext.
+./data_engine/processing/filtering/deduplication_engine.py:360:            self._chunk_hashes.clear()
+./data_engine/processing/filtering/deduplication_engine.py:365:        for chunk in chunks:
+./data_engine/processing/filtering/deduplication_engine.py:366:            chunk_id, text, article_id = self._extract_chunk_fields(chunk)
+./data_engine/processing/filtering/deduplication_engine.py:369:            is_dup = h in self._chunk_hashes
+./data_engine/processing/filtering/deduplication_engine.py:371:                is_dup = self._store.has_chunk_hash(h)
+./data_engine/processing/filtering/deduplication_engine.py:374:                dup_ids.append(chunk_id)
+./data_engine/processing/filtering/deduplication_engine.py:375:                logger.debug("ChunkDedup: تكرار chunk_id=%s", chunk_id)
+./data_engine/processing/filtering/deduplication_engine.py:377:                self._chunk_hashes.add(h)
+./data_engine/processing/filtering/deduplication_engine.py:379:                    self._store.add_chunk_hash(h, chunk_id, article_id)
+./data_engine/processing/filtering/deduplication_engine.py:380:                unique.append(chunk)
+./data_engine/processing/filtering/deduplication_engine.py:386:        return ChunkDedupResult(unique_chunks=unique, duplicate_ids=dup_ids)
+./data_engine/processing/filtering/deduplication_engine.py:392:    def deduplicate_embeddings(
+./data_engine/processing/filtering/deduplication_engine.py:433:                "chunk_hashes": len(self._chunk_hashes),
+./data_engine/processing/filtering/deduplication_engine.py:440:                "chunks": self._store.chunk_count(),
+./data_engine/processing/filtering/deduplication_engine.py:448:        self._chunk_hashes.clear()
+./data_engine/processing/filtering/deduplication_engine.py:491:    def _extract_chunk_fields(self, chunk: Any) -> Tuple[str, str, str]:
+./data_engine/processing/filtering/deduplication_engine.py:492:        """استخراج حقول الـ chunk."""
+./data_engine/processing/filtering/deduplication_engine.py:493:        from data_engine.processing.transformation.chunking_engine import DocumentChunk
+./data_engine/processing/filtering/deduplication_engine.py:494:        if isinstance(chunk, DocumentChunk):
+./data_engine/processing/filtering/deduplication_engine.py:495:            return chunk.chunk_id, chunk.text, chunk.article_id
+./data_engine/processing/filtering/deduplication_engine.py:496:        elif isinstance(chunk, dict):
+./data_engine/processing/filtering/deduplication_engine.py:498:                str(chunk.get("chunk_id", "")),
+./data_engine/processing/filtering/deduplication_engine.py:499:                str(chunk.get("text", "")),
+./data_engine/processing/filtering/deduplication_engine.py:500:                str(chunk.get("article_id", "")),
+./data_engine/processing/filtering/deduplication_engine.py:502:        return "", str(chunk), ""
+./data_engine/processing/filtering/deduplication_engine.py:516:        if cfg.deduplicate_urls and url:
+./data_engine/processing/filtering/deduplication_engine.py:529:        if cfg.deduplicate_content and content:
+./data_engine/processing/filtering/deduplication_engine.py:552:    def _similarity_dedup(
+./data_engine/processing/filtering/deduplicator.py:5:- URL-based deduplication
+./data_engine/processing/filtering/deduplicator.py:30:    """Controls deduplication behaviour."""
+./data_engine/processing/filtering/deduplicator.py:32:    deduplicate_urls: bool = True
+./data_engine/processing/filtering/deduplicator.py:33:    deduplicate_exact_content: bool = True
+./data_engine/processing/filtering/deduplicator.py:34:    deduplicate_similar_content: bool = False
+./data_engine/processing/filtering/deduplicator.py:127:    """Result of a deduplication pass."""
+./data_engine/processing/filtering/deduplicator.py:150:    This allows deduplication across multiple fetch cycles.
+./data_engine/processing/filtering/deduplicator.py:164:        """Clear all seen hashes (start fresh dedup state)."""
+./data_engine/processing/filtering/deduplicator.py:172:    def deduplicate(
+./data_engine/processing/filtering/deduplicator.py:214:        if cfg.deduplicate_similar_content:
+./data_engine/processing/filtering/deduplicator.py:215:            result = self._fuzzy_dedup(result)
+./data_engine/processing/filtering/deduplicator.py:269:        if cfg.deduplicate_urls:
+./data_engine/processing/filtering/deduplicator.py:276:        if cfg.deduplicate_exact_content:
+./data_engine/processing/filtering/deduplicator.py:285:    def _fuzzy_dedup(self, result: DedupResult) -> DedupResult:
+./data_engine/processing/filtering/deduplicator.py:286:        """Apply fuzzy similarity check to the already URL/hash-deduped list."""
+./data_engine/processing/filtering/filtering_pipeline.py:10:  7. PIIFilter        — إخفاء البيانات الحساسة
+./data_engine/processing/filtering/filtering_pipeline.py:25:from .quality_scorer import QualityScorer, QualityScorerConfig
+./data_engine/processing/filtering/filtering_pipeline.py:27:from .deduplicator import Deduplicator, DeduplicatorConfig
+./data_engine/processing/filtering/filtering_pipeline.py:28:from .pii_filter import PIIFilter, PIIFilterConfig
+./data_engine/processing/filtering/filtering_pipeline.py:45:    use_quality_scorer: bool = True
+./data_engine/processing/filtering/filtering_pipeline.py:47:    use_deduplicator: bool = True
+./data_engine/processing/filtering/filtering_pipeline.py:54:    quality_config: Optional[QualityScorerConfig] = None
+./data_engine/processing/filtering/filtering_pipeline.py:56:    dedup_config: Optional[DeduplicatorConfig] = None
+./data_engine/processing/filtering/filtering_pipeline.py:57:    pii_config: Optional[PIIFilterConfig] = None
+./data_engine/processing/filtering/filtering_pipeline.py:76:    quality_score: float = 0.0
+./data_engine/processing/filtering/filtering_pipeline.py:102:    def avg_quality_score(self) -> float:
+./data_engine/processing/filtering/filtering_pipeline.py:103:        scores = [r.quality_score for r in self.article_results if r.passed]
+./data_engine/processing/filtering/filtering_pipeline.py:117:            "avg_quality_score": round(self.avg_quality_score, 4),
+./data_engine/processing/filtering/filtering_pipeline.py:143:        self._quality_scorer = QualityScorer(cfg.quality_config) if cfg.use_quality_scorer else None
+./data_engine/processing/filtering/filtering_pipeline.py:145:        self._deduplicator = Deduplicator(cfg.dedup_config) if cfg.use_deduplicator else None
+./data_engine/processing/filtering/filtering_pipeline.py:146:        self._pii_filter = PIIFilter(cfg.pii_config) if cfg.use_pii_filter else None
+./data_engine/processing/filtering/filtering_pipeline.py:148:    def reset_dedup(self) -> None:
+./data_engine/processing/filtering/filtering_pipeline.py:149:        """إعادة تعيين حالة الـ deduplication."""
+./data_engine/processing/filtering/filtering_pipeline.py:150:        if self._deduplicator:
+./data_engine/processing/filtering/filtering_pipeline.py:151:            self._deduplicator.reset()
+./data_engine/processing/filtering/filtering_pipeline.py:220:            if self._quality_scorer and result.passed:
+./data_engine/processing/filtering/filtering_pipeline.py:221:                score = self._quality_scorer.score_article(current)
+./data_engine/processing/filtering/filtering_pipeline.py:222:                result.quality_score = score.total_score
+./data_engine/processing/filtering/filtering_pipeline.py:244:            # 6. Deduplicator (check only — batch dedup done in filter_batch)
+./data_engine/processing/filtering/filtering_pipeline.py:245:            if self._deduplicator and result.passed:
+./data_engine/processing/filtering/filtering_pipeline.py:246:                is_dup = self._deduplicator.is_duplicate(current)
+./data_engine/processing/filtering/filtering_pipeline.py:256:            # 7. PIIFilter
+./data_engine/processing/filtering/filtering_pipeline.py:262:                    result.rejected_by = "PIIFilter"
+./data_engine/processing/filtering/filtering_pipeline.py:281:        self, articles: List[Article], reset_dedup: bool = False
+./data_engine/processing/filtering/filtering_pipeline.py:289:        reset_dedup:
+./data_engine/processing/filtering/filtering_pipeline.py:290:            إعادة تعيين dedup state قبل المعالجة.
+./data_engine/processing/filtering/filtering_pipeline.py:296:        if reset_dedup and self._deduplicator:
+./data_engine/processing/filtering/filtering_pipeline.py:297:            self._deduplicator.reset()
+./data_engine/processing/filtering/pii_filter.py:1:"""PII Filter — Phase 2 (Section 2.3).
+./data_engine/processing/filtering/pii_filter.py:3:يكتشف ويُعيد كتابة (redact) البيانات الشخصية الحساسة (PII).
+./data_engine/processing/filtering/pii_filter.py:84:class PIIFilterConfig:
+./data_engine/processing/filtering/pii_filter.py:85:    """إعدادات فلتر PII."""
+./data_engine/processing/filtering/pii_filter.py:111:# PII Detection Result
+./data_engine/processing/filtering/pii_filter.py:115:class PIIMatch:
+./data_engine/processing/filtering/pii_filter.py:116:    """مطابقة PII واحدة."""
+./data_engine/processing/filtering/pii_filter.py:125:class PIIRedactionResult:
+./data_engine/processing/filtering/pii_filter.py:130:    matches: List[PIIMatch] = field(default_factory=list)
+./data_engine/processing/filtering/pii_filter.py:149:    cfg: PIIFilterConfig,
+./data_engine/processing/filtering/pii_filter.py:150:    matches_out: Optional[List[PIIMatch]] = None,
+./data_engine/processing/filtering/pii_filter.py:178:                matches_out.append(PIIMatch(
+./data_engine/processing/filtering/pii_filter.py:192:# PIIFilter class
+./data_engine/processing/filtering/pii_filter.py:195:class PIIFilter:
+./data_engine/processing/filtering/pii_filter.py:196:    """فلتر إخفاء البيانات الشخصية الحساسة (PII Redaction).
+./data_engine/processing/filtering/pii_filter.py:201:        PIIFilterConfig للتحكم في السلوك.
+./data_engine/processing/filtering/pii_filter.py:204:    def __init__(self, config: Optional[PIIFilterConfig] = None) -> None:
+./data_engine/processing/filtering/pii_filter.py:205:        self.config = config or PIIFilterConfig()
+./data_engine/processing/filtering/pii_filter.py:207:    def redact_article(self, article: Article) -> PIIRedactionResult:
+./data_engine/processing/filtering/pii_filter.py:217:        PIIRedactionResult مع المحتوى المُنقّى.
+./data_engine/processing/filtering/pii_filter.py:220:        matches: List[PIIMatch] = []
+./data_engine/processing/filtering/pii_filter.py:240:                "PIIFilter: rejected id=%s — %s", article.id, rejection_reason
+./data_engine/processing/filtering/pii_filter.py:244:                "PIIFilter: id=%s redacted=%d types=%s",
+./data_engine/processing/filtering/pii_filter.py:250:        return PIIRedactionResult(
+./data_engine/processing/filtering/pii_filter.py:260:    def apply_to_article(self, article: Article) -> Tuple[Article, PIIRedactionResult]:
+./data_engine/processing/filtering/pii_filter.py:284:    ) -> Tuple[List[Article], List[PIIRedactionResult]]:
+./data_engine/processing/filtering/pii_filter.py:285:        """تطبيق PII redaction على دُفعة من المقالات.
+./data_engine/processing/filtering/pii_filter.py:297:        results: List[PIIRedactionResult] = []
+./data_engine/processing/filtering/pii_filter.py:308:            "PIIFilter.filter_batch: in=%d kept=%d rejected=%d total_pii_redacted=%d",
+./data_engine/processing/filtering/pii_filter.py:317:        """اكتشاف PII في نص بدون redaction (للتحليل فقط).
+./data_engine/processing/filtering/pii_filter.py:323:        matches: List[PIIMatch] = []
+./data_engine/processing/filtering/quality_scorer.py:3:Scores articles on multiple quality dimensions and provides a rejection
+./data_engine/processing/filtering/quality_scorer.py:42:    """Controls quality scoring behaviour."""
+./data_engine/processing/filtering/quality_scorer.py:219:    """Detailed quality score for a single article."""
+./data_engine/processing/filtering/quality_scorer.py:240:    """Computes quality scores and filters low-quality articles.
+./data_engine/processing/filtering/quality_scorer.py:252:        """Compute a detailed quality score for *article*.
+./data_engine/processing/filtering/quality_scorer.py:283:            rejection_reason = f"quality_below_threshold (score={total:.3f}, worst={worst_dim})"
+./data_engine/processing/filtering/spam_detector.py:3:Detects spam / low-quality promotional content using heuristic rules only.
+./data_engine/processing/transformation/__init__.py:3:from .chunker import TextChunker, ChunkerConfig
+./data_engine/processing/transformation/chunker.py:3:Splits long texts into overlapping chunks for downstream processing.
+./data_engine/processing/transformation/chunker.py:11:All strategies support configurable ``chunk_size`` and ``overlap``.
+./data_engine/processing/transformation/chunker.py:43:    """Controls text chunking behaviour."""
+./data_engine/processing/transformation/chunker.py:46:    chunk_size: int = 512          # chars (fixed) or tokens (token_estimate)
+./data_engine/processing/transformation/chunker.py:48:    min_chunk_length: int = 20    # skip chunks shorter than this
+./data_engine/processing/transformation/chunker.py:49:    max_chunks: Optional[int] = None
+./data_engine/processing/transformation/chunker.py:59:    """A single text chunk."""
+./data_engine/processing/transformation/chunker.py:104:    """Merge short parts into chunks of at most *max_chars* characters,
+./data_engine/processing/transformation/chunker.py:105:    with *overlap_chars* of trailing overlap between consecutive chunks."""
+./data_engine/processing/transformation/chunker.py:106:    chunks: List[str] = []
+./data_engine/processing/transformation/chunker.py:114:                chunks.append(current)
+./data_engine/processing/transformation/chunker.py:115:            # Start next chunk with overlap from the end of current
+./data_engine/processing/transformation/chunker.py:120:        chunks.append(current)
+./data_engine/processing/transformation/chunker.py:122:    return chunks
+./data_engine/processing/transformation/chunker.py:125:def _fixed_split(text: str, chunk_size: int, overlap: int) -> List[str]:
+./data_engine/processing/transformation/chunker.py:127:    chunks: List[str] = []
+./data_engine/processing/transformation/chunker.py:132:        end = min(start + chunk_size, length)
+./data_engine/processing/transformation/chunker.py:133:        chunks.append(text[start:end])
+./data_engine/processing/transformation/chunker.py:134:        start = end - overlap if overlap < chunk_size else end
+./data_engine/processing/transformation/chunker.py:136:    return chunks
+./data_engine/processing/transformation/chunker.py:144:    """Splits long texts into manageable chunks.
+./data_engine/processing/transformation/chunker.py:155:    def chunk_text(self, text: str) -> List[Chunk]:
+./data_engine/processing/transformation/chunker.py:156:        """Split *text* into chunks according to config.
+./data_engine/processing/transformation/chunker.py:171:        raw_chunks = self._split(text)
+./data_engine/processing/transformation/chunker.py:173:        if not raw_chunks:
+./data_engine/processing/transformation/chunker.py:177:        chunks: List[Chunk] = []
+./data_engine/processing/transformation/chunker.py:179:        for i, chunk_text in enumerate(raw_chunks):
+./data_engine/processing/transformation/chunker.py:180:            if len(chunk_text) < cfg.min_chunk_length:
+./data_engine/processing/transformation/chunker.py:182:            # Find the chunk start position in original text
+./data_engine/processing/transformation/chunker.py:183:            start = text.find(chunk_text, cursor)
+./data_engine/processing/transformation/chunker.py:186:            end = start + len(chunk_text)
+./data_engine/processing/transformation/chunker.py:189:            chunks.append(
+./data_engine/processing/transformation/chunker.py:192:                    text=chunk_text,
+./data_engine/processing/transformation/chunker.py:195:                    estimated_tokens=_estimate_tokens(chunk_text),
+./data_engine/processing/transformation/chunker.py:199:            if cfg.max_chunks and len(chunks) >= cfg.max_chunks:
+./data_engine/processing/transformation/chunker.py:203:            "TextChunker: strategy=%s chunks=%d total_chars=%d",
+./data_engine/processing/transformation/chunker.py:205:            len(chunks),
+./data_engine/processing/transformation/chunker.py:208:        return chunks
+./data_engine/processing/transformation/chunker.py:210:    def chunk_article(self, article: Article) -> List[Chunk]:
+./data_engine/processing/transformation/chunker.py:222:        chunks = self.chunk_text(article.content)
+./data_engine/processing/transformation/chunker.py:223:        logger.debug("TextChunker: id=%s chunks=%d", article.id, len(chunks))
+./data_engine/processing/transformation/chunker.py:224:        return chunks
+./data_engine/processing/transformation/chunker.py:226:    def chunk_batch(
+./data_engine/processing/transformation/chunker.py:238:        List of ``(article, chunks)`` tuples.
+./data_engine/processing/transformation/chunker.py:240:        result = [(a, self.chunk_article(a)) for a in articles]
+./data_engine/processing/transformation/chunker.py:242:            "TextChunker.chunk_batch: articles=%d total_chunks=%d",
+./data_engine/processing/transformation/chunker.py:255:        chunk_size = cfg.chunk_size
+./data_engine/processing/transformation/chunker.py:257:        min_len = cfg.min_chunk_length
+./data_engine/processing/transformation/chunker.py:260:            return _fixed_split(text, chunk_size, overlap)
+./data_engine/processing/transformation/chunker.py:263:            char_size = chunk_size * _CHARS_PER_TOKEN
+./data_engine/processing/transformation/chunker.py:269:            return _merge_with_overlap(parts, chunk_size, overlap, min_len)
+./data_engine/processing/transformation/chunker.py:275:        return _merge_with_overlap(parts, chunk_size, overlap, min_len)
+./data_engine/processing/transformation/chunking_engine.py:4:  - recursive chunking (الأسلوب الموصى به)
+./data_engine/processing/transformation/chunking_engine.py:5:  - semantic chunking (تقسيم بناءً على الجمل والفقرات)
+./data_engine/processing/transformation/chunking_engine.py:6:  - fixed chunking (حجم ثابت بالأحرف)
+./data_engine/processing/transformation/chunking_engine.py:7:  - token-aware chunking (بالاستناد إلى عدد الـ tokens)
+./data_engine/processing/transformation/chunking_engine.py:39:    المعرّف (chunk_id) محدد وثابت بناءً على محتوى القطعة
+./data_engine/processing/transformation/chunking_engine.py:42:    chunk_id: str
+./data_engine/processing/transformation/chunking_engine.py:58:            self.content_hash = _compute_chunk_hash(self.text)
+./data_engine/processing/transformation/chunking_engine.py:70:            f"DocumentChunk(id={self.chunk_id[:12]}… "

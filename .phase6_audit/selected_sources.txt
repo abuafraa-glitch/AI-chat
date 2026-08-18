@@ -1,0 +1,2763 @@
+===== cloud/dataset_manager.py =====
+"""
+dataset_manager.py — HuggingFace Dataset Manager
+إدارة تحميل ورفع وتقسيم وتحديث datasets من/إلى HuggingFace
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+from dotenv import load_dotenv
+
+from .hf_client import HFClient
+
+load_dotenv()
+logger = logging.getLogger(__name__)
+
+
+class DatasetManager:
+    """
+    مدير Datasets: تحميل، رفع، تقسيم، تحديث تلقائي.
+    يعمل مع HuggingFace Datasets Hub.
+    """
+
+    SUPPORTED_SOURCES = [
+        "wikipedia",
+        "common_crawl",
+        "arabic",
+        "english",
+        "qa",
+        "code",
+    ]
+
+    def __init__(self, hf_client: Optional[HFClient] = None):
+        self.client = hf_client or HFClient()
+        self.dataset_repo = self.client.dataset_repo
+        self.local_cache_dir = Path(
+            os.getenv("DATASET_CACHE_DIR", "./data/hf_datasets")
+        )
+        self.local_cache_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"DatasetManager جاهز. Cache: {self.local_cache_dir}")
+
+    def load_from_hub(
+        self,
+        dataset_name: str,
+        split: str = "train",
+        streaming: bool = False,
+        config_name: Optional[str] = None,
+        num_samples: Optional[int] = None,
+    ) -> Any:
+        """
+        تحميل dataset من HuggingFace Hub.
+
+        Args:
+            dataset_name: اسم الـ dataset (مثلاً 'Raedthawaba/hajeen-datasets')
+            split: الـ split المطلوب ('train', 'validation', 'test')
+            streaming: تفعيل streaming لتوفير الذاكرة
+            config_name: اسم الـ config إذا وُجد
+            num_samples: عدد العينات (None = كل شيء)
+
+        Returns:
+            HuggingFace Dataset object
+        """
+        from datasets import load_dataset
+
+        logger.info(f"⬇️  تحميل dataset: {dataset_name} [{split}]")
+        kwargs: Dict[str, Any] = {
+            "path": dataset_name,
+            "split": split,
+            "streaming": streaming,
+            "token": self.client.token or None,
+        }
+        if config_name:
+            kwargs["name"] = config_name
+
+        try:
+            dataset = load_dataset(**kwargs)
+            if num_samples and not streaming:
+                dataset = dataset.select(range(min(num_samples, len(dataset))))
+            logger.info(f"✅ تم تحميل {dataset_name}: {len(dataset) if not streaming else 'streaming'} عينة")
+            return dataset
+        except Exception as e:
+            logger.error(f"❌ فشل تحميل {dataset_name}: {e}")
+            raise
+
+    def load_hajeen_datasets(
+        self,
+        splits: Optional[List[str]] = None,
+        streaming: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        تحميل مجموعة datasets الحاجين من HuggingFace.
+        """
+        splits = splits or ["train"]
+        results = {}
+        for split in splits:
+            try:
+                ds = self.load_from_hub(
+                    dataset_name=self.dataset_repo,
+                    split=split,
+                    streaming=streaming,
+                )
+                results[split] = ds
+            except Exception as e:
+                logger.warning(f"⚠️  لم يتم تحميل split '{split}': {e}")
+        return results
+
+    def upload_dataset(
+        self,
+        local_path: Union[str, Path],
+        repo_path: str,
+        commit_message: Optional[str] = None,
+        version_tag: Optional[str] = None,
+    ) -> str:
+        """
+        رفع dataset محلي إلى HuggingFace.
+
+        Args:
+            local_path: مسار الملف أو المجلد المحلي
+            repo_path: المسار داخل الـ repository
+            commit_message: رسالة الـ commit
+            version_tag: وسم الإصدار (اختياري)
+
+        Returns:
+            رابط الـ dataset المرفوع
+        """
+        local_path = Path(local_path)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        msg = commit_message or f"[Hajeen] Upload dataset — {ts}"
+        if version_tag:
+            repo_path = f"versions/{version_tag}/{repo_path}"
+
+        if local_path.is_dir():
+            return self.client.upload_folder(
+                local_folder=str(local_path),
+                repo_folder=repo_path,
+                repo_type="dataset",
+                commit_message=msg,
+            )
+        else:
+            return self.client.upload_file(
+                local_path=str(local_path),
+                repo_path=repo_path,
+                repo_type="dataset",
+                commit_message=msg,
+            )
+
+    def upload_cleaned_dataset(
+        self,
+        data: List[Dict[str, Any]],
+        name: str,
+        source: str = "unknown",
+    ) -> str:
+        """
+        رفع dataset منظف مباشرةً من الذاكرة.
+        """
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        tmp_path = self.local_cache_dir / f"{name}_{ts}.jsonl"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            for record in data:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+        repo_path = f"cleaned/{source}/{name}_{ts}.jsonl"
+        logger.info(f"⬆️  رفع dataset منظف: {len(data)} سجل → {repo_path}")
+        url = self.upload_dataset(tmp_path, repo_path, commit_message=f"[Hajeen] Cleaned dataset: {name}")
+        tmp_path.unlink(missing_ok=True)
+        return url
+
+    def split_dataset(
+        self,
+        dataset: Any,
+        train_ratio: float = 0.9,
+        val_ratio: float = 0.05,
+        seed: int = 42,
+    ) -> Dict[str, Any]:
+        """
+        تقسيم dataset إلى train/validation/test.
+        """
+        logger.info(f"تقسيم الـ dataset — train:{train_ratio} val:{val_ratio}")
+        split1 = dataset.train_test_split(test_size=(1 - train_ratio), seed=seed)
+        remaining = split1["test"]
+        val_size = val_ratio / (1 - train_ratio)
+        split2 = remaining.train_test_split(test_size=(1 - val_size), seed=seed)
+
+        return {
+            "train": split1["train"],
+            "validation": split2["train"],
+            "test": split2["test"],
+        }
+
+    def get_dataset_versions(self) -> List[str]:
+        """جلب قائمة إصدارات الـ datasets المرفوعة."""
+        files = self.client.list_repo_files(
+            repo_id=self.dataset_repo, repo_type="dataset"
+        )
+        versions = sorted({f.split("/")[1] for f in files if f.startswith("versions/")})
+        return versions
+
+    def load_wikipedia(
+        self, language: str = "ar", num_samples: Optional[int] = 50000
+    ) -> Any:
+        """تحميل Wikipedia dataset."""
+        logger.info(f"⬇️  Wikipedia [{language}]")
+        from datasets import load_dataset
+        ds = load_dataset("wikipedia", f"20220301.{language}", split="train", streaming=True, trust_remote_code=True)
+        if num_samples:
+            ds = ds.take(num_samples)
+        return ds
+
+    def load_common_crawl(self, num_samples: int = 10000) -> Any:
+        """تحميل Common Crawl (OSCAR Arabic)."""
+        logger.info("⬇️  Common Crawl / OSCAR Arabic")
+        from datasets import load_dataset
+        ds = load_dataset("oscar-corpus/OSCAR-2301", "ar", split="train", streaming=True, trust_remote_code=True)
+        return ds.take(num_samples)
+
+    def auto_update_datasets(self) -> Dict[str, str]:
+        """تحديث datasets تلقائياً وإعادة رفعها."""
+        logger.info("🔄 بدء التحديث التلقائي للـ datasets")
+        results = {}
+        sources = [("wikipedia_ar", "ar"), ("wikipedia_en", "en")]
+        for name, lang in sources:
+            try:
+                ds = self.load_wikipedia(language=lang, num_samples=5000)
+                records = [{"text": r["text"], "source": f"wikipedia_{lang}", "lang": lang}
+                           for r in ds]
+                url = self.upload_cleaned_dataset(records, name=name, source="wikipedia")
+                results[name] = url
+            except Exception as e:
+                logger.error(f"❌ فشل تحديث {name}: {e}")
+                results[name] = f"error: {e}"
+        return results
+===== data_engine/preparation/data_preparation_pipeline.py =====
+
+from typing import List, Dict
+from .data_validator import DataValidator
+from .deduplicator import Deduplicator
+from .quality_scorer import QualityScorer
+from .language_detector import LanguageDetector
+from .dataset_statistics import DatasetStatistics
+
+class DataPreparationPipeline:
+    def __init__(self, deduplication_threshold: float = 0.8):
+        self.validator = DataValidator()
+        self.deduplicator = Deduplicator(threshold=deduplication_threshold)
+        self.scorer = QualityScorer()
+        self.lang_detector = LanguageDetector()
+        self.stats_generator = DatasetStatistics()
+
+    def run(self, dataset: List[Dict], min_quality_score: int = 0) -> List[Dict]:
+        print("Starting data preparation pipeline...")
+
+        # 1. Validation
+        print("Running data validation...")
+        validated_dataset = self.validator.validate_dataset(dataset)
+        print(f"Validated {len(validated_dataset)} samples.")
+
+        # 2. Language Detection and Filtering
+        print("Detecting and filtering languages...")
+        lang_filtered_dataset = self.lang_detector.filter_unsupported_languages(validated_dataset)
+        print(f"Filtered to {len(lang_filtered_dataset)} samples after language detection.")
+
+        # 3. Quality Scoring
+        print("Scoring data quality...")
+        scored_dataset = self.scorer.score_dataset(lang_filtered_dataset)
+        print(f"Scored {len(scored_dataset)} samples.")
+
+        # Filter by minimum quality score
+        quality_filtered_dataset = [sample for sample in scored_dataset if sample.get("quality_score", 0) >= min_quality_score]
+        print(f"Filtered to {len(quality_filtered_dataset)} samples with quality score >= {min_quality_score}.")
+
+        # 4. Deduplication
+        print("Running deduplication...")
+        deduplicated_dataset = self.deduplicator.deduplicate_dataset(quality_filtered_dataset)
+        print(f"Deduplicated to {len(deduplicated_dataset)} unique samples.")
+
+        print("Data preparation pipeline finished.")
+        return deduplicated_dataset
+
+    def generate_and_save_statistics(self, dataset: List[Dict], filepath: str):
+        print("Generating dataset statistics...")
+        stats = self.stats_generator.generate_statistics(dataset)
+        self.stats_generator.save_statistics(stats, filepath)
+        print(f"Statistics saved to {filepath}")
+        return stats
+===== data_engine/preparation/data_validator.py =====
+
+import re
+
+class DataValidator:
+    def __init__(self):
+        pass
+
+    def validate_sample(self, sample: dict) -> dict:
+        errors = []
+        # Check for empty fields
+        if not sample.get('instruction') or not sample.get('output'):
+            errors.append('Empty instruction or output field')
+
+        # Check for corrupted text (simple regex for now, can be expanded)
+        if not re.match(r'^[\s\S]*$', sample.get('instruction', '')):
+            errors.append('Corrupted instruction text')
+        if not re.match(r'^[\s\S]*$', sample.get('output', '')):
+            errors.append('Corrupted output text')
+
+        # Check encoding (assuming UTF-8, basic check)
+        try:
+            sample.get('instruction', '').encode('utf-8').decode('utf-8')
+            sample.get('output', '').encode('utf-8').decode('utf-8')
+        except UnicodeDecodeError:
+            errors.append('Encoding error detected')
+
+        # Check sample length (example: min 10 chars, max 2000 chars)
+        instruction_length = len(sample.get('instruction', ''))
+        output_length = len(sample.get('output', ''))
+        if instruction_length < 10 or output_length < 10:
+            errors.append('Sample too short')
+        if instruction_length > 2000 or output_length > 2000:
+            errors.append('Sample too long')
+
+        sample['validation_errors'] = errors
+        sample['is_valid'] = not bool(errors)
+        return sample
+
+    def validate_dataset(self, dataset: list[dict]) -> list[dict]:
+        validated_dataset = [self.validate_sample(sample) for sample in dataset]
+        return validated_dataset
+===== data_engine/preparation/quality_scorer.py =====
+
+class QualityScorer:
+    def __init__(self, min_length_score=50, max_length_score=100, validation_penalty=30):
+        self.min_length_score = min_length_score
+        self.max_length_score = max_length_score
+        self.validation_penalty = validation_penalty
+
+    def score_sample(self, sample: dict) -> dict:
+        score = 100  # Start with a perfect score
+
+        # Penalize for validation errors
+        if not sample.get('is_valid', True):
+            score -= self.validation_penalty * len(sample.get('validation_errors', []))
+
+        # Score based on length (example logic)
+        instruction_length = len(sample.get('instruction', ''))
+        output_length = len(sample.get('output', ''))
+        total_length = instruction_length + output_length
+
+        if total_length < 50:
+            score -= (50 - total_length) * 0.5 # Small penalty for being too short
+        elif total_length > 1000:
+            score -= (total_length - 1000) * 0.01 # Small penalty for being too long
+
+        # Ensure score is within 0-100 range
+        sample['quality_score'] = max(0, min(100, int(score)))
+        return sample
+
+    def score_dataset(self, dataset: list[dict]) -> list[dict]:
+        scored_dataset = [self.score_sample(sample) for sample in dataset]
+        return scored_dataset
+===== data_engine/processing/transformation/data_transformer.py =====
+"""Data Transformer — section 4.13.
+
+Converts Article objects into output-ready formats and provides
+batch transformation utilities.
+
+Capabilities:
+- Article → flat dict (CSV-ready)
+- Article → JSON-serialisable dict (API-ready, full / compact)
+- Batch transformation with optional field selection
+- Field renaming / mapping
+- Schema validation on output
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Callable, Dict, List, Optional
+
+from shared.schemas.article import Article
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Output format names
+# ---------------------------------------------------------------------------
+
+OUTPUT_FORMAT_FULL = "full"
+OUTPUT_FORMAT_COMPACT = "compact"
+OUTPUT_FORMAT_FLAT = "flat"
+OUTPUT_FORMAT_CSV = "csv"
+
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TransformerConfig:
+    """Controls the transformation behaviour."""
+
+    output_format: str = OUTPUT_FORMAT_FULL
+    include_fields: List[str] = field(default_factory=list)
+    exclude_fields: List[str] = field(default_factory=list)
+    field_renames: Dict[str, str] = field(default_factory=dict)
+    datetime_format: str = "%Y-%m-%dT%H:%M:%SZ"
+    include_metadata: bool = True
+    include_entities: bool = True
+    flatten_metadata: bool = False
+    extra: dict = field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Transformation helpers
+# ---------------------------------------------------------------------------
+
+def _format_datetime(dt: Optional[datetime], fmt: str) -> Optional[str]:
+    """Return a formatted datetime string or ``None``."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.strftime(fmt)
+
+
+def article_to_dict(
+    article: Article,
+    config: Optional[TransformerConfig] = None,
+) -> Dict[str, Any]:
+    """Convert a single :class:`Article` to a plain dictionary.
+
+    The output format is controlled by ``config.output_format``:
+
+    ``full``
+        All fields including nested metadata and entities.
+    ``compact``
+        Core fields only: ``id``, ``title``, ``url``, ``published_at``,
+        ``language``, ``source_id``, ``tags``.
+    ``flat``
+        All fields flattened — metadata sub-fields are promoted to the
+        top level (e.g. ``metadata_source_id``, ``metadata_language``).
+    ``csv``
+        Scalar fields only, safe for CSV serialisation.
+
+    Parameters
+    ----------
+    article:
+        Source article.
+    config:
+        Transformation configuration.
+
+    Returns
+    -------
+    Dictionary representation of the article.
+    """
+    cfg = config or TransformerConfig()
+    fmt = cfg.output_format
+
+    if fmt == OUTPUT_FORMAT_COMPACT:
+        data = _to_compact(article, cfg)
+    elif fmt == OUTPUT_FORMAT_FLAT:
+        data = _to_flat(article, cfg)
+    elif fmt == OUTPUT_FORMAT_CSV:
+        data = _to_csv_row(article, cfg)
+    else:
+        data = _to_full(article, cfg)
+
+    data = _apply_field_selection(data, cfg)
+    data = _apply_field_renames(data, cfg)
+    return data
+
+
+def articles_to_dicts(
+    articles: List[Article],
+    config: Optional[TransformerConfig] = None,
+) -> List[Dict[str, Any]]:
+    """Convert a list of articles to a list of dicts.
+
+    Parameters
+    ----------
+    articles:
+        Source articles.
+    config:
+        Shared transformation configuration.
+
+    Returns
+    -------
+    List of dictionaries.
+    """
+    cfg = config or TransformerConfig()
+    return [article_to_dict(a, cfg) for a in articles]
+
+
+def article_to_json(
+    article: Article,
+    config: Optional[TransformerConfig] = None,
+    indent: Optional[int] = None,
+) -> str:
+    """Serialise a single article to a JSON string.
+
+    Parameters
+    ----------
+    article:
+        Source article.
+    config:
+        Transformation configuration.
+    indent:
+        JSON indentation level (``None`` for compact JSON).
+
+    Returns
+    -------
+    JSON string.
+    """
+    data = article_to_dict(article, config)
+    return json.dumps(data, ensure_ascii=False, indent=indent, default=str)
+
+
+def articles_to_jsonl(
+    articles: List[Article],
+    config: Optional[TransformerConfig] = None,
+) -> str:
+    """Serialise articles to newline-delimited JSON (JSONL).
+
+    Each line is one JSON object.
+
+    Parameters
+    ----------
+    articles:
+        Source articles.
+    config:
+        Shared transformation configuration.
+
+    Returns
+    -------
+    JSONL string.
+    """
+    cfg = config or TransformerConfig()
+    lines = [
+        json.dumps(article_to_dict(a, cfg), ensure_ascii=False, default=str)
+        for a in articles
+    ]
+    return "\n".join(lines)
+
+
+def get_csv_headers(config: Optional[TransformerConfig] = None) -> List[str]:
+    """Return the ordered field names used by the CSV output format.
+
+    Parameters
+    ----------
+    config:
+        Transformation config (used for renames).
+
+    Returns
+    -------
+    List of header strings.
+    """
+    cfg = config or TransformerConfig(output_format=OUTPUT_FORMAT_CSV)
+    sample_headers = [
+        "id", "title", "url", "published_at", "extracted_at",
+        "language", "source_id", "author", "summary",
+        "content_length", "tags", "reading_time_seconds",
+    ]
+    if cfg.include_fields:
+        sample_headers = [h for h in sample_headers if h in cfg.include_fields]
+    if cfg.exclude_fields:
+        sample_headers = [h for h in sample_headers if h not in cfg.exclude_fields]
+    return [cfg.field_renames.get(h, h) for h in sample_headers]
+
+
+# ---------------------------------------------------------------------------
+# Article-level transformer class
+# ---------------------------------------------------------------------------
+
+class DataTransformer:
+    """Stateless transformer with a fixed :class:`TransformerConfig`.
+
+    Parameters
+    ----------
+    config:
+        Transformation configuration shared across all calls.
+    custom_transform:
+        Optional callable ``(article, dict) -> dict`` applied after the
+        standard transformation.  Useful for project-specific post-processing.
+    """
+
+    def __init__(
+        self,
+        config: Optional[TransformerConfig] = None,
+        custom_transform: Optional[Callable[[Article, Dict[str, Any]], Dict[str, Any]]] = None,
+    ) -> None:
+        self.config = config or TransformerConfig()
+        self._custom = custom_transform
+
+    def transform(self, article: Article) -> Dict[str, Any]:
+        """Transform a single article.
+
+        Parameters
+        ----------
+        article:
+            Source article.
+
+        Returns
+        -------
+        Transformed dictionary.
+        """
+        data = article_to_dict(article, self.config)
+        if self._custom:
+            data = self._custom(article, data)
+        return data
+
+    def transform_batch(
+        self,
+        articles: List[Article],
+    ) -> List[Dict[str, Any]]:
+        """Transform a list of articles.
+
+        Parameters
+        ----------
+===== data_engine/processing/transformation/chunking_engine.py =====
+"""Chunking Engine — Phase 6.5.
+
+محرك تقسيم نصوص احترافي يدعم:
+  - recursive chunking (الأسلوب الموصى به)
+  - semantic chunking (تقسيم بناءً على الجمل والفقرات)
+  - fixed chunking (حجم ثابت بالأحرف)
+  - token-aware chunking (بالاستناد إلى عدد الـ tokens)
+  
+يُنتج DocumentChunk مع كامل البيانات الوصفية اللازمة للـ Embeddings.
+"""
+from __future__ import annotations
+
+import hashlib
+import logging
+import re
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
+
+# ── ثوابت ───────────────────────────────────────────────────────────────────
+
+_PARAGRAPH_SEP = re.compile(r"\n{2,}")
+_SENTENCE_END = re.compile(r"(?<=[.!?؟।\n])\s+")
+_SENTENCE_END_STRICT = re.compile(r"[.!?؟]\s+")
+_WHITESPACE_NORM = re.compile(r"\s+")
+_CHARS_PER_TOKEN = 4  # تقدير خام: 1 رمز ≈ 4 أحرف
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DocumentChunk — المخرج الأساسي
+# ─────────────────────────────────────────────────────────────────────────────
+
+@dataclass
+class DocumentChunk:
+    """قطعة نصية واحدة جاهزة للـ Embedding.
+
+    المعرّف (chunk_id) محدد وثابت بناءً على محتوى القطعة
+    ومعرّف المقال ورقم الترتيب — يمنع التكرار.
+    """
+    chunk_id: str
+    article_id: str
+    text: str
+    token_count: int
+    char_count: int
+    order: int
+    start_char: int
+    end_char: int
+    strategy: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    # ── كائن التشابه ─────────────────────────────────────────────────────────
+    content_hash: str = field(default="")
+
+    def __post_init__(self) -> None:
+        if not self.content_hash:
+            self.content_hash = _compute_chunk_hash(self.text)
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.text.strip()
+
+    @property
+    def words(self) -> List[str]:
+        return self.text.split()
+
+    def __repr__(self) -> str:
+        return (
+            f"DocumentChunk(id={self.chunk_id[:12]}… "
+            f"order={self.order} tokens={self.token_count} "
+            f"chars={self.char_count})"
+        )
+
+
+def _compute_chunk_hash(text: str) -> str:
+    normalized = re.sub(r"\s+", " ", text.strip().lower())
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
+
+
+def _make_chunk_id(article_id: str, order: int, text: str) -> str:
+    base = f"{article_id}::{order}::{_compute_chunk_hash(text)}"
+    return "chk_" + hashlib.sha256(base.encode()).hexdigest()[:16]
+
+
+def _estimate_tokens(text: str) -> int:
+    return max(1, len(text) // _CHARS_PER_TOKEN)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ChunkingStrategy(str, Enum):
+    RECURSIVE = "recursive"
+    SEMANTIC = "semantic"
+    FIXED = "fixed"
+    TOKEN_AWARE = "token_aware"
+
+
+@dataclass
+class ChunkingConfig:
+    """إعدادات محرك التقسيم."""
+
+    strategy: ChunkingStrategy = ChunkingStrategy.RECURSIVE
+    chunk_size: int = 512       # بالأحرف (fixed) أو الـ tokens (token_aware)
+    overlap: int = 64            # أحرف أو tokens للتداخل بين القطع
+    min_chunk_chars: int = 50   # حد أدنى لطول القطعة
+    max_chunk_chars: int = 4096  # حد أقصى لطول القطعة
+    max_chunks_per_article: Optional[int] = None
+    # Recursive chunking separators (بالترتيب التنازلي للأولوية)
+    separators: List[str] = field(
+        default_factory=lambda: ["\n\n", "\n", ". ", "؟ ", "! ", " ", ""]
+    )
+    # Semantic chunking
+    sentence_min_chars: int = 30
+    # Token-aware
+    chars_per_token_override: Optional[int] = None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Splitters الأساسية
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _split_by_separator(text: str, separator: str) -> List[str]:
+    """تقسيم نص بفاصل محدد."""
+    if not separator:
+        return list(text)
+    parts = text.split(separator)
+    return [p for p in parts if p.strip()]
+
+
+def _merge_splits(
+    splits: List[str],
+    max_chars: int,
+    overlap_chars: int,
+    min_chars: int,
+    separator: str = " ",
+) -> List[str]:
+    """دمج الأجزاء في chunks بحجم أقصى مع دعم التداخل."""
+    chunks: List[str] = []
+    current_parts: List[str] = []
+    current_len = 0
+
+    for split in splits:
+        split_len = len(split)
+        if current_len + split_len + len(separator) > max_chars and current_parts:
+            combined = separator.join(current_parts).strip()
+            if len(combined) >= min_chars:
+                chunks.append(combined)
+            # إنشاء التداخل
+            overlap_text = combined[-overlap_chars:] if overlap_chars else ""
+            current_parts = [overlap_text] if overlap_text else []
+            current_len = len(overlap_text)
+        current_parts.append(split)
+        current_len += split_len + len(separator)
+
+    if current_parts:
+        combined = separator.join(current_parts).strip()
+        if len(combined) >= min_chars:
+            chunks.append(combined)
+
+    return chunks
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# استراتيجيات التقسيم
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _recursive_split(
+    text: str,
+    separators: List[str],
+    max_chars: int,
+    overlap_chars: int,
+    min_chars: int,
+) -> List[str]:
+    """Recursive Character Text Splitting.
+    
+    يُقسّم بالفاصل الأعلى أولوية؛ إذا كانت القطع لا تزال كبيرة،
+    يُكرر العملية بالفاصل التالي.
+    """
+    stripped = text.strip()
+    if not stripped:
+        return []
+
+    # إذا كان النص أصغر من الحجم المطلوب → أعِده مباشرة
+    if len(stripped) <= max_chars:
+        return [stripped] if len(stripped) >= min_chars else []
+
+    separator = separators[0] if separators else ""
+    next_separators = separators[1:] if len(separators) > 1 else [""]
+
+    splits = _split_by_separator(text, separator)
+
+    result: List[str] = []
+    good_splits: List[str] = []
+
+    for split in splits:
+        if len(split) <= max_chars:
+            good_splits.append(split)
+        else:
+            # القطعة لا تزال كبيرة — نُقسّمها مرة أخرى
+            if good_splits:
+                result.extend(_merge_splits(
+                    good_splits, max_chars, overlap_chars, min_chars, separator
+                ))
+                good_splits = []
+            result.extend(_recursive_split(
+                split, next_separators, max_chars, overlap_chars, min_chars
+            ))
+
+    if good_splits:
+        result.extend(_merge_splits(
+            good_splits, max_chars, overlap_chars, min_chars, separator
+        ))
+
+    return result
+
+
+def _semantic_split(
+    text: str,
+    max_chars: int,
+    overlap_chars: int,
+    min_chars: int,
+    sentence_min_chars: int = 30,
+) -> List[str]:
+    """Semantic Splitting — تقسيم بناءً على الجمل والفقرات."""
+    # 1. تقسيم الفقرات
+    paragraphs = _PARAGRAPH_SEP.split(text.strip())
+
+    sentences: List[str] = []
+    for para in paragraphs:
+        # تقسيم الجمل داخل كل فقرة
+        sents = _SENTENCE_END.split(para.strip())
+        for s in sents:
+            s = s.strip()
+            if len(s) >= sentence_min_chars:
+                sentences.append(s)
+            elif sentences:
+                # دمج الجملة القصيرة مع السابقة
+                sentences[-1] = sentences[-1] + " " + s
+        # فاصل فقرة = سطر فارغ يُضاف كحد
+        if sentences:
+            sentences.append("")  # placeholder للفقرة
+
+    # 2. دمج الجمل في chunks
+    chunks: List[str] = []
+    current = ""
+    for sent in sentences:
+        if not sent:
+            if current.strip():
+                chunks.append(current.strip())
+                current = current[-overlap_chars:] if overlap_chars else ""
+            continue
+        if len(current) + len(sent) + 1 <= max_chars:
+            current = (current + " " + sent).strip()
+        else:
+            if len(current) >= min_chars:
+                chunks.append(current.strip())
+            overlap = current[-overlap_chars:] if overlap_chars else ""
+===== data_engine/storage/storage_manager.py =====
+"""Storage Manager — إدارة موحّدة لجميع طبقات التخزين.
+
+هيكل مجلدات التخزين:
+storage_data/
+├── raw/           — البيانات الخام
+├── bronze/        — بعد التنظيف الأولي
+├── silver/        — بعد الإثراء
+├── gold/          — البيانات المنسّقة النهائية
+└── metadata/      — SQLite للفهرسة والبيانات الوصفية
+
+يدعم:
+- Singleton instance لمنع تعدد الاتصالات
+- منع duplicate writes عبر content hash
+- file locking عند الكتابة
+- JSONL storage
+- cleanup utilities
+- metadata tracking
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import os
+import threading
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+from .raw_store.local_storage import LocalRawStorage
+from .processed_store.bronze_layer import BronzeLayer
+from .processed_store.silver_layer import SilverLayer
+from .processed_store.gold_layer import GoldLayer
+from .metadata_store.sqlite_catalog import SQLiteCatalog
+from .repositories.article_repository import ArticleRepository
+from .repositories.channel_repository import ChannelRepository
+from .repositories.pipeline_repository import PipelineRepository
+
+logger = logging.getLogger(__name__)
+
+_DEFAULT_BASE_DIR = Path("storage_data")
+_DEDUP_SET_MAX = 100_000
+
+
+class StorageManager:
+    """إدارة موحّدة لجميع أنظمة التخزين مع singleton support."""
+
+    def __init__(self, base_data_dir: Union[str, Path] = _DEFAULT_BASE_DIR) -> None:
+        self.base_data_dir = Path(base_data_dir).resolve()
+        self.base_data_dir.mkdir(parents=True, exist_ok=True)
+
+        self.raw_storage = LocalRawStorage(base_dir=self.base_data_dir / "raw")
+        self.bronze_layer = BronzeLayer(base_dir=self.base_data_dir / "bronze")
+        self.silver_layer = SilverLayer(base_dir=self.base_data_dir / "silver")
+        self.gold_layer = GoldLayer(base_dir=self.base_data_dir / "gold")
+
+        metadata_dir = self.base_data_dir / "metadata"
+        metadata_dir.mkdir(parents=True, exist_ok=True)
+
+        self.metadata_catalog = SQLiteCatalog(db_path=metadata_dir / "catalog.db")
+        self.article_repo = ArticleRepository(catalog=self.metadata_catalog)
+        self.channel_repo = ChannelRepository(catalog=self.metadata_catalog)
+        self.pipeline_repo = PipelineRepository(catalog=self.metadata_catalog)
+
+        # Set in-memory للكشف عن duplicates
+        self._seen_hashes: set[str] = set()
+        self._dedup_lock = threading.Lock()
+
+        self._connected = False
+        logger.info("StorageManager: مجلد التخزين = %s", self.base_data_dir)
+
+    # ------------------------------------------------------------------
+    # Connection lifecycle
+    # ------------------------------------------------------------------
+
+    async def connect(self) -> None:
+        """الاتصال بجميع أنظمة التخزين."""
+        if self._connected:
+            return
+        await self.raw_storage.connect()
+        await self.bronze_layer.connect()
+        await self.silver_layer.connect()
+        await self.gold_layer.connect()
+        await self.metadata_catalog.connect()
+        self._connected = True
+        logger.info("StorageManager: اتّصل بجميع أنظمة التخزين")
+
+    async def disconnect(self) -> None:
+        """قطع الاتصال بجميع أنظمة التخزين."""
+        if not self._connected:
+            return
+        await self.raw_storage.disconnect()
+        await self.bronze_layer.disconnect()
+        await self.silver_layer.disconnect()
+        await self.gold_layer.disconnect()
+        await self.metadata_catalog.disconnect()
+        self._connected = False
+
+    async def health_check(self) -> Dict[str, Any]:
+        """فحص صحة جميع أنظمة التخزين."""
+        return {
+            "connected": self._connected,
+            "raw": await self.raw_storage.health_check(),
+            "bronze": await self.bronze_layer.health_check(),
+            "silver": await self.silver_layer.health_check(),
+            "gold": await self.gold_layer.health_check(),
+            "metadata": await self.metadata_catalog.health_check(),
+            "dedup_cache_size": len(self._seen_hashes),
+        }
+
+    # ------------------------------------------------------------------
+    # Deduplication helpers
+    # ------------------------------------------------------------------
+
+    def _compute_hash(self, data: Any) -> str:
+        """حساب hash للبيانات للكشف عن التكرار."""
+        if isinstance(data, dict):
+            key = data.get("id") or json.dumps(data, sort_keys=True, ensure_ascii=False)
+        elif isinstance(data, str):
+            key = data
+        else:
+            key = str(data)
+        return hashlib.sha256(key.encode()).hexdigest()[:16]
+
+    def is_duplicate(self, data: Any) -> bool:
+        """فحص إذا كانت البيانات مكررة."""
+        h = self._compute_hash(data)
+        with self._dedup_lock:
+            if h in self._seen_hashes:
+                return True
+            # منع تجاوز الحد الأقصى
+            if len(self._seen_hashes) >= _DEDUP_SET_MAX:
+                # إزالة نصف العناصر الأقدم (بسيط وفعّال)
+                to_remove = list(self._seen_hashes)[:_DEDUP_SET_MAX // 2]
+                for h2 in to_remove:
+                    self._seen_hashes.discard(h2)
+            self._seen_hashes.add(h)
+            return False
+
+    def mark_seen(self, data: Any) -> None:
+        """تسجيل البيانات كـ seen لمنع تكرارها."""
+        h = self._compute_hash(data)
+        with self._dedup_lock:
+            self._seen_hashes.add(h)
+
+    # ------------------------------------------------------------------
+    # JSONL support
+    # ------------------------------------------------------------------
+
+    async def append_jsonl(
+        self,
+        records: List[Dict[str, Any]],
+        filepath: Union[str, Path],
+        deduplicate: bool = True,
+    ) -> int:
+        """إضافة سجلات JSONL إلى ملف مع منع التكرار.
+
+        Returns:
+            عدد السجلات المكتوبة فعلاً.
+        """
+        import asyncio
+        import fcntl
+
+        path = Path(filepath)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        written = 0
+
+        def _write_locked() -> int:
+            count = 0
+            with open(path, "a", encoding="utf-8") as f:
+                try:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                    for rec in records:
+                        if deduplicate and self.is_duplicate(rec):
+                            continue
+                        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                        count += 1
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            return count
+
+        try:
+            written = await asyncio.to_thread(_write_locked)
+        except AttributeError:
+            # fcntl غير متاح على Windows
+            with open(path, "a", encoding="utf-8") as f:
+                for rec in records:
+                    if deduplicate and self.is_duplicate(rec):
+                        continue
+                    f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                    written += 1
+
+        logger.debug("StorageManager: كُتب %d/%d سجل JSONL → %s", written, len(records), path)
+        return written
+
+    async def read_jsonl(self, filepath: Union[str, Path]) -> List[Dict[str, Any]]:
+        """قراءة ملف JSONL وإعادة قائمة السجلات."""
+        import asyncio
+
+        path = Path(filepath)
+        if not path.exists():
+            return []
+
+        def _read() -> List[Dict[str, Any]]:
+            records = []
+            with open(path, "r", encoding="utf-8") as f:
+                for line_no, line in enumerate(f, 1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        records.append(json.loads(line))
+                    except json.JSONDecodeError as exc:
+                        logger.warning("StorageManager: سطر JSONL غير صالح %d — %s", line_no, exc)
+            return records
+
+        return await asyncio.to_thread(_read)
+
+    # ------------------------------------------------------------------
+    # Cleanup utilities
+    # ------------------------------------------------------------------
+
+    async def cleanup_old_files(self, older_than_days: int = 30, layer: str = "raw") -> int:
+        """حذف ملفات قديمة من طبقة معينة.
+
+        Args:
+            older_than_days: عمر الملف بالأيام.
+            layer: الطبقة (raw / bronze / silver / gold).
+
+        Returns:
+            عدد الملفات المحذوفة.
+        """
+        import asyncio
+        import time
+
+        layer_paths = {
+            "raw": self.base_data_dir / "raw",
+            "bronze": self.base_data_dir / "bronze",
+            "silver": self.base_data_dir / "silver",
+            "gold": self.base_data_dir / "gold",
+        }
+        target = layer_paths.get(layer)
+        if not target or not target.exists():
+            return 0
+
+        cutoff = time.time() - (older_than_days * 86400)
+
+        def _delete_old() -> int:
+            count = 0
+            for f in target.rglob("*"):
+                if f.is_file() and f.stat().st_mtime < cutoff:
+                    try:
+                        f.unlink()
+                        count += 1
+                    except Exception as exc:
+                        logger.warning("cleanup: تعذّر حذف %s — %s", f, exc)
+            return count
+
+        deleted = await asyncio.to_thread(_delete_old)
+===== data_engine/storage/metadata_store/lineage_tracker.py =====
+from datetime import datetime
+from typing import Any, Dict, Optional, AsyncIterator
+
+from sqlalchemy import Column, DateTime, Integer, String, Text, JSON
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+Base = declarative_base()
+
+class DataLineage(Base):
+    __tablename__ = "data_lineage"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_key = Column(String, nullable=False, index=True)
+    source_layer = Column(String, nullable=False)
+    target_key = Column(String, nullable=False, index=True)
+    target_layer = Column(String, nullable=False)
+    transformation_type = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.now)
+    metadata_ = Column(JSON, nullable=True, name='metadata')
+
+class LineageTracker:
+    """Tracks data lineage within the Hajeen AI Platform."""
+
+    def __init__(self, session_factory):
+        self.session_factory = session_factory
+
+    async def record_lineage(self, 
+                             source_key: str,
+                             source_layer: str,
+                             target_key: str,
+                             target_layer: str,
+                             transformation_type: Optional[str] = None,
+                             metadata: Optional[Dict[str, Any]] = None) -> None:
+        """Records a data transformation event."""
+        async with self.session_factory() as session:
+            lineage_entry = DataLineage(
+                source_key=source_key,
+                source_layer=source_layer,
+                target_key=target_key,
+                target_layer=target_layer,
+                transformation_type=transformation_type,
+                metadata_=metadata,
+            )
+            session.add(lineage_entry)
+            await session.commit()
+
+    async def get_lineage_for_key(self, key: str, layer: str) -> AsyncIterator[Dict[str, Any]]:
+        """Retrieves lineage records for a given data key and layer."""
+        async with self.session_factory() as session:
+            stmt = select(DataLineage).where(
+                (DataLineage.source_key == key) & (DataLineage.source_layer == layer) |
+                (DataLineage.target_key == key) & (DataLineage.target_layer == layer)
+            )
+            result = await session.execute(stmt)
+            for row in result.scalars():
+                yield row.__dict__
+===== services/data_service/dataset_builder.py =====
+from __future__ import annotations
+
+import json
+import logging
+import time
+import uuid
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class DatasetBuilder:
+    """Build structured training datasets from raw text sources."""
+
+    def __init__(self, output_dir: str = "storage_data/datasets") -> None:
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    def build_instruction_dataset(
+        self,
+        raw_items: List[Dict],
+        instruction_fn: Callable[[Dict], str],
+        response_fn: Callable[[Dict], str],
+        input_fn: Optional[Callable[[Dict], str]] = None,
+        quality_threshold: float = 0.0,
+    ) -> List[Dict]:
+        records: List[Dict] = []
+        for item in raw_items:
+            try:
+                instruction = instruction_fn(item).strip()
+                response = response_fn(item).strip()
+                if not instruction or not response:
+                    continue
+                if len(instruction) < 10 or len(response) < 5:
+                    continue
+                rec: Dict = {
+                    "id": str(uuid.uuid4()),
+                    "instruction": instruction,
+                    "response": response,
+                    "created_at": time.time(),
+                }
+                if input_fn is not None:
+                    rec["input"] = input_fn(item).strip()
+                if quality_threshold > 0:
+                    score = self._quality_score(instruction, response)
+                    if score < quality_threshold:
+                        continue
+                    rec["quality_score"] = score
+                records.append(rec)
+            except Exception as exc:
+                logger.debug("Skipping item due to error: %s", exc)
+        logger.info("Built %d instruction records", len(records))
+        return records
+
+    def build_chat_dataset(
+        self, conversations: List[List[Dict]]
+    ) -> List[Dict]:
+        records: List[Dict] = []
+        for convo in conversations:
+            if len(convo) < 2:
+                continue
+            records.append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "messages": convo,
+                    "turn_count": len(convo),
+                    "created_at": time.time(),
+                }
+            )
+        return records
+
+    def save(self, records: List[Dict], name: str, fmt: str = "jsonl") -> str:
+        ext = fmt if fmt.startswith(".") else f".{fmt}"
+        path = self.output_dir / f"{name}{ext}"
+        if fmt == "jsonl":
+            with path.open("w", encoding="utf-8") as f:
+                for r in records:
+                    f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        elif fmt == "json":
+            path.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
+        logger.info("Saved %d records to %s", len(records), path)
+        return str(path)
+
+    @staticmethod
+    def _quality_score(instruction: str, response: str) -> float:
+        score = 0.5
+        if len(response) > 50:
+            score += 0.2
+        if len(response) > 200:
+            score += 0.1
+        if "?" in instruction:
+            score += 0.1
+        if len(set(instruction.lower().split()) & set(response.lower().split())) > 2:
+            score += 0.1
+        return min(1.0, score)
+===== services/data_service/dataset_cleaner.py =====
+from __future__ import annotations
+
+import hashlib
+import re
+import unicodedata
+from typing import Dict, List, Optional, Set
+
+
+class DatasetCleaner:
+    """Clean, deduplicate, and filter training datasets."""
+
+    def __init__(
+        self,
+        min_length: int = 10,
+        max_length: int = 32_000,
+        remove_duplicates: bool = True,
+        min_quality: float = 0.0,
+    ) -> None:
+        self.min_length = min_length
+        self.max_length = max_length
+        self.remove_duplicates = remove_duplicates
+        self.min_quality = min_quality
+        self._seen_hashes: Set[str] = set()
+
+    def clean_text(self, text: str) -> str:
+        text = unicodedata.normalize("NFC", text)
+        text = re.sub(r"\r\n|\r", "\n", text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        text = re.sub(r"[ \t]+", " ", text)
+        text = re.sub(r"[^\x09\x0A\x0D\x20-\x7E\u0080-\uFFFF]", "", text)
+        return text.strip()
+
+    def clean_record(self, record: Dict) -> Optional[Dict]:
+        cleaned = {}
+        for key, value in record.items():
+            if isinstance(value, str):
+                cleaned[key] = self.clean_text(value)
+            else:
+                cleaned[key] = value
+        main_text = cleaned.get("text") or cleaned.get("instruction") or cleaned.get("content", "")
+        if len(main_text) < self.min_length:
+            return None
+        if len(main_text) > self.max_length:
+            cleaned[next(k for k in ["text", "instruction", "content"] if k in cleaned)] = main_text[:self.max_length]
+        return cleaned
+
+    def deduplicate(self, records: List[Dict], field: str = "text") -> List[Dict]:
+        unique: List[Dict] = []
+        seen: Set[str] = set()
+        for rec in records:
+            text = str(rec.get(field, rec.get("instruction", rec.get("content", ""))))
+            h = hashlib.md5(text.lower().strip().encode()).hexdigest()
+            if h not in seen:
+                seen.add(h)
+                unique.append(rec)
+        return unique
+
+    def filter_by_language(self, records: List[Dict], allowed: List[str]) -> List[Dict]:
+        try:
+            from langdetect import detect  # type: ignore
+            result = []
+            for rec in records:
+                text = rec.get("text", rec.get("instruction", ""))
+                try:
+                    lang = detect(text)
+                    if lang in allowed:
+                        result.append(rec)
+                except Exception:
+                    result.append(rec)
+            return result
+        except ImportError:
+            return records
+
+    def process(self, records: List[Dict]) -> List[Dict]:
+        cleaned = [self.clean_record(r) for r in records]
+        cleaned = [r for r in cleaned if r is not None]
+        if self.remove_duplicates:
+            for field in ["text", "instruction", "content"]:
+                if any(field in r for r in cleaned):
+                    cleaned = self.deduplicate(cleaned, field)
+                    break
+        return cleaned
+===== services/data_service/dataset_versioner.py =====
+"""Dataset Versioner — Phase 4 — إدارة إصدارات الـ datasets."""
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import os
+import shutil
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DatasetVersion:
+    version_id: str
+    name: str
+    version: str
+    record_count: int
+    size_bytes: int
+    format: str
+    checksum: str
+    created_at: float = field(default_factory=time.time)
+    metadata: Dict = field(default_factory=dict)
+    path: str = ""
+    is_train: bool = False
+    is_valid: bool = False
+
+    def to_dict(self) -> Dict:
+        return {
+            "version_id": self.version_id,
+            "name": self.name,
+            "version": self.version,
+            "record_count": self.record_count,
+            "size_bytes": self.size_bytes,
+            "format": self.format,
+            "checksum": self.checksum,
+            "created_at": self.created_at,
+            "path": self.path,
+        }
+
+
+class DatasetVersioner:
+    """
+    إدارة إصدارات الـ datasets مع:
+    - dataset versioning بـ checksum
+    - train/validation split
+    - quality filtering
+    - duplicate removal
+    - JSONL + Parquet export
+    - HuggingFace compatibility
+    - metadata preservation
+    - embedding-ready export
+    """
+
+    def __init__(self, base_dir: str = "storage_data/datasets") -> None:
+        self._base = Path(base_dir)
+        self._base.mkdir(parents=True, exist_ok=True)
+        self._registry_path = self._base / "versions.json"
+        self._versions: Dict[str, DatasetVersion] = {}
+        self._load_registry()
+
+    def _load_registry(self) -> None:
+        if self._registry_path.exists():
+            try:
+                data = json.loads(self._registry_path.read_text())
+                for vid, entry in data.items():
+                    self._versions[vid] = DatasetVersion(**entry)
+            except Exception as exc:
+                logger.warning("فشل تحميل registry: %s", exc)
+
+    def _save_registry(self) -> None:
+        data = {vid: v.to_dict() for vid, v in self._versions.items()}
+        self._registry_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+
+    # ─── Build ────────────────────────────────────────────────────────────────
+
+    def create_version(
+        self,
+        records: List[Dict],
+        name: str,
+        version: str = "v1.0",
+        fmt: str = "jsonl",
+        metadata: Optional[Dict] = None,
+    ) -> DatasetVersion:
+        """يُنشئ إصداراً جديداً من الـ records."""
+        if not records:
+            raise ValueError("لا يمكن إنشاء dataset فارغ")
+
+        # Quality filtering
+        records = self._quality_filter(records)
+
+        # Deduplication
+        records = self._deduplicate(records)
+
+        # Compute checksum
+        checksum = self._checksum(records)
+        version_id = f"{name}_{version}_{checksum[:8]}"
+
+        # Check if same checksum exists
+        for v in self._versions.values():
+            if v.checksum == checksum and v.name == name:
+                logger.info("Dataset مطابق موجود: %s", v.version_id)
+                return v
+
+        # Save
+        version_dir = self._base / version_id
+        version_dir.mkdir(exist_ok=True)
+
+        path = self._save_records(records, version_dir, name, fmt)
+        size = os.path.getsize(path)
+
+        ver = DatasetVersion(
+            version_id=version_id,
+            name=name,
+            version=version,
+            record_count=len(records),
+            size_bytes=size,
+            format=fmt,
+            checksum=checksum,
+            metadata=metadata or {},
+            path=str(path),
+        )
+        self._versions[version_id] = ver
+        self._save_registry()
+
+        logger.info(
+            "Dataset version created: %s records=%d size=%.1fKB",
+            version_id, len(records), size / 1024,
+        )
+        return ver
+
+    def split(
+        self,
+        records: List[Dict],
+        train_ratio: float = 0.9,
+        shuffle: bool = True,
+        seed: int = 42,
+    ) -> tuple:
+        """تقسيم إلى train/validation."""
+        import random
+        rng = random.Random(seed)
+        data = list(records)
+        if shuffle:
+            rng.shuffle(data)
+        split_idx = int(len(data) * train_ratio)
+        return data[:split_idx], data[split_idx:]
+
+    # ─── Export ───────────────────────────────────────────────────────────────
+
+    def export_jsonl(self, records: List[Dict], path: str) -> str:
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("w", encoding="utf-8") as f:
+            for r in records:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        logger.info("JSONL export: %s (%d records)", path, len(records))
+        return str(p)
+
+    def export_parquet(self, records: List[Dict], path: str) -> str:
+        try:
+            import pandas as pd
+            df = pd.DataFrame(records)
+            p = Path(path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            df.to_parquet(str(p), index=False, engine="pyarrow")
+            logger.info("Parquet export: %s (%d records)", path, len(records))
+            return str(p)
+        except ImportError:
+            logger.warning("pandas/pyarrow غير متاح — تصدير كـ JSONL بدلاً")
+            return self.export_jsonl(records, path.replace(".parquet", ".jsonl"))
+
+    def export_huggingface(self, records: List[Dict], path: str, split: str = "train") -> str:
+        """تصدير بصيغة HuggingFace DatasetDict."""
+        hf_path = Path(path) / split
+        hf_path.mkdir(parents=True, exist_ok=True)
+        jsonl_path = hf_path / "data.jsonl"
+        self.export_jsonl(records, str(jsonl_path))
+        # metadata
+        meta = {
+            "split": split,
+            "num_examples": len(records),
+            "features": list(records[0].keys()) if records else [],
+        }
+        (hf_path / "metadata.json").write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2)
+        )
+        logger.info("HuggingFace export: %s split=%s", path, split)
+        return str(hf_path)
+
+    def export_embedding_ready(
+        self,
+        records: List[Dict],
+        text_field: str = "text",
+        path: str = "storage_data/datasets/embedding_ready.jsonl",
+    ) -> str:
+        """تصدير بصيغة جاهزة للـ embedding."""
+        ready = []
+        for r in records:
+            text = r.get(text_field) or r.get("content") or r.get("instruction", "")
+            if text:
+                ready.append({
+                    "id": r.get("id", ""),
+                    "text": str(text)[:8192],
+                    "metadata": {k: v for k, v in r.items() if k not in (text_field, "id")},
+                })
+        return self.export_jsonl(ready, path)
+
+    # ─── Internal ────────────────────────────────────────────────────────────
+
+    def _quality_filter(self, records: List[Dict]) -> List[Dict]:
+        filtered = []
+        for r in records:
+            text = (r.get("text") or r.get("content") or
+                    r.get("instruction") or r.get("response") or
+                    r.get("input") or "")
+            if len(str(text).strip()) >= 5:
+                filtered.append(r)
+        removed = len(records) - len(filtered)
+        if removed:
+            logger.debug("Quality filter: removed %d low-quality records", removed)
+        return filtered
+
+    def _deduplicate(self, records: List[Dict]) -> List[Dict]:
+        seen: set = set()
+        unique = []
+        for r in records:
+            key_text = r.get("text") or r.get("content") or r.get("instruction", "")
+            key = hashlib.md5(str(key_text).encode()).hexdigest()
+            if key not in seen:
+                seen.add(key)
+                unique.append(r)
+        removed = len(records) - len(unique)
+        if removed:
+            logger.debug("Deduplication: removed %d duplicates", removed)
+        return unique
+
+    @staticmethod
+    def _checksum(records: List[Dict]) -> str:
+        content = json.dumps(records, ensure_ascii=False, sort_keys=True)
+        return hashlib.sha256(content.encode()).hexdigest()
+
+    def _save_records(
+        self,
+        records: List[Dict],
+        directory: Path,
+        name: str,
+        fmt: str,
+    ) -> Path:
+        path = directory / f"{name}.{fmt}"
+        if fmt == "jsonl":
+            with path.open("w", encoding="utf-8") as f:
+                for r in records:
+                    f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        elif fmt == "json":
+            path.write_text(json.dumps(records, ensure_ascii=False, indent=2))
+        else:
+===== core/model/model_registry.py =====
+from __future__ import annotations
+
+import logging
+from threading import Lock
+from typing import Dict, List, Optional
+
+from .model_config import ModelConfig
+
+logger = logging.getLogger(__name__)
+
+
+class ModelRegistry:
+    """Thread-safe in-process registry for ModelConfig objects."""
+
+    _instance: Optional["ModelRegistry"] = None
+    _lock: Lock = Lock()
+
+    def __new__(cls) -> "ModelRegistry":
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+                cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self) -> None:
+        if self._initialized:
+            return
+        self._configs: Dict[str, ModelConfig] = {}
+        self._initialized = True
+        self._seed_defaults()
+        logger.info("ModelRegistry initialized with %d defaults", len(self._configs))
+
+    def _seed_defaults(self) -> None:
+        defaults = [
+            ModelConfig(
+                model_id="llama3-8b",
+                display_name="LLaMA 3 8B",
+                tokenizer_type="llama",
+                context_length=8192,
+            ),
+            ModelConfig(
+                model_id="mistral-7b",
+                display_name="Mistral 7B",
+                tokenizer_type="mistral",
+                context_length=8192,
+            ),
+            ModelConfig(
+                model_id="ollama:llama3",
+                display_name="Ollama LLaMA 3",
+                backend="ollama",
+                tokenizer_type="generic",
+            ),
+        ]
+        for cfg in defaults:
+            self._configs[cfg.model_id] = cfg
+
+    def register(self, config: ModelConfig) -> None:
+        self._configs[config.model_id] = config
+        logger.info("Model registered: %s", config.model_id)
+
+    def get(self, model_id: str) -> Optional[ModelConfig]:
+        return self._configs.get(model_id)
+
+    def get_or_raise(self, model_id: str) -> ModelConfig:
+        cfg = self.get(model_id)
+        if cfg is None:
+            raise KeyError(f"Model '{model_id}' not found in registry")
+        return cfg
+
+    def list_models(self) -> List[Dict]:
+        return [
+            {
+                "model_id": c.model_id,
+                "display_name": c.display_name or c.model_id,
+                "backend": c.backend,
+                "context_length": c.context_length,
+            }
+            for c in self._configs.values()
+        ]
+
+    def unregister(self, model_id: str) -> bool:
+        if model_id in self._configs:
+            del self._configs[model_id]
+            logger.info("Model unregistered: %s", model_id)
+            return True
+        return False
+
+    def __len__(self) -> int:
+        return len(self._configs)
+===== core/training_engine/trainer.py =====
+from __future__ import annotations
+
+import logging
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class TrainingConfig:
+    output_dir: str = "storage_data/training_output"
+    num_epochs: int = 3
+    per_device_train_batch_size: int = 4
+    per_device_eval_batch_size: int = 4
+    gradient_accumulation_steps: int = 4
+    learning_rate: float = 2e-4
+    warmup_ratio: float = 0.03
+    lr_scheduler_type: str = "cosine"
+    weight_decay: float = 0.01
+    max_grad_norm: float = 1.0
+    logging_steps: int = 10
+    eval_steps: int = 100
+    save_steps: int = 200
+    fp16: bool = True
+    bf16: bool = False
+    dataloader_num_workers: int = 0
+    seed: int = 42
+    max_seq_length: int = 2048
+    report_to: List[str] = field(default_factory=list)
+    resume_from_checkpoint: Optional[str] = None
+
+
+class Trainer:
+    """Generic trainer wrapper around HuggingFace Trainer."""
+
+    def __init__(
+        self,
+        config: TrainingConfig,
+        on_log: Optional[Callable[[Dict], None]] = None,
+    ) -> None:
+        self.config = config
+        self.on_log = on_log
+        self._trainer: Optional[Any] = None
+        Path(config.output_dir).mkdir(parents=True, exist_ok=True)
+
+    def setup(
+        self,
+        model: Any,
+        tokenizer: Any,
+        train_dataset: Any,
+        eval_dataset: Optional[Any] = None,
+        data_collator: Optional[Any] = None,
+    ) -> None:
+        try:
+            from transformers import TrainingArguments, Trainer as HFTrainer  # type: ignore
+
+            args = TrainingArguments(
+                output_dir=self.config.output_dir,
+                num_train_epochs=self.config.num_epochs,
+                per_device_train_batch_size=self.config.per_device_train_batch_size,
+                per_device_eval_batch_size=self.config.per_device_eval_batch_size,
+                gradient_accumulation_steps=self.config.gradient_accumulation_steps,
+                learning_rate=self.config.learning_rate,
+                warmup_ratio=self.config.warmup_ratio,
+                lr_scheduler_type=self.config.lr_scheduler_type,
+                weight_decay=self.config.weight_decay,
+                max_grad_norm=self.config.max_grad_norm,
+                logging_steps=self.config.logging_steps,
+                eval_steps=self.config.eval_steps,
+                save_steps=self.config.save_steps,
+                fp16=self.config.fp16,
+                bf16=self.config.bf16,
+                seed=self.config.seed,
+                report_to=self.config.report_to,
+                evaluation_strategy="steps" if eval_dataset is not None else "no",
+            )
+
+            self._trainer = HFTrainer(
+                model=model,
+                args=args,
+                train_dataset=train_dataset,
+                eval_dataset=eval_dataset,
+                tokenizer=tokenizer,
+                data_collator=data_collator,
+            )
+            logger.info("Trainer setup complete")
+        except ImportError as exc:
+            raise RuntimeError("transformers not installed") from exc
+
+    def train(self, resume: bool = False) -> Dict:
+        if self._trainer is None:
+            raise RuntimeError("Call setup() before train()")
+        start = time.time()
+        checkpoint = self.config.resume_from_checkpoint if resume else None
+        result = self._trainer.train(resume_from_checkpoint=checkpoint)
+        elapsed = time.time() - start
+        metrics = dict(result.metrics) if hasattr(result, "metrics") else {}
+        metrics["training_time_seconds"] = round(elapsed, 2)
+        logger.info("Training complete: %s", metrics)
+        return metrics
+
+    def evaluate(self) -> Dict:
+        if self._trainer is None:
+            raise RuntimeError("Call setup() before evaluate()")
+        return self._trainer.evaluate()
+
+    def save(self, path: Optional[str] = None) -> str:
+        if self._trainer is None:
+            raise RuntimeError("Trainer not set up")
+        out = path or self.config.output_dir
+        self._trainer.save_model(out)
+        logger.info("Model saved to: %s", out)
+        return out
+===== core/training_engine/evaluator.py =====
+from __future__ import annotations
+
+import logging
+import math
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class Evaluator:
+    """Evaluate LLM quality: perplexity, BLEU, and generation benchmarks."""
+
+    def __init__(self, model: Optional[Any] = None, tokenizer: Optional[Any] = None) -> None:
+        self.model = model
+        self.tokenizer = tokenizer
+
+    def perplexity(self, texts: List[str], batch_size: int = 4) -> float:
+        """Compute average perplexity on a text list."""
+        try:
+            import torch  # type: ignore
+            if self.model is None or self.tokenizer is None:
+                raise RuntimeError("model and tokenizer must be set")
+            self.model.eval()
+            total_loss = 0.0
+            total_tokens = 0
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i: i + batch_size]
+                encoded = self.tokenizer(
+                    batch,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=512,
+                )
+                with torch.no_grad():
+                    outputs = self.model(**encoded, labels=encoded["input_ids"])
+                loss = outputs.loss.item()
+                n_tokens = encoded["input_ids"].ne(self.tokenizer.pad_token_id).sum().item()
+                total_loss += loss * n_tokens
+                total_tokens += n_tokens
+            avg_loss = total_loss / max(1, total_tokens)
+            return round(math.exp(avg_loss), 4)
+        except ImportError as exc:
+            raise RuntimeError("PyTorch + transformers required") from exc
+
+    def bleu(self, references: List[str], hypotheses: List[str]) -> float:
+        """Compute corpus-level BLEU score."""
+        try:
+            from nltk.translate.bleu_score import corpus_bleu  # type: ignore
+            import nltk  # type: ignore
+            refs = [[r.split()] for r in references]
+            hyps = [h.split() for h in hypotheses]
+            return round(corpus_bleu(refs, hyps), 4)
+        except ImportError:
+            return self._simple_bleu(references, hypotheses)
+
+    def _simple_bleu(self, references: List[str], hypotheses: List[str]) -> float:
+        total = 0.0
+        for ref, hyp in zip(references, hypotheses):
+            ref_tokens = set(ref.lower().split())
+            hyp_tokens = hyp.lower().split()
+            if not hyp_tokens:
+                continue
+            overlap = sum(1 for t in hyp_tokens if t in ref_tokens)
+            total += overlap / len(hyp_tokens)
+        return round(total / max(1, len(references)), 4)
+
+    def generation_benchmark(
+        self,
+        prompts: List[str],
+        expected: Optional[List[str]] = None,
+        max_new_tokens: int = 64,
+    ) -> Dict:
+        results: List[Dict] = []
+        for i, prompt in enumerate(prompts):
+            entry: Dict = {"prompt": prompt, "generated": "", "error": None}
+            try:
+                import torch  # type: ignore
+                inputs = self.tokenizer(prompt, return_tensors="pt")
+                with torch.no_grad():
+                    output = self.model.generate(
+                        **inputs, max_new_tokens=max_new_tokens, do_sample=False
+                    )
+                gen = self.tokenizer.decode(
+                    output[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True
+                )
+                entry["generated"] = gen
+                if expected and i < len(expected):
+                    entry["bleu"] = self._simple_bleu([expected[i]], [gen])
+            except Exception as exc:
+                entry["error"] = str(exc)
+            results.append(entry)
+        avg_bleu = sum(r.get("bleu", 0.0) for r in results) / max(1, len(results))
+        return {"results": results, "avg_bleu": round(avg_bleu, 4)}
+===== core/training_engine/checkpoint_manager.py =====
+from __future__ import annotations
+
+import json
+import logging
+import shutil
+import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class CheckpointManager:
+    """Save, load, and list training checkpoints."""
+
+    def __init__(self, checkpoint_dir: str = "storage_data/checkpoints") -> None:
+        self.checkpoint_dir = Path(checkpoint_dir)
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    def save(
+        self,
+        model: Any,
+        tokenizer: Any,
+        step: int,
+        metrics: Optional[Dict] = None,
+        tag: Optional[str] = None,
+    ) -> str:
+        name = tag or f"checkpoint-step-{step}"
+        dest = self.checkpoint_dir / name
+        dest.mkdir(exist_ok=True)
+
+        try:
+            model.save_pretrained(str(dest))
+            if tokenizer is not None:
+                tokenizer.save_pretrained(str(dest))
+        except AttributeError as exc:
+            logger.warning("Cannot call save_pretrained: %s", exc)
+
+        meta = {
+            "step": step,
+            "saved_at": time.time(),
+            "metrics": metrics or {},
+            "tag": tag,
+        }
+        (dest / "checkpoint_meta.json").write_text(
+            json.dumps(meta, indent=2), encoding="utf-8"
+        )
+        logger.info("Checkpoint saved: %s", dest)
+        return str(dest)
+
+    def load_latest(self) -> Optional[Path]:
+        checkpoints = self._list_checkpoints()
+        if not checkpoints:
+            return None
+        return max(checkpoints, key=lambda p: self._step_from_name(p.name))
+
+    def load(self, path: str) -> Path:
+        p = Path(path)
+        if not p.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {path}")
+        return p
+
+    def list_checkpoints(self) -> List[Dict]:
+        result = []
+        for p in self.checkpoint_dir.iterdir():
+            if p.is_dir():
+                meta_file = p / "checkpoint_meta.json"
+                meta = {}
+                if meta_file.exists():
+                    try:
+                        meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                    except Exception:
+                        pass
+                result.append({"name": p.name, "path": str(p), **meta})
+        result.sort(key=lambda x: x.get("saved_at", 0), reverse=True)
+        return result
+
+    def delete(self, name: str) -> bool:
+        p = self.checkpoint_dir / name
+        if p.exists():
+            shutil.rmtree(p)
+            logger.info("Checkpoint deleted: %s", name)
+            return True
+        return False
+
+    def _list_checkpoints(self) -> List[Path]:
+        return [p for p in self.checkpoint_dir.iterdir() if p.is_dir()]
+
+    @staticmethod
+    def _step_from_name(name: str) -> int:
+        parts = name.split("-")
+        for part in reversed(parts):
+            if part.isdigit():
+                return int(part)
+        return 0
+===== hajeen_model/hybrid_models/training/training_pipeline.py =====
+"""
+training_pipeline.py — Full training pipeline for Hajeen Foundation Model.
+
+Features:
+    - Mixed precision training (FP16 / BF16)
+    - Gradient accumulation
+    - Learning rate scheduling (cosine with warmup)
+    - Gradient clipping
+    - Checkpoint saving and resuming
+    - Distributed training ready (DDP)
+    - Logging: loss, perplexity, learning rate
+
+Usage:
+    config = TrainingConfig(max_steps=10000, batch_size=8)
+    pipeline = TrainingPipeline(model, tokenizer, train_ds, val_ds, config)
+    pipeline.train()
+"""
+
+from __future__ import annotations
+
+import math
+import os
+import time
+from dataclasses import dataclass, field
+from typing import Optional
+
+import torch
+import torch.nn as nn
+from torch.cuda.amp import GradScaler, autocast
+from torch.optim import AdamW
+from torch.utils.data import DataLoader
+
+
+@dataclass
+class TrainingConfig:
+    """Configuration for the Hajeen training pipeline."""
+
+    # ── Output ────────────────────────────────────────────────────────────
+    output_dir: str = "outputs/hajeen_training"
+
+    # ── Batching ──────────────────────────────────────────────────────────
+    batch_size: int = 8
+    gradient_accumulation_steps: int = 4
+
+    # ── Steps / Epochs ────────────────────────────────────────────────────
+    max_steps: int = 100_000
+    max_epochs: Optional[int] = None      # If set, overrides max_steps
+
+    # ── Optimizer ─────────────────────────────────────────────────────────
+    learning_rate: float = 3e-4
+    weight_decay: float = 0.1
+    beta1: float = 0.9
+    beta2: float = 0.95
+    eps: float = 1e-8
+    max_grad_norm: float = 1.0
+
+    # ── LR Schedule ───────────────────────────────────────────────────────
+    warmup_steps: int = 1_000
+    lr_schedule: str = "cosine"           # "cosine" | "linear" | "constant"
+    min_lr_ratio: float = 0.1             # Minimum LR = learning_rate * min_lr_ratio
+
+    # ── Mixed Precision ───────────────────────────────────────────────────
+    use_amp: bool = True
+    amp_dtype: str = "float16"            # "float16" | "bfloat16"
+
+    # ── Checkpoint ────────────────────────────────────────────────────────
+    save_every_n_steps: int = 1_000
+    keep_n_checkpoints: int = 3
+
+    # ── Evaluation ────────────────────────────────────────────────────────
+    eval_every_n_steps: int = 500
+    eval_max_batches: int = 50
+
+    # ── Logging ───────────────────────────────────────────────────────────
+    log_every_n_steps: int = 10
+
+    # ── DataLoader ────────────────────────────────────────────────────────
+    num_workers: int = 0
+    seed: int = 42
+
+
+def _cosine_lr(
+    step: int,
+    warmup_steps: int,
+    max_steps: int,
+    max_lr: float,
+    min_lr: float,
+) -> float:
+    if step < warmup_steps:
+        return max_lr * (step / max(1, warmup_steps))
+    progress = (step - warmup_steps) / max(1, max_steps - warmup_steps)
+    cosine = 0.5 * (1 + math.cos(math.pi * progress))
+    return min_lr + (max_lr - min_lr) * cosine
+
+
+def _linear_lr(step: int, warmup_steps: int, max_steps: int, max_lr: float, min_lr: float) -> float:
+    if step < warmup_steps:
+        return max_lr * (step / max(1, warmup_steps))
+    progress = (step - warmup_steps) / max(1, max_steps - warmup_steps)
+    return max_lr - (max_lr - min_lr) * progress
+
+
+class TrainingPipeline:
+    """
+    End-to-end training pipeline for HajeenForCausalLM.
+
+    Handles:
+        - DataLoader setup
+        - Optimizer and LR scheduler
+        - Mixed precision (AMP)
+        - Gradient accumulation
+        - Checkpoint save / resume
+        - Evaluation loop
+        - Logging
+
+    Args:
+        model: HajeenForCausalLM instance.
+        tokenizer: HajeenTokenizer instance.
+        train_dataset: Training dataset.
+        val_dataset: Validation dataset (optional).
+        config: TrainingConfig.
+    """
+
+    def __init__(
+        self,
+        model: nn.Module,
+        tokenizer,
+        train_dataset,
+        val_dataset=None,
+        config: Optional[TrainingConfig] = None,
+    ) -> None:
+        self.model = model
+        self.tokenizer = tokenizer
+        self.train_dataset = train_dataset
+        self.val_dataset = val_dataset
+        self.config = config or TrainingConfig()
+
+        # Device
+        self.device = (
+            torch.device("cuda") if torch.cuda.is_available()
+            else torch.device("mps") if torch.backends.mps.is_available()
+            else torch.device("cpu")
+        )
+        self.model.to(self.device)
+
+        # Optimizer
+        self.optimizer = self._build_optimizer()
+
+        # Scaler for mixed precision
+        self.scaler = GradScaler(enabled=self.config.use_amp and self.device.type == "cuda")
+
+        # AMP context dtype
+        if self.config.amp_dtype == "bfloat16":
+            self._amp_dtype = torch.bfloat16
+        else:
+            self._amp_dtype = torch.float16
+
+        # State
+        self.global_step: int = 0
+        self.epoch: int = 0
+        self._checkpoint_manager = None
+        os.makedirs(self.config.output_dir, exist_ok=True)
+
+    def _build_optimizer(self) -> AdamW:
+        """Build AdamW with weight decay applied only to weight matrices."""
+        decay_params = []
+        no_decay_params = []
+        for name, param in self.model.named_parameters():
+            if not param.requires_grad:
+                continue
+            if "bias" in name or "norm" in name or "embedding" in name:
+                no_decay_params.append(param)
+            else:
+                decay_params.append(param)
+
+        return AdamW(
+            [
+                {"params": decay_params, "weight_decay": self.config.weight_decay},
+                {"params": no_decay_params, "weight_decay": 0.0},
+            ],
+            lr=self.config.learning_rate,
+            betas=(self.config.beta1, self.config.beta2),
+            eps=self.config.eps,
+        )
+
+    def _get_lr(self) -> float:
+        """Compute the current learning rate."""
+        max_lr = self.config.learning_rate
+        min_lr = max_lr * self.config.min_lr_ratio
+        max_steps = self.config.max_steps
+
+        if self.config.lr_schedule == "cosine":
+            return _cosine_lr(self.global_step, self.config.warmup_steps, max_steps, max_lr, min_lr)
+        elif self.config.lr_schedule == "linear":
+            return _linear_lr(self.global_step, self.config.warmup_steps, max_steps, max_lr, min_lr)
+        else:
+            return max_lr
+
+    def _set_lr(self, lr: float) -> None:
+        for pg in self.optimizer.param_groups:
+            pg["lr"] = lr
+
+    def _train_step(self, batch: dict) -> float:
+        """Execute a single forward + backward step. Return loss value."""
+        input_ids = batch["input_ids"].to(self.device)
+        labels    = batch["labels"].to(self.device)
+
+        use_amp = self.config.use_amp and self.device.type == "cuda"
+
+        with autocast(device_type=self.device.type, dtype=self._amp_dtype, enabled=use_amp):
+            out = self.model(input_ids=input_ids, labels=labels)
+            loss = out["loss"] / self.config.gradient_accumulation_steps
+
+        self.scaler.scale(loss).backward()
+        return loss.item() * self.config.gradient_accumulation_steps
+
+    def _optimizer_step(self) -> None:
+        """Clip gradients, step optimizer, zero grads."""
+        self.scaler.unscale_(self.optimizer)
+        nn.utils.clip_grad_norm_(self.model.parameters(), self.config.max_grad_norm)
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
+        self.optimizer.zero_grad(set_to_none=True)
+
+    @torch.no_grad()
+    def evaluate(self) -> dict:
+        """Run evaluation on val_dataset. Returns dict with 'loss' and 'ppl'."""
+        if self.val_dataset is None:
+            return {}
+
+        self.model.eval()
+        from hajeen_model.datasets.dataset_builder import HajeenDataset
+        loader = DataLoader(
+            self.val_dataset,
+            batch_size=self.config.batch_size,
+            shuffle=False,
+            collate_fn=lambda b: HajeenDataset.collate_fn(b, pad_token_id=self.tokenizer.pad_token_id),
+        )
+
+        total_loss = 0.0
+        n_batches = 0
+
+        for batch in loader:
+            if n_batches >= self.config.eval_max_batches:
+                break
+            input_ids = batch["input_ids"].to(self.device)
+            labels    = batch["labels"].to(self.device)
+            out = self.model(input_ids=input_ids, labels=labels)
+            total_loss += out["loss"].item()
+            n_batches += 1
+
+        self.model.train()
+        avg_loss = total_loss / max(1, n_batches)
+        ppl = math.exp(min(avg_loss, 20))
+        return {"val_loss": avg_loss, "val_ppl": ppl}
+
+    def _save_checkpoint(self) -> None:
+        """Save a training checkpoint."""
+        from hajeen_model.checkpoints.checkpoint_manager import CheckpointManager
+        if self._checkpoint_manager is None:
+===== hajeen_model/hybrid_models/evaluation/evaluation_pipeline.py =====
+"""
+evaluation_pipeline.py — Evaluation framework for Hajeen Foundation Model.
+
+Metrics:
+    - Perplexity (primary language modeling metric)
+    - Cross-entropy loss
+    - Token-level accuracy
+    - Benchmark testing (custom tasks)
+    - Response quality evaluation (BLEU-like)
+"""
+
+from __future__ import annotations
+
+import math
+import time
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
+import torch
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+
+
+@dataclass
+class EvaluationConfig:
+    """Configuration for the evaluation pipeline."""
+    batch_size: int = 8
+    max_batches: Optional[int] = None     # None = evaluate full dataset
+    device: Optional[str] = None
+    output_file: Optional[str] = None
+
+
+@dataclass
+class EvaluationResult:
+    """Container for evaluation metrics."""
+    loss: float = 0.0
+    perplexity: float = 0.0
+    accuracy: float = 0.0
+    n_tokens: int = 0
+    n_batches: int = 0
+    elapsed_seconds: float = 0.0
+    benchmark_scores: Dict[str, float] = field(default_factory=dict)
+
+    def summary(self) -> str:
+        lines = [
+            "=" * 55,
+            "  Hajeen Evaluation Results",
+            "=" * 55,
+            f"  Loss        : {self.loss:.4f}",
+            f"  Perplexity  : {self.perplexity:.2f}",
+            f"  Accuracy    : {self.accuracy * 100:.2f}%",
+            f"  Tokens eval : {self.n_tokens:,}",
+            f"  Batches     : {self.n_batches}",
+            f"  Time        : {self.elapsed_seconds:.1f}s",
+        ]
+        if self.benchmark_scores:
+            lines.append("  Benchmarks:")
+            for name, score in self.benchmark_scores.items():
+                lines.append(f"    {name:30s}: {score:.4f}")
+        lines.append("=" * 55)
+        return "\n".join(lines)
+
+    def to_dict(self) -> Dict:
+        return {
+            "loss": self.loss,
+            "perplexity": self.perplexity,
+            "accuracy": self.accuracy,
+            "n_tokens": self.n_tokens,
+            "n_batches": self.n_batches,
+            "elapsed_seconds": self.elapsed_seconds,
+            "benchmark_scores": self.benchmark_scores,
+        }
+
+
+# ── BLEU-like n-gram precision ─────────────────────────────────────────────
+
+def _ngram_counts(tokens: List[int], n: int) -> Dict[Tuple, int]:
+    counts: Dict[Tuple, int] = {}
+    for i in range(len(tokens) - n + 1):
+        gram = tuple(tokens[i: i + n])
+        counts[gram] = counts.get(gram, 0) + 1
+    return counts
+
+
+def compute_bleu(
+    references: List[List[int]],
+    hypotheses: List[List[int]],
+    max_n: int = 4,
+) -> float:
+    """
+    Compute corpus-level BLEU score (simplified, no brevity penalty).
+
+    Args:
+        references: List of reference token id sequences.
+        hypotheses: List of hypothesis token id sequences.
+        max_n: Maximum n-gram order.
+
+    Returns:
+        BLEU score in [0, 1].
+    """
+    precisions = []
+    for n in range(1, max_n + 1):
+        clipped = 0
+        total = 0
+        for ref, hyp in zip(references, hypotheses):
+            ref_counts = _ngram_counts(ref, n)
+            hyp_counts = _ngram_counts(hyp, n)
+            for gram, cnt in hyp_counts.items():
+                clipped += min(cnt, ref_counts.get(gram, 0))
+            total += max(len(hyp) - n + 1, 0)
+        if total == 0:
+            precisions.append(0.0)
+        else:
+            precisions.append(clipped / total)
+
+    if any(p == 0 for p in precisions):
+        return 0.0
+
+    log_bleu = sum(math.log(p) for p in precisions) / max_n
+    return math.exp(log_bleu)
+
+
+# ── Main evaluation pipeline ───────────────────────────────────────────────
+
+class EvaluationPipeline:
+    """
+    Full evaluation pipeline for HajeenForCausalLM.
+
+    Computes perplexity, accuracy, and optional benchmark scores.
+
+    Usage:
+        pipeline = EvaluationPipeline(model, tokenizer, config)
+        result = pipeline.evaluate(val_dataset)
+        print(result.summary())
+    """
+
+    def __init__(
+        self,
+        model,
+        tokenizer,
+        config: Optional[EvaluationConfig] = None,
+    ) -> None:
+        self.model = model
+        self.tokenizer = tokenizer
+        self.config = config or EvaluationConfig()
+
+        if self.config.device:
+            self.device = torch.device(self.config.device)
+        else:
+            self.device = (
+                torch.device("cuda") if torch.cuda.is_available()
+                else torch.device("cpu")
+            )
+        self.model.to(self.device)
+
+    @torch.no_grad()
+    def evaluate(self, dataset, pad_token_id: int = 0) -> EvaluationResult:
+        """
+        Run evaluation on a dataset.
+
+        Args:
+            dataset: HajeenDataset (or any Dataset with 'input_ids' / 'labels').
+            pad_token_id: Padding token id (skipped in metrics).
+
+        Returns:
+            EvaluationResult with all metrics.
+        """
+        from hajeen_model.datasets.dataset_builder import HajeenDataset
+
+        self.model.eval()
+        loader = DataLoader(
+            dataset,
+            batch_size=self.config.batch_size,
+            shuffle=False,
+            collate_fn=lambda b: HajeenDataset.collate_fn(b, pad_token_id=pad_token_id),
+        )
+
+        total_loss = 0.0
+        total_correct = 0
+        total_tokens = 0
+        n_batches = 0
+        t0 = time.time()
+
+        for batch in loader:
+            if self.config.max_batches and n_batches >= self.config.max_batches:
+                break
+
+            input_ids = batch["input_ids"].to(self.device)
+            labels    = batch["labels"].to(self.device)
+
+            out = self.model(input_ids=input_ids, labels=labels)
+            logits = out["logits"]
+
+            # Per-token loss (excluding padding and ignore=-100)
+            shift_logits = logits[:, :-1, :].contiguous()
+            shift_labels  = labels[:, 1:].contiguous()
+            flat_logits   = shift_logits.view(-1, logits.size(-1))
+            flat_labels   = shift_labels.view(-1)
+
+            mask = (flat_labels != -100) & (flat_labels != pad_token_id)
+            if mask.sum() == 0:
+                continue
+
+            active_logits = flat_logits[mask]
+            active_labels  = flat_labels[mask]
+
+            token_loss = F.cross_entropy(active_logits, active_labels, reduction="sum")
+            total_loss += token_loss.item()
+
+            # Accuracy
+            preds = active_logits.argmax(dim=-1)
+            total_correct += (preds == active_labels).sum().item()
+            total_tokens += mask.sum().item()
+            n_batches += 1
+
+        elapsed = time.time() - t0
+
+        if total_tokens == 0:
+            return EvaluationResult(elapsed_seconds=elapsed)
+
+        avg_loss = total_loss / total_tokens
+        ppl = math.exp(min(avg_loss, 20))
+        acc = total_correct / total_tokens
+
+        result = EvaluationResult(
+            loss=avg_loss,
+            perplexity=ppl,
+            accuracy=acc,
+            n_tokens=total_tokens,
+            n_batches=n_batches,
+            elapsed_seconds=elapsed,
+        )
+
+        return result
+
+    def run_benchmarks(self, tasks: List[Dict]) -> Dict[str, float]:
+        """
+        Run custom benchmark tasks.
+
+        Each task is a dict:
+            {"name": str, "prompts": List[str], "references": List[str]}
+
+        Returns:
+            Dict mapping task name → BLEU score.
+        """
+        from hajeen_model.inference.inference_engine import InferenceEngine, GenerationConfig
+
+        engine = InferenceEngine(self.model, self.tokenizer, device=str(self.device))
+        gen_config = GenerationConfig(do_sample=False, max_new_tokens=128)
+        scores = {}
+
+        for task in tasks:
+            name = task["name"]
+            prompts = task["prompts"]
+            references = task.get("references", [])
+
+            hypotheses = [engine.generate(p, gen_config) for p in prompts]
+
+            if references:
+                ref_ids = [self.tokenizer.encode(r) for r in references]
+===== services/evaluation/evaluation_engine.py =====
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+from typing import Any, Callable, Dict, List, Optional
+
+from services.agents.base_agent import AgentResult
+from services.evaluation.metrics import (
+    agent_success_rate_metric,
+    hallucination_metric,
+    latency_metric,
+    tool_accuracy_metric,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class EvaluationEngine:
+    """
+    Comprehensive AI evaluation framework.
+    Supports:
+    - Per-result metric evaluation (hallucination, success, latency, tool accuracy)
+    - Custom metric registration
+    - Named benchmark suites
+    - Batch evaluation with aggregated reports
+    - Automated evaluation on every result
+    """
+
+    DEFAULT_METRICS: Dict[str, Callable] = {
+        "hallucination": hallucination_metric,
+        "success_rate": agent_success_rate_metric,
+        "latency": latency_metric,
+        "tool_accuracy": tool_accuracy_metric,
+    }
+
+    def __init__(self, enable_defaults: bool = True) -> None:
+        self._metrics: Dict[str, Callable] = {}
+        self._benchmarks: Dict[str, Callable] = {}
+        self._history: List[Dict[str, Any]] = []
+        if enable_defaults:
+            self._metrics.update(self.DEFAULT_METRICS)
+        logger.info(
+            "EvaluationEngine initialised with %d metrics.", len(self._metrics)
+        )
+
+    # ── Registration ─────────────────────────────────────────────────────
+
+    def register_metric(self, name: str, metric_fn: Callable) -> None:
+        """Register a custom metric function: (AgentResult) -> Dict."""
+        self._metrics[name] = metric_fn
+        logger.debug("Metric '%s' registered.", name)
+
+    def register_benchmark(self, name: str, benchmark_fn: Callable) -> None:
+        """Register a benchmark suite function: (**kwargs) -> Dict."""
+        self._benchmarks[name] = benchmark_fn
+        logger.debug("Benchmark '%s' registered.", name)
+
+    # ── Single Result Evaluation ──────────────────────────────────────────
+
+    async def evaluate_agent_result(
+        self, agent_result: AgentResult, tag: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Evaluate a single AgentResult against all registered metrics.
+        Results are stored in evaluation history.
+        """
+        eval_start = time.perf_counter()
+        scores: Dict[str, Any] = {}
+
+        for metric_name, metric_fn in self._metrics.items():
+            try:
+                if asyncio.iscoroutinefunction(metric_fn):
+                    score = await metric_fn(agent_result)
+                else:
+                    score = metric_fn(agent_result)
+                scores[metric_name] = score
+            except Exception as exc:
+                logger.error("Metric '%s' failed: %s", metric_name, exc)
+                scores[metric_name] = {"error": str(exc)}
+
+        eval_ms = round((time.perf_counter() - eval_start) * 1000, 2)
+        report = {
+            "tag": tag,
+            "success": agent_result.success,
+            "scores": scores,
+            "eval_duration_ms": eval_ms,
+            "agent_duration_ms": agent_result.total_duration_ms,
+            "steps": len(agent_result.steps),
+        }
+        self._history.append(report)
+        logger.info(
+            "Evaluation complete (tag=%s) — %d metrics in %.0f ms.",
+            tag, len(scores), eval_ms,
+        )
+        return report
+
+    # ── Batch Evaluation ──────────────────────────────────────────────────
+
+    async def evaluate_batch(
+        self, results: List[AgentResult], tags: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Evaluate a list of AgentResults and return aggregate statistics.
+        """
+        tags = tags or [None] * len(results)
+        individual = await asyncio.gather(
+            *[self.evaluate_agent_result(r, t) for r, t in zip(results, tags)]
+        )
+
+        # Aggregate per metric
+        aggregated: Dict[str, Any] = {}
+        for metric_name in self._metrics:
+            values = []
+            for report in individual:
+                score = report["scores"].get(metric_name, {})
+                if isinstance(score, dict):
+                    v = score.get("score", score.get("latency_ms"))
+                else:
+                    v = score
+                if isinstance(v, (int, float)):
+                    values.append(v)
+            if values:
+                aggregated[metric_name] = {
+                    "mean": round(sum(values) / len(values), 4),
+                    "min": round(min(values), 4),
+                    "max": round(max(values), 4),
+                    "samples": len(values),
+                }
+
+        return {
+            "total": len(results),
+            "succeeded": sum(1 for r in results if r.success),
+            "failed": sum(1 for r in results if not r.success),
+            "aggregated": aggregated,
+            "individual": individual,
+        }
+
+    # ── Benchmarks ────────────────────────────────────────────────────────
+
+    async def run_benchmark(self, benchmark_name: str, **kwargs) -> Dict[str, Any]:
+        """Execute a named benchmark suite and return results."""
+        fn = self._benchmarks.get(benchmark_name)
+        if fn is None:
+            raise ValueError(f"Benchmark '{benchmark_name}' not registered.")
+
+        logger.info("Running benchmark: %s", benchmark_name)
+        start = time.perf_counter()
+        try:
+            results = await fn(**kwargs) if asyncio.iscoroutinefunction(fn) else fn(**kwargs)
+            elapsed = round((time.perf_counter() - start) * 1000, 2)
+            logger.info("Benchmark '%s' completed in %.0f ms.", benchmark_name, elapsed)
+            return {
+                "benchmark": benchmark_name,
+                "results": results,
+                "elapsed_ms": elapsed,
+                "success": True,
+            }
+        except Exception as exc:
+            logger.error("Benchmark '%s' failed: %s", benchmark_name, exc)
+            return {
+                "benchmark": benchmark_name,
+                "success": False,
+                "error": str(exc),
+                "elapsed_ms": round((time.perf_counter() - start) * 1000, 2),
+            }
+
+    async def run_all_benchmarks(self, **kwargs) -> Dict[str, Any]:
+        """Run every registered benchmark and aggregate results."""
+        results = {}
+        for name in self._benchmarks:
+            results[name] = await self.run_benchmark(name, **kwargs)
+        passed = sum(1 for r in results.values() if r.get("success"))
+        return {
+            "total_benchmarks": len(results),
+            "passed": passed,
+            "failed": len(results) - passed,
+            "results": results,
+        }
+
+    # ── History & Reporting ───────────────────────────────────────────────
+
+    def get_history(self, last_n: Optional[int] = None) -> List[Dict[str, Any]]:
+        return self._history[-last_n:] if last_n else list(self._history)
+
+    def summary_report(self) -> Dict[str, Any]:
+        if not self._history:
+            return {"total_evaluations": 0}
+        successes = sum(1 for h in self._history if h.get("success"))
+        return {
+            "total_evaluations": len(self._history),
+            "success_rate": round(successes / len(self._history), 3),
+            "avg_agent_ms": round(
+                sum(h.get("agent_duration_ms", 0) for h in self._history) / len(self._history), 2
+            ),
+        }
