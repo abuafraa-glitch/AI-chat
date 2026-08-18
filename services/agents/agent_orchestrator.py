@@ -158,6 +158,7 @@ class AgentOrchestrator:
                 step.result = observation.output
                 if observation.status != TaskStatus.COMPLETED:
                     step.status = TaskStatus.FAILED
+                    context.status = TaskStatus.FAILED
                     step.error = observation.error or "Tool execution failed"
                     self._record(events, context, "step_failed", {"step_id": step.step_id, "error": step.error})
                     return AgentRunResult(False, None, context, events, step.error)
@@ -173,6 +174,7 @@ class AgentOrchestrator:
                 raise
             except Exception as exc:
                 step.status = TaskStatus.FAILED
+                context.status = TaskStatus.FAILED
                 step.error = str(exc)
                 self._record(events, context, "step_failed", {"step_id": step.step_id, "error": str(exc)})
                 return AgentRunResult(False, None, context, events, str(exc))

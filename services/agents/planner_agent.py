@@ -25,7 +25,8 @@ class PlannerAgent(BaseAgent):
         max_steps: int = 10,
         **kwargs: Any,
     ) -> None:
-        super().__init__(name="planner", description="Produces executable plans", llm=llm, max_iterations=max_steps, **kwargs)
+        legacy_iterations = int(kwargs.pop("max_iterations", max_steps))
+        super().__init__(name="planner", description="Produces executable plans", llm=llm, max_iterations=legacy_iterations, **kwargs)
         self._model_router = model_router
         self._prompt_builder = prompt_builder
         self._max_steps = max_steps

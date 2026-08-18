@@ -142,11 +142,16 @@ class ToolExecutor:
                 )
 
         try:
-            result = spec.handler(**dict(call.arguments))
-            if inspect.isawaitable(result):
-                result = await asyncio.wait_for(result, timeout=spec.timeout_seconds)
+            if inspect.iscoroutinefunction(spec.handler):
+                result = await asyncio.wait_for(
+                    spec.handler(**dict(call.arguments)),
+                    timeout=spec.timeout_seconds,
+                )
             else:
-                result = await asyncio.wait_for(asyncio.to_thread(lambda: result), timeout=spec.timeout_seconds)
+                result = await asyncio.wait_for(
+                    asyncio.to_thread(spec.handler, **dict(call.arguments)),
+                    timeout=spec.timeout_seconds,
+                )
             observation = Observation(
                 tool_name=spec.name,
                 execution_id=call.execution_id,
