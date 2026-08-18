@@ -60,6 +60,8 @@ class TrainingRun:
     base_model: str
     base_model_version: str
     training_config: dict[str, Any]
+    dataset_checksum: str = ""
+    dataset_lineage: dict[str, Any] = field(default_factory=dict)
     started_at: float = 0.0
     completed_at: float = 0.0
     status: TrainingStatus = TrainingStatus.QUEUED
@@ -144,6 +146,8 @@ class TrainingPipelineLifecycle:
         base_model_version: str,
         training_config: Optional[dict[str, Any]] = None,
         code_version: str = "",
+        dataset_checksum: str = "",
+        dataset_lineage: Optional[Mapping[str, Any]] = None,
     ) -> TrainingRun:
         run = TrainingRun(
             training_run_id=f"train_{uuid.uuid4().hex}",
@@ -152,6 +156,8 @@ class TrainingPipelineLifecycle:
             base_model=base_model,
             base_model_version=base_model_version,
             training_config=dict(training_config or {}),
+            dataset_checksum=dataset_checksum,
+            dataset_lineage=dict(dataset_lineage or {}),
             code_version=code_version,
             environment={"python": platform.python_version(), "platform": platform.platform()},
         )
@@ -332,11 +338,14 @@ class EvaluationPipelineLifecycle:
                 "sample_count": evaluation.sample_count,
                 "measured_at": time.time(),
             })
-            evaluation.passes_threshold = all(
+            required_thresholds = dict(thresholds or {})
+            missing_metrics = sorted(set(required_thresholds) - set(metrics))
+            evaluation.passes_threshold = not missing_metrics and all(
                 float(metrics[name]) >= float(limit)
-                for name, limit in (thresholds or {}).items()
-                if name in metrics
+                for name, limit in required_thresholds.items()
             )
+            if missing_metrics:
+                evaluation.error = "missing_metrics:" + ",".join(missing_metrics)
             evaluation.status = EvaluationStatus.COMPLETED
         except Exception as exc:
             evaluation.status = EvaluationStatus.FAILED

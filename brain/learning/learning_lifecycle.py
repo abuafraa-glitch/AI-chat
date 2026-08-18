@@ -67,6 +67,8 @@ class LearningLifecycleCoordinator:
             base_model_version=base_model_version,
             training_config=training_config,
             code_version=code_version,
+            dataset_checksum=dataset.checksum,
+            dataset_lineage={"source": dataset.source.provenance, "source_id": dataset.source.source_id, "dataset_run_id": dataset.run_id},
         )
 
     def complete_training(
@@ -88,7 +90,10 @@ class LearningLifecycleCoordinator:
         model_version: str,
         benchmark_id: str,
         benchmark_version: str,
-        sample_count: int,
+        sample_count: int = 0,
+        benchmark_path: str = "",
+        benchmark_source: str = "",
+        benchmark_split: str = "test",
         infer_and_measure: Optional[Callable[[], Mapping[str, Any]]] = None,
         thresholds: Optional[Mapping[str, float]] = None,
     ) -> EvaluationRun:
@@ -101,6 +106,9 @@ class LearningLifecycleCoordinator:
             benchmark_id=benchmark_id,
             benchmark_version=benchmark_version,
             sample_count=sample_count,
+            benchmark_path=benchmark_path,
+            benchmark_source=benchmark_source,
+            benchmark_split=benchmark_split,
         )
         if evaluation.status is EvaluationStatus.BLOCKED:
             return evaluation
@@ -134,6 +142,9 @@ class LearningLifecycleCoordinator:
             training_run_id=training.training_run_id,
             evaluation_id=evaluation.evaluation_id,
             metrics=evaluation.metrics,
+            dataset_checksum=training.dataset_checksum,
+            benchmark_checksum=evaluation.benchmark_checksum,
+            lineage={"dataset": training.dataset_lineage, "evaluation": evaluation.metric_provenance},
             status=ModelArtifactStatus.TRAINED,
         )
         self.registry.register_artifact(record)

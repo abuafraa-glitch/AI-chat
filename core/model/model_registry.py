@@ -41,6 +41,9 @@ class ModelArtifactRecord:
     error: str = ""
     artifact_checksum: str = ""
     artifact_metadata: Dict[str, Any] = field(default_factory=dict)
+    dataset_checksum: str = ""
+    benchmark_checksum: str = ""
+    lineage: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         value = asdict(self)
@@ -161,6 +164,7 @@ class ModelRegistry:
         record = self._require_artifact(model_id, model_version)
         if record.status is not ModelArtifactStatus.EVALUATED:
             raise ValueError("only an evaluated-passing artifact can be approved")
+        self._assert_artifact_integrity(record)
         record.status = ModelArtifactStatus.APPROVED
         return record
 
@@ -170,6 +174,7 @@ class ModelRegistry:
             raise ValueError("target must be STAGING or PRODUCTION")
         if record.status is not ModelArtifactStatus.APPROVED:
             raise ValueError("promotion requires APPROVED status")
+        self._assert_artifact_integrity(record)
         record.status = target
         return record
 
@@ -201,6 +206,13 @@ class ModelRegistry:
                 for name in metric_names
             },
         }
+
+    def _assert_artifact_integrity(self, record: ModelArtifactRecord) -> None:
+        valid, reasons, checksum, _ = validate_artifact_directory(record.artifact_location)
+        if not valid:
+            raise ValueError("artifact_integrity_failed:" + ",".join(reasons))
+        if record.artifact_checksum and checksum != record.artifact_checksum:
+            raise ValueError("artifact_integrity_failed:checksum_mismatch")
 
     def _require_artifact(self, model_id: str, model_version: str) -> ModelArtifactRecord:
         record = self.get_artifact(model_id, model_version)
