@@ -164,3 +164,29 @@ async def test_model_router_excludes_unapproved_registered_artifact(tmp_path):
     assert result.success is False
     assert result.metadata["fail_closed"] is True
     assert "approved" in result.error.lower()
+
+
+@pytest.mark.asyncio
+async def test_evaluation_benchmark_dataset_is_validated_and_traced(tmp_path):
+    lifecycle = EvaluationPipelineLifecycle(storage_dir=str(tmp_path / "eval-runs"))
+    artifact = tmp_path / "artifact"
+    make_valid_artifact(artifact)
+    benchmark = tmp_path / "benchmark.jsonl"
+    benchmark.write_text('{"prompt":"hello","expected":"hi"}\n{"prompt":"bye","expected":"goodbye"}\n', encoding="utf-8")
+    run = lifecycle.create_run(
+        model_id="phase6-benchmark-model",
+        model_version="v1",
+        artifact_location=str(artifact),
+        benchmark_id="benchmark-main",
+        benchmark_version="v1",
+        benchmark_path=str(benchmark),
+        benchmark_source="test-fixture",
+    )
+    assert run.status is EvaluationStatus.QUEUED
+    assert run.sample_count == 2
+    assert run.benchmark_checksum
+    result = lifecycle.run(run, lambda: {"accuracy": 0.9}, thresholds={"accuracy": 0.8})
+    assert result.status is EvaluationStatus.COMPLETED
+    assert result.passes_threshold is True
+    assert result.metric_provenance["benchmark"]["source"] == "test-fixture"
+    assert result.metric_provenance["evaluation"]["sample_count"] == 2

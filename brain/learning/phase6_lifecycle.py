@@ -37,6 +37,21 @@ class EvaluationStatus(str, Enum):
     BLOCKED = "BLOCKED"
 
 
+@dataclass(frozen=True)
+class BenchmarkDataset:
+    benchmark_id: str
+    benchmark_version: str
+    path: str
+    sample_count: int
+    checksum: str
+    source: str = ""
+    split: str = "test"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 @dataclass
 class TrainingRun:
     training_run_id: str
@@ -73,6 +88,8 @@ class EvaluationRun:
     started_at: float = 0.0
     completed_at: float = 0.0
     metrics: dict[str, Any] = field(default_factory=dict)
+    metric_provenance: dict[str, Any] = field(default_factory=dict)
+    benchmark_checksum: str = ""
     passes_threshold: bool = False
     error: str = ""
 
@@ -208,6 +225,43 @@ class EvaluationPipelineLifecycle:
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         self.artifact_validator = ArtifactValidator()
 
+    @staticmethod
+    def _benchmark_checksum(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def validate_benchmark_dataset(
+        self,
+        *,
+        benchmark_id: str,
+        benchmark_version: str,
+        benchmark_path: str,
+        source: str = "",
+        split: str = "test",
+    ) -> tuple[Optional[BenchmarkDataset], str]:
+        path = Path(benchmark_path)
+        if not path.is_file():
+            return None, "benchmark_missing"
+        try:
+            if path.suffix.lower() == ".jsonl":
+                records = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            else:
+                records = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(records, list) or not records or not all(isinstance(item, dict) for item in records):
+                return None, "benchmark_invalid"
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            return None, "benchmark_invalid"
+        dataset = BenchmarkDataset(
+            benchmark_id=benchmark_id,
+            benchmark_version=benchmark_version,
+            path=str(path),
+            sample_count=len(records),
+            checksum=self._benchmark_checksum(path),
+            source=source,
+            split=split,
+            metadata={"record_schema": "object"},
+        )
+        return dataset, ""
+
     def create_run(
         self,
         *,
@@ -216,7 +270,10 @@ class EvaluationPipelineLifecycle:
         artifact_location: str,
         benchmark_id: str,
         benchmark_version: str,
-        sample_count: int,
+        sample_count: int = 0,
+        benchmark_path: str = "",
+        benchmark_source: str = "",
+        benchmark_split: str = "test",
     ) -> EvaluationRun:
         run = EvaluationRun(
             evaluation_id=f"eval_{uuid.uuid4().hex}",
@@ -231,6 +288,21 @@ class EvaluationPipelineLifecycle:
         if not validation.valid:
             run.status = EvaluationStatus.BLOCKED
             run.error = "artifact_invalid:" + ",".join(validation.reasons)
+        elif benchmark_path:
+            benchmark, benchmark_error = self.validate_benchmark_dataset(
+                benchmark_id=benchmark_id,
+                benchmark_version=benchmark_version,
+                benchmark_path=benchmark_path,
+                source=benchmark_source,
+                split=benchmark_split,
+            )
+            if benchmark is None:
+                run.status = EvaluationStatus.BLOCKED
+                run.error = benchmark_error
+            else:
+                run.sample_count = benchmark.sample_count
+                run.benchmark_checksum = benchmark.checksum
+                run.metric_provenance["benchmark"] = benchmark.to_dict()
         elif sample_count <= 0:
             run.status = EvaluationStatus.BLOCKED
             run.error = "benchmark_empty"
@@ -253,6 +325,13 @@ class EvaluationPipelineLifecycle:
             if not metrics:
                 raise ValueError("empty_metrics")
             evaluation.metrics = metrics
+            evaluation.metric_provenance.setdefault("evaluation", {})
+            evaluation.metric_provenance["evaluation"].update({
+                "benchmark_id": evaluation.benchmark_id,
+                "benchmark_version": evaluation.benchmark_version,
+                "sample_count": evaluation.sample_count,
+                "measured_at": time.time(),
+            })
             evaluation.passes_threshold = all(
                 float(metrics[name]) >= float(limit)
                 for name, limit in (thresholds or {}).items()
@@ -273,6 +352,6 @@ class EvaluationPipelineLifecycle:
 
 
 __all__ = [
-    "ArtifactValidation", "ArtifactValidator", "EvaluationPipelineLifecycle", "EvaluationRun",
+    "ArtifactValidation", "ArtifactValidator", "BenchmarkDataset", "EvaluationPipelineLifecycle", "EvaluationRun",
     "EvaluationStatus", "TrainingPipelineLifecycle", "TrainingRun", "TrainingStatus",
 ]
