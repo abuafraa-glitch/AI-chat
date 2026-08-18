@@ -28,6 +28,11 @@ class DatasetVersion:
     path: str = ""
     is_train: bool = False
     is_valid: bool = False
+    status: str = "CREATED"
+    source_id: str = ""
+    lineage: Dict[str, Any] = field(default_factory=dict)
+    validation_report: Dict[str, Any] = field(default_factory=dict)
+    processing_config: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict:
         return {
@@ -39,7 +44,15 @@ class DatasetVersion:
             "format": self.format,
             "checksum": self.checksum,
             "created_at": self.created_at,
+            "metadata": self.metadata,
             "path": self.path,
+            "is_train": self.is_train,
+            "is_valid": self.is_valid,
+            "status": self.status,
+            "source_id": self.source_id,
+            "lineage": self.lineage,
+            "validation_report": self.validation_report,
+            "processing_config": self.processing_config,
         }
 
 
