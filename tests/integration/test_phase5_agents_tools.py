@@ -144,6 +144,36 @@ async def test_tool_retry_is_limited_to_idempotent_tools_and_replays_by_key(runt
 
 
 @pytest.mark.asyncio
+async def test_tool_permissions_and_policy_failure_are_fail_closed(runtime, monkeypatch):
+    registry, orchestrator = runtime
+    registry.register(ToolSpec(
+        name="scoped",
+        description="Permission-scoped test tool.",
+        input_schema={"type": "object"},
+        output_schema={"type": "string"},
+        permissions=frozenset({"read:scoped"}),
+        handler=lambda: "ok",
+    ))
+    denied = await orchestrator.tool_executor.execute(
+        ToolCall(tool_name="scoped", arguments={}), session_id="phase5"
+    )
+    assert denied.status == TaskStatus.FAILED
+    assert denied.metadata["security"] == "denied"
+
+    async def unavailable(_: object) -> object:
+        raise RuntimeError("policy down")
+
+    monkeypatch.setattr(orchestrator.tool_executor.policy_engine, "evaluate", unavailable)
+    failed_closed = await orchestrator.tool_executor.execute(
+        ToolCall(tool_name="scoped", arguments={}),
+        session_id="phase5",
+        granted_permissions=frozenset({"read:scoped"}),
+    )
+    assert failed_closed.status == TaskStatus.FAILED
+    assert failed_closed.metadata["fail_closed"] is True
+
+
+@pytest.mark.asyncio
 async def test_unknown_tool_invalid_input_and_max_steps_fail_closed(runtime):
     registry, orchestrator = runtime
     registry.register(ToolSpec(

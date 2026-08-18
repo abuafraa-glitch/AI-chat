@@ -97,7 +97,7 @@ class ToolExecutor:
                 metadata={"idempotent_replay": True, "original_execution_id": previous.execution_id},
             )
 
-        if spec.dangerous and not spec.permissions.issubset(granted_permissions):
+        if spec.permissions and not spec.permissions.issubset(granted_permissions):
             return Observation(
                 tool_name=spec.name,
                 execution_id=call.execution_id,
@@ -108,14 +108,27 @@ class ToolExecutor:
                 metadata={"security": "denied", "required_permissions": sorted(spec.permissions)},
             )
 
-        policy = await self.policy_engine.evaluate({
-            "query": f"tool:{spec.name}",
-            "tool_name": spec.name,
-            "capabilities": sorted(spec.capabilities),
-            "permissions": sorted(spec.permissions),
-            "session_id": session_id,
-            "user_id": user_id,
-        })
+        try:
+            policy = await self.policy_engine.evaluate({
+                "query": f"tool:{spec.name}",
+                "tool_name": spec.name,
+                "capabilities": sorted(spec.capabilities),
+                "permissions": sorted(spec.permissions),
+                "session_id": session_id,
+                "user_id": user_id,
+            })
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            return Observation(
+                tool_name=spec.name,
+                execution_id=call.execution_id,
+                status=TaskStatus.FAILED,
+                error="Tool policy unavailable; execution denied",
+                started_at=started,
+                finished_at=time.time(),
+                metadata={"security": "policy_unavailable", "fail_closed": True, "policy_error": str(exc)},
+            )
         if policy.final_decision == PolicyDecision.BLOCK or policy.blocked:
             return Observation(
                 tool_name=spec.name,
