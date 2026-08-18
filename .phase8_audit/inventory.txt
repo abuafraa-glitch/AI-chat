@@ -1,0 +1,16 @@
+Phase 8 source inventory
+
+brain/brain_v3.py — central BrainV3 runtime, ModelRouter injection, RAG/agents/memory orchestration, native stream path.
+core/model/model_registry.py — artifact registry and approval/promotion authority.
+core/model/model_router.py — runtime model/provider selection authority.
+core/model/artifact_validation.py — shared artifact validation contract when present in repository.
+core/inference/inference_engine.py — inference abstraction inspected for runtime binding.
+api/v1/ai/router.py — chat, stream, and RAG API routes delegating to BrainV3.
+api/v1/hajeen_model_router.py — model-facing API facade; must not load models or bypass BrainV3.
+brain/memory/memory_fabric.py — canonical conversation, agent, and telemetry memory.
+brain/rag/* — canonical retrieval path; runtime must not own retrieval.
+brain/agents/* — canonical agent orchestration and tool execution.
+brain/learning/phase6_lifecycle.py — evaluation/artifact lifecycle reused by Phase 8.
+brain/evolution/phase7_lifecycle.py — controlled candidate/evolution lifecycle.
+tests/integration/test_phase7_self_evolution.py — Phase 7 acceptance and safety regression coverage.
+tests/integration/* — Phase 2–6 runtime regression coverage.

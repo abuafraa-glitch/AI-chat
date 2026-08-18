@@ -10,6 +10,8 @@ import asyncio
 import time
 import uuid
 
+import pytest
+
 from core.llm.base import LLMConfig, LLMMessage, LLMRequest, LLMResponse, LLMStreamChunk
 
 
@@ -773,3 +775,56 @@ if __name__ == "__main__":
     test.test_full_pipeline_mock()
 
     print("\n✅ All Phase 8 tests completed successfully!")
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 controlled local-runtime acceptance tests
+# ---------------------------------------------------------------------------
+
+class TestHajeenLocalRuntimeFailClosed:
+    def test_local_engine_rejects_missing_model(self, tmp_path):
+        from hajeen_model.core.local_inference_engine import LocalInferenceConfig, LocalInferenceEngine
+        engine = LocalInferenceEngine(config=LocalInferenceConfig(model_path=str(tmp_path / "missing.pt"), tokenizer_path=str(tmp_path / "missing-tokenizer")))
+        with pytest.raises(RuntimeError, match="MODEL_NOT_READY"):
+            engine.generate("اختبار")
+
+    def test_local_stream_rejects_missing_model(self, tmp_path):
+        from hajeen_model.core.local_inference_engine import LocalInferenceConfig, LocalInferenceEngine
+        engine = LocalInferenceEngine(config=LocalInferenceConfig(model_path=str(tmp_path / "missing.pt"), tokenizer_path=str(tmp_path / "missing-tokenizer")))
+
+        async def collect():
+            async for _ in engine.stream_generate("اختبار"):
+                pass
+
+        with pytest.raises(RuntimeError, match="MODEL_NOT_READY"):
+            asyncio.get_event_loop().run_until_complete(collect())
+
+    def test_hajeen_facade_reports_not_ready_without_artifact(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("MODEL_WEIGHTS_DIR", str(tmp_path / "missing-weights"))
+        monkeypatch.setenv("TOKENIZER_OUTPUT_DIR", str(tmp_path / "missing-tokenizer"))
+        from hajeen_model.core import hajeen_model_v1 as module
+        module.HajeenModelV1().reset_cache()
+        model = module.HajeenModelV1()
+        health = asyncio.get_event_loop().run_until_complete(model.health())
+        assert health["readiness"] is False
+        assert health["status"] == "not_ready"
+        with pytest.raises(RuntimeError, match="MODEL_NOT_READY"):
+            asyncio.get_event_loop().run_until_complete(
+                model.chat("اختبار", max_tokens=8)
+            )
+
+    def test_no_production_mock_symbols(self):
+        from pathlib import Path
+        source = Path("hajeen_model/core/hajeen_model_v1.py").read_text(encoding="utf-8")
+        assert "_mock_response" not in source
+        assert "local_fallback" not in source
+        assert "_ollama_complete" not in source
+        assert "_ollama_stream" not in source
+
+    def test_runtime_status_is_not_ready_without_artifact(self):
+        from hajeen_model.core.hajeen_model_v1 import HajeenModelV1
+        model = HajeenModelV1()
+        health = asyncio.get_event_loop().run_until_complete(model.health())
+        assert health["status"] in {"ready", "not_ready"}
+        if not health["readiness"]:
+            assert health["active_provider"] == "none"

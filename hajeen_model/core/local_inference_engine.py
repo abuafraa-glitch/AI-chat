@@ -219,8 +219,8 @@ class LocalInferenceEngine:
         توليد نص من النموذج المحلي.
         يعمل فقط بالأوزان المحلية — لا يتصل بأي خدمة خارجية.
         """
-        if not self._is_loaded or self.model is None:
-            return self._fallback_response(prompt)
+        if not self._is_loaded or self.model is None or self.tokenizer is None:
+            raise RuntimeError("MODEL_NOT_READY: approved model and tokenizer are not loaded")
 
         start_time = time.time()
         max_new = max_new_tokens or self.config.max_new_tokens
@@ -228,10 +228,9 @@ class LocalInferenceEngine:
         self.sampler.temperature = temp
 
         if self.tokenizer is None:
-            input_ids = [ord(c) % 1000 for c in prompt[:100]]
-        else:
-            encoded = self.tokenizer.encode(prompt)
-            input_ids = encoded.ids if hasattr(encoded, "ids") else encoded
+            raise RuntimeError("TOKENIZER_ERROR: tokenizer is not loaded")
+        encoded = self.tokenizer.encode(prompt)
+        input_ids = encoded.ids if hasattr(encoded, "ids") else encoded
 
         input_tensor = torch.tensor([input_ids], dtype=torch.long).to(self.device)
         prompt_token_count = len(input_ids)
@@ -279,19 +278,8 @@ class LocalInferenceEngine:
         )
 
     def _fallback_response(self, prompt: str) -> LocalResponse:
-        """استجابة احتياطية عندما لا يكون النموذج محملاً."""
-        logger.warning("⚠️  النموذج غير محمل — استجابة احتياطية")
-        return LocalResponse(
-            content=(
-                "[Hajeen Foundation Model — Local Mode]\n"
-                "النموذج غير محمل بعد. يرجى:\n"
-                "1. تدريب النموذج باستخدام train_hajeen_cloud.py\n"
-                "2. تحميل الأوزان من HuggingFace\n"
-                "3. أو وضع الأوزان في ./model_weights/"
-            ),
-            provider="local_fallback",
-            finish_reason="no_model",
-        )
+        """Deprecated compatibility hook; production never fabricates a response."""
+        raise RuntimeError("MODEL_NOT_READY: no fallback response is permitted")
 
     async def generate_async(self, prompt: str, **kwargs) -> LocalResponse:
         """نسخة async من generate."""
@@ -302,13 +290,16 @@ class LocalInferenceEngine:
     async def stream_generate(
         self, prompt: str, **kwargs
     ) -> AsyncGenerator[str, None]:
-        """Streaming بسيط — يولد token بـ token."""
-        response = self.generate(prompt, **kwargs)
-        words = response.content.split()
-        for word in words:
-            yield word + " "
-            import asyncio
-            await asyncio.sleep(0.01)
+        """Provider-native streaming only; no synthetic word splitting."""
+        if not self._is_loaded or self.model is None or self.tokenizer is None:
+            raise RuntimeError("MODEL_NOT_READY: streaming requires a loaded model and tokenizer")
+        native_stream = getattr(self.model, "stream_generate", None)
+        if native_stream is None:
+            raise RuntimeError("STREAM_ERROR: model does not expose native streaming")
+        async for chunk in native_stream(prompt, tokenizer=self.tokenizer, **kwargs):
+            if not isinstance(chunk, str) or not chunk:
+                continue
+            yield chunk
 
     def get_model_info(self) -> Dict:
         """معلومات النموذج الحالي."""

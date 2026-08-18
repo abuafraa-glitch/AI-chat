@@ -26,8 +26,16 @@ class HajeenLLMProvider(BaseLLMProvider):
         self.local_model = LocalHajeenModel(model_path=config.extra.get("model_path"))
 
     async def initialize(self) -> None:
-        # Loading is intentionally deferred to inference/health_check so startup
-        # does not claim a checkpoint exists when it does not.
+        """Load and validate the approved local checkpoint before readiness."""
+        try:
+            if not self.local_model.load_model():
+                raise LLMProviderError(
+                    "Hajeen checkpoint is unavailable or failed validation"
+                )
+        except LLMProviderError:
+            raise
+        except Exception as exc:
+            raise LLMProviderError(f"Hajeen initialization failed: {exc}") from exc
         self._initialized = True
 
     async def _complete_implementation(self, request: LLMRequest) -> LLMResponse:
