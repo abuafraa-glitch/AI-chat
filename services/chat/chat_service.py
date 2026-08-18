@@ -7,6 +7,7 @@ ChatService (Adapter) — خدمة الدردشة الرئيسية
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from dataclasses import dataclass, field
@@ -15,6 +16,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 from brain.brain_v3 import BrainRequest, BrainResponse, HajeenBrainV3, get_brain_v3
 from brain.memory.unified_interface import get_unified_memory
 from core.inference_engine.stream_handler import StreamEvent
+from core.llm.base import LLMStreamChunk
 
 from .citation_injector import CitationInjector
 
@@ -184,19 +186,20 @@ class ChatService:
     async def stream_chat(
         self,
         request: ChatRequest,
-    ) -> AsyncGenerator[StreamEvent, None]:
-        """محادثة مع streaming عبر HajeenBrainV3."""
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """محادثة مع native streaming عبر HajeenBrainV3."""
         if not self._initialized:
             await self.initialize()
 
         session_id = request.session_id or str(uuid.uuid4())
         stream_id = str(uuid.uuid4())
+        collected: List[str] = []
+        completed = False
 
         if self._inference_engine is not None:
             history = await self._unified_memory.get_context(session_id, max_messages=20)
             messages = history + [{"role": "user", "content": request.message}]
-            chunks: List[str] = []
-            async for event in self._inference_engine.stream_infer(
+            async for chunk in self._inference_engine.stream_infer(
                 messages=messages,
                 model=request.model,
                 temperature=request.temperature,
@@ -204,14 +207,16 @@ class ChatService:
                 session_id=session_id,
                 stream_id=stream_id,
             ):
-                if event.event_type == "token":
-                    chunks.append(event.data)
-                    yield event
-                elif event.event_type in {"done", "error"}:
-                    yield event
-            if chunks:
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("InferenceEngine returned a non-native stream chunk")
+                if chunk.event_type == "delta" and chunk.delta:
+                    collected.append(chunk.delta)
+                elif chunk.event_type == "finish":
+                    completed = True
+                yield chunk
+            if completed:
                 await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
-                await self._unified_memory.add_message(session_id, "assistant", "".join(chunks), {"stream_id": stream_id})
+                await self._unified_memory.add_message(session_id, "assistant", "".join(collected), {"stream_id": stream_id})
             return
 
         brain_request = BrainRequest(
@@ -236,21 +241,28 @@ class ChatService:
 
         try:
             async for chunk in self._brain.stream(brain_request):
-                if chunk.startswith("data: "):
-                    data_str = chunk[6:].strip()
-                    if data_str == "[DONE]":
-                        yield StreamEvent(event_type="done", data="")
-                        break
-                    
-                    try:
-                        import ast
-                        data_dict = ast.literal_eval(data_str)
-                        if "content" in data_dict:
-                            yield StreamEvent(event_type="content", data=data_dict["content"])
-                    except Exception:
-                        yield StreamEvent(event_type="content", data=data_str)
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Brain returned a non-native stream chunk")
+                if chunk.event_type == "delta" and chunk.delta:
+                    collected.append(chunk.delta)
+                elif chunk.event_type == "finish":
+                    completed = True
+                elif chunk.event_type == "error":
+                    completed = False
+                yield chunk
+            if completed:
+                await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
+                await self._unified_memory.add_message(session_id, "assistant", "".join(collected), {"stream_id": stream_id})
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
-            yield StreamEvent(event_type="error", data=str(e))
+            yield LLMStreamChunk(
+                delta="",
+                event_type="error",
+                provider="chat_service",
+                request_id=stream_id,
+                metadata={"error": str(e)},
+            )
 
     def get_session_info(self, session_id: str) -> Optional[Dict[str, Any]]:
         """معلومات جلسة محادثة (عبر الواجهة الموحدة)."""

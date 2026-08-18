@@ -113,21 +113,42 @@ async def handle_ws_chat(websocket: WebSocket) -> None:
                 )
 
                 index = 0
+                completed = False
                 async for event in chat_service.stream_chat(request):
-                    if event.event_type == "token":
-                        sent = await ws_manager.send_token(client_id, event.data, index)
-                        if not sent:
-                            break
-                        index += 1
-                    elif event.event_type == "done":
-                        await ws_manager.send_done(client_id, {
-                            "chunks": index,
-                            "session_id": session_id,
+                    if event.event_type == "start":
+                        sent = await ws_manager.send_json(client_id, {
+                            "type": "start",
+                            "request_id": event.request_id,
+                            "model": event.model,
+                            "provider": event.provider,
                         })
-                        break
+                    elif event.event_type == "delta":
+                        sent = await ws_manager.send_json(client_id, {
+                            "type": "delta",
+                            "data": event.delta,
+                            "index": index,
+                            "metadata": event.metadata,
+                        })
+                        index += 1
+                    elif event.event_type == "finish":
+                        completed = True
+                        sent = await ws_manager.send_json(client_id, {
+                            "type": "finish",
+                            "finish_reason": event.finish_reason or "stop",
+                            "metadata": event.metadata,
+                        })
                     elif event.event_type == "error":
-                        await ws_manager.send_error(client_id, event.data)
+                        await ws_manager.send_error(client_id, event.metadata.get("error", "stream failed"))
                         break
+                    else:
+                        raise RuntimeError(f"Unsupported native stream event: {event.event_type}")
+                    if not sent:
+                        break
+                if completed:
+                    await ws_manager.send_done(client_id, {
+                        "chunks": index,
+                        "session_id": session_id,
+                    })
 
             except Exception as e:
                 logger.error("WebSocket streaming error: %s", e)

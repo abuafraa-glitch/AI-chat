@@ -6,13 +6,13 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from core.llm.base import LLMRequest, LLMResponse
+from core.llm.base import LLMRequest, LLMResponse, LLMStreamChunk
 from core.llm.llm_manager import LLMManager, get_llm_manager
 
 from .queue_manager import QueueManager
 from .request_handler import RequestHandler
 from .response_handler import ProcessedResponse, ResponseHandler
-from .stream_handler import StreamEvent, StreamHandler
+from .stream_handler import StreamHandler
 from .token_tracker import TokenTracker
 
 logger = logging.getLogger(__name__)
@@ -132,7 +132,7 @@ class InferenceEngine:
         max_tokens: Optional[int] = None,
         session_id: Optional[str] = None,
         stream_id: Optional[str] = None,
-    ) -> AsyncGenerator[StreamEvent, None]:
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
         """
         Streaming inference — يُرجع events تدريجياً.
         """
@@ -152,8 +152,8 @@ class InferenceEngine:
 
         chunk_generator = self.llm_manager.stream(job.request)
 
-        async for event in self.stream_handler.process_stream(chunk_generator, sid):
-            yield event
+        async for chunk in self.stream_handler.process_stream(chunk_generator, sid):
+            yield chunk
 
     async def queue_infer(
         self,

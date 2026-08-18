@@ -100,72 +100,68 @@ class StreamHandler:
         self,
         chunk_generator: AsyncGenerator[LLMStreamChunk, None],
         session_id: str,
-    ) -> AsyncGenerator[StreamEvent, None]:
-        """
-        تحويل stream من LLM إلى StreamEvents.
-
-        يدعم:
-        - إلغاء الطلب
-        - timeout للـ chunks
-        - معالجة الأخطاء
-        - تجميع الـ buffer
-        """
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """تمرير native chunks مع التتبع والإلغاء دون تصنيع أحداث أو نصوص."""
         session = self.create_session(session_id)
-        buffer: List[str] = []
+        saw_finish = False
         index = 0
 
         try:
+            yield LLMStreamChunk(
+                delta="",
+                event_type="start",
+                index=index,
+                request_id=session_id,
+                metadata={"session_id": session_id},
+            )
             async for chunk in chunk_generator:
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Stream provider returned a non-native chunk")
                 if session.cancelled:
                     logger.info("Stream %s: cancelled by client", session_id)
-                    yield StreamEvent(
+                    session.error = "cancelled"
+                    yield LLMStreamChunk(
+                        delta="",
                         event_type="error",
-                        data="Stream cancelled",
-                        chunk_index=index,
+                        index=index,
+                        request_id=session_id,
+                        metadata={"error": "Stream cancelled"},
                     )
-                    break
+                    return
 
                 if chunk.delta:
                     session.add_chunk(chunk.delta)
-                    buffer.append(chunk.delta)
+                index = max(index, chunk.index)
+                if chunk.event_type == "finish":
+                    saw_finish = True
+                    session.completed = True
+                elif chunk.event_type == "error":
+                    session.error = chunk.metadata.get("error", "stream failed")
+                yield chunk
 
-                    if len(buffer) >= self.buffer_size or chunk.finish_reason:
-                        text = "".join(buffer)
-                        buffer.clear()
-                        yield StreamEvent(
-                            event_type="token",
-                            data=text,
-                            chunk_index=index,
-                            finish_reason=chunk.finish_reason,
-                        )
-                        index += 1
-
-                if chunk.finish_reason:
-                    break
-
-            # flush remaining buffer
-            if buffer:
-                yield StreamEvent(
-                    event_type="token",
-                    data="".join(buffer),
-                    chunk_index=index,
+            if not saw_finish and session.error is None:
+                session.error = "Stream ended without finish event"
+                yield LLMStreamChunk(
+                    delta="",
+                    event_type="error",
+                    index=index + 1,
+                    request_id=session_id,
+                    metadata={"error": session.error},
                 )
-
-            # done event
-            yield StreamEvent(
-                event_type="done",
-                data=f"[DONE] chunks={session.chunks_received} chars={session.total_chars}",
-                chunk_index=index + 1,
-            )
-            session.completed = True
 
         except asyncio.CancelledError:
             session.error = "cancelled"
-            yield StreamEvent(event_type="error", data="Stream cancelled", chunk_index=index)
+            raise
         except Exception as e:
             session.error = str(e)
             logger.error("Stream %s error: %s", session_id, e)
-            yield StreamEvent(event_type="error", data=str(e), chunk_index=index)
+            yield LLMStreamChunk(
+                delta="",
+                event_type="error",
+                index=index,
+                request_id=session_id,
+                metadata={"error": str(e)},
+            )
         finally:
             logger.debug(
                 "Stream %s ended: chunks=%d chars=%d ms=%.1f",
@@ -174,6 +170,7 @@ class StreamHandler:
                 session.total_chars,
                 session.duration_ms,
             )
+            self.cleanup_session(session_id)
 
     async def collect_full_response(
         self,
