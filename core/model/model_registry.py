@@ -184,6 +184,20 @@ class ModelRegistry:
         record.error = reason
         return record
 
+    def rollback(self, model_id: str, target_version: str) -> ModelArtifactRecord:
+        """Atomically move a validated approved artifact to production and deprecate the current one."""
+        target = self._require_artifact(model_id, target_version)
+        if target.status not in {ModelArtifactStatus.APPROVED, ModelArtifactStatus.STAGING, ModelArtifactStatus.PRODUCTION}:
+            raise ValueError("rollback target must be APPROVED, STAGING, or PRODUCTION")
+        self._assert_artifact_integrity(target)
+        for record in self._artifacts.values():
+            if record.model_id == model_id and record.model_version != target_version:
+                if record.status is ModelArtifactStatus.PRODUCTION:
+                    self._assert_artifact_integrity(record)
+                    record.status = ModelArtifactStatus.DEPRECATED
+        target.status = ModelArtifactStatus.PRODUCTION
+        return target
+
     def list_artifacts(self) -> List[Dict[str, Any]]:
         return [record.to_dict() for record in self._artifacts.values()]
 

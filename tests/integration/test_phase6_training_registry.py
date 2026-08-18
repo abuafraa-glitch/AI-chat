@@ -230,3 +230,28 @@ def test_registry_rejects_artifact_tampering_after_registration(tmp_path):
     with pytest.raises(ValueError, match="integrity"):
         registry.approve(model_id, version)
     assert registry.get_artifact(model_id, version).status is ModelArtifactStatus.EVALUATED
+
+
+def test_registry_rolls_back_to_validated_previous_artifact(tmp_path):
+    registry = ModelRegistry()
+    model_id = "rollback-model"
+    first_dir = tmp_path / "artifact-v1"
+    second_dir = tmp_path / "artifact-v2"
+    make_valid_artifact(first_dir)
+    make_valid_artifact(second_dir)
+    registry.register_artifact(ModelArtifactRecord(
+        model_id=model_id, model_version="v1", model_type="causal_lm",
+        artifact_location=str(first_dir), base_model="base", dataset_version="ds-v1", training_run_id="t1",
+    ))
+    registry.mark_evaluated(model_id, "v1", "e1", {"accuracy": 0.8}, True)
+    registry.approve(model_id, "v1")
+    registry.promote(model_id, "v1", ModelArtifactStatus.PRODUCTION)
+    registry.register_artifact(ModelArtifactRecord(
+        model_id=model_id, model_version="v2", model_type="causal_lm",
+        artifact_location=str(second_dir), base_model="base", dataset_version="ds-v2", training_run_id="t2",
+    ))
+    registry.mark_evaluated(model_id, "v2", "e2", {"accuracy": 0.85}, True)
+    registry.approve(model_id, "v2")
+    rolled_back = registry.rollback(model_id, "v2")
+    assert rolled_back.status is ModelArtifactStatus.PRODUCTION
+    assert registry.get_artifact(model_id, "v1").status is ModelArtifactStatus.DEPRECATED
