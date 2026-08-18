@@ -109,18 +109,81 @@ class HuggingFaceProvider(BaseLLMProvider):
             raise LLMProviderError(f"HuggingFace error: {e}")
 
     async def stream(self, request: LLMRequest) -> AsyncGenerator[LLMStreamChunk, None]:
-        response = await self.complete(request)
-        words = response.content.split()
-        import asyncio
-        for i, word in enumerate(words):
-            await asyncio.sleep(0.03)
-            is_last = i == len(words) - 1
-            yield LLMStreamChunk(
-                delta=word + ("" if is_last else " "),
-                finish_reason="stop" if is_last else None,
-                index=i,
-                model=response.model,
-            )
+        """Use Hugging Face's native text-generation SSE endpoint only.
+
+        A non-streaming response is deliberately rejected; it must never be
+        converted into synthetic word chunks in the production path.
+        """
+        if not self._initialized:
+            await self.initialize()
+
+        model = request.model or self.config.model
+        url = f"{self._base_url}/{model}"
+        prompt = await self._build_prompt(request)
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "temperature": request.temperature or self.config.temperature,
+                "max_new_tokens": request.max_tokens or self.config.max_tokens,
+                "return_full_text": False,
+            },
+            "stream": True,
+        }
+        index = 0
+        saw_event = False
+        try:
+            async with httpx.AsyncClient(timeout=self.config.timeout) as client:
+                async with client.stream("POST", url, json=payload, headers=self._headers) as resp:
+                    if resp.status_code != 200:
+                        body = await resp.aread()
+                        raise LLMProviderError(
+                            f"HuggingFace streaming API error {resp.status_code}: {body.decode(errors='replace')}",
+                            status_code=resp.status_code,
+                        )
+                    async for line in resp.aiter_lines():
+                        if not line or line.startswith(":"):
+                            continue
+                        if not line.startswith("data:"):
+                            continue
+                        raw = line[5:].strip()
+                        if raw == "[DONE]":
+                            break
+                        try:
+                            data = __import__("json").loads(raw)
+                        except ValueError as exc:
+                            raise LLMProviderError("HuggingFace returned invalid streaming JSON") from exc
+                        token = data.get("token", {}) if isinstance(data, dict) else {}
+                        delta = token.get("text", "") if isinstance(token, dict) else ""
+                        if not delta:
+                            continue
+                        saw_event = True
+                        yield LLMStreamChunk(
+                            delta=delta,
+                            index=index,
+                            model=model,
+                            provider=self.provider_name,
+                            request_id=request.request_id,
+                        )
+                        index += 1
+                        if isinstance(data, dict) and data.get("details", {}).get("finish_reason"):
+                            yield LLMStreamChunk(
+                                delta="",
+                                finish_reason=str(data["details"]["finish_reason"]),
+                                index=index,
+                                model=model,
+                                provider=self.provider_name,
+                                request_id=request.request_id,
+                                event_type="finish",
+                            )
+                            break
+            if not saw_event:
+                raise LLMProviderError("HuggingFace provider did not return native streaming events")
+        except httpx.TimeoutException as exc:
+            raise LLMProviderError(f"HuggingFace streaming timeout: {exc}") from exc
+        except LLMProviderError:
+            raise
+        except Exception as exc:
+            raise LLMProviderError(f"HuggingFace streaming error: {exc}") from exc
 
     async def health_check(self) -> bool:
         try:

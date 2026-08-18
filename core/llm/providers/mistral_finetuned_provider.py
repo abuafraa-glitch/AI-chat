@@ -1,6 +1,6 @@
 """Mistral Fine-tuned Local Provider — تشغيل نموذج Mistral المدرَّب على بياناتك.
 
-الأولوية: Fine-tuned model → Base Mistral via Ollama → Mock fallback
+الأولوية: Fine-tuned model native streaming أو Ollama native streaming؛ لا يوجد fallback وهمي
 
 يدعم:
   - تحميل نموذج QLoRA / LoRA adapter
@@ -18,7 +18,7 @@ import os
 import time
 from typing import AsyncIterator, Dict, List, Optional
 
-from core.llm.base import BaseLLMProvider, LLMConfig, LLMMessage, LLMResponse
+from core.llm.base import BaseLLMProvider, LLMConfig, LLMMessage, LLMResponse, LLMStreamChunk
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +197,7 @@ class MistralFinetunedProvider(BaseLLMProvider):
         messages: List[LLMMessage],
         config: Optional[LLMConfig] = None,
         **kwargs,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[LLMStreamChunk]:
         if not self._loaded:
             await self.initialize()
 
@@ -208,16 +208,11 @@ class MistralFinetunedProvider(BaseLLMProvider):
                 yield chunk
             return
 
-        prompt = self._format_prompt(messages)
-        full = await asyncio.get_event_loop().run_in_executor(
-            None, self._inference_sync, prompt, cfg
+        raise RuntimeError(
+            "Mistral local backend does not expose native token streaming; refusing synthesized chunks"
         )
-        words = full.split()
-        for i, word in enumerate(words):
-            yield word + (" " if i < len(words) - 1 else "")
-            await asyncio.sleep(0.01)
 
-    async def _ollama_stream(self, messages: List[LLMMessage], config: LLMConfig) -> AsyncIterator[str]:
+    async def _ollama_stream(self, messages: List[LLMMessage], config: LLMConfig) -> AsyncIterator[LLMStreamChunk]:
         import httpx
         payload = {
             "model": "mistral:7b",
@@ -225,19 +220,39 @@ class MistralFinetunedProvider(BaseLLMProvider):
             "stream": True,
             "options": {"temperature": config.temperature or 0.7},
         }
+        sequence = 0
         async with httpx.AsyncClient(timeout=180) as client:
             async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json=payload) as resp:
+                resp.raise_for_status()
                 async for line in resp.aiter_lines():
-                    if line:
-                        try:
-                            data = json.loads(line)
-                            content = data.get("message", {}).get("content", "")
-                            if content:
-                                yield content
-                            if data.get("done"):
-                                break
-                        except json.JSONDecodeError:
-                            continue
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    content = data.get("message", {}).get("content", "")
+                    if content:
+                        sequence += 1
+                        yield LLMStreamChunk(
+                            delta=content,
+                            index=sequence,
+                            model="mistral:7b",
+                            provider="ollama",
+                            event_type="delta",
+                        )
+                    if data.get("done"):
+                        sequence += 1
+                        yield LLMStreamChunk(
+                            delta="",
+                            finish_reason="stop",
+                            index=sequence,
+                            model="mistral:7b",
+                            provider="ollama",
+                            event_type="finish",
+                            metadata={"eval_count": data.get("eval_count", 0)},
+                        )
+                        break
 
     async def health_check(self) -> Dict[str, str]:
         if self._use_ollama_fallback:
