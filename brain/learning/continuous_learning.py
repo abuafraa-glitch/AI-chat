@@ -115,8 +115,12 @@ class ContinuousLearningPipeline:
     # samples that share a template but differ in their factual payload.
     DEDUP_SIMILARITY_THRESHOLD = 0.999
 
-    def __init__(self, storage_path: str = "storage_data/brain/learning") -> None:
+    def __init__(self, storage_path: str = "storage_data/brain/learning", deployment_gate=None) -> None:
         self._path = Path(storage_path)
+        # Legacy learning may collect/train/evaluate locally, but it cannot deploy.
+        # A canonical Phase 6/7 coordinator must be explicitly injected to authorize
+        # any future deployment handoff.
+        self._canonical_deployment_gate = deployment_gate
         self._path.mkdir(parents=True, exist_ok=True)
         self._runs: Dict[str, PipelineRun] = {}
         self._pending_approval: List[DataSample] = []
@@ -699,71 +703,23 @@ class ContinuousLearningPipeline:
         )
 
     async def _stage_deployment(self, run: PipelineRun) -> None:
-        """نشر النموذج في سجل النماذج وتحديث نقطة الخدمة الحالية."""
-        run.record_stage(PipelineStage.DEPLOYMENT, 0, "بدء النشر")
-
-        model_version = f"hajeen-v{time.strftime('%Y%m%d')}-{run.run_id[:8]}"
-        output_dir = run.training_config.get("output_dir")
-
-        deployment_info: Dict[str, Any] = {
-            "model_version": model_version,
-            "run_id": run.run_id,
-            "model_path": output_dir,
-            "base_model": run.training_config.get("base_model", "unknown"),
-            "training_samples": run.training_config.get("sample_count", 0),
-            "evaluation": {
-                "perplexity": run.evaluation_results.get("perplexity"),
-                "accuracy": run.evaluation_results.get("accuracy"),
-                "bleu": run.evaluation_results.get("bleu"),
-            },
-            "deployed_at": time.time(),
-            "deployed_at_human": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "rollback_available": True,
-            "status": "active",
-        }
-
-        # تحديث سجل النماذج
-        registry_path = self._path / "model_registry.json"
-        registry: Dict[str, Any] = {"models": [], "current_active": None}
-        if registry_path.exists():
-            try:
-                with open(registry_path, "r", encoding="utf-8") as f:
-                    registry = json.load(f)
-            except Exception:
-                pass
-
-        for m in registry.get("models", []):
-            if m.get("status") == "active":
-                m["status"] = "retired"
-                m["retired_at"] = time.time()
-
-        registry.setdefault("models", []).append(deployment_info)
-        registry["current_active"] = model_version
-        registry["updated_at"] = time.time()
-
-        with open(registry_path, "w", encoding="utf-8") as f:
-            json.dump(registry, f, ensure_ascii=False, indent=2)
-
-        # ملف الإشارة للـ model server
-        active_path = self._path / "active_model.json"
-        with open(active_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "version": model_version,
-                "path": output_dir,
-                "updated_at": time.time(),
-            }, f, ensure_ascii=False, indent=2)
-
-        run.deployment_info = deployment_info
-        self._models_deployed.append(deployment_info)
-        logger.info(
-            "learning_pipeline: deployed version=%s | path=%s",
-            model_version, output_dir,
+        """Legacy deployment is disabled; Phase 6/7 owns registry and promotion."""
+        raise RuntimeError(
+            "legacy deployment blocked: use LearningLifecycleCoordinator and ModelRegistry"
         )
-        run.record_stage(PipelineStage.DEPLOYMENT, 0, f"تم النشر: {model_version}")
+
 
     def _should_deploy(self, run: PipelineRun) -> bool:
         results = run.evaluation_results
-        return results.get("passes_threshold", False) and results.get("accuracy", 0) >= 0.75
+        if self._canonical_deployment_gate is None:
+            return False
+        if not results.get("passes_threshold", False):
+            return False
+        try:
+            return bool(self._canonical_deployment_gate(run))
+        except Exception:
+            logger.exception("learning_pipeline: canonical deployment gate failed closed")
+            return False
 
     def _default_training_config(self) -> Dict[str, Any]:
         return {

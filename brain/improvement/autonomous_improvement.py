@@ -271,8 +271,10 @@ class AutonomousImprovement:
                     "تشغيل Self Evolution لتطبيق التغييرات",
                 ],
                 estimated_effort="hours",
-                auto_applicable=True,
-            ))
+                    # Advisory only: any router change must enter Phase 7 and pass
+                    # evaluation, approval, versioning, and deployment gates.
+                    auto_applicable=False,
+                ))
 
         # اقتراح 4: إذا كانت بيانات Distillation كثيرة بما يكفي للتدريب
         approved_samples = distillation.get("pending_training", 0)

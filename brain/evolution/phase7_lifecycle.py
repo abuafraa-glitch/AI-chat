@@ -37,9 +37,11 @@ class EvolutionState(str, Enum):
     STAGED = "STAGED"
     DEPLOYING = "DEPLOYING"
     DEPLOYED = "DEPLOYED"
+    MONITORING = "MONITORING"
     REJECTED = "REJECTED"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
+    BLOCKED = "BLOCKED"
     ROLLED_BACK = "ROLLED_BACK"
 
 
@@ -113,11 +115,57 @@ class EvaluationResult:
 
 
 @dataclass(frozen=True)
+class ApprovalDecision:
+    decision_id: str
+    experiment_id: str
+    status: str
+    candidate_ref: str
+    reason: str
+    policy_version: Optional[str] = None
+    metrics: Mapping[str, Any] = field(default_factory=dict)
+    decided_by: str = "policy"
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass(frozen=True)
+class ImprovementCandidate:
+    candidate_id: str
+    candidate_ref: str
+    experiment_id: str
+    evaluation_id: str
+    artifact_ref: Optional[str] = None
+    configuration: Mapping[str, Any] = field(default_factory=dict)
+    provenance: Mapping[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass(frozen=True)
 class EvolutionVersion:
     version_id: str
     candidate_ref: str
     experiment_id: str
     evaluation_id: str
+    candidate_id: Optional[str] = None
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass(frozen=True)
+class DeploymentRecord:
+    deployment_id: str
+    experiment_id: str
+    version_id: str
+    deployment_ref: str
+    status: str
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass(frozen=True)
+class RollbackRecord:
+    rollback_id: str
+    experiment_id: str
+    deployment_ref: str
+    status: str
+    reason: str = ""
     created_at: float = field(default_factory=time.time)
 
 
@@ -143,6 +191,10 @@ class EvolutionRecord:
     evaluation_result: Optional[EvaluationResult] = None
     candidate_ref: Optional[str] = None
     version: Optional[EvolutionVersion] = None
+    candidate: Optional[ImprovementCandidate] = None
+    approval: Optional[ApprovalDecision] = None
+    deployment: Optional[DeploymentRecord] = None
+    rollback: Optional[RollbackRecord] = None
     deployment_ref: Optional[str] = None
     error: Optional[str] = None
     trace: list[EvolutionTrace] = field(default_factory=list)
@@ -179,6 +231,8 @@ class EvolutionLifecycle:
         self._deployment_idempotency: Dict[str, str] = {}
         self._locks: Dict[str, asyncio.Lock] = {}
         self._cancel: Dict[str, asyncio.Event] = {}
+        self._approval_idempotency: Dict[str, str] = {}
+        self._version_idempotency: Dict[str, str] = {}
 
     def _lock_for(self, key: str) -> asyncio.Lock:
         return self._locks.setdefault(key, asyncio.Lock())
@@ -188,8 +242,15 @@ class EvolutionLifecycle:
 
     def _memory(self, record: EvolutionRecord, outcome: str) -> None:
         metadata = {"experiment_id": record.experiment_id, "state": record.state.value, "outcome": outcome}
+        if hasattr(self.memory, "record_evolution_event"):
+            self.memory.record_evolution_event("lifecycle", record.hypothesis.statement, outcome, metadata)
+            return
         if hasattr(self.memory, "record_episode"):
-            self.memory.record_episode("self_evolution", record.hypothesis.statement, outcome)
+            try:
+                self.memory.record_episode("self_evolution", record.hypothesis.statement, outcome, metadata)
+            except TypeError:
+                # Backward-compatible test/double API; canonical MemoryFabric accepts metadata.
+                self.memory.record_episode("self_evolution", record.hypothesis.statement, outcome)
         if hasattr(self.memory, "memorize_semantically"):
             self.memory.memorize_semantically(f"evolution:{record.experiment_id}:{outcome}", metadata)
 
@@ -204,8 +265,13 @@ class EvolutionLifecycle:
                 thresholds: Optional[Mapping[str, float]] = None, idempotency_key: Optional[str] = None) -> EvolutionRecord:
         if not source or not payload:
             raise ValueError("observation source and payload are required")
+        if evidence_refs and any(not isinstance(ref, str) or not ref.strip() for ref in evidence_refs):
+            raise ValueError("evidence_refs must contain non-empty strings")
         if idempotency_key and idempotency_key in self._idempotency:
             return self._records[self._idempotency[idempotency_key]]
+        forbidden_keys = {"production_config", "production_database", "production_model", "secret", "secrets", "shell", "arbitrary_code", "unrestricted_network"}
+        if forbidden_keys.intersection(payload) or forbidden_keys.intersection((proposed_change or {})):
+            raise EvolutionLifecycleError("unsafe experiment capability requested")
         statement = hypothesis or str(payload.get("hypothesis", ""))
         if not statement:
             raise EvolutionLifecycleError("hypothesis is required; no implicit hypothesis is allowed")
@@ -219,6 +285,8 @@ class EvolutionLifecycle:
         plan = ExperimentPlan(experiment_id, item.hypothesis_id, dataset_ref=dataset_ref,
                               benchmark_ref=benchmark_ref, metrics=tuple(metrics),
                               thresholds=dict(thresholds or metrics), timeout_seconds=self.timeout_seconds)
+        if not plan.isolated:
+            raise EvolutionLifecycleError("experiments must be isolated")
         record = EvolutionRecord(experiment_id, observation, item, plan)
         self._event(record, "observation_recorded", source=source)
         self._event(record, "hypothesis_created", hypothesis_id=item.hypothesis_id)
@@ -228,6 +296,34 @@ class EvolutionLifecycle:
             self._idempotency[idempotency_key] = experiment_id
         self._memory(record, "hypothesis_created")
         return record
+
+    def create_hypothesis(self, experiment_id: str, *, statement: str,
+                          expected_metrics: Mapping[str, float],
+                          proposed_change: Optional[Mapping[str, Any]] = None) -> EvolutionHypothesis:
+        """Return a typed hypothesis only for an existing evidence record."""
+        record = self._require(experiment_id)
+        if record.observation is None or not statement or not expected_metrics:
+            raise EvolutionLifecycleError("evidence-backed measurable hypothesis is required")
+        hypothesis = EvolutionHypothesis(
+            record.hypothesis.hypothesis_id,
+            record.observation.observation_id,
+            statement,
+            dict(expected_metrics),
+            dict(record.hypothesis.baseline),
+            dict(proposed_change or record.hypothesis.proposed_change),
+            record.hypothesis.risk,
+            record.hypothesis.rollback_strategy,
+        )
+        record.hypothesis = hypothesis
+        self._event(record, "hypothesis_updated", hypothesis_id=hypothesis.hypothesis_id)
+        return hypothesis
+
+    def plan_experiment(self, experiment_id: str) -> ExperimentPlan:
+        """Expose the immutable, isolated plan without executing it."""
+        record = self._require(experiment_id)
+        if not record.plan.isolated:
+            raise EvolutionLifecycleError("experiment isolation is mandatory")
+        return record.plan
 
     async def run_experiment(self, experiment_id: str) -> EvolutionRecord:
         record = self._require(experiment_id)
@@ -312,12 +408,25 @@ class EvolutionLifecycle:
         if record.state is not EvolutionState.EVALUATED or not candidate_ref:
             raise EvolutionLifecycleError("evaluated record and candidate_ref are required")
         if self.policy is None:
-            return self._fail(record, "approval_policy_required")
+            record.state = EvolutionState.BLOCKED
+            record.error = "approval_policy_required"
+            self._event(record, "approval_blocked", reason=record.error)
+            self._memory(record, record.error)
+            return record
         allowed = await self._call(self.policy, "approve_evolution", {"experiment_id": experiment_id, "candidate_ref": candidate_ref, "evaluation": record.evaluation})
         if not allowed:
+            record.approval = ApprovalDecision(
+                decision_id="approval-" + uuid.uuid4().hex,
+                experiment_id=experiment_id,
+                status="REJECTED",
+                candidate_ref=candidate_ref,
+                reason="approval_policy_denied",
+                policy_version=str(record.plan.configuration.get("policy_version")) if record.plan.configuration.get("policy_version") else None,
+                metrics=dict(record.evaluation_result.metrics if record.evaluation_result else {}),
+            )
             record.state = EvolutionState.REJECTED
             record.error = "approval_policy_denied"
-            self._event(record, "approval_rejected", candidate_ref=candidate_ref)
+            self._event(record, "approval_rejected", candidate_ref=candidate_ref, approval_id=record.approval.decision_id)
             self._memory(record, record.error)
             return record
         if self.model_registry is not None:
@@ -338,10 +447,28 @@ class EvolutionLifecycle:
                 return self._fail(record, f"model_registry_approval_failed:{type(exc).__name__}")
 
         record.candidate_ref = candidate_ref
+        record.candidate = ImprovementCandidate(
+            candidate_id="candidate-" + uuid.uuid4().hex,
+            candidate_ref=candidate_ref,
+            experiment_id=experiment_id,
+            evaluation_id=record.evaluation_result.evaluation_id if record.evaluation_result else "",
+            artifact_ref=record.plan.configuration.get("artifact_location"),
+            configuration=dict(record.plan.configuration),
+            provenance=dict(record.evaluation_result.provenance if record.evaluation_result else {}),
+        )
+        record.approval = ApprovalDecision(
+            decision_id="approval-" + uuid.uuid4().hex,
+            experiment_id=experiment_id,
+            status="APPROVED",
+            candidate_ref=candidate_ref,
+            reason="policy_approved",
+            policy_version=str(record.plan.configuration.get("policy_version")) if record.plan.configuration.get("policy_version") else None,
+            metrics=dict(record.evaluation_result.metrics if record.evaluation_result else {}),
+        )
         record.state = EvolutionState.APPROVED
-        record.version = EvolutionVersion("evo-" + uuid.uuid4().hex, candidate_ref, experiment_id, record.evaluation_result.evaluation_id if record.evaluation_result else "")
+        record.version = EvolutionVersion("evo-" + uuid.uuid4().hex, candidate_ref, experiment_id, record.evaluation_result.evaluation_id if record.evaluation_result else "", record.candidate.candidate_id)
         record.state = EvolutionState.VERSIONED
-        self._event(record, "approval_granted", candidate_ref=candidate_ref, version_id=record.version.version_id)
+        self._event(record, "approval_granted", candidate_ref=candidate_ref, version_id=record.version.version_id, approval_id=record.approval.decision_id)
         self._memory(record, "approved")
         return record
 
@@ -357,6 +484,13 @@ class EvolutionLifecycle:
         self._event(record, "deployment_started")
         try:
             record.deployment_ref = str(await self._call(self.deployer, record))
+            record.deployment = DeploymentRecord(
+                deployment_id="deployment-" + uuid.uuid4().hex,
+                experiment_id=experiment_id,
+                version_id=record.version.version_id if record.version else "",
+                deployment_ref=record.deployment_ref,
+                status="DEPLOYED",
+            )
             record.state = EvolutionState.DEPLOYED
             if idempotency_key:
                 self._deployment_idempotency[idempotency_key] = experiment_id
@@ -372,12 +506,34 @@ class EvolutionLifecycle:
 
     async def rollback(self, experiment_id: str) -> EvolutionRecord:
         record = self._require(experiment_id)
-        if record.state is not EvolutionState.DEPLOYED or self.rollbacker is None or not record.deployment_ref:
+        if record.state not in {EvolutionState.DEPLOYED, EvolutionState.MONITORING} or self.rollbacker is None or not record.deployment_ref:
             return self._fail(record, "deployed_record_and_rollbacker_required")
-        await self._call(self.rollbacker, record.deployment_ref)
+        try:
+            await self._call(self.rollbacker, record.deployment_ref)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            return self._fail(record, f"rollback_failed:{type(exc).__name__}")
+        record.rollback = RollbackRecord(
+            rollback_id="rollback-" + uuid.uuid4().hex,
+            experiment_id=experiment_id,
+            deployment_ref=record.deployment_ref,
+            status="ROLLED_BACK",
+            reason="explicit_rollback",
+        )
         record.state = EvolutionState.ROLLED_BACK
         self._event(record, "rollback_completed", deployment_ref=record.deployment_ref)
         self._memory(record, "rolled_back")
+        return record
+
+    async def monitor(self, experiment_id: str, metrics: Mapping[str, Any]) -> EvolutionRecord:
+        """Record post-deployment monitoring evidence; it never deploys or mutates."""
+        record = self._require(experiment_id)
+        if record.state is not EvolutionState.DEPLOYED or not metrics:
+            return self._fail(record, "deployed_record_and_monitoring_metrics_required")
+        record.state = EvolutionState.MONITORING
+        self._event(record, "monitoring_recorded", metrics=dict(metrics))
+        self._memory(record, "monitoring")
         return record
 
     def cancel(self, experiment_id: str) -> None:

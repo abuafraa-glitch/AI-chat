@@ -45,6 +45,16 @@ from .cognitive_layer.reasoning_engine import (
 )
 from .decision_engine import DecisionEngine, get_decision_engine_sync
 from .goal_manager import GoalManager, get_goal_manager
+from .task_decomposer import get_task_decomposer
+from .graph_planner import get_graph_planner
+from .multi_model import get_multi_model_collaborator
+from .state_machine import get_state_machine
+from .knowledge.knowledge_graph import get_knowledge_graph
+from .knowledge.knowledge_distillation import get_distillation_pipeline
+from .reflection.self_reflection import get_self_reflection
+from .reflection.self_evolution import get_self_evolution
+from .sovereignty.sovereignty_layer import get_sovereignty_layer
+from .improvement.autonomous_improvement import get_autonomous_improvement
 from .evolution.phase7_lifecycle import EvolutionLifecycle, EvolutionRecord
 from .memory.memory_fabric import MemoryFabric, get_memory_fabric
 from .metrics.model_performance_db import ModelPerformanceDB, get_performance_db
@@ -52,6 +62,10 @@ from .model_router import ModelRouter, get_model_router
 from .policy.policy_engine import PolicyEngine, get_policy_engine
 from services.agents.agent_orchestrator import AgentOrchestrator
 from services.agents.planner_agent import PlannerAgent
+
+# Compatibility aliases retained for Phase 1-6 test and integration consumers.
+# BrainV3 itself continues to use the canonical factories above.
+get_decision_engine = get_decision_engine_sync
 
 logger = logging.getLogger(__name__)
 
@@ -260,6 +274,56 @@ class HajeenBrainV3:
             expected_metrics=expected_metrics,
             proposed_change=proposed_change,
             idempotency_key=idempotency_key or f"brain-request:{request.request_id}",
+        )
+
+    def _record_runtime_evidence(
+        self,
+        *,
+        request: BrainRequest,
+        trace: ExecutionTrace,
+        error: Optional[str] = None,
+    ) -> Optional[EvolutionRecord]:
+        """Record only caller-supplied, traceable runtime evidence.
+
+        The legacy response quality default is deliberately not treated as evidence.
+        A producer must provide ``evolution_observation`` with evidence references and
+        a measurable hypothesis, or a real ``measured_quality_score`` below its
+        configured threshold. This keeps BrainV3 observational and non-mutating.
+        """
+        if self.evolution_lifecycle is None:
+            return None
+        context = request.context or {}
+        details = context.get("evolution_observation")
+        if not isinstance(details, dict):
+            return None
+        refs = tuple(str(ref) for ref in details.get("evidence_refs", ()) if str(ref).strip())
+        hypothesis = details.get("hypothesis")
+        measured = context.get("measured_quality_score")
+        threshold = float(context.get("quality_threshold", 0.0))
+        low_quality = isinstance(measured, (int, float)) and float(measured) < threshold
+        if not refs or not isinstance(hypothesis, str) or not hypothesis.strip():
+            return None
+        if error is None and not low_quality and not details.get("force_observation", False):
+            return None
+        payload = {
+            "request_id": request.request_id,
+            "session_id": request.session_id,
+            "trace_id": trace.trace_id,
+            "layers_passed": tuple(trace.layers_passed),
+            "provider": trace.provider,
+            "execution": dict(trace.execution),
+            "measured_quality_score": float(measured) if isinstance(measured, (int, float)) else None,
+            "error": error,
+        }
+        return self.record_evolution_observation(
+            request=request,
+            trace=trace,
+            quality_score=float(measured) if isinstance(measured, (int, float)) else 0.0,
+            evidence_refs=refs,
+            hypothesis=hypothesis,
+            expected_metrics=details.get("expected_metrics"),
+            proposed_change=details.get("proposed_change"),
+            idempotency_key=f"brain-evidence:{request.request_id}",
         )
 
     def set_rag_pipeline(self, rag_pipeline: Optional[RAGPipeline]) -> None:
@@ -579,6 +643,7 @@ class HajeenBrainV3:
                 "success": False,
                 "fail_closed": True,
             })
+            self._record_runtime_evidence(request=request, trace=trace, error=type(exc).__name__)
             queue = self._stream_queues.get(request.request_id)
             if queue is not None:
                 await queue.put(exc)
@@ -593,6 +658,7 @@ class HajeenBrainV3:
         trace.record_layer("reflection", {"stored_in_memory_fabric": True})
 
         trace.total_latency_ms = (time.perf_counter() - t0) * 1000
+        self._record_runtime_evidence(request=request, trace=trace)
 
         return BrainResponse(
             request_id=request_id,

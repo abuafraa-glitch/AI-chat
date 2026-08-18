@@ -106,3 +106,98 @@ async def test_missing_reflection_or_policy_fails_closed():
     result = await lifecycle.reflect_and_evaluate(record.experiment_id)
     assert result.state is EvolutionState.FAILED
     assert result.error == "reflector_and_evaluator_required"
+
+
+def test_unsafe_capability_is_rejected_before_experiment():
+    lifecycle = EvolutionLifecycle(memory=Memory())
+    with pytest.raises(Exception, match="unsafe experiment capability"):
+        lifecycle.observe(
+            "runtime",
+            {"x": 1, "secrets": "not allowed"},
+            hypothesis="unsafe change",
+        )
+
+
+@pytest.mark.asyncio
+async def test_missing_metric_fails_closed():
+    async def executor(hypothesis, cancel):
+        return {"metrics": {"quality": 0.9}}
+
+    async def reflector(record):
+        return {"evidence": True}
+
+    async def evaluator(record):
+        return {"metrics": {"quality": 0.9}, "passes_threshold": True}
+
+    lifecycle = EvolutionLifecycle(
+        memory=Memory(), executor=executor, reflector=reflector, evaluator=evaluator
+    )
+    record = lifecycle.observe(
+        "runtime", {"x": 1}, hypothesis="measure latency", expected_metrics={"latency": 0.2}
+    )
+    await lifecycle.run_experiment(record.experiment_id)
+    result = await lifecycle.reflect_and_evaluate(record.experiment_id)
+    assert result.state is EvolutionState.FAILED
+    assert result.error == "missing_metrics:latency"
+
+
+@pytest.mark.asyncio
+async def test_deployment_requires_approval_and_is_idempotent():
+    calls = []
+
+    async def deployer(record):
+        calls.append(record.experiment_id)
+        return "deployment-once"
+
+    lifecycle = EvolutionLifecycle(memory=Memory(), deployer=deployer)
+    record = lifecycle.observe("runtime", {"x": 1}, hypothesis="candidate")
+    blocked = await lifecycle.deploy(record.experiment_id, idempotency_key="deploy-1")
+    assert blocked.state is EvolutionState.FAILED
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_policy_denial_is_rejected_without_version_or_deployment():
+    async def executor(hypothesis, cancel):
+        return {"metrics": {"quality": 0.9}}
+
+    async def reflector(record):
+        return {"evidence": True}
+
+    async def evaluator(record):
+        return {"metrics": {"quality": 0.9}, "passes_threshold": True}
+
+    async def policy(action, context):
+        return False
+
+    lifecycle = EvolutionLifecycle(
+        memory=Memory(), executor=executor, reflector=reflector,
+        evaluator=evaluator, policy=policy, deployer=lambda record: "never"
+    )
+    record = lifecycle.observe("runtime", {"x": 1}, hypothesis="candidate")
+    await lifecycle.run_experiment(record.experiment_id)
+    await lifecycle.reflect_and_evaluate(record.experiment_id)
+    result = await lifecycle.approve(record.experiment_id, candidate_ref="candidate-1")
+    assert result.state is EvolutionState.REJECTED
+    assert result.version is None
+    assert result.approval is not None
+    assert result.approval.status == "REJECTED"
+
+
+@pytest.mark.asyncio
+async def test_legacy_learning_pipeline_never_deploys_without_canonical_gate(tmp_path):
+    from brain.learning.continuous_learning import ContinuousLearningPipeline
+
+    pipeline = ContinuousLearningPipeline(storage_path=str(tmp_path))
+    raw = [
+        {
+            "instruction": f"اشرح مفهوم الذكاء الاصطناعي رقم {i}",
+            "output": f"الذكاء الاصطناعي رقم {i} هو مجال حاسوبي يدرس بناء الأنظمة الذكية بالتفصيل.",
+            "quality_score": 0.9,
+        }
+        for i in range(60)
+    ]
+    run = await pipeline.run(raw)
+    assert run.deployment_info == {}
+    assert not (tmp_path / "model_registry.json").exists()
+    assert not (tmp_path / "active_model.json").exists()

@@ -358,8 +358,14 @@ class MemoryFabric:
         return self._semantic.search(query, top_k)
 
     # ── Episodic Memory ────────────────────────────────────────────────────
-    def record_episode(self, event_type: str, description: str, outcome: str) -> None:
-        self._episodic.record(event_type, description, outcome)
+    def record_episode(self, event_type: str, description: str, outcome: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+        self._episodic.record(event_type, description, outcome, metadata)
+
+    def record_evolution_event(self, event_type: str, description: str, outcome: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+        """Store evolution telemetry in episodic/semantic memory, never conversation memory."""
+        event_metadata = {"namespace": "evolution", **(metadata or {})}
+        self._episodic.record(f"evolution:{event_type}", description, outcome, event_metadata)
+        self._semantic.store(description, event_metadata, relevance=1.0)
 
     def recall_episodes(self, event_type: str) -> List[Dict]:
         return self._episodic.get_similar_episodes(event_type)

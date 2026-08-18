@@ -1,0 +1,61 @@
+PHASE 7 COMPONENT INVENTORY
+Generated from repository search under brain/ and services/; see audit.md for status and decisions.
+
+brain/cognitive_layer/curiosity_engine.py
+  Classes: GapType, GapPriority, KnowledgeGap, CuriosityQuery, CuriosityEngine
+  Key methods: identify_knowledge_gaps, generate_curiosity_query, execute_curiosity_query, get_curiosity_statistics
+  State: in-memory gaps and queries
+
+brain/cognitive_layer/hypothesis_engine.py
+  Legacy hypothesis generation/data helpers
+  No verified BrainV3 production caller found
+
+brain/cognitive_layer/experiment_engine.py
+  Legacy ExperimentEngine
+  Execution path hardened to fail closed; not a canonical authority
+
+brain/cognitive_layer/dream_engine.py
+  Classes: DreamType, DreamStatus, Dream, DreamEngine
+  Key methods: schedule_dream and dream lifecycle methods
+  State: in-memory dreams, dreams_by_type, active_dreams
+
+brain/reflection/self_evolution.py
+  Legacy reflection-oriented self-evolution implementation
+  Competing proposal/state behavior; not canonical Phase 7
+
+brain/reflection/self_reflection.py
+  Reflection reports and runtime reflection logic
+  Must consume actual traces/metrics before producing a hypothesis candidate
+
+brain/evolution/self_evolution.py
+  Phase 7 compatibility facade
+  EvolutionProposal, SelfEvolution, get_self_evolution_engine
+  Proposal/evaluation/mutation methods reject legacy paths
+
+brain/evolution/phase7_lifecycle.py
+  Canonical EvolutionLifecycle and typed contracts
+  Observation -> Hypothesis -> Experiment -> Evaluation -> Approval -> Version -> Deployment -> Rollback
+
+brain/improvement/autonomous_improvement.py
+  Weekly analysis reports and improvement suggestions
+  Local report/suggestion state; no direct canonical deployment path
+
+brain/learning/continuous_learning.py
+  Older continuous learning pipeline with local deployment behavior
+  Must not be used as Phase 7 authority
+
+brain/learning/learning_lifecycle.py
+  Phase 6 learning coordinator and canonical data/training/evaluation lifecycle
+
+services/self_evolution/continuous_learning_loop.py
+  Legacy loop around inference, reflection, memory, and curiosity
+  No verified canonical BrainV3 caller
+
+services/self_evolution/curiosity_engine.py
+  Duplicate service curiosity implementation
+
+services/self_evolution/self_reflection_engine.py
+  Duplicate service reflection implementation
+
+tests/integration/test_phase7_self_evolution.py
+  Five acceptance tests for observation, fail-closed execution, full lifecycle/rollback, cancellation, and missing authorities

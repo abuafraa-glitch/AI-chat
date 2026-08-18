@@ -293,36 +293,14 @@ class SelfReflection:
         )
         recs.extend(llm_recs)
 
-        # Apply recommendations to other systems if applicable
+        # Phase 7 rule: reflection is advisory evidence, never a mutation authority.
+        # ModelPerformanceDB and PolicyEngine updates must be performed by their
+        # canonical coordinators after an explicit Observation → Evaluation → Approval
+        # lifecycle. Keep the recommendation in the report for downstream ingestion.
         if not correct_model:
-            # Example: Update model performance in DB
-            # Example: Update model performance in DB
-            # Infer provider from model_used (simple heuristic)
-            provider = "openai" if "openai" in model.lower() else "ollama"
-            # Infer task_type and domain from context, or use generic values
-            task_type = context.get("task_type", "general_reflection")
-            domain = context.get("domain", "reflection")
-            success = quality >= 0.7 # Assuming quality >= 0.7 means success
-
-            self._model_performance_db.record_call(
-                model_id=model,
-                provider=provider,
-                task_type=task_type,
-                domain=domain,
-                latency_ms=latency_ms,
-                tokens_used=estimated_tokens, # Using estimated tokens for recording
-                quality_score=quality,
-                success=success,
-                cost_usd=0.0 # Placeholder, actual cost calculation is complex
-            )
+            recs.append("pending canonical evaluation: model performance regression")
         if reduce_cost:
-            # Example: Add a policy to reduce tokens for similar tasks
-            await self._policy_engine.add_policy(
-                name=f"Reduce_Tokens_for_{model}",
-                description=f"Reduce max_tokens for {model} when estimated tokens are exceeded.",
-                rules={"model": model, "token_efficiency_ratio_gt": 1.3},
-                action={"type": "reduce_max_tokens", "factor": 0.8}
-            )
+            recs.append("pending canonical approval: token efficiency policy candidate")
         return recs
 
     def _save_report(self, report: ReflectionReport) -> None:

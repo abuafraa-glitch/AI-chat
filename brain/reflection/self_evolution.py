@@ -264,44 +264,14 @@ class SelfEvolution:
         return proposals
 
     async def apply_proposal(self, proposal_id: str) -> bool:
-        """تطبيق اقتراح التطوير."""
+        """Reject legacy direct application; Phase 7 is the only change authority."""
         proposal = next((p for p in self._proposals if p.proposal_id == proposal_id), None)
-        if not proposal:
+        if not proposal or proposal.status != EvolutionStatus.PROPOSED:
             return False
-        if proposal.status != EvolutionStatus.PROPOSED:
-            return False
-
-        try:
-            # تحديث القواعد الحالية
-            self._update_rules(proposal)
-            proposal.status = EvolutionStatus.APPLIED
-            proposal.applied_at = time.time()
-            proposal.result = "تم التطبيق بنجاح"
-            self._applied.append(proposal)
-            self._save_rules()
-            logger.info("self_evolution: applied proposal '%s'", proposal.title)
-            return True
-        except Exception as e:
-            proposal.status = EvolutionStatus.REJECTED
-            proposal.result = str(e)
-            logger.error("self_evolution: apply failed: %s", e)
-            return False
-
-    def _update_rules(self, proposal: EvolutionProposal) -> None:
-        target_key = proposal.target.value
-        if target_key in self._current_rules:
-            if isinstance(proposal.proposed_value, dict):
-                self._current_rules[target_key].update(proposal.proposed_value)
-            else:
-                # تحديث قيمة بسيطة بناءً على العنوان
-                pass
-
-    def _save_rules(self) -> None:
-        try:
-            with open(self._path / "current_rules.json", "w", encoding="utf-8") as f:
-                json.dump(self._current_rules, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error("self_evolution: save rules error: %s", e)
+        proposal.status = EvolutionStatus.REJECTED
+        proposal.result = "blocked: submit as evidence-backed Phase 7 candidate"
+        logger.warning("self_evolution: direct proposal application blocked: %s", proposal.title)
+        return False
 
     def get_current_rules(self) -> Dict[str, Any]:
         return dict(self._current_rules)

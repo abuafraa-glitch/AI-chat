@@ -10,11 +10,11 @@
 |---|---|---|
 | BrainV3 | حقن `EvolutionLifecycle` اختيارياً وتسجيل observation مبني على trace فعلي فقط | لا يتغير السلوك السابق عند عدم حقن lifecycle، ولا تُنشأ ملاحظات وهمية |
 | MemoryFabric | استخدام واجهة الذاكرة المركزية الموجودة لتسجيل أحداث التطور | trace قابل للتتبع دون مصدر ذاكرة بديل |
-| Legacy SelfEvolution | إعادة بناء `brain/evolution/self_evolution.py` كـ facade fail-closed | لا proposal أو evaluation أو production mutation خارج Phase 7 |
+| Legacy SelfEvolution | تحويل `apply_proposal` إلى رفض صريح وإبقاء الاقتراحات advisory-only | لا proposal أو evaluation أو production mutation خارج Phase 7 |
 | Celery workers | تعطيل مهام proposal/evaluation القديمة مع إبقاء أسماء المهام للتوافق | إرجاع `rejected` صريح بدلاً من نجاح أو تنفيذ وهمي |
 | Phase 6 | إضافة `make_phase6_evaluator` لاستدعاء `EvaluationPipelineLifecycle` | لا ينجح التقييم إلا مع artifact وbenchmark وقياس inference فعلي |
 | ModelRegistry | ربط `approve` اختيارياً ببوابات `mark_evaluated` ثم `approve` | منع اعتماد artifact دون lineage وتقييم مسجل |
-| الاختبارات | إضافة اختبارات قبول لمسار observation إلى rollback | إثبات idempotency، غياب executor، الإلغاء، التقييم، النشر والتراجع |
+| الاختبارات | توسيع acceptance suite لتشمل capabilities الخطرة، المقاييس المفقودة، رفض policy، deployment gate، وlegacy learning | إثبات idempotency، fail-closed، الإلغاء، التقييم، النشر والتراجع ومنع النشر المحلي |
 
 ## الضمانات السلوكية
 
@@ -33,14 +33,14 @@
 | `tests/integration/test_phase6_learning_coordinator.py` | 4 ناجحة |
 | `tests/integration/test_phase6_learning_data.py` | 6 ناجحة |
 | `tests/integration/test_phase6_training_registry.py` | 11 ناجحة |
-| `tests/integration/test_phase7_self_evolution.py` | 5 ناجحة |
-| المجموع المستهدف | **58 ناجحة، 6 متجاوزة** |
+| `tests/integration/test_phase7_self_evolution.py` | **10 ناجحة** |
+| المجموعة المستهدفة بعد التوسعة | **28 ناجحة، 3 تحذيرات** |
 
 كما نجح فحص Python compilation، ونجح اختبار مستقل لمحول Phase 6 باستخدام artifact وbenchmark مؤقتين وcallable inference فعلي. ونجح فحص العمال والواجهة القديمة في إرجاع `legacy_evolution_path_disabled` و`rejected` كما هو مطلوب.
 
 ## ملاحظة عن الاختبار الكامل
 
-تشغيل `pytest -q` على كامل المستودع لم يصل إلى التنفيذ بسبب اعتماديات اختبارية اختيارية غير مثبتة في البيئة، منها `respx` و`feedparser` واعتماديات embedding/FAISS في اختبارات أخرى. هذا فشل بيئي في مرحلة collection، وليس فشلاً ناتجاً عن Phase 7. مجموعة التكامل المستهدفة للمراحل 2–7 اجتازت بنجاح باستثناء اختبارات RAG المتجاوزة المعروفة.
+تم تثبيت الاعتماديات الخفيفة وFAISS وsentence-transformers، ثم أُعيد تشغيل `pytest -q`. بقي فشل كامل المستودع محصوراً في اختبارات embedding التي تحاول تحميل نموذج من Hugging Face أثناء collection/runtime ولا يتوفر النموذج محلياً في البيئة؛ كما ظهرت إخفاقات embedding متوقعة بسبب عدم توفر النموذج. هذه قيود بيئية/خارجية وليست فشلاً في مسار Phase 7. مجموعة Phase 7 وBrainV3 وContinuous Learning وReflection اجتازت **28/28**.
 
 ## Git checkpoint
 
@@ -61,8 +61,9 @@
 | `brain/evolution/self_evolution.py` | facade legacy موقوفة fail-closed |
 | `brain/evolution/__init__.py` | exports وتوافق الأسماء القديمة |
 | `workers/async_tasks.py` | تعطيل مهام التطور القديمة دون حذف أسماء Celery |
-| `tests/integration/test_phase7_self_evolution.py` | acceptance suite للمسار الكامل |
+| `.phase7_audit/` | inventory، call graph، authority matrix، lifecycle map، والمصادر المختارة | سجل تدقيق مبني على الكود وقابل للمراجعة |
+| `tests/integration/test_phase7_self_evolution.py` | acceptance suite للمسار الكامل وحالات security/fail-closed |
 
 ## الخلاصة
 
-Phase 7 أصبحت مدمجة ومحمية من bypasses الأساسية: observation evidence-only، فرضية صريحة، تجربة معزولة، تقييم قابل للتتبع، approval policy، ModelRegistry gates عند حقنه، deployment idempotent، وrollback صريح. ما تبقى قبل اعتبار المستودع أخضر بالكامل هو تثبيت اعتماديات الاختبارات الاختيارية ثم إعادة تشغيل `pytest -q` على كامل المستودع؛ أما مسار Phase 2–7 المستهدف فقد تحقق بنجاح.
+Phase 7 أصبحت مدمجة ومحمية من bypasses الأساسية: observation evidence-only، فرضية صريحة، تجربة معزولة، تقييم قابل للتتبع، approval policy، ModelRegistry gates عند حقنه، deployment idempotent، monitoring، وrollback صريح. كما مُنع `SelfEvolution.apply_proposal` والنشر المحلي في `ContinuousLearningPipeline`، وأصبحت autonomous improvement advisory-only. لا يبدأ هذا العمل Phase 8 ولا يدمج Hajeen Model. الاختبارات المستهدفة مكتملة، بينما يبقى `pytest -q` الكامل معتمداً على توفر نموذج embedding خارجي/مخزن محلياً.
