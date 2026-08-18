@@ -78,3 +78,59 @@ async def test_model_router_is_fail_closed_for_unknown_forced_model():
     router = ModelRouter()
     with pytest.raises(RuntimeError, match="not registered"):
         await collect(router, model_key="unknown/model")
+
+
+class MemoryRecorder:
+    def __init__(self):
+        self.messages = []
+
+    async def initialize(self):
+        return None
+
+    async def get_context(self, session_id, max_messages=20):
+        return []
+
+    async def add_message(self, session_id, role, content, metadata=None):
+        self.messages.append((session_id, role, content, metadata or {}))
+
+
+class BrainSuccessful:
+    async def stream(self, request):
+        yield LLMStreamChunk(delta="", event_type="start", request_id=request.request_id)
+        yield LLMStreamChunk(delta="native response", event_type="delta", request_id=request.request_id)
+        yield LLMStreamChunk(delta="", event_type="finish", finish_reason="stop", request_id=request.request_id)
+
+
+class BrainFailed:
+    async def stream(self, request):
+        yield LLMStreamChunk(delta="partial", event_type="delta", request_id=request.request_id)
+        yield LLMStreamChunk(delta="", event_type="error", request_id=request.request_id, metadata={"error": "provider failed"})
+
+
+@pytest.mark.asyncio
+async def test_chat_service_saves_memory_only_after_successful_finish():
+    from services.chat.chat_service import ChatRequest, ChatService
+
+    service = ChatService(brain=BrainSuccessful())
+    memory = MemoryRecorder()
+    service._unified_memory = memory
+    service._initialized = True
+    events = [event async for event in service.stream_chat(ChatRequest(message="سؤال"))]
+
+    assert [event.event_type for event in events] == ["start", "delta", "finish"]
+    assert [role for _, role, _, _ in memory.messages] == ["user", "assistant"]
+    assert memory.messages[-1][2] == "native response"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_does_not_save_memory_after_error():
+    from services.chat.chat_service import ChatRequest, ChatService
+
+    service = ChatService(brain=BrainFailed())
+    memory = MemoryRecorder()
+    service._unified_memory = memory
+    service._initialized = True
+    events = [event async for event in service.stream_chat(ChatRequest(message="سؤال"))]
+
+    assert [event.event_type for event in events] == ["delta", "error"]
+    assert memory.messages == []
