@@ -14,6 +14,9 @@ from core.model.model_registry import ModelArtifactStatus, ModelRegistry
 
 logger = logging.getLogger(__name__)
 
+VERIFIED_BASE_MODEL_ID = "Qwen/Qwen3-30B-A3B"
+VERIFIED_BASE_TARGET_COMMIT = "9d6a564f66303a3691cbb646d39a28f3eb792ca7"
+
 
 @dataclass(frozen=True)
 class ModelConfig:
@@ -64,7 +67,7 @@ DEFAULT_MODELS: Dict[str, ModelConfig] = {
     "ollama/qwen2.5-coder": ModelConfig("qwen2.5-coder:7b", "ollama", "http://localhost:11434", None, ["code"], 32768, 8192, 900, 0.0, 0.85, True),
     "openai/gpt-4o": ModelConfig("gpt-4o", "openai", None, "env:OPENAI_API_KEY", ["general", "code", "math", "analysis", "creative", "rag"], 128000, 4096, 2000, 5.0, 0.97, False),
     "openai/gpt-4o-mini": ModelConfig("gpt-4o-mini", "openai", None, "env:OPENAI_API_KEY", ["general", "code", "math", "analysis", "rag"], 128000, 4096, 800, 0.15, 0.88, False),
-    "hajeen-local": ModelConfig("hajeen-v1", "local", None, None, ["arabic", "general", "rag"], 4096, 4096, 500, 0.0, 0.70, True),
+    "hajeen-local": ModelConfig(VERIFIED_BASE_MODEL_ID, "local", None, None, ["arabic", "general", "rag"], 32768, 8192, 500, 0.0, 0.90, True),
 }
 
 
@@ -115,17 +118,27 @@ class ModelRouter:
         return getter(cfg.model_id, "production") or getter(key, "production")
 
     def _registry_eligible(self, key: str, cfg: ModelConfig) -> bool:
-        """Unregistered runtime providers remain compatible; registered artifacts need approval."""
+        """Require a commit-pinned VERIFIED_BASE for the real local Hajeen path."""
         records = getattr(self._model_registry, "list_artifacts", lambda: [])()
         related = [
             item for item in records
-            if item.get("model_id") in {key, cfg.model_id}
+            if item.get("model_id") in {key, cfg.model_id, VERIFIED_BASE_MODEL_ID}
         ]
+        if key == "hajeen-local" or cfg.model_id == VERIFIED_BASE_MODEL_ID:
+            if key in self._provider_registry:
+                return True
+            return any(
+                item.get("status") == ModelArtifactStatus.VERIFIED_BASE.value
+                and item.get("lineage", {}).get("target_commit") == VERIFIED_BASE_TARGET_COMMIT
+                for item in related
+            )
         if not related:
             return True
         return any(item.get("status") in {ModelArtifactStatus.STAGING.value, ModelArtifactStatus.PRODUCTION.value} for item in related)
 
     def _resolve_key(self, identifier: str) -> Optional[str]:
+        if identifier == "hajeen-v1" and "hajeen-local" in self._models:
+            return "hajeen-local"
         if identifier in self._models:
             return identifier
         for key, cfg in self._models.items():

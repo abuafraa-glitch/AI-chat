@@ -8,13 +8,14 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Mapping, Optional
 
-from .artifact_validation import validate_artifact_directory
+from .artifact_validation import load_verified_base_manifest, validate_artifact_directory
 from .model_config import ModelConfig
 
 logger = logging.getLogger(__name__)
 
 
 class ModelArtifactStatus(str, Enum):
+    VERIFIED_BASE = "VERIFIED_BASE"
     CREATED = "CREATED"
     TRAINED = "TRAINED"
     EVALUATED = "EVALUATED"
@@ -137,6 +138,53 @@ class ModelRegistry:
             raise ValueError(f"artifact version already registered: {key}")
         self._artifacts[key] = record
         logger.info("Model artifact registered: %s", key)
+        return record
+
+    def register_verified_base(
+        self,
+        artifact_location: str,
+        model_id: str,
+        model_version: str,
+    ) -> ModelArtifactRecord:
+        manifest_valid, manifest_reasons, manifest = load_verified_base_manifest(artifact_location)
+        if not manifest_valid:
+            raise ValueError("verified_base_manifest_invalid:" + ",".join(manifest_reasons))
+        valid, reasons, checksum, metadata = validate_artifact_directory(artifact_location)
+        if not valid:
+            raise ValueError("artifact_invalid:" + ",".join(reasons))
+        if not model_id or not model_version:
+            raise ValueError("model_id and model_version are required")
+        key = f"{model_id}:{model_version}"
+        if key in self._artifacts:
+            existing = self._artifacts[key]
+            existing_manifest = existing.artifact_metadata.get("verification_manifest", {})
+            if (
+                existing.status is ModelArtifactStatus.VERIFIED_BASE
+                and existing.artifact_location == artifact_location
+                and existing_manifest.get("target_commit") == manifest.get("target_commit")
+            ):
+                return existing
+            raise ValueError(f"artifact version already registered: {key}")
+        record = ModelArtifactRecord(
+            model_id=model_id,
+            model_version=model_version,
+            model_type="base_model",
+            artifact_location=artifact_location,
+            base_model=manifest["source_model_id"],
+            dataset_version="not_applicable",
+            training_run_id="not_applicable",
+            status=ModelArtifactStatus.VERIFIED_BASE,
+            artifact_checksum=checksum,
+            artifact_metadata=metadata,
+            lineage={
+                "source_model_id": manifest["source_model_id"],
+                "source_revision": manifest["source_revision"],
+                "target_repo_id": manifest["target_repo_id"],
+                "target_commit": manifest["target_commit"],
+            },
+        )
+        self._artifacts[key] = record
+        logger.info("Verified base artifact registered: %s", key)
         return record
 
     def get_artifact(self, model_id: str, model_version: str) -> Optional[ModelArtifactRecord]:

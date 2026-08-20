@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "status": "VERIFIED_BASE",
+  "source_model_id": "Qwen/Qwen3-30B-A3B",
+  "source_revision": "ad44e777bcd18fa416d9da3bd8f70d33ebb85d39",
+  "target_repo_id": "Raedthawaba/hajeen-base-qwen3-30b-a3b",
+  "target_commit": "9d6a564f66303a3691cbb646d39a28f3eb792ca7",
+  "artifact_location": {
+    "type": "external_huggingface_snapshot",
+    "revision": "9d6a564f66303a3691cbb646d39a28f3eb792ca7",
+    "path_env": "HAJEEN_MODEL_PATH",
+    "weights_in_repository": false
+  },
+  "artifact_verification": {
+    "remote_file_count": 26,
+    "safetensors_shards": 16,
+    "all_source_files_present": true,
+    "all_file_sizes_match": true,
+    "all_shards_opened_with_safe_open": true,
+    "all_shard_sha256_match": true,
+    "model_index_present": true,
+    "configuration_present": true,
+    "tokenizer_present": true
+  },
+  "tokenizer_verification": {
+    "loaded_from_local_files_only": true,
+    "encode_decode_round_trip_passed": true,
+    "vocab_size": 151669,
+    "eos_token_id": 151645,
+    "pad_token_id": 151643
+  },
+  "runtime_capability": {
+    "full_unquantized_inference_tested": false,
+    "reason": "Artifact verification is complete; full inference requires a separate runtime with sufficient memory and is not represented as a mock result."
+  },
+  "training": {
+    "started": false,
+    "fine_tuning_started": false,
+    "quantization_started": false,
+    "weights_modified": false
+  }
+}

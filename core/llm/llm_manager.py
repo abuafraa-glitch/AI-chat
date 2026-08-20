@@ -127,7 +127,7 @@ class LLMManager:
             messages=request.to_messages_list(),
             capability="general",
             budget_tokens=request.max_tokens or self.settings.max_tokens,
-            force_model=provider_name,
+            force_model=provider_name or self._primary_name,
             request_id=request.request_id,
         )
         if not result.success:
@@ -178,7 +178,7 @@ class LLMManager:
             messages=request.to_messages_list(),
             capability="general",
             budget_tokens=request.max_tokens or self.settings.max_tokens,
-            force_model=provider_name,
+            force_model=provider_name or self._primary_name,
             request_id=request.request_id,
         ):
             yield chunk
