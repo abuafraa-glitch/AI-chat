@@ -1,0 +1,21 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 7 items
+
+tests/architecture/test_phase4_security_boundaries.py .......            [100%]
+
+=============================== warnings summary ===============================
+tests/architecture/test_phase4_security_boundaries.py::test_canonical_security_and_routing_modules_exist
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/architecture/test_phase4_security_boundaries.py::test_canonical_security_and_routing_modules_exist
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 7 passed, 2 warnings in 0.02s =========================

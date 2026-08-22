@@ -1,0 +1,20 @@
+PHASE 4 REGRESSION RECORD
+===========================
+
+Baseline commit:
+364b4ace0d78c76a94ec1130e8d0bd4ed1fea542
+
+Baseline collection:
+- pytest --collect-only: recorded in PHASE4_BASELINE.txt
+- Phase 2 regression: 26 passed, 5 warnings
+- Phase 3 regression: 7 passed, 5 warnings
+- compileall: recorded in PHASE4_BASELINE.txt
+
+Phase 4 additions:
+- New security/boundary tests: to be recorded after final run
+- New evidence documents: nine required files
+
+Status rules:
+PASS, FAIL, SKIPPED, ERROR are reported separately.
+SKIPPED is not PASS.
+Qwen download, training, and fine-tuning are not part of this regression.
