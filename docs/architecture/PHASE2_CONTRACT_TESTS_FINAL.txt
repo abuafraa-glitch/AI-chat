@@ -1,0 +1,36 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 25 items
+
+tests/integration/test_phase2_runtime_contract.py ................       [ 64%]
+tests/unit/test_phase1_runtime_contract.py ...                           [ 76%]
+tests/integration/test_phase4_native_streaming.py ......                 [100%]
+
+=============================== warnings summary ===============================
+../../../usr/local/lib/python3.12/dist-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/dist-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+brain/brain_v3.py:58
+  /home/ubuntu/ai-chat-review/brain/brain_v3.py:58: DeprecationWarning: brain.evolution is deprecated. Use brain.reflection directly.
+    from .evolution.phase7_lifecycle import EvolutionLifecycle, EvolutionRecord
+
+tests/integration/test_phase2_runtime_contract.py::test_api_chat_delegates_to_brain_and_router
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/integration/test_phase2_runtime_contract.py::test_api_chat_delegates_to_brain_and_router
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+tests/integration/test_phase2_runtime_contract.py::test_api_chat_delegates_to_brain_and_router
+  /home/ubuntu/ai-chat-review/api/v1/ai/router.py:56: PydanticDeprecatedSince20: `min_items` is deprecated and will be removed, use `min_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    messages: List[MessageSchema] = Field(..., min_items=1)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 25 passed, 5 warnings in 33.18s ========================
+exit=0

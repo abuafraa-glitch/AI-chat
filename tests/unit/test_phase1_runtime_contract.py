@@ -54,6 +54,6 @@ def test_route_signature_preserves_model_provider_separation():
     key = "hajeen-local"
     config = router._models[key]
 
-    assert config.model_id == "hajeen-v1"
+    assert config.model_id == "Qwen/Qwen3-30B-A3B"
     assert config.provider == "local"
     assert config.model_id != config.provider

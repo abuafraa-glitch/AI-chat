@@ -1,0 +1,172 @@
+=== tests/ai/test_security.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 11 items
+
+tests/ai/test_security.py ...........                                    [100%]
+
+=============================== warnings summary ===============================
+tests/ai/test_security.py::test_policy_engine_init
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/ai/test_security.py::test_policy_engine_init
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 11 passed, 2 warnings in 0.02s ========================
+exit=0
+=== tests/integration/test_security.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 42 items
+
+tests/integration/test_security.py ..................................... [ 88%]
+.....                                                                    [100%]
+
+=============================== warnings summary ===============================
+tests/integration/test_security.py::TestJWTAuthentication::test_create_and_verify_token
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/integration/test_security.py::TestJWTAuthentication::test_create_and_verify_token
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 42 passed, 2 warnings in 1.42s ========================
+exit=0
+=== tests/production/security/test_security.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 7 items
+
+tests/production/security/test_security.py sssssss                       [100%]
+
+============================== 7 skipped in 0.02s ==============================
+exit=0
+=== tests/integration/test_brain_v3_cognitive.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 6 items
+
+tests/integration/test_brain_v3_cognitive.py ......                      [100%]
+
+=============================== warnings summary ===============================
+tests/integration/test_brain_v3_cognitive.py::TestBrainV3CognitivePipeline::test_brain_v3_has_cognitive_components
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/integration/test_brain_v3_cognitive.py::TestBrainV3CognitivePipeline::test_brain_v3_has_cognitive_components
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+tests/integration/test_brain_v3_cognitive.py::TestBrainV3CognitivePipeline::test_brain_v3_has_cognitive_components
+  /home/ubuntu/ai-chat-review/brain/brain_v3.py:58: DeprecationWarning: brain.evolution is deprecated. Use brain.reflection directly.
+    from .evolution.phase7_lifecycle import EvolutionLifecycle, EvolutionRecord
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 6 passed, 3 warnings in 1.45s =========================
+exit=0
+=== tests/integration/test_phase3_rag_runtime.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 6 items
+
+tests/integration/test_phase3_rag_runtime.py ssssss                      [100%]
+
+============================== 6 skipped in 0.75s ==============================
+exit=0
+=== tests/integration/test_rag_pipeline.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 9 items
+
+tests/integration/test_rag_pipeline.py s.......s                         [100%]/usr/local/lib/python3.12/dist-packages/_pytest/unraisableexception.py:33: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+  gc.collect()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+
+
+=============================== warnings summary ===============================
+tests/integration/test_rag_pipeline.py::TestRAGPipelineIntegration::test_full_rag_query_without_llm
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/integration/test_rag_pipeline.py::TestRAGPipelineIntegration::test_full_rag_query_without_llm
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================== 7 passed, 2 skipped, 2 warnings in 0.62s ===================
+exit=0
+=== tests/integration/test_verified_base_registry.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 3 items
+
+tests/integration/test_verified_base_registry.py ...                     [100%]
+
+=============================== warnings summary ===============================
+tests/integration/test_verified_base_registry.py::test_verified_manifest_and_sharded_artifact
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/integration/test_verified_base_registry.py::test_verified_manifest_and_sharded_artifact
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 3 passed, 2 warnings in 0.42s =========================
+exit=0
+=== tests/unit/test_registry.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 11 items
+
+tests/unit/test_registry.py ...........                                  [100%]
+
+=============================== warnings summary ===============================
+tests/unit/test_registry.py::test_register_channel
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/unit/test_registry.py::test_register_channel
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 11 passed, 2 warnings in 0.18s ========================
+exit=0

@@ -45,6 +45,10 @@ def test(name: str):
     return decorator
 
 
+# This helper is a decorator factory, not an independent pytest test.
+test.__test__ = False
+
+
 def run(coro):
     return asyncio.run(coro)
 
@@ -155,9 +159,8 @@ def test_embedding_config():
     assert cfg.dimensions == 384
     assert cfg.batch_size == 32
     assert cfg.normalize_embeddings is True
-test_embedding_config()
-
-
+if __name__ == "__main__":
+    test_embedding_config()
 @test("7.1.2 SentenceTransformer load & embed")
 def test_st_embed():
     from core.embeddings.sentence_transformer import SentenceTransformerModel
@@ -166,9 +169,8 @@ def test_st_embed():
     assert len(result.vector) > 0
     assert result.dimensions > 0
     print(f"     → dims={result.dimensions} latency={result.latency_ms:.1f}ms", end="")
-test_st_embed()
-
-
+if __name__ == "__main__":
+    test_st_embed()
 @test("7.1.3 Batch Embedding (10 texts)")
 def test_st_batch():
     from core.embeddings.sentence_transformer import SentenceTransformerModel
@@ -178,18 +180,16 @@ def test_st_batch():
     assert len(results) == 10
     assert all(len(r.vector) == results[0].dimensions for r in results)
     print(f"     → {len(results)} embeddings, dims={results[0].dimensions}", end="")
-test_st_batch()
-
-
+if __name__ == "__main__":
+    test_st_batch()
 @test("7.1.4 EmbeddingRegistry.list_models()")
 def test_registry():
     from core.embeddings.embedding_registry import EmbeddingRegistry
     models = EmbeddingRegistry.list_models()
     assert len(models) >= 1
     assert "all-MiniLM-L6-v2" in models
-test_registry()
-
-
+if __name__ == "__main__":
+    test_registry()
 @test("7.1.5 EmbeddingManager singleton + health_check")
 def test_manager_health():
     from core.embeddings.embedding_manager import get_embedding_manager
@@ -200,9 +200,8 @@ def test_manager_health():
     assert health["status"] == "ok"
     assert health["dimensions"] > 0
     print(f"     → {health['dimensions']} dims", end="")
-test_manager_health()
-
-
+if __name__ == "__main__":
+    test_manager_health()
 @test("7.1.6 Embed 100 texts — performance")
 def test_embed_100():
     from core.embeddings.embedding_manager import get_embedding_manager
@@ -213,8 +212,8 @@ def test_embed_100():
     ms = (time.perf_counter() - t0) * 1000
     assert len(results) == 100
     print(f"     → 100 embeddings في {ms:.0f}ms ({ms/100:.1f}ms/text)", end="")
-test_embed_100()
-
+if __name__ == "__main__":
+    test_embed_100()
 # ═══════════════════════════════════════════════════════════════════════════
 # Section 7.2 — Chunk Embedding Pipeline
 # ═══════════════════════════════════════════════════════════════════════════
@@ -231,9 +230,8 @@ def test_embed_stage_single():
     assert record is not None
     assert len(record.vector) > 0
     assert record.embedding_dim > 0
-test_embed_stage_single()
-
-
+if __name__ == "__main__":
+    test_embed_stage_single()
 @test("7.2.2 ChunkEmbeddingStage — batch 10 chunks")
 def test_embed_stage_batch():
     from data_engine.pipelines.stages.embed_stage import ChunkEmbeddingStage
@@ -244,9 +242,8 @@ def test_embed_stage_batch():
     assert result.failed == 0
     assert len(result.records) == 10
     print(f"     → {result.embedded} embedded في {result.total_ms:.1f}ms", end="")
-test_embed_stage_batch()
-
-
+if __name__ == "__main__":
+    test_embed_stage_batch()
 @test("7.2.3 ChunkEmbeddingRecord fields")
 def test_embed_record_fields():
     from data_engine.pipelines.stages.embed_stage import ChunkEmbeddingStage
@@ -259,8 +256,8 @@ def test_embed_record_fields():
     assert record.model_name != ""
     assert record.embedding_dim > 0
     assert record.latency_ms >= 0
-test_embed_record_fields()
-
+if __name__ == "__main__":
+    test_embed_record_fields()
 # ═══════════════════════════════════════════════════════════════════════════
 # Section 7.3 — Vector Storage (FAISS + SQLite)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -288,9 +285,8 @@ def test_faiss_add():
     assert added == 100
     assert store.stats().total_vectors == 100
     print(f"     → {store.stats().total_vectors} vectors في FAISS", end="")
-test_faiss_add()
-
-
+if __name__ == "__main__":
+    test_faiss_add()
 @test("7.3.2 FAISSVectorStore — similarity search top-5")
 def test_faiss_search():
     import numpy as np
@@ -310,9 +306,8 @@ def test_faiss_search():
     scores = [r.score for r in results]
     assert scores == sorted(scores, reverse=True)
     print(f"     → top-5: {[round(s,3) for s in scores[:3]]}", end="")
-test_faiss_search()
-
-
+if __name__ == "__main__":
+    test_faiss_search()
 @test("7.3.3 FAISSVectorStore — save & load")
 def test_faiss_save_load():
     import tempfile, os
@@ -333,9 +328,8 @@ def test_faiss_save_load():
         store2 = FAISSVectorStore(dimensions=16)
         store2.load(path)
         assert store2.stats().total_vectors == 10
-test_faiss_save_load()
-
-
+if __name__ == "__main__":
+    test_faiss_save_load()
 @test("7.3.4 SQLiteVectorIndex — add & cosine search")
 def test_sqlite_vector():
     import tempfile
@@ -354,9 +348,8 @@ def test_sqlite_vector():
         q = rng.standard_normal(32).tolist()
         results = store.search(q, top_k=5)
         assert len(results) == 5
-test_sqlite_vector()
-
-
+if __name__ == "__main__":
+    test_sqlite_vector()
 @test("7.3.5 FAISSVectorStore — metadata filtering")
 def test_faiss_filter():
     import numpy as np
@@ -373,8 +366,8 @@ def test_faiss_filter():
     q = rng.standard_normal(16).tolist()
     results = store.search(q, top_k=5, filter_metadata={"category": "ai"})
     assert all(r.metadata.get("category") == "ai" for r in results)
-test_faiss_filter()
-
+if __name__ == "__main__":
+    test_faiss_filter()
 # ═══════════════════════════════════════════════════════════════════════════
 # Section 7.4 — Semantic Search Engine
 # (نبني engine مشترك)
@@ -382,8 +375,15 @@ test_faiss_filter()
 
 print("\n\n[7.4 Semantic Search Engine]")
 
-_CHUNKS = _make_chunks(10)
-_ENGINE = run(_build_search_engine(_CHUNKS))
+_CHUNKS = []
+_ENGINE = None
+
+# The legacy Phase 7 runner is executable as a script.  Keep its expensive
+# embedding/search setup out of pytest import/collection; pytest must not
+# download or initialize external models merely by collecting tests.
+if __name__ == "__main__":
+    _CHUNKS = _make_chunks(10)
+    _ENGINE = run(_build_search_engine(_CHUNKS))
 
 
 @test("7.4.1 QueryProcessor — Arabic question detection")
@@ -394,9 +394,8 @@ def test_query_processor():
     assert result.is_question is True
     assert result.language == "ar"
     assert len(result.keywords) > 0
-test_query_processor()
-
-
+if __name__ == "__main__":
+    test_query_processor()
 @test("7.4.2 SemanticSearchEngine — basic search")
 def test_semantic_search_basic():
     response = run(_ENGINE.search("الذكاء الاصطناعي", top_k=3))
@@ -404,9 +403,8 @@ def test_semantic_search_basic():
     assert response.search_time_ms > 0
     assert len(response.hits) <= 3
     print(f"     → {response.total_found} نتيجة في {response.search_time_ms:.1f}ms", end="")
-test_semantic_search_basic()
-
-
+if __name__ == "__main__":
+    test_semantic_search_basic()
 @test("7.4.3 SearchResponse fields validation")
 def test_search_response_fields():
     response = run(_ENGINE.search("تعلم الآلة", top_k=5))
@@ -417,9 +415,8 @@ def test_search_response_fields():
         assert hit.chunk_id
         assert hit.article_id
         assert hit.score >= 0
-test_search_response_fields()
-
-
+if __name__ == "__main__":
+    test_search_response_fields()
 @test("7.4.4 Reranker — diversity penalty")
 def test_reranker():
     from services.search.reranker import Reranker
@@ -434,16 +431,15 @@ def test_reranker():
     assert len(reranked) == 5
     art0_count = sum(1 for r in reranked if r.article_id == "art_0")
     assert art0_count <= 2
-test_reranker()
-
-
+if __name__ == "__main__":
+    test_reranker()
 @test("7.4.5 Hybrid Search")
 def test_hybrid_search():
     response = run(_ENGINE.hybrid_search("FAISS vector", top_k=5))
     assert response.search_type == "hybrid"
     assert response.total_found > 0
-test_hybrid_search()
-
+if __name__ == "__main__":
+    test_hybrid_search()
 # ═══════════════════════════════════════════════════════════════════════════
 # Section 7.5 — Retriever Layer
 # ═══════════════════════════════════════════════════════════════════════════
@@ -459,9 +455,8 @@ def test_vector_retriever():
     assert result.total_retrieved > 0
     assert result.retriever_name == "VectorRetriever"
     print(f"     → {result.total_retrieved} chunks في {result.retrieval_time_ms:.1f}ms", end="")
-test_vector_retriever()
-
-
+if __name__ == "__main__":
+    test_vector_retriever()
 @test("7.5.2 HybridRetriever")
 def test_hybrid_retriever():
     from services.retrieval.hybrid_retriever import HybridRetriever
@@ -469,9 +464,8 @@ def test_hybrid_retriever():
     result = run(retriever.retrieve("RAG استرجاع", top_k=5))
     assert result.retriever_name == "HybridRetriever"
     assert result.total_retrieved > 0
-test_hybrid_retriever()
-
-
+if __name__ == "__main__":
+    test_hybrid_retriever()
 @test("7.5.3 MultiQueryRetriever — variant generation")
 def test_multi_query_retriever():
     from services.retrieval.multi_query_retriever import MultiQueryRetriever
@@ -480,9 +474,8 @@ def test_multi_query_retriever():
     assert result.retriever_name == "MultiQueryRetriever"
     assert result.metadata.get("num_variants", 0) >= 1
     print(f"     → {result.metadata.get('num_variants')} variants → {result.total_retrieved} chunks", end="")
-test_multi_query_retriever()
-
-
+if __name__ == "__main__":
+    test_multi_query_retriever()
 @test("7.5.4 ContextAssembler — build context")
 def test_context_assembler():
     from services.retrieval.vector_retriever import VectorRetriever
@@ -494,9 +487,8 @@ def test_context_assembler():
     assert len(context.context_text) > 0
     assert context.query == "البحث الدلالي"
     print(f"     → {len(context.context_text)} حرف", end="")
-test_context_assembler()
-
-
+if __name__ == "__main__":
+    test_context_assembler()
 @test("7.5.5 RetrievalResult.to_context_text()")
 def test_retrieval_to_text():
     from services.retrieval.vector_retriever import VectorRetriever
@@ -505,8 +497,8 @@ def test_retrieval_to_text():
     text = result.to_context_text()
     assert isinstance(text, str)
     assert len(text) > 0
-test_retrieval_to_text()
-
+if __name__ == "__main__":
+    test_retrieval_to_text()
 # ═══════════════════════════════════════════════════════════════════════════
 # Section 7.6 — RAG Pipeline
 # ═══════════════════════════════════════════════════════════════════════════
@@ -532,9 +524,8 @@ def test_rag_basic():
     assert len(response.formatted.context_used) > 0
     assert len(response.formatted.prompt_ready) > 100
     print(f"     → {len(response.formatted.citations)} مصادر، context={len(response.formatted.context_used)} حرف", end="")
-test_rag_basic()
-
-
+if __name__ == "__main__":
+    test_rag_basic()
 @test("7.6.2 RAGPipeline — stage timings present")
 def test_rag_timings():
     from services.rag.rag_pipeline import RAGRequest
@@ -543,9 +534,8 @@ def test_rag_timings():
     assert "retrieval_ms" in response.stage_timings
     assert "prompt_build_ms" in response.stage_timings
     assert all(v >= 0 for v in response.stage_timings.values())
-test_rag_timings()
-
-
+if __name__ == "__main__":
+    test_rag_timings()
 @test("7.6.3 ContextBuilder — token limit respected")
 def test_context_builder():
     from services.retrieval.vector_retriever import VectorRetriever
@@ -557,9 +547,8 @@ def test_context_builder():
     builder = ContextBuilder(max_tokens=50)
     built = builder.build(assembled)
     assert built.total_tokens_estimate <= 50
-test_context_builder()
-
-
+if __name__ == "__main__":
+    test_context_builder()
 @test("7.6.4 PromptBuilder — Arabic QA template")
 def test_prompt_builder():
     from services.retrieval.vector_retriever import VectorRetriever
@@ -575,9 +564,8 @@ def test_prompt_builder():
     assert len(prompt.prompt) > 50
     assert prompt.template_used != ""
     assert "ما هو" in prompt.prompt
-test_prompt_builder()
-
-
+if __name__ == "__main__":
+    test_prompt_builder()
 @test("7.6.5 CitationManager — format references")
 def test_citation_manager():
     from services.rag.citation_manager import CitationManager
@@ -591,16 +579,15 @@ def test_citation_manager():
     mgr.add_from_chunks(chunks)
     assert len(mgr.get_all()) == 3
     assert "المصادر" in mgr.format_references()
-test_citation_manager()
-
-
+if __name__ == "__main__":
+    test_citation_manager()
 @test("7.6.6 RAGPipeline.quick_context()")
 def test_rag_quick_context():
     context = run(_RAG.quick_context("تخزين المتجهات", top_k=3))
     assert isinstance(context, str)
     assert len(context) > 0
-test_rag_quick_context()
-
+if __name__ == "__main__":
+    test_rag_quick_context()
 # ═══════════════════════════════════════════════════════════════════════════
 # Section 7.9 — Search Metrics
 # ═══════════════════════════════════════════════════════════════════════════
@@ -618,9 +605,8 @@ def test_latency_tracker():
     assert stats["count"] == 5
     assert stats["mean_ms"] == approx(30.0, abs_tol=0.01)
     assert stats["min_ms"] == approx(10.0, abs_tol=0.01)
-test_latency_tracker()
-
-
+if __name__ == "__main__":
+    test_latency_tracker()
 @test("7.9.2 RetrievalEvaluator — precision & recall")
 def test_retrieval_evaluator():
     from monitoring.search_metrics.retrieval_evaluator import RetrievalEvaluator
@@ -631,18 +617,16 @@ def test_retrieval_evaluator():
     assert result.precision_at_k == approx(3/5)
     assert result.recall_at_k == approx(3/3)
     assert result.mrr > 0
-test_retrieval_evaluator()
-
-
+if __name__ == "__main__":
+    test_retrieval_evaluator()
 @test("7.9.3 RetrievalEvaluator — duplicate detection")
 def test_dup_rate():
     from monitoring.search_metrics.retrieval_evaluator import RetrievalEvaluator
     ev = RetrievalEvaluator()
     result = ev.evaluate("q", ["a", "a", "b", "b", "c"])
     assert result.duplicate_rate == approx(0.4)
-test_dup_rate()
-
-
+if __name__ == "__main__":
+    test_dup_rate()
 @test("7.9.4 SearchMetricsCollector — summary")
 def test_metrics_collector():
     from monitoring.search_metrics.metrics_collector import SearchMetricsCollector
@@ -654,9 +638,8 @@ def test_metrics_collector():
     summary = coll.summary()
     assert summary["counters"]["search.semantic"] == 5
     assert "latency_per_operation" in summary
-test_metrics_collector()
-
-
+if __name__ == "__main__":
+    test_metrics_collector()
 @test("7.9.5 RetrievalEvaluator — batch evaluation")
 def test_batch_eval():
     from monitoring.search_metrics.retrieval_evaluator import RetrievalEvaluator
@@ -669,8 +652,8 @@ def test_batch_eval():
     metrics = ev.batch_evaluate(queries)
     assert metrics["num_queries"] == 10
     assert "mean_ndcg" in metrics
-test_batch_eval()
-
+if __name__ == "__main__":
+    test_batch_eval()
 # ═══════════════════════════════════════════════════════════════════════════
 # Section 7.10 — Full Integration
 # ═══════════════════════════════════════════════════════════════════════════
@@ -736,9 +719,8 @@ def test_full_pipeline():
         )
 
     run(_run())
-test_full_pipeline()
-
-
+if __name__ == "__main__":
+    test_full_pipeline()
 @test("7.10.2 Full RAG pipeline end-to-end")
 def test_full_rag():
     from services.retrieval.multi_query_retriever import MultiQueryRetriever
@@ -762,24 +744,25 @@ def test_full_rag():
         f"\n       • جاهز للـ LLM ✓",
         end=""
     )
-test_full_rag()
-
+if __name__ == "__main__":
+    test_full_rag()
 # ═══════════════════════════════════════════════════════════════════════════
 # النتائج
 # ═══════════════════════════════════════════════════════════════════════════
+if __name__ == "__main__":
 
-total = len(_results)
-passed = sum(1 for _, ok, _ in _results if ok)
-failed_list = [(name, err) for name, ok, err in _results if not ok]
+    total = len(_results)
+    passed = sum(1 for _, ok, _ in _results if ok)
+    failed_list = [(name, err) for name, ok, err in _results if not ok]
 
-print(f"\n\n{'═'*60}")
-print(f"  النتيجة: {passed}/{total} اختبارات ناجحة")
-if failed_list:
-    print(f"  الفاشلة ({len(failed_list)}):")
-    for name, err in failed_list:
-        print(f"    • {name}: {err}")
-else:
-    print(f"  ✅ جميع الاختبارات ناجحة — Phase 7 جاهز للـ LLM!")
-print("═" * 60)
+    print(f"\n\n{'═'*60}")
+    print(f"  النتيجة: {passed}/{total} اختبارات ناجحة")
+    if failed_list:
+        print(f"  الفاشلة ({len(failed_list)}):")
+        for name, err in failed_list:
+            print(f"    • {name}: {err}")
+    else:
+        print(f"  ✅ جميع الاختبارات ناجحة — Phase 7 جاهز للـ LLM!")
+    print("═" * 60)
 
-sys.exit(0 if not failed_list else 1)
+    sys.exit(0 if not failed_list else 1)

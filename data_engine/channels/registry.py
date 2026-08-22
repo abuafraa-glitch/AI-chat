@@ -213,12 +213,12 @@ class ChannelRegistry:
     def register(cls, channel: BaseChannel, actor: str = "system") -> None:
         """تسجيل قناة وحفظها في SQLite مع audit log."""
         if not isinstance(channel, BaseChannel):
-            raise ChannelException("كائن القناة غير صالح للتسجيل.")
+            raise ChannelException("Invalid channel object: كائن القناة غير صالح للتسجيل.")
 
         cid = channel.config.id
         with cls._lock:
             if cid in cls._channels:
-                raise ChannelException(f"القناة '{cid}' مسجّلة بالفعل.")
+                raise ChannelException(f"Channel already registered: القناة '{cid}' مسجّلة بالفعل.")
             cls._channels[cid] = channel
 
         _save_channel_to_db(channel.config)
@@ -239,7 +239,7 @@ class ChannelRegistry:
         """إلغاء تسجيل القناة وحذفها من SQLite."""
         with cls._lock:
             if channel_id not in cls._channels:
-                raise ChannelException(f"القناة '{channel_id}' غير موجودة.")
+                raise ChannelException(f"Channel not found for unregistration: القناة '{channel_id}' غير موجودة.")
             del cls._channels[channel_id]
 
         _delete_channel_from_db(channel_id)
@@ -263,7 +263,7 @@ class ChannelRegistry:
         with cls._lock:
             channel = cls._channels.get(channel_id)
             if not channel:
-                raise ChannelException(f"القناة '{channel_id}' غير موجودة لتحديث الحالة.")
+                raise ChannelException(f"Channel not found for status update: القناة '{channel_id}' غير موجودة لتحديث الحالة.")
             old_status = channel.config.status
             channel.update_status(new_status)
 

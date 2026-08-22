@@ -1,0 +1,8250 @@
+{
+  "files": 791,
+  "parse_errors": 0,
+  "layer_edges": [
+    {
+      "from": "api",
+      "to": "brain",
+      "count": 11
+    },
+    {
+      "from": "api",
+      "to": "core",
+      "count": 17
+    },
+    {
+      "from": "api",
+      "to": "data_engine",
+      "count": 19
+    },
+    {
+      "from": "api",
+      "to": "database",
+      "count": 1
+    },
+    {
+      "from": "api",
+      "to": "hajeen_model",
+      "count": 5
+    },
+    {
+      "from": "api",
+      "to": "security",
+      "count": 4
+    },
+    {
+      "from": "api",
+      "to": "services",
+      "count": 11
+    },
+    {
+      "from": "api",
+      "to": "workers",
+      "count": 4
+    },
+    {
+      "from": "brain",
+      "to": "core",
+      "count": 19
+    },
+    {
+      "from": "brain",
+      "to": "data_engine",
+      "count": 1
+    },
+    {
+      "from": "brain",
+      "to": "services",
+      "count": 3
+    },
+    {
+      "from": "brain",
+      "to": "workers",
+      "count": 2
+    },
+    {
+      "from": "core",
+      "to": "brain",
+      "count": 3
+    },
+    {
+      "from": "core",
+      "to": "config",
+      "count": 2
+    },
+    {
+      "from": "core",
+      "to": "hajeen_model",
+      "count": 1
+    },
+    {
+      "from": "data_engine",
+      "to": "core",
+      "count": 1
+    },
+    {
+      "from": "data_engine",
+      "to": "services",
+      "count": 1
+    },
+    {
+      "from": "data_engine",
+      "to": "workers",
+      "count": 1
+    },
+    {
+      "from": "demo_pipeline.py",
+      "to": "data_engine",
+      "count": 4
+    },
+    {
+      "from": "demo_rag.py",
+      "to": "data_engine",
+      "count": 4
+    },
+    {
+      "from": "demo_rag.py",
+      "to": "services",
+      "count": 4
+    },
+    {
+      "from": "diagnose_learning_hang.py",
+      "to": "brain",
+      "count": 1
+    },
+    {
+      "from": "diagnose_pipeline.py",
+      "to": "data_engine",
+      "count": 2
+    },
+    {
+      "from": "hajeen_model",
+      "to": "core",
+      "count": 1
+    },
+    {
+      "from": "measure_learning_similarity.py",
+      "to": "core",
+      "count": 1
+    },
+    {
+      "from": "scripts",
+      "to": "core",
+      "count": 5
+    },
+    {
+      "from": "scripts",
+      "to": "data_engine",
+      "count": 2
+    },
+    {
+      "from": "scripts",
+      "to": "hajeen_model",
+      "count": 6
+    },
+    {
+      "from": "services",
+      "to": "brain",
+      "count": 9
+    },
+    {
+      "from": "services",
+      "to": "core",
+      "count": 23
+    },
+    {
+      "from": "services",
+      "to": "data_engine",
+      "count": 2
+    },
+    {
+      "from": "tests",
+      "to": "api",
+      "count": 4
+    },
+    {
+      "from": "tests",
+      "to": "brain",
+      "count": 109
+    },
+    {
+      "from": "tests",
+      "to": "configs",
+      "count": 10
+    },
+    {
+      "from": "tests",
+      "to": "core",
+      "count": 108
+    },
+    {
+      "from": "tests",
+      "to": "data_engine",
+      "count": 343
+    },
+    {
+      "from": "tests",
+      "to": "hajeen_model",
+      "count": 9
+    },
+    {
+      "from": "tests",
+      "to": "security",
+      "count": 42
+    },
+    {
+      "from": "tests",
+      "to": "services",
+      "count": 128
+    },
+    {
+      "from": "tests",
+      "to": "workers",
+      "count": 29
+    },
+    {
+      "from": "train_hajeen_cloud.py",
+      "to": "hajeen_model",
+      "count": 2
+    },
+    {
+      "from": "train_rlhf_ppo.py",
+      "to": "core",
+      "count": 4
+    },
+    {
+      "from": "workers",
+      "to": "brain",
+      "count": 3
+    },
+    {
+      "from": "workers",
+      "to": "core",
+      "count": 6
+    },
+    {
+      "from": "workers",
+      "to": "data_engine",
+      "count": 21
+    },
+    {
+      "from": "workers",
+      "to": "services",
+      "count": 3
+    }
+  ],
+  "modules": {
+    "__init__.py": {
+      "imports": []
+    },
+    "api/__init__.py": {
+      "imports": []
+    },
+    "api/dependencies.py": {
+      "imports": [
+        "__future__",
+        "data_engine.storage.storage_manager",
+        "fastapi",
+        "functools",
+        "logging",
+        "typing"
+      ]
+    },
+    "api/main.py": {
+      "imports": [
+        "__future__",
+        "api.v1.ai.router",
+        "api.v1.ai.websocket",
+        "api.v1.auth.router",
+        "api.v1.embeddings.router",
+        "api.v1.hajeen_model_router",
+        "api.v1.router",
+        "api.v1.search.router",
+        "api.v1.tasks.router",
+        "brain.brain_v3",
+        "brain.prompts.unified_prompt_builder",
+        "core.embeddings.embedding_manager",
+        "core.inference_engine.engine",
+        "core.llm.llm_manager",
+        "core.llm.provider_registry",
+        "core.llm.providers.mistral_finetuned_provider",
+        "data_engine.channels.registry",
+        "data_engine.storage.storage_manager",
+        "data_engine.storage.vector_store.base_vector_store",
+        "data_engine.storage.vector_store.faiss_client",
+        "database.models",
+        "fastapi",
+        "fastapi.exceptions",
+        "fastapi.middleware.cors",
+        "fastapi.responses",
+        "logging",
+        "logging.config",
+        "monitoring.ai_metrics.ai_metrics_collector",
+        "os",
+        "pathlib",
+        "security.middleware.auth_middleware",
+        "services.rag.rag_pipeline",
+        "services.redis.redis_service",
+        "services.retrieval.hybrid_retriever",
+        "services.retrieval.vector_retriever",
+        "services.search.semantic_search",
+        "starlette.exceptions",
+        "time",
+        "traceback",
+        "typing",
+        "uuid",
+        "uvicorn",
+        "yaml"
+      ]
+    },
+    "api/v1/__init__.py": {
+      "imports": []
+    },
+    "api/v1/ai/__init__.py": {
+      "imports": []
+    },
+    "api/v1/ai/chat.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain",
+        "core.llm.base",
+        "fastapi",
+        "fastapi.responses",
+        "json",
+        "pydantic",
+        "services.moderation_service",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "api/v1/ai/completion.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.brain_v3",
+        "core.llm.base",
+        "fastapi",
+        "fastapi.responses",
+        "json",
+        "logging",
+        "pydantic",
+        "time",
+        "typing"
+      ]
+    },
+    "api/v1/ai/embeddings.py": {
+      "imports": [
+        "__future__",
+        "fastapi",
+        "pydantic",
+        "services.embedding_service",
+        "time",
+        "typing"
+      ]
+    },
+    "api/v1/ai/health.py": {
+      "imports": [
+        "__future__",
+        "core.utils.gpu_utils",
+        "fastapi",
+        "pydantic",
+        "time",
+        "typing"
+      ]
+    },
+    "api/v1/ai/models.py": {
+      "imports": [
+        "__future__",
+        "core.model.model_registry",
+        "fastapi",
+        "pydantic",
+        "time",
+        "typing"
+      ]
+    },
+    "api/v1/ai/rerank.py": {
+      "imports": [
+        "__future__",
+        "fastapi",
+        "pydantic",
+        "services.rag.reranker",
+        "services.rag.retriever",
+        "time",
+        "typing"
+      ]
+    },
+    "api/v1/ai/router.py": {
+      "imports": [
+        "__future__",
+        "api.v1.ai.embeddings",
+        "api.v1.ai.health",
+        "api.v1.ai.rerank",
+        "asyncio",
+        "brain.brain_v3",
+        "core.llm.base",
+        "fastapi",
+        "fastapi.responses",
+        "hajeen_model.evaluation.evaluation_framework",
+        "json",
+        "logging",
+        "pydantic",
+        "typing",
+        "uuid"
+      ]
+    },
+    "api/v1/ai/websocket.py": {
+      "imports": [
+        "__future__",
+        "fastapi",
+        "json",
+        "logging",
+        "services.chat.chat_service",
+        "typing",
+        "uuid"
+      ]
+    },
+    "api/v1/auth/__init__.py": {
+      "imports": [
+        "api.v1.auth.router"
+      ]
+    },
+    "api/v1/auth/router.py": {
+      "imports": [
+        "__future__",
+        "fastapi",
+        "hashlib",
+        "logging",
+        "os",
+        "pydantic",
+        "security.auth.api_key_manager",
+        "security.auth.jwt_auth",
+        "security.auth.revoked_tokens",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "api/v1/channels/__init__.py": {
+      "imports": []
+    },
+    "api/v1/channels/router.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.builder",
+        "data_engine.channels.registry",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.storage.storage_manager",
+        "fastapi",
+        "logging",
+        "pydantic",
+        "shared.schemas.channel",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "api/v1/embeddings/__init__.py": {
+      "imports": []
+    },
+    "api/v1/embeddings/router.py": {
+      "imports": [
+        "__future__",
+        "core.embeddings.embedding_manager",
+        "core.embeddings.embedding_registry",
+        "fastapi",
+        "logging",
+        "pydantic",
+        "time",
+        "typing"
+      ]
+    },
+    "api/v1/hajeen_model_router.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.brain_v3",
+        "core.llm.base",
+        "fastapi",
+        "fastapi.responses",
+        "hajeen_model.training_pipeline",
+        "httpx",
+        "json",
+        "logging",
+        "pathlib",
+        "pydantic",
+        "time",
+        "typing",
+        "uuid",
+        "yaml"
+      ]
+    },
+    "api/v1/ingestion/__init__.py": {
+      "imports": []
+    },
+    "api/v1/router.py": {
+      "imports": [
+        "__future__",
+        "api.v1.channels.router",
+        "fastapi"
+      ]
+    },
+    "api/v1/search/__init__.py": {
+      "imports": []
+    },
+    "api/v1/search/router.py": {
+      "imports": [
+        "__future__",
+        "api.main",
+        "fastapi",
+        "logging",
+        "pydantic",
+        "services.rag.rag_pipeline",
+        "time",
+        "typing"
+      ]
+    },
+    "api/v1/tasks/__init__.py": {
+      "imports": []
+    },
+    "api/v1/tasks/router.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.registry",
+        "data_engine.ingestion.schedulers.cron_scheduler",
+        "data_engine.storage.metadata_store.job_store",
+        "fastapi",
+        "logging",
+        "monitoring.task_monitor",
+        "pydantic",
+        "typing",
+        "workers.celery_app",
+        "workers.tasks.ingestion_tasks",
+        "workers.tasks.pipeline_tasks"
+      ]
+    },
+    "api/v1/webhooks/__init__.py": {
+      "imports": []
+    },
+    "brain/__init__.py": {
+      "imports": [
+        "__future__",
+        "importlib"
+      ]
+    },
+    "brain/api/__init__.py": {
+      "imports": [
+        ".brain_router"
+      ]
+    },
+    "brain/api/brain_router.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.brain_v3",
+        "core.llm.base",
+        "fastapi",
+        "fastapi.responses",
+        "json",
+        "logging",
+        "pydantic",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/brain_v3.py": {
+      "imports": [
+        ".cognitive_layer.context_analyzer",
+        ".cognitive_layer.intent_analyzer",
+        ".cognitive_layer.reasoning_engine",
+        ".decision_engine",
+        ".evolution.phase7_lifecycle",
+        ".goal_manager",
+        ".graph_planner",
+        ".improvement.autonomous_improvement",
+        ".knowledge.knowledge_distillation",
+        ".knowledge.knowledge_graph",
+        ".memory.memory_fabric",
+        ".metrics.model_performance_db",
+        ".model_router",
+        ".multi_model",
+        ".policy.policy_engine",
+        ".reflection.self_evolution",
+        ".reflection.self_reflection",
+        ".sovereignty.sovereignty_layer",
+        ".state_machine",
+        ".task_decomposer",
+        "__future__",
+        "asyncio",
+        "brain.prompts.unified_prompt_builder",
+        "dataclasses",
+        "enum",
+        "inspect",
+        "logging",
+        "services.agents.agent_orchestrator",
+        "services.agents.planner_agent",
+        "services.rag.rag_pipeline",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/__init__.py": {
+      "imports": [
+        ".cognitive_compiler",
+        ".cognitive_constitution",
+        ".cognitive_dna",
+        ".cognitive_event_system",
+        ".cognitive_evolution_protocol",
+        ".cognitive_version_control",
+        ".concept_engine",
+        ".context_analyzer",
+        ".curiosity_engine",
+        ".dream_engine",
+        ".evidence_court",
+        ".experience_memory",
+        ".experiment_engine",
+        ".hypothesis_engine",
+        ".intent_analyzer",
+        ".knowledge_physics_engine",
+        ".meta_brain",
+        ".model_society",
+        ".reasoning_engine",
+        ".world_model"
+      ]
+    },
+    "brain/cognitive_layer/cognitive_compiler.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/cognitive_constitution.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/cognitive_dna.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/cognitive_event_system.py": {
+      "imports": [
+        "collections",
+        "datetime",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/cognitive_evolution_protocol.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/cognitive_version_control.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/concept_engine.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/context_analyzer.py": {
+      "imports": [
+        "__future__",
+        "brain.memory.memory_fabric",
+        "core.embeddings",
+        "core.llm",
+        "dataclasses",
+        "json",
+        "logging",
+        "numpy",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/curiosity_engine.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/decision_engine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "collections",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/cognitive_layer/dream_engine.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/evidence_court.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/experience_memory.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/experiment_engine.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/expert_models_layer.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "collections",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/cognitive_layer/hypothesis_engine.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/intent_analyzer.py": {
+      "imports": [
+        "__future__",
+        "core.llm",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/knowledge_physics_engine.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/meta_brain.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/model_society.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/cognitive_layer/planning_engine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/cognitive_layer/reasoning_engine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "collections",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/cognitive_layer/test_cognitive_components.py": {
+      "imports": [
+        "cognitive_compiler",
+        "cognitive_event_system",
+        "concept_engine",
+        "unittest"
+      ]
+    },
+    "brain/cognitive_layer/world_model.py": {
+      "imports": [
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/config.py": {
+      "imports": [
+        "__future__",
+        "enum",
+        "json",
+        "pathlib",
+        "pydantic",
+        "typing",
+        "yaml"
+      ]
+    },
+    "brain/decision_engine.py": {
+      "imports": [
+        ".goal_manager",
+        "__future__",
+        "core.llm.base",
+        "core.llm.llm_manager",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "workers.async_tasks"
+      ]
+    },
+    "brain/evolution/__init__.py": {
+      "imports": [
+        ".phase7_lifecycle",
+        ".self_evolution",
+        "__future__",
+        "brain.reflection.self_evolution",
+        "warnings"
+      ]
+    },
+    "brain/evolution/phase7_lifecycle.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "enum",
+        "inspect",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/evolution/self_evolution.py": {
+      "imports": [
+        "..reflection.self_reflection",
+        ".phase7_lifecycle",
+        "__future__",
+        "dataclasses",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/evolution/test_self_evolution.py": {
+      "imports": [
+        "asyncio",
+        "brain.evolution.self_evolution",
+        "brain.reflection.self_reflection",
+        "core.llm.base",
+        "json",
+        "unittest.mock"
+      ]
+    },
+    "brain/execution_trace.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "pathlib",
+        "structlog",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/goal_manager.py": {
+      "imports": [
+        ".llm_analyzer",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/graph_planner.py": {
+      "imports": [
+        ".task_decomposer",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/improvement/__init__.py": {
+      "imports": [
+        ".autonomous_improvement"
+      ]
+    },
+    "brain/improvement/autonomous_improvement.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/knowledge/__init__.py": {
+      "imports": [
+        ".knowledge_graph"
+      ]
+    },
+    "brain/knowledge/knowledge_distillation.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "pathlib",
+        "re",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/knowledge/knowledge_graph.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/learning/__init__.py": {
+      "imports": [
+        ".continuous_learning"
+      ]
+    },
+    "brain/learning/continuous_learning.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.embeddings",
+        "dataclasses",
+        "datasets",
+        "enum",
+        "hashlib",
+        "json",
+        "logging",
+        "math",
+        "nltk",
+        "nltk.translate.bleu_score",
+        "numpy",
+        "pathlib",
+        "peft",
+        "time",
+        "torch",
+        "transformers",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/learning/learning_lifecycle.py": {
+      "imports": [
+        ".phase6_lifecycle",
+        "__future__",
+        "core.model.model_registry",
+        "data_engine.lifecycle",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    "brain/learning/phase6_lifecycle.py": {
+      "imports": [
+        "__future__",
+        "core.model.artifact_validation",
+        "dataclasses",
+        "enum",
+        "hashlib",
+        "json",
+        "os",
+        "pathlib",
+        "platform",
+        "subprocess",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/llm_analyzer.py": {
+      "imports": [
+        "openai",
+        "os",
+        "pydantic",
+        "typing"
+      ]
+    },
+    "brain/memory/__init__.py": {
+      "imports": [
+        ".memory_fabric"
+      ]
+    },
+    "brain/memory/memory_fabric.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/memory/unified_interface.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.memory.memory_fabric",
+        "logging",
+        "typing"
+      ]
+    },
+    "brain/metrics/__init__.py": {
+      "imports": [
+        ".model_performance_db"
+      ]
+    },
+    "brain/metrics/model_performance_db.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/metrics_engine.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "structlog",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/model_router.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.llm.base",
+        "core.llm.provider_registry",
+        "core.model.model_registry",
+        "dataclasses",
+        "logging",
+        "os",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/multi_model.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "brain/policy/__init__.py": {
+      "imports": [
+        ".policy_engine"
+      ]
+    },
+    "brain/policy/policy_engine.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/prompts/__init__.py": {
+      "imports": [
+        ".unified_prompt_builder"
+      ]
+    },
+    "brain/prompts/unified_prompt_builder.py": {
+      "imports": [
+        "__future__",
+        "core.prompts.base",
+        "dataclasses",
+        "enum",
+        "logging",
+        "typing"
+      ]
+    },
+    "brain/reflection/__init__.py": {
+      "imports": [
+        ".self_evolution",
+        ".self_reflection"
+      ]
+    },
+    "brain/reflection/self_evolution.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/reflection/self_reflection.py": {
+      "imports": [
+        "..decision_engine",
+        "..goal_manager",
+        "..metrics.model_performance_db",
+        "..model_router",
+        "..policy.policy_engine",
+        "__future__",
+        "collections",
+        "dataclasses",
+        "json",
+        "logging",
+        "monitoring.metrics.prometheus_metrics",
+        "pathlib",
+        "time",
+        "typing",
+        "uuid",
+        "workers.async_tasks"
+      ]
+    },
+    "brain/reflection/test_self_reflection.py": {
+      "imports": [
+        "asyncio",
+        "brain.reflection.self_reflection"
+      ]
+    },
+    "brain/sovereignty/__init__.py": {
+      "imports": [
+        ".sovereignty_layer"
+      ]
+    },
+    "brain/sovereignty/sovereignty_layer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/state_machine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/task_decomposer.py": {
+      "imports": [
+        ".goal_manager",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "brain/tests/__init__.py": {
+      "imports": []
+    },
+    "brain/tests/test_brain_components.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.goal_manager",
+        "brain.graph_planner",
+        "brain.knowledge.knowledge_distillation",
+        "brain.memory.memory_fabric",
+        "brain.policy.policy_engine",
+        "brain.sovereignty.sovereignty_layer",
+        "brain.state_machine",
+        "brain.task_decomposer",
+        "os",
+        "pytest",
+        "sys"
+      ]
+    },
+    "cloud/__init__.py": {
+      "imports": [
+        ".cloud_sync",
+        ".dataset_manager",
+        ".hf_client",
+        ".model_manager"
+      ]
+    },
+    "cloud/cloud_sync.py": {
+      "imports": [
+        ".hf_client",
+        ".model_manager",
+        "__future__",
+        "datetime",
+        "dotenv",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "cloud/dataset_manager.py": {
+      "imports": [
+        ".hf_client",
+        "__future__",
+        "datasets",
+        "datetime",
+        "dotenv",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "cloud/hf_client.py": {
+      "imports": [
+        "__future__",
+        "dotenv",
+        "huggingface_hub",
+        "logging",
+        "os",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "cloud/model_manager.py": {
+      "imports": [
+        ".hf_client",
+        "__future__",
+        "datetime",
+        "dotenv",
+        "huggingface_hub",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "shutil",
+        "typing"
+      ]
+    },
+    "configs/__init__.py": {
+      "imports": []
+    },
+    "configs/redis.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "logging",
+        "os",
+        "redis",
+        "redis.asyncio",
+        "time",
+        "typing",
+        "urllib.parse"
+      ]
+    },
+    "core/__init__.py": {
+      "imports": []
+    },
+    "core/alignment/__init__.py": {
+      "imports": []
+    },
+    "core/alignment/alignment_pipeline.py": {
+      "imports": [
+        ".dpo_trainer",
+        ".evaluation_system",
+        ".ppo_trainer",
+        ".preference_dataset",
+        ".reward_model",
+        "__future__",
+        "logging",
+        "os",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "core/alignment/dpo_trainer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "pathlib",
+        "transformers",
+        "trl",
+        "typing"
+      ]
+    },
+    "core/alignment/evaluation_system.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/alignment/ppo_trainer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "pathlib",
+        "torch",
+        "transformers",
+        "trl",
+        "typing"
+      ]
+    },
+    "core/alignment/preference_dataset.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "json",
+        "logging",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "core/alignment/reward_model.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "torch",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/context_intelligence/context_engine.py": {
+      "imports": [
+        "__future__",
+        "core.context_intelligence.context_scoring",
+        "core.context_intelligence.semantic_memory",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/context_intelligence/context_scoring.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/context_intelligence/semantic_memory.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/distributed/gpu_scheduler.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "os",
+        "time",
+        "torch.distributed",
+        "typing"
+      ]
+    },
+    "core/distributed/kubernetes_runtime.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "kubernetes",
+        "kubernetes.client",
+        "logging",
+        "typing",
+        "yaml"
+      ]
+    },
+    "core/distributed/ray_runtime.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "os",
+        "ray",
+        "ray.util",
+        "typing"
+      ]
+    },
+    "core/embeddings/__init__.py": {
+      "imports": [
+        ".batch_embedder",
+        ".embedding_cache",
+        ".embedding_engine",
+        ".embedding_models",
+        ".similarity",
+        "core.embeddings.base",
+        "core.embeddings.embedding_manager",
+        "core.embeddings.embedding_registry"
+      ]
+    },
+    "core/embeddings/base.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "asyncio",
+        "dataclasses",
+        "time",
+        "typing"
+      ]
+    },
+    "core/embeddings/batch_embedder.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/embeddings/embedding_cache.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "hashlib",
+        "time",
+        "typing"
+      ]
+    },
+    "core/embeddings/embedding_engine.py": {
+      "imports": [
+        ".embedding_cache",
+        ".embedding_models",
+        "__future__",
+        "asyncio",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/embeddings/embedding_manager.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.embeddings.base",
+        "core.embeddings.embedding_registry",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "core/embeddings/embedding_models.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "math",
+        "sentence_transformers",
+        "torch",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/embeddings/embedding_registry.py": {
+      "imports": [
+        "__future__",
+        "core.embeddings.base",
+        "core.embeddings.sentence_transformer",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/embeddings/models/__init__.py": {
+      "imports": []
+    },
+    "core/embeddings/sentence_transformer.py": {
+      "imports": [
+        "__future__",
+        "core.embeddings.base",
+        "logging",
+        "numpy",
+        "os",
+        "pathlib",
+        "sentence_transformers",
+        "typing"
+      ]
+    },
+    "core/embeddings/similarity.py": {
+      "imports": [
+        "__future__",
+        "math",
+        "typing"
+      ]
+    },
+    "core/hf_integration/__init__.py": {
+      "imports": []
+    },
+    "core/hf_integration/data_cleaner.py": {
+      "imports": [
+        "datasets",
+        "logging",
+        "re",
+        "typing"
+      ]
+    },
+    "core/hf_integration/hub_manager.py": {
+      "imports": [
+        "datasets",
+        "huggingface_hub",
+        "logging",
+        "os",
+        "typing"
+      ]
+    },
+    "core/inference_engine/__init__.py": {
+      "imports": [
+        ".batching",
+        ".context_manager",
+        ".engine",
+        ".generation",
+        ".inference_config",
+        ".queue_manager",
+        ".request_handler",
+        ".response_handler",
+        ".response_parser",
+        ".sampler",
+        ".stopping",
+        ".stream_handler",
+        ".token_tracker"
+      ]
+    },
+    "core/inference_engine/batching.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "core/inference_engine/context_manager.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/inference_engine/engine.py": {
+      "imports": [
+        ".queue_manager",
+        ".request_handler",
+        ".response_handler",
+        ".stream_handler",
+        ".token_tracker",
+        "__future__",
+        "asyncio",
+        "core.llm.base",
+        "core.llm.llm_manager",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "core/inference_engine/generation.py": {
+      "imports": [
+        ".inference_config",
+        "__future__",
+        "asyncio",
+        "logging",
+        "threading",
+        "torch",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/inference_engine/inference_config.py": {
+      "imports": [
+        "__future__",
+        "pydantic",
+        "typing"
+      ]
+    },
+    "core/inference_engine/queue_manager.py": {
+      "imports": [
+        ".request_handler",
+        "__future__",
+        "asyncio",
+        "collections",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "core/inference_engine/request_handler.py": {
+      "imports": [
+        "__future__",
+        "core.llm.base",
+        "dataclasses",
+        "enum",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "core/inference_engine/response_handler.py": {
+      "imports": [
+        "__future__",
+        "core.llm.base",
+        "dataclasses",
+        "re",
+        "time",
+        "typing"
+      ]
+    },
+    "core/inference_engine/response_parser.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "re",
+        "typing"
+      ]
+    },
+    "core/inference_engine/sampler.py": {
+      "imports": [
+        "__future__",
+        "math",
+        "random",
+        "typing"
+      ]
+    },
+    "core/inference_engine/stopping.py": {
+      "imports": [
+        "__future__",
+        "typing"
+      ]
+    },
+    "core/inference_engine/stream_handler.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.llm.base",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "core/inference_engine/token_tracker.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "logging",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "core/llm/__init__.py": {
+      "imports": [
+        ".base",
+        ".config",
+        ".llm_manager",
+        ".provider_registry"
+      ]
+    },
+    "core/llm/base.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "aiobreaker",
+        "asyncio",
+        "dataclasses",
+        "datetime",
+        "tenacity",
+        "time",
+        "typing"
+      ]
+    },
+    "core/llm/config.py": {
+      "imports": [
+        ".base",
+        "__future__",
+        "dataclasses",
+        "os",
+        "typing"
+      ]
+    },
+    "core/llm/llm_manager.py": {
+      "imports": [
+        ".base",
+        ".config",
+        ".provider_registry",
+        "__future__",
+        "aiobreaker",
+        "asyncio",
+        "brain.model_router",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/llm/provider_registry.py": {
+      "imports": [
+        ".base",
+        "__future__",
+        "importlib",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/llm/providers/__init__.py": {
+      "imports": []
+    },
+    "core/llm/providers/hajeen_provider.py": {
+      "imports": [
+        "..base",
+        "__future__",
+        "hajeen_model.inference.hajeen_provider",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/llm/providers/huggingface_provider.py": {
+      "imports": [
+        "..base",
+        "__future__",
+        "httpx",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/llm/providers/llama_cpp_provider.py": {
+      "imports": [
+        "..base",
+        "__future__",
+        "asyncio",
+        "llama_cpp",
+        "logging",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "core/llm/providers/mistral_finetuned_provider.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.llm.base",
+        "httpx",
+        "json",
+        "logging",
+        "os",
+        "time",
+        "torch",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/llm/providers/mock_provider.py": {
+      "imports": [
+        "..base",
+        "__future__",
+        "asyncio",
+        "time",
+        "typing"
+      ]
+    },
+    "core/llm/providers/ollama_provider.py": {
+      "imports": [
+        "..base",
+        "__future__",
+        "httpx",
+        "json",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/llm/providers/openai_provider.py": {
+      "imports": [
+        "..base",
+        "__future__",
+        "logging",
+        "openai",
+        "typing"
+      ]
+    },
+    "core/memory/__init__.py": {
+      "imports": [
+        ".conversation_store",
+        ".long_term_memory",
+        ".memory_manager",
+        ".short_term_memory"
+      ]
+    },
+    "core/memory/conversation_store.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing"
+      ]
+    },
+    "core/memory/long_term_memory.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing"
+      ]
+    },
+    "core/memory/memory_manager.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.memory.unified_interface",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/memory/short_term_memory.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "pydantic",
+        "time",
+        "typing"
+      ]
+    },
+    "core/model/__init__.py": {
+      "imports": []
+    },
+    "core/model/artifact_validation.py": {
+      "imports": [
+        "__future__",
+        "hashlib",
+        "json",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "core/model/model_config.py": {
+      "imports": [
+        "__future__",
+        "enum",
+        "pydantic",
+        "typing"
+      ]
+    },
+    "core/model/model_loader.py": {
+      "imports": [
+        ".model_config",
+        ".quantization",
+        "__future__",
+        "llama_cpp",
+        "logging",
+        "ollama",
+        "torch",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/model/model_manager.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.model.model_config",
+        "core.model.model_loader",
+        "dataclasses",
+        "enum",
+        "gc",
+        "logging",
+        "os",
+        "threading",
+        "time",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/model/model_registry.py": {
+      "imports": [
+        ".artifact_validation",
+        ".model_config",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "logging",
+        "pathlib",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "core/model/quantization.py": {
+      "imports": [
+        ".model_config",
+        "__future__",
+        "enum",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/optimization/__init__.py": {
+      "imports": []
+    },
+    "core/optimization/inference_optimizer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "time",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/optimization/kv_cache_manager.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hashlib",
+        "json",
+        "logging",
+        "time",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/optimization/prompt_cache.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hashlib",
+        "json",
+        "logging",
+        "redis",
+        "time",
+        "typing"
+      ]
+    },
+    "core/optimization/quantization_manager.py": {
+      "imports": [
+        "__future__",
+        "auto_gptq",
+        "awq",
+        "dataclasses",
+        "enum",
+        "logging",
+        "os",
+        "pathlib",
+        "time",
+        "torch",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/optimization/speculative_decoding.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "time",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/optimization/tensor_parallel.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "os",
+        "torch",
+        "torch.distributed",
+        "typing"
+      ]
+    },
+    "core/prompts/__init__.py": {
+      "imports": [
+        ".conversation_formatter",
+        ".prompt_builder",
+        ".system_prompts",
+        ".templates"
+      ]
+    },
+    "core/prompts/base.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "dataclasses",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/prompts/conversation_formatter.py": {
+      "imports": [
+        "__future__",
+        "enum",
+        "pydantic",
+        "typing"
+      ]
+    },
+    "core/prompts/prompt_builder.py": {
+      "imports": [
+        ".base",
+        ".conversation_formatter",
+        ".system_prompts",
+        ".templates",
+        "__future__",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/prompts/system_prompts.py": {
+      "imports": [
+        "__future__",
+        "typing"
+      ]
+    },
+    "core/prompts/templates.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    "core/retrieval/__init__.py": {
+      "imports": [
+        "core.retrieval.retrieval_engine"
+      ]
+    },
+    "core/retrieval/retrieval_engine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "logging",
+        "re",
+        "time",
+        "typing"
+      ]
+    },
+    "core/serving/__init__.py": {
+      "imports": []
+    },
+    "core/serving/batching_engine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "core/serving/llama_cpp_server.py": {
+      "imports": [
+        "__future__",
+        "gc",
+        "llama_cpp",
+        "logging",
+        "os",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "core/serving/load_balancer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "core/serving/model_pool.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "collections",
+        "core.model.loader",
+        "dataclasses",
+        "gc",
+        "logging",
+        "os",
+        "time",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/serving/model_server.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "contextlib",
+        "core.serving.batching_engine",
+        "core.serving.load_balancer",
+        "core.serving.model_pool",
+        "core.serving.request_scheduler",
+        "core.serving.streaming_server",
+        "fastapi",
+        "fastapi.middleware.cors",
+        "fastapi.responses",
+        "logging",
+        "os",
+        "prometheus_client",
+        "pydantic",
+        "time",
+        "typing",
+        "uvicorn"
+      ]
+    },
+    "core/serving/request_scheduler.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.serving.batching_engine",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "core/serving/streaming_server.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.serving.model_pool",
+        "json",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "core/serving/vllm_server.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "os",
+        "typing",
+        "vllm",
+        "vllm.outputs"
+      ]
+    },
+    "core/tokenizer/__init__.py": {
+      "imports": [
+        ".token_counter",
+        ".tokenizer_factory",
+        ".tokenizer_manager"
+      ]
+    },
+    "core/tokenizer/models/__init__.py": {
+      "imports": [
+        ".generic_tokenizer",
+        ".llama_tokenizer",
+        ".mistral_tokenizer"
+      ]
+    },
+    "core/tokenizer/models/generic_tokenizer.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "re",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/tokenizer/models/llama_tokenizer.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "re",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/tokenizer/models/mistral_tokenizer.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "re",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/tokenizer/token_counter.py": {
+      "imports": [
+        "__future__",
+        "re",
+        "typing"
+      ]
+    },
+    "core/tokenizer/tokenizer_factory.py": {
+      "imports": [
+        ".models.generic_tokenizer",
+        ".models.llama_tokenizer",
+        ".models.mistral_tokenizer",
+        "__future__",
+        "logging",
+        "typing"
+      ]
+    },
+    "core/tokenizer/tokenizer_manager.py": {
+      "imports": [
+        ".token_counter",
+        ".tokenizer_factory",
+        "__future__",
+        "logging",
+        "threading",
+        "typing"
+      ]
+    },
+    "core/training_engine/__init__.py": {
+      "imports": [
+        ".checkpoint_manager",
+        ".dataset_loader",
+        ".evaluator",
+        ".finetuning",
+        ".lora_trainer",
+        ".metrics",
+        ".trainer"
+      ]
+    },
+    "core/training_engine/checkpoint_manager.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "logging",
+        "pathlib",
+        "shutil",
+        "time",
+        "typing"
+      ]
+    },
+    "core/training_engine/collator.py": {
+      "imports": [
+        "__future__",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/training_engine/dataset_loader.py": {
+      "imports": [
+        "__future__",
+        "datasets",
+        "json",
+        "logging",
+        "pandas",
+        "pathlib",
+        "random",
+        "typing"
+      ]
+    },
+    "core/training_engine/evaluator.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "math",
+        "nltk",
+        "nltk.translate.bleu_score",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/training_engine/finetuning.py": {
+      "imports": [
+        ".checkpoint_manager",
+        ".dataset_loader",
+        ".lora_trainer",
+        ".metrics",
+        ".trainer",
+        "__future__",
+        "datasets",
+        "logging",
+        "pathlib",
+        "torch",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/training_engine/lora_trainer.py": {
+      "imports": [
+        ".trainer",
+        "__future__",
+        "dataclasses",
+        "logging",
+        "peft",
+        "typing"
+      ]
+    },
+    "core/training_engine/metrics.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "math",
+        "time",
+        "typing"
+      ]
+    },
+    "core/training_engine/trainer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "pathlib",
+        "time",
+        "transformers",
+        "typing"
+      ]
+    },
+    "core/utils/__init__.py": {
+      "imports": [
+        ".device_manager",
+        ".gpu_utils",
+        ".model_cache"
+      ]
+    },
+    "core/utils/device_manager.py": {
+      "imports": [
+        ".gpu_utils",
+        "__future__",
+        "logging",
+        "os",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/utils/gpu_utils.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "os",
+        "torch",
+        "typing"
+      ]
+    },
+    "core/utils/model_cache.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "os",
+        "pathlib",
+        "shutil",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/__init__.py": {
+      "imports": []
+    },
+    "data_engine/__main__.py": {
+      "imports": [
+        "data_engine.cli"
+      ]
+    },
+    "data_engine/ai/__init__.py": {
+      "imports": []
+    },
+    "data_engine/ai/embeddings/__init__.py": {
+      "imports": [
+        ".base_embedder",
+        ".embedding_cache",
+        ".embedding_metadata",
+        ".embedding_pipeline",
+        ".embedding_storage"
+      ]
+    },
+    "data_engine/ai/embeddings/base_embedder.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "dataclasses",
+        "datetime",
+        "hashlib",
+        "math",
+        "shared.utils.datetime_utils",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/ai/embeddings/embedding_cache.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "datetime",
+        "hashlib",
+        "json",
+        "logging",
+        "pathlib",
+        "sqlite3",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/ai/embeddings/embedding_metadata.py": {
+      "imports": [
+        "__future__",
+        "datetime",
+        "json",
+        "logging",
+        "pathlib",
+        "sqlite3",
+        "typing"
+      ]
+    },
+    "data_engine/ai/embeddings/embedding_pipeline.py": {
+      "imports": [
+        ".base_embedder",
+        ".embedding_cache",
+        ".embedding_metadata",
+        ".embedding_storage",
+        "__future__",
+        "data_engine.processing.transformation.chunking_engine",
+        "dataclasses",
+        "logging",
+        "shared.schemas.article",
+        "shared.schemas.unified_article",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/ai/embeddings/embedding_storage.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "pathlib",
+        "sqlite3",
+        "typing"
+      ]
+    },
+    "data_engine/channels/__init__.py": {
+      "imports": []
+    },
+    "data_engine/channels/base.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.storage.storage_manager",
+        "datetime",
+        "logging",
+        "pydantic",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "shared.utils.datetime_utils",
+        "typing"
+      ]
+    },
+    "data_engine/channels/builder.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.base",
+        "data_engine.channels.predefined.demo_channel",
+        "data_engine.ingestion.crawlers.rss_parser",
+        "logging",
+        "shared.exceptions",
+        "shared.schemas.channel",
+        "typing"
+      ]
+    },
+    "data_engine/channels/custom/__init__.py": {
+      "imports": []
+    },
+    "data_engine/channels/custom/user_defined/__init__.py": {
+      "imports": []
+    },
+    "data_engine/channels/predefined/__init__.py": {
+      "imports": [
+        ".demo_channel",
+        ".finance_channel",
+        ".news_channel",
+        ".science_channel",
+        ".tech_channel"
+      ]
+    },
+    "data_engine/channels/predefined/arabic_sources.py": {
+      "imports": [
+        "__future__",
+        "typing"
+      ]
+    },
+    "data_engine/channels/predefined/demo_channel.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.base",
+        "data_engine.storage.storage_manager",
+        "json",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "typing"
+      ]
+    },
+    "data_engine/channels/predefined/finance_channel.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.channels.base",
+        "data_engine.ingestion.connectors.newsapi_connector",
+        "data_engine.ingestion.connectors.reddit_connector",
+        "data_engine.ingestion.crawlers.robots_checker",
+        "data_engine.ingestion.crawlers.rss_parser",
+        "logging",
+        "os",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "typing"
+      ]
+    },
+    "data_engine/channels/predefined/news_channel.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.base",
+        "data_engine.ingestion.crawlers.robots_checker",
+        "data_engine.ingestion.crawlers.rss_parser",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "datetime",
+        "logging",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "shared.utils.datetime_utils",
+        "typing"
+      ]
+    },
+    "data_engine/channels/predefined/science_channel.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.channels.base",
+        "data_engine.ingestion.connectors.arxiv_connector",
+        "data_engine.ingestion.crawlers.robots_checker",
+        "data_engine.ingestion.crawlers.rss_parser",
+        "logging",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "typing"
+      ]
+    },
+    "data_engine/channels/predefined/tech_channel.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.base",
+        "data_engine.ingestion.crawlers.robots_checker",
+        "data_engine.ingestion.crawlers.rss_parser",
+        "logging",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "typing"
+      ]
+    },
+    "data_engine/channels/registry.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.base",
+        "data_engine.channels.builder",
+        "datetime",
+        "json",
+        "logging",
+        "pathlib",
+        "shared.exceptions",
+        "shared.schemas.channel",
+        "sqlite3",
+        "threading",
+        "typing"
+      ]
+    },
+    "data_engine/cli.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.channels.builder",
+        "data_engine.channels.registry",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.storage.storage_manager",
+        "logging",
+        "os",
+        "pathlib",
+        "rich.console",
+        "rich.table",
+        "shared.schemas.channel",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "subprocess",
+        "sys",
+        "time",
+        "typer",
+        "typing",
+        "uvicorn"
+      ]
+    },
+    "data_engine/config/__init__.py": {
+      "imports": []
+    },
+    "data_engine/embeddings/__init__.py": {
+      "imports": []
+    },
+    "data_engine/embeddings/embedding_pipeline.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "hashlib",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/__init__.py": {
+      "imports": []
+    },
+    "data_engine/ingestion/connectors/__init__.py": {
+      "imports": [
+        ".arxiv_connector",
+        ".base_connector",
+        ".custom_connector",
+        ".github_connector",
+        ".newsapi_connector",
+        ".reddit_connector",
+        ".youtube_connector"
+      ]
+    },
+    "data_engine/ingestion/connectors/arxiv_connector.py": {
+      "imports": [
+        ".base_connector",
+        "__future__",
+        "asyncio",
+        "datetime",
+        "httpx",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "typing",
+        "xml.etree"
+      ]
+    },
+    "data_engine/ingestion/connectors/base_connector.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "asyncio",
+        "httpx",
+        "logging",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/connectors/custom_connector.py": {
+      "imports": [
+        ".base_connector",
+        "__future__",
+        "datetime",
+        "logging",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/connectors/github_connector.py": {
+      "imports": [
+        ".base_connector",
+        "__future__",
+        "datetime",
+        "logging",
+        "os",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/connectors/newsapi_connector.py": {
+      "imports": [
+        ".base_connector",
+        "__future__",
+        "datetime",
+        "logging",
+        "os",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/connectors/reddit_connector.py": {
+      "imports": [
+        ".base_connector",
+        "__future__",
+        "datetime",
+        "logging",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/connectors/youtube_connector.py": {
+      "imports": [
+        ".base_connector",
+        "__future__",
+        "datetime",
+        "logging",
+        "os",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/crawlers/__init__.py": {
+      "imports": [
+        ".playwright_crawler",
+        ".requests_fetcher",
+        ".robots_checker",
+        ".rss_parser",
+        ".sitemap_parser"
+      ]
+    },
+    "data_engine/ingestion/crawlers/playwright_crawler.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "html.parser",
+        "httpx",
+        "logging",
+        "playwright.async_api",
+        "random",
+        "re",
+        "time",
+        "typing",
+        "urllib.parse"
+      ]
+    },
+    "data_engine/ingestion/crawlers/requests_fetcher.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.http_client",
+        "data_engine.ingestion.response_models",
+        "data_engine.storage.raw_store.local_storage",
+        "hashlib",
+        "json",
+        "logging",
+        "re",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/crawlers/robots_checker.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "time",
+        "typing",
+        "urllib.parse",
+        "urllib.robotparser"
+      ]
+    },
+    "data_engine/ingestion/crawlers/rss_parser.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "datetime",
+        "email.utils",
+        "feedparser",
+        "hashlib",
+        "logging",
+        "shared.schemas.article",
+        "shared.utils.id_generator",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/crawlers/sitemap_parser.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "datetime",
+        "httpx",
+        "logging",
+        "typing",
+        "xml.etree"
+      ]
+    },
+    "data_engine/ingestion/http_client.py": {
+      "imports": [
+        ".response_models",
+        "__future__",
+        "asyncio",
+        "httpx",
+        "random",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/response_models.py": {
+      "imports": [
+        "__future__",
+        "datetime",
+        "json",
+        "pydantic",
+        "shared.utils.datetime_utils",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/schedulers/__init__.py": {
+      "imports": [
+        ".cron_scheduler",
+        ".job_tracker",
+        ".priority_queue"
+      ]
+    },
+    "data_engine/ingestion/schedulers/cron_scheduler.py": {
+      "imports": [
+        "__future__",
+        "apscheduler.events",
+        "apscheduler.executors.pool",
+        "apscheduler.jobstores.memory",
+        "apscheduler.jobstores.sqlalchemy",
+        "apscheduler.schedulers.background",
+        "apscheduler.triggers.cron",
+        "apscheduler.triggers.date",
+        "apscheduler.triggers.interval",
+        "datetime",
+        "logging",
+        "os",
+        "typing",
+        "workers.tasks.ingestion_tasks"
+      ]
+    },
+    "data_engine/ingestion/schedulers/job_tracker.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "pathlib",
+        "sqlite3",
+        "threading",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/ingestion/schedulers/priority_queue.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "datetime",
+        "enum",
+        "json",
+        "logging",
+        "pathlib",
+        "sqlite3",
+        "threading",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/ingestion/streams/__init__.py": {
+      "imports": [
+        ".kafka_consumer",
+        ".webhook_receiver",
+        ".websocket_listener"
+      ]
+    },
+    "data_engine/ingestion/streams/kafka_consumer.py": {
+      "imports": [
+        "__future__",
+        "aiokafka",
+        "aiokafka.errors",
+        "asyncio",
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/ingestion/streams/webhook_receiver.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "datetime",
+        "hashlib",
+        "hmac",
+        "json",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/ingestion/streams/websocket_listener.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "time",
+        "typing",
+        "websockets",
+        "websockets.exceptions"
+      ]
+    },
+    "data_engine/lifecycle.py": {
+      "imports": [
+        "__future__",
+        "data_engine.preparation.data_validator",
+        "data_engine.preparation.language_detector",
+        "data_engine.preparation.quality_scorer",
+        "dataclasses",
+        "enum",
+        "hashlib",
+        "json",
+        "logging",
+        "pathlib",
+        "re",
+        "services.data_service.dataset_versioner",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/metadata/__init__.py": {
+      "imports": [
+        ".tracker"
+      ]
+    },
+    "data_engine/metadata/tracker.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "pathlib",
+        "shared.utils.datetime_utils",
+        "sqlite3",
+        "typing"
+      ]
+    },
+    "data_engine/monitoring/__init__.py": {
+      "imports": []
+    },
+    "data_engine/pipelines/__init__.py": {
+      "imports": [
+        ".base_pipeline",
+        ".pipeline_orchestrator",
+        ".pipeline_result"
+      ]
+    },
+    "data_engine/pipelines/base_pipeline.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "asyncio",
+        "data_engine.processing.base_processor",
+        "data_engine.processing.processing_context",
+        "data_engine.processing.processing_result",
+        "logging",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/pipelines/definitions/__init__.py": {
+      "imports": []
+    },
+    "data_engine/pipelines/pipeline_orchestrator.py": {
+      "imports": [
+        "__future__",
+        "data_engine.pipelines.base_pipeline",
+        "data_engine.pipelines.stages",
+        "data_engine.processing.cleaning.text_normalizer",
+        "data_engine.processing.enrichment.content_enricher",
+        "data_engine.processing.enrichment.entity_extractor",
+        "data_engine.processing.enrichment.keyword_extractor",
+        "data_engine.processing.enrichment.summarizer",
+        "data_engine.processing.filtering.deduplicator",
+        "data_engine.processing.filtering.language_filter",
+        "data_engine.processing.filtering.policy_filter",
+        "data_engine.processing.filtering.quality_scorer",
+        "data_engine.processing.filtering.spam_detector",
+        "data_engine.processing.processing_context",
+        "data_engine.processing.transformation.chunker",
+        "data_engine.processing.transformation.tokenizer_wrapper",
+        "dataclasses",
+        "logging",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/pipelines/pipeline_result.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.processing_context",
+        "dataclasses",
+        "datetime",
+        "enum",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/pipelines/stages/__init__.py": {
+      "imports": [
+        ".clean_stage",
+        ".embed_stage",
+        ".enrich_stage",
+        ".fetch_stage",
+        ".filter_stage",
+        ".store_stage",
+        ".transform_stage"
+      ]
+    },
+    "data_engine/pipelines/stages/clean_stage.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.base_processor",
+        "data_engine.processing.cleaning.html_cleaner",
+        "data_engine.processing.cleaning.text_normalizer",
+        "data_engine.processing.processing_context",
+        "logging",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/pipelines/stages/embed_stage.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.embeddings.embedding_manager",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/pipelines/stages/enrich_stage.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.base_processor",
+        "data_engine.processing.enrichment.content_enricher",
+        "data_engine.processing.enrichment.entity_extractor",
+        "data_engine.processing.enrichment.keyword_extractor",
+        "data_engine.processing.enrichment.summarizer",
+        "data_engine.processing.processing_context",
+        "logging",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/pipelines/stages/fetch_stage.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.base_processor",
+        "data_engine.processing.processing_context",
+        "logging",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/pipelines/stages/filter_stage.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.base_processor",
+        "data_engine.processing.filtering.deduplicator",
+        "data_engine.processing.filtering.language_filter",
+        "data_engine.processing.filtering.policy_filter",
+        "data_engine.processing.filtering.quality_scorer",
+        "data_engine.processing.filtering.spam_detector",
+        "data_engine.processing.processing_context",
+        "logging",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/pipelines/stages/store_stage.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.processing.base_processor",
+        "data_engine.processing.processing_context",
+        "json",
+        "logging",
+        "pathlib",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/pipelines/stages/transform_stage.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.base_processor",
+        "data_engine.processing.processing_context",
+        "data_engine.processing.transformation.chunker",
+        "data_engine.processing.transformation.tokenizer_wrapper",
+        "logging",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/preparation/__init__.py": {
+      "imports": []
+    },
+    "data_engine/preparation/data_preparation_pipeline.py": {
+      "imports": [
+        ".data_validator",
+        ".dataset_statistics",
+        ".deduplicator",
+        ".language_detector",
+        ".quality_scorer",
+        "typing"
+      ]
+    },
+    "data_engine/preparation/data_validator.py": {
+      "imports": [
+        "re"
+      ]
+    },
+    "data_engine/preparation/dataset_statistics.py": {
+      "imports": [
+        "json",
+        "typing"
+      ]
+    },
+    "data_engine/preparation/deduplicator.py": {
+      "imports": [
+        "datasketch",
+        "typing"
+      ]
+    },
+    "data_engine/preparation/language_detector.py": {
+      "imports": [
+        "langdetect",
+        "typing"
+      ]
+    },
+    "data_engine/preparation/quality_scorer.py": {
+      "imports": []
+    },
+    "data_engine/processing/__init__.py": {
+      "imports": [
+        ".base_processor",
+        ".cleaning",
+        ".enrichment",
+        ".filtering",
+        ".processing_context",
+        ".processing_result",
+        ".transformation"
+      ]
+    },
+    "data_engine/processing/base_processor.py": {
+      "imports": [
+        ".processing_context",
+        ".processing_result",
+        "__future__",
+        "abc",
+        "logging",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/processing/cleaning/__init__.py": {
+      "imports": [
+        ".cleaning_pipeline",
+        ".html_cleaner",
+        ".text_cleaner",
+        ".text_normalizer"
+      ]
+    },
+    "data_engine/processing/cleaning/cleaning_pipeline.py": {
+      "imports": [
+        ".html_cleaner",
+        ".text_cleaner",
+        ".text_normalizer",
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "hashlib",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/processing/cleaning/html_cleaner.py": {
+      "imports": [
+        "__future__",
+        "bs4",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "trafilatura",
+        "typing"
+      ]
+    },
+    "data_engine/processing/cleaning/text_cleaner.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "html",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing",
+        "unicodedata"
+      ]
+    },
+    "data_engine/processing/cleaning/text_normalizer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing",
+        "unicodedata"
+      ]
+    },
+    "data_engine/processing/enrichment/__init__.py": {
+      "imports": [
+        ".content_enricher",
+        ".enrichment_pipeline",
+        ".entity_extractor",
+        ".keyword_extractor",
+        ".sentiment_analyzer",
+        ".summarizer",
+        ".topic_classifier"
+      ]
+    },
+    "data_engine/processing/enrichment/content_enricher.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/enrichment/enrichment_pipeline.py": {
+      "imports": [
+        ".content_enricher",
+        ".entity_extractor",
+        ".keyword_extractor",
+        ".sentiment_analyzer",
+        ".summarizer",
+        ".topic_classifier",
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "hashlib",
+        "logging",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/processing/enrichment/entity_extractor.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "spacy",
+        "typing"
+      ]
+    },
+    "data_engine/processing/enrichment/keyword_extractor.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing",
+        "yake"
+      ]
+    },
+    "data_engine/processing/enrichment/sentiment_analyzer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing",
+        "vaderSentiment.vaderSentiment"
+      ]
+    },
+    "data_engine/processing/enrichment/summarizer.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/enrichment/topic_classifier.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "math",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/filtering/__init__.py": {
+      "imports": [
+        ".content_filter",
+        ".deduplicator",
+        ".filtering_pipeline",
+        ".language_filter",
+        ".pii_filter",
+        ".quality_scorer",
+        ".spam_detector"
+      ]
+    },
+    "data_engine/processing/filtering/content_filter.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hashlib",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/filtering/deduplication_engine.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.transformation.chunking_engine",
+        "dataclasses",
+        "datetime",
+        "difflib",
+        "hashlib",
+        "logging",
+        "pathlib",
+        "re",
+        "shared.schemas.article",
+        "shared.schemas.unified_article",
+        "sqlite3",
+        "typing"
+      ]
+    },
+    "data_engine/processing/filtering/deduplicator.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "difflib",
+        "hashlib",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/filtering/filtering_pipeline.py": {
+      "imports": [
+        ".content_filter",
+        ".deduplicator",
+        ".language_filter",
+        ".pii_filter",
+        ".policy_filter",
+        ".quality_scorer",
+        ".spam_detector",
+        "__future__",
+        "dataclasses",
+        "logging",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/processing/filtering/language_filter.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "langdetect",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/filtering/pii_filter.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/filtering/policy_filter.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "pathlib",
+        "re",
+        "shared.schemas.article",
+        "typing",
+        "urllib.parse",
+        "yaml"
+      ]
+    },
+    "data_engine/processing/filtering/quality_scorer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/filtering/spam_detector.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/processing_context.py": {
+      "imports": [
+        ".processing_result",
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "shared.schemas.article",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/processing/processing_result.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/transformation/__init__.py": {
+      "imports": [
+        ".chunker",
+        ".data_transformer",
+        ".markdown_converter",
+        ".tokenizer_wrapper",
+        ".transformation_pipeline"
+      ]
+    },
+    "data_engine/processing/transformation/chunker.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/transformation/chunking_engine.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "hashlib",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "shared.schemas.unified_article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/transformation/data_transformer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/transformation/markdown_converter.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "data_engine/processing/transformation/tokenizer_wrapper.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "tiktoken",
+        "typing"
+      ]
+    },
+    "data_engine/processing/transformation/transformation_pipeline.py": {
+      "imports": [
+        ".chunking_engine",
+        ".data_transformer",
+        ".markdown_converter",
+        ".tokenizer_wrapper",
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "json",
+        "logging",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/storage/__init__.py": {
+      "imports": [
+        ".base",
+        ".interfaces",
+        ".metadata_store.lineage_tracker",
+        ".metadata_store.sqlite_catalog",
+        ".processed_store.bronze_layer",
+        ".processed_store.gold_layer",
+        ".processed_store.silver_layer",
+        ".storage_manager"
+      ]
+    },
+    "data_engine/storage/base.py": {
+      "imports": [
+        "abc",
+        "typing"
+      ]
+    },
+    "data_engine/storage/interfaces.py": {
+      "imports": [
+        "typing"
+      ]
+    },
+    "data_engine/storage/metadata_store/__init__.py": {
+      "imports": []
+    },
+    "data_engine/storage/metadata_store/job_store.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "json",
+        "logging",
+        "pathlib",
+        "sqlite3",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/storage/metadata_store/lineage_tracker.py": {
+      "imports": [
+        "datetime",
+        "sqlalchemy",
+        "sqlalchemy.ext.asyncio",
+        "sqlalchemy.future",
+        "sqlalchemy.orm",
+        "typing"
+      ]
+    },
+    "data_engine/storage/metadata_store/sqlite_catalog.py": {
+      "imports": [
+        "..base",
+        "asyncio",
+        "datetime",
+        "pathlib",
+        "sqlalchemy",
+        "sqlalchemy.ext.asyncio",
+        "sqlalchemy.future",
+        "sqlalchemy.orm",
+        "typing"
+      ]
+    },
+    "data_engine/storage/processed_store/__init__.py": {
+      "imports": []
+    },
+    "data_engine/storage/processed_store/bronze_layer.py": {
+      "imports": [
+        "..base",
+        "asyncio",
+        "datetime",
+        "json",
+        "pathlib",
+        "pydantic",
+        "typing"
+      ]
+    },
+    "data_engine/storage/processed_store/gold_layer.py": {
+      "imports": [
+        "..base",
+        "asyncio",
+        "datetime",
+        "json",
+        "pathlib",
+        "pydantic",
+        "typing"
+      ]
+    },
+    "data_engine/storage/processed_store/silver_layer.py": {
+      "imports": [
+        "..base",
+        "asyncio",
+        "datetime",
+        "json",
+        "pathlib",
+        "pydantic",
+        "typing"
+      ]
+    },
+    "data_engine/storage/raw_store/__init__.py": {
+      "imports": []
+    },
+    "data_engine/storage/raw_store/local_storage.py": {
+      "imports": [
+        "..base",
+        "asyncio",
+        "datetime",
+        "os",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "data_engine/storage/repositories/__init__.py": {
+      "imports": []
+    },
+    "data_engine/storage/repositories/article_repository.py": {
+      "imports": [
+        "..metadata_store.sqlite_catalog",
+        "typing"
+      ]
+    },
+    "data_engine/storage/repositories/channel_repository.py": {
+      "imports": [
+        "..metadata_store.sqlite_catalog",
+        "typing"
+      ]
+    },
+    "data_engine/storage/repositories/pipeline_repository.py": {
+      "imports": [
+        "..metadata_store.sqlite_catalog",
+        "typing"
+      ]
+    },
+    "data_engine/storage/storage_manager.py": {
+      "imports": [
+        ".metadata_store.sqlite_catalog",
+        ".processed_store.bronze_layer",
+        ".processed_store.gold_layer",
+        ".processed_store.silver_layer",
+        ".raw_store.local_storage",
+        ".repositories.article_repository",
+        ".repositories.channel_repository",
+        ".repositories.pipeline_repository",
+        "__future__",
+        "asyncio",
+        "datetime",
+        "fcntl",
+        "hashlib",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "data_engine/storage/vector_store/__init__.py": {
+      "imports": [
+        "data_engine.storage.vector_store.base_vector_store"
+      ]
+    },
+    "data_engine/storage/vector_store/base_vector_store.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    "data_engine/storage/vector_store/chroma_client.py": {
+      "imports": [
+        "__future__",
+        "chromadb",
+        "chromadb.config",
+        "data_engine.storage.vector_store.base_vector_store",
+        "hashlib",
+        "logging",
+        "os",
+        "typing"
+      ]
+    },
+    "data_engine/storage/vector_store/faiss_client.py": {
+      "imports": [
+        "__future__",
+        "data_engine.storage.vector_store.base_vector_store",
+        "faiss",
+        "json",
+        "logging",
+        "numpy",
+        "os",
+        "pickle",
+        "typing"
+      ]
+    },
+    "data_engine/storage/vector_store/qdrant_client.py": {
+      "imports": [
+        "__future__",
+        "data_engine.storage.vector_store.base_vector_store",
+        "logging",
+        "os",
+        "qdrant_client",
+        "qdrant_client.http.models",
+        "typing",
+        "uuid"
+      ]
+    },
+    "data_engine/storage/vector_store/sqlite_vector_index.py": {
+      "imports": [
+        ".base_vector_store",
+        "__future__",
+        "json",
+        "math",
+        "pathlib",
+        "sqlite3",
+        "typing"
+      ]
+    },
+    "data_engine/storage/vector_store/vector_store_manager.py": {
+      "imports": [
+        "__future__",
+        "data_engine.storage.vector_store.base_vector_store",
+        "data_engine.storage.vector_store.chroma_client",
+        "data_engine.storage.vector_store.faiss_client",
+        "data_engine.storage.vector_store.qdrant_client",
+        "data_engine.storage.vector_store.sqlite_vector_index",
+        "enum",
+        "logging",
+        "os",
+        "typing"
+      ]
+    },
+    "database/__init__.py": {
+      "imports": [
+        "database.models"
+      ]
+    },
+    "database/models.py": {
+      "imports": [
+        "__future__",
+        "os",
+        "sqlalchemy",
+        "sqlalchemy.ext.asyncio",
+        "sqlalchemy.orm",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "demo_pipeline.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.channels.builder",
+        "data_engine.channels.registry",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.storage.storage_manager",
+        "logging",
+        "os",
+        "pathlib",
+        "shared.schemas.channel",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator",
+        "sys",
+        "time"
+      ]
+    },
+    "demo_rag.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.pipelines.stages.embed_stage",
+        "data_engine.processing.transformation.chunking_engine",
+        "data_engine.storage.vector_store.base_vector_store",
+        "data_engine.storage.vector_store.faiss_client",
+        "monitoring.search_metrics.metrics_collector",
+        "pathlib",
+        "services.rag.rag_pipeline",
+        "services.retrieval.multi_query_retriever",
+        "services.retrieval.vector_retriever",
+        "services.search.semantic_search",
+        "sys",
+        "time"
+      ]
+    },
+    "diagnose_learning_hang.py": {
+      "imports": [
+        "asyncio",
+        "brain.learning.continuous_learning",
+        "faulthandler",
+        "logging",
+        "tempfile"
+      ]
+    },
+    "diagnose_pipeline.py": {
+      "imports": [
+        "asyncio",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.processing.filtering.spam_detector",
+        "logging",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "hajeen_model/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/adapters/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/configs/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/core/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/core/hajeen_model_v1.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "dotenv",
+        "hajeen_model.core.local_inference_engine",
+        "logging",
+        "os",
+        "pathlib",
+        "time",
+        "typing",
+        "uuid",
+        "yaml"
+      ]
+    },
+    "hajeen_model/core/local_inference_engine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "cloud.model_manager",
+        "dataclasses",
+        "logging",
+        "os",
+        "pathlib",
+        "time",
+        "tokenizers",
+        "torch",
+        "torch.nn",
+        "torch.nn.functional",
+        "typing",
+        "uuid"
+      ]
+    },
+    "hajeen_model/datasets/__init__.py": {
+      "imports": [
+        ".dataset_manager"
+      ]
+    },
+    "hajeen_model/datasets/dataset_manager.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "pathlib",
+        "shutil",
+        "typing"
+      ]
+    },
+    "hajeen_model/evaluation/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/evaluation/evaluation_framework.py": {
+      "imports": [
+        "core.inference_engine.engine",
+        "json",
+        "os",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/__init__.py": {
+      "imports": [
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.transformer.hajeen_model"
+      ]
+    },
+    "hajeen_model/hybrid_models/attention/__init__.py": {
+      "imports": [
+        "hajeen_model.attention.kv_cache",
+        "hajeen_model.attention.multi_head_attention"
+      ]
+    },
+    "hajeen_model/hybrid_models/attention/kv_cache.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.config.hajeen_config",
+        "torch",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/attention/multi_head_attention.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.attention.kv_cache",
+        "hajeen_model.attention.scaled_dot_product",
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.embeddings.rope",
+        "torch",
+        "torch.nn",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/attention/scaled_dot_product.py": {
+      "imports": [
+        "__future__",
+        "math",
+        "torch",
+        "torch.nn.functional",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/config/__init__.py": {
+      "imports": [
+        "hajeen_model.config.hajeen_config"
+      ]
+    },
+    "hajeen_model/hybrid_models/config/hajeen_config.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "json",
+        "os",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/embeddings/__init__.py": {
+      "imports": [
+        "hajeen_model.embeddings.position_embeddings",
+        "hajeen_model.embeddings.rope",
+        "hajeen_model.embeddings.token_embeddings"
+      ]
+    },
+    "hajeen_model/hybrid_models/embeddings/position_embeddings.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.config.hajeen_config",
+        "math",
+        "torch",
+        "torch.nn"
+      ]
+    },
+    "hajeen_model/hybrid_models/embeddings/rope.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.config.hajeen_config",
+        "torch",
+        "torch.nn"
+      ]
+    },
+    "hajeen_model/hybrid_models/embeddings/token_embeddings.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.config.hajeen_config",
+        "math",
+        "torch",
+        "torch.nn"
+      ]
+    },
+    "hajeen_model/hybrid_models/evaluation/__init__.py": {
+      "imports": [
+        "hajeen_model.evaluation.evaluation_pipeline"
+      ]
+    },
+    "hajeen_model/hybrid_models/evaluation/evaluation_pipeline.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hajeen_model.datasets.dataset_builder",
+        "hajeen_model.inference.inference_engine",
+        "math",
+        "time",
+        "torch",
+        "torch.nn.functional",
+        "torch.utils.data",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/export/__init__.py": {
+      "imports": [
+        "hajeen_model.export.exporter"
+      ]
+    },
+    "hajeen_model/hybrid_models/export/exporter.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "json",
+        "onnx",
+        "onnxsim",
+        "os",
+        "torch",
+        "torch.nn",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/inference/__init__.py": {
+      "imports": [
+        "hajeen_model.inference.inference_engine"
+      ]
+    },
+    "hajeen_model/hybrid_models/inference/inference_engine.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hajeen_model.attention.kv_cache",
+        "math",
+        "torch",
+        "torch.nn.functional",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/layers/__init__.py": {
+      "imports": [
+        "hajeen_model.layers.feed_forward",
+        "hajeen_model.layers.normalization",
+        "hajeen_model.layers.residual"
+      ]
+    },
+    "hajeen_model/hybrid_models/layers/feed_forward.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.config.hajeen_config",
+        "torch",
+        "torch.nn",
+        "torch.nn.functional"
+      ]
+    },
+    "hajeen_model/hybrid_models/layers/normalization.py": {
+      "imports": [
+        "__future__",
+        "torch",
+        "torch.nn"
+      ]
+    },
+    "hajeen_model/hybrid_models/layers/residual.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.layers.normalization",
+        "torch",
+        "torch.nn",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/quantization/__init__.py": {
+      "imports": [
+        "hajeen_model.quantization.quantizer"
+      ]
+    },
+    "hajeen_model/hybrid_models/quantization/quantizer.py": {
+      "imports": [
+        "__future__",
+        "copy",
+        "dataclasses",
+        "torch",
+        "torch.nn",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/serving/__init__.py": {
+      "imports": [
+        "hajeen_model.serving.model_server"
+      ]
+    },
+    "hajeen_model/hybrid_models/serving/model_server.py": {
+      "imports": [
+        "__future__",
+        "argparse",
+        "dataclasses",
+        "flask",
+        "hajeen_model.inference.inference_engine",
+        "hajeen_model.tokenizer.tokenizer_loader",
+        "hajeen_model.transformer.hajeen_model",
+        "json",
+        "time",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/hybrid_models/tests/test_attention.py": {
+      "imports": [
+        "hajeen_model.attention.kv_cache",
+        "hajeen_model.attention.multi_head_attention",
+        "hajeen_model.attention.scaled_dot_product",
+        "hajeen_model.config.hajeen_config",
+        "pytest",
+        "torch"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_checkpoint.py": {
+      "imports": [
+        "hajeen_model.checkpoints.checkpoint_manager",
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.transformer.hajeen_model",
+        "os",
+        "pytest",
+        "tempfile",
+        "torch",
+        "torch.optim"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_config.py": {
+      "imports": [
+        "hajeen_model.config.hajeen_config",
+        "json",
+        "os",
+        "pytest",
+        "tempfile"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_datasets.py": {
+      "imports": [
+        "hajeen_model.datasets.dataset_builder",
+        "hajeen_model.datasets.dataset_cleaner",
+        "hajeen_model.datasets.dataset_statistics",
+        "hajeen_model.datasets.dataset_validator",
+        "os",
+        "pytest",
+        "tempfile",
+        "torch"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_fine_tuning.py": {
+      "imports": [
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.tokenizer.bpe_tokenizer",
+        "hajeen_model.tokenizer.tokenizer_loader",
+        "hajeen_model.training.fine_tuning",
+        "hajeen_model.transformer.hajeen_model",
+        "pytest",
+        "torch",
+        "torch.nn"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_inference.py": {
+      "imports": [
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.inference.inference_engine",
+        "hajeen_model.tokenizer.bpe_tokenizer",
+        "hajeen_model.tokenizer.tokenizer_loader",
+        "hajeen_model.transformer.hajeen_model",
+        "pytest",
+        "torch"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_layers.py": {
+      "imports": [
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.layers.feed_forward",
+        "hajeen_model.layers.normalization",
+        "hajeen_model.layers.residual",
+        "pytest",
+        "torch"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_model.py": {
+      "imports": [
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.transformer.hajeen_model",
+        "os",
+        "pytest",
+        "tempfile",
+        "torch"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_quantization.py": {
+      "imports": [
+        "copy",
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.quantization.quantizer",
+        "hajeen_model.transformer.hajeen_model",
+        "pytest",
+        "torch"
+      ]
+    },
+    "hajeen_model/hybrid_models/tests/test_tokenizer.py": {
+      "imports": [
+        "hajeen_model.tokenizer.bpe_tokenizer",
+        "hajeen_model.tokenizer.tokenizer_loader",
+        "os",
+        "pytest",
+        "tempfile",
+        "torch"
+      ]
+    },
+    "hajeen_model/hybrid_models/tokenizer/__init__.py": {
+      "imports": [
+        "hajeen_model.tokenizer.bpe_tokenizer",
+        "hajeen_model.tokenizer.tokenizer_loader"
+      ]
+    },
+    "hajeen_model/hybrid_models/tokenizer/bpe_tokenizer.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "json",
+        "os",
+        "re",
+        "typing",
+        "unicodedata"
+      ]
+    },
+    "hajeen_model/hybrid_models/tokenizer/cloud_tokenizer_trainer.py": {
+      "imports": [
+        "__future__",
+        "cloud.model_manager",
+        "datasets",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "sys",
+        "tokenizers",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/tokenizer/tokenizer_loader.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.tokenizer.bpe_tokenizer",
+        "os",
+        "torch",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/tokenizer/tokenizer_validator.py": {
+      "imports": [
+        "__future__",
+        "argparse",
+        "dataclasses",
+        "hajeen_model.tokenizer.tokenizer_loader",
+        "sys",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/tokenizer/train_tokenizer.py": {
+      "imports": [
+        "__future__",
+        "argparse",
+        "hajeen_model.tokenizer.bpe_tokenizer",
+        "os",
+        "pathlib",
+        "sys",
+        "time",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/training/__init__.py": {
+      "imports": [
+        "hajeen_model.training.training_pipeline"
+      ]
+    },
+    "hajeen_model/hybrid_models/training/cloud_trainer.py": {
+      "imports": [
+        "__future__",
+        "cloud.cloud_sync",
+        "cloud.model_manager",
+        "datasets",
+        "datetime",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "sys",
+        "time",
+        "torch",
+        "torch.nn",
+        "torch.optim",
+        "torch.optim.lr_scheduler",
+        "torch.utils.data",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/training/fine_tuning.py": {
+      "imports": [
+        "__future__",
+        "torch",
+        "torch.nn",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/training/training_pipeline.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hajeen_model.checkpoints.checkpoint_manager",
+        "hajeen_model.datasets.dataset_builder",
+        "math",
+        "os",
+        "time",
+        "torch",
+        "torch.cuda.amp",
+        "torch.nn",
+        "torch.optim",
+        "torch.utils.data",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/transformer/__init__.py": {
+      "imports": [
+        "hajeen_model.transformer.hajeen_model",
+        "hajeen_model.transformer.transformer_block"
+      ]
+    },
+    "hajeen_model/hybrid_models/transformer/hajeen_model.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.attention.kv_cache",
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.embeddings.position_embeddings",
+        "hajeen_model.embeddings.token_embeddings",
+        "hajeen_model.layers.normalization",
+        "hajeen_model.transformer.transformer_block",
+        "math",
+        "os",
+        "torch",
+        "torch.nn",
+        "torch.nn.functional",
+        "typing"
+      ]
+    },
+    "hajeen_model/hybrid_models/transformer/transformer_block.py": {
+      "imports": [
+        "__future__",
+        "hajeen_model.attention.kv_cache",
+        "hajeen_model.attention.multi_head_attention",
+        "hajeen_model.config.hajeen_config",
+        "hajeen_model.layers.feed_forward",
+        "hajeen_model.layers.normalization",
+        "torch",
+        "torch.nn",
+        "typing"
+      ]
+    },
+    "hajeen_model/inference/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/inference/base_provider.py": {
+      "imports": [
+        "abc"
+      ]
+    },
+    "hajeen_model/inference/hajeen_provider.py": {
+      "imports": [
+        ".base_provider",
+        "__future__",
+        "logging",
+        "os",
+        "pathlib",
+        "transformers",
+        "typing"
+      ]
+    },
+    "hajeen_model/inference/inference_engine.py": {
+      "imports": [
+        ".base_provider",
+        ".hajeen_provider",
+        ".ollama_provider"
+      ]
+    },
+    "hajeen_model/inference/ollama_manager.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "httpx",
+        "json",
+        "logging",
+        "subprocess",
+        "sys",
+        "typing"
+      ]
+    },
+    "hajeen_model/inference/ollama_provider.py": {
+      "imports": [
+        ".base_provider",
+        "requests"
+      ]
+    },
+    "hajeen_model/tests/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/tests/test_phase_4_5.py": {
+      "imports": [
+        "hajeen_model.datasets.dataset_loader",
+        "hajeen_model.inference.hajeen_provider",
+        "hajeen_model.inference.inference_engine",
+        "hajeen_model.inference.ollama_provider",
+        "hajeen_model.training.checkpoint_manager",
+        "json",
+        "os",
+        "shutil",
+        "sys",
+        "unittest"
+      ]
+    },
+    "hajeen_model/tokenizer/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/training/__init__.py": {
+      "imports": []
+    },
+    "hajeen_model/training/checkpoint_manager.py": {
+      "imports": [
+        "datetime",
+        "json",
+        "os",
+        "shutil"
+      ]
+    },
+    "hajeen_model/training/training_pipeline.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datasets",
+        "hajeen_model.hajeen_model_v1",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "peft",
+        "random",
+        "shutil",
+        "time",
+        "torch",
+        "transformers",
+        "trl",
+        "typing"
+      ]
+    },
+    "infra/__init__.py": {
+      "imports": []
+    },
+    "measure_learning_similarity.py": {
+      "imports": [
+        "asyncio",
+        "core.embeddings",
+        "numpy"
+      ]
+    },
+    "monitoring/__init__.py": {
+      "imports": [
+        ".task_monitor"
+      ]
+    },
+    "monitoring/ai/__init__.py": {
+      "imports": [
+        ".evaluation_dashboard",
+        ".gpu_monitor",
+        ".hallucination_tracker",
+        ".inference_metrics",
+        ".latency_tracker",
+        ".token_metrics"
+      ]
+    },
+    "monitoring/ai/evaluation_dashboard.py": {
+      "imports": [
+        ".gpu_monitor",
+        ".hallucination_tracker",
+        ".inference_metrics",
+        ".latency_tracker",
+        ".token_metrics",
+        "__future__",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/ai/gpu_monitor.py": {
+      "imports": [
+        "__future__",
+        "time",
+        "torch",
+        "typing"
+      ]
+    },
+    "monitoring/ai/hallucination_tracker.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "re",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/ai/inference_metrics.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/ai/latency_tracker.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "math",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/ai/token_metrics.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/ai_metrics/__init__.py": {
+      "imports": [
+        ".ai_metrics_collector",
+        ".latency_tracker",
+        ".provider_monitor",
+        ".token_usage_tracker"
+      ]
+    },
+    "monitoring/ai_metrics/ai_metrics_collector.py": {
+      "imports": [
+        ".latency_tracker",
+        ".provider_monitor",
+        ".token_usage_tracker",
+        "__future__",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/ai_metrics/latency_tracker.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "statistics",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/ai_metrics/provider_monitor.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "logging",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/ai_metrics/token_usage_tracker.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "logging",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/dashboard/__init__.py": {
+      "imports": []
+    },
+    "monitoring/dashboard/streamlit_dashboard.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "json",
+        "monitoring.health.health_checker",
+        "monitoring.metrics.prometheus_metrics",
+        "os",
+        "pathlib",
+        "streamlit",
+        "sys",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/health/__init__.py": {
+      "imports": []
+    },
+    "monitoring/health/health_checker.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "enum",
+        "logging",
+        "os",
+        "psutil",
+        "sqlite3",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/metrics/__init__.py": {
+      "imports": []
+    },
+    "monitoring/metrics/prometheus_metrics.py": {
+      "imports": [
+        "__future__",
+        "contextlib",
+        "logging",
+        "prometheus_client",
+        "psutil",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/search_metrics/__init__.py": {
+      "imports": [
+        "monitoring.search_metrics.latency_tracker",
+        "monitoring.search_metrics.metrics_collector",
+        "monitoring.search_metrics.retrieval_evaluator"
+      ]
+    },
+    "monitoring/search_metrics/latency_tracker.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "dataclasses",
+        "statistics",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/search_metrics/metrics_collector.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "monitoring.search_metrics.latency_tracker",
+        "monitoring.search_metrics.retrieval_evaluator",
+        "time",
+        "typing"
+      ]
+    },
+    "monitoring/search_metrics/retrieval_evaluator.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "math",
+        "typing"
+      ]
+    },
+    "monitoring/task_monitor.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "json",
+        "logging",
+        "pathlib",
+        "sqlite3",
+        "time",
+        "typing"
+      ]
+    },
+    "multi_tenant/__init__.py": {
+      "imports": []
+    },
+    "multi_tenant/billing_tracker.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "multi_tenant/isolation.py": {
+      "imports": [
+        "__future__",
+        "contextlib",
+        "contextvars",
+        "logging",
+        "typing"
+      ]
+    },
+    "multi_tenant/quota_manager.py": {
+      "imports": [
+        "__future__",
+        "calendar",
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "math",
+        "redis",
+        "time",
+        "typing"
+      ]
+    },
+    "multi_tenant/tenant_config.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "logging",
+        "redis",
+        "typing"
+      ]
+    },
+    "multi_tenant/tenant_manager.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "json",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "multi_tenant/tenant_router.py": {
+      "imports": [
+        "__future__",
+        "fastapi",
+        "fastapi.responses",
+        "logging",
+        "multi_tenant.isolation",
+        "multi_tenant.tenant_manager",
+        "starlette.middleware.base",
+        "starlette.types",
+        "typing"
+      ]
+    },
+    "orchestration/runtime/__init__.py": {
+      "imports": [
+        ".dynamic_executor",
+        ".intelligent_router",
+        ".runtime_decision_system"
+      ]
+    },
+    "orchestration/runtime/dynamic_executor.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "typing"
+      ]
+    },
+    "orchestration/runtime/intelligent_router.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "typing"
+      ]
+    },
+    "orchestration/runtime/runtime_decision_system.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "typing"
+      ]
+    },
+    "requirements/__init__.py": {
+      "imports": []
+    },
+    "scripts/__init__.py": {
+      "imports": []
+    },
+    "scripts/data_collectors/__init__.py": {
+      "imports": []
+    },
+    "scripts/data_collectors/arabic_corpus_collector.py": {
+      "imports": [
+        "__future__",
+        "cloud.dataset_manager",
+        "cloud.hf_client",
+        "datasets",
+        "dotenv",
+        "logging",
+        "pathlib",
+        "re",
+        "sys",
+        "typing"
+      ]
+    },
+    "scripts/data_collectors/books_collector.py": {
+      "imports": [
+        "__future__",
+        "cloud.dataset_manager",
+        "cloud.hf_client",
+        "datasets",
+        "dotenv",
+        "logging",
+        "pathlib",
+        "re",
+        "sys",
+        "typing"
+      ]
+    },
+    "scripts/data_collectors/github_code_collector.py": {
+      "imports": [
+        "__future__",
+        "cloud.dataset_manager",
+        "cloud.hf_client",
+        "datasets",
+        "dotenv",
+        "logging",
+        "pathlib",
+        "re",
+        "sys",
+        "typing"
+      ]
+    },
+    "scripts/data_collectors/qa_collector.py": {
+      "imports": [
+        "__future__",
+        "cloud.dataset_manager",
+        "cloud.hf_client",
+        "datasets",
+        "dotenv",
+        "logging",
+        "pathlib",
+        "re",
+        "sys",
+        "typing"
+      ]
+    },
+    "scripts/data_collectors/web_crawler.py": {
+      "imports": [
+        "__future__",
+        "bs4",
+        "cloud.dataset_manager",
+        "cloud.hf_client",
+        "dotenv",
+        "hashlib",
+        "logging",
+        "pathlib",
+        "re",
+        "requests",
+        "sys",
+        "time",
+        "typing",
+        "urllib.parse",
+        "urllib.robotparser"
+      ]
+    },
+    "scripts/data_collectors/wikipedia_collector.py": {
+      "imports": [
+        "__future__",
+        "cloud.dataset_manager",
+        "cloud.hf_client",
+        "datasets",
+        "dotenv",
+        "logging",
+        "os",
+        "pathlib",
+        "re",
+        "sys",
+        "typing"
+      ]
+    },
+    "scripts/evaluation/__init__.py": {
+      "imports": []
+    },
+    "scripts/evaluation/run_evaluation.py": {
+      "imports": [
+        "argparse",
+        "asyncio",
+        "hajeen_model.hajeen_model_v1",
+        "json",
+        "logging",
+        "pathlib",
+        "sys",
+        "time"
+      ]
+    },
+    "scripts/expand_arabic_dataset.py": {
+      "imports": [
+        "argparse",
+        "core.hf_integration.data_cleaner",
+        "core.hf_integration.hub_manager",
+        "datasets",
+        "logging",
+        "os",
+        "typing"
+      ]
+    },
+    "scripts/finetune_mistral.py": {
+      "imports": [
+        "__future__",
+        "argparse",
+        "datasets",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "peft",
+        "torch",
+        "transformers",
+        "trl",
+        "typing"
+      ]
+    },
+    "scripts/setup/__init__.py": {
+      "imports": []
+    },
+    "scripts/setup/create_storage_dirs.py": {
+      "imports": [
+        "asyncio",
+        "data_engine.storage.storage_manager"
+      ]
+    },
+    "scripts/setup/init_database.py": {
+      "imports": [
+        "asyncio",
+        "data_engine.storage.storage_manager"
+      ]
+    },
+    "scripts/sync_hf_data.py": {
+      "imports": [
+        "argparse",
+        "core.hf_integration.data_cleaner",
+        "core.hf_integration.hub_manager",
+        "logging",
+        "os",
+        "sys"
+      ]
+    },
+    "scripts/sync_hf_model.py": {
+      "imports": [
+        "argparse",
+        "core.hf_integration.hub_manager",
+        "logging",
+        "os",
+        "sys"
+      ]
+    },
+    "scripts/training/__init__.py": {
+      "imports": []
+    },
+    "scripts/training/run_training.py": {
+      "imports": [
+        "argparse",
+        "hajeen_model.dataset_builder",
+        "hajeen_model.training_pipeline",
+        "json",
+        "logging",
+        "pathlib",
+        "sys",
+        "time"
+      ]
+    },
+    "security/__init__.py": {
+      "imports": []
+    },
+    "security/api_keys/__init__.py": {
+      "imports": []
+    },
+    "security/api_keys/api_key_manager.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hashlib",
+        "json",
+        "logging",
+        "os",
+        "secrets",
+        "time",
+        "typing"
+      ]
+    },
+    "security/audit/__init__.py": {
+      "imports": []
+    },
+    "security/audit/audit_logger.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "hashlib",
+        "json",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "security/auth/__init__.py": {
+      "imports": []
+    },
+    "security/auth/api_key_manager.py": {
+      "imports": [
+        "dataclasses",
+        "hashlib",
+        "secrets",
+        "time",
+        "typing"
+      ]
+    },
+    "security/auth/jwt_auth.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "jwt",
+        "logging",
+        "os",
+        "security.auth.revoked_tokens",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "security/auth/revoked_tokens.py": {
+      "imports": [
+        "time",
+        "typing"
+      ]
+    },
+    "security/config/__init__.py": {
+      "imports": []
+    },
+    "security/config/secret_manager.py": {
+      "imports": [
+        "__future__",
+        "base64",
+        "hashlib",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "time",
+        "typing"
+      ]
+    },
+    "security/encryption/__init__.py": {
+      "imports": []
+    },
+    "security/encryption/encryptor.py": {
+      "imports": [
+        "__future__",
+        "base64",
+        "cryptography.hazmat.backends",
+        "cryptography.hazmat.primitives",
+        "cryptography.hazmat.primitives.ciphers.aead",
+        "cryptography.hazmat.primitives.kdf.pbkdf2",
+        "hashlib",
+        "os",
+        "typing"
+      ]
+    },
+    "security/firewall/__init__.py": {
+      "imports": []
+    },
+    "security/firewall/ip_filter.py": {
+      "imports": [
+        "__future__",
+        "ipaddress",
+        "logging",
+        "redis",
+        "time",
+        "typing"
+      ]
+    },
+    "security/middleware/__init__.py": {
+      "imports": [
+        "security.middleware.auth_middleware"
+      ]
+    },
+    "security/middleware/auth_middleware.py": {
+      "imports": [
+        "__future__",
+        "fastapi",
+        "fastapi.responses",
+        "logging",
+        "os",
+        "redis",
+        "security.audit.audit_logger",
+        "security.auth.api_key_manager",
+        "security.auth.jwt_auth",
+        "security.rate_limit.rate_limiter",
+        "security.rbac.rbac",
+        "starlette.middleware.base",
+        "time",
+        "typing"
+      ]
+    },
+    "security/middleware/security_middleware.py": {
+      "imports": [
+        "__future__",
+        "base64",
+        "collections",
+        "functools",
+        "hashlib",
+        "hmac",
+        "json",
+        "jwt",
+        "logging",
+        "os",
+        "time",
+        "typing"
+      ]
+    },
+    "security/permissions/__init__.py": {
+      "imports": []
+    },
+    "security/permissions/rbac.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "logging",
+        "typing"
+      ]
+    },
+    "security/rate_limit/__init__.py": {
+      "imports": []
+    },
+    "security/rate_limit/rate_limiter.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hashlib",
+        "logging",
+        "redis",
+        "time",
+        "typing"
+      ]
+    },
+    "security/rbac/rbac.py": {
+      "imports": [
+        "__future__",
+        "enum",
+        "functools",
+        "typing"
+      ]
+    },
+    "security/resource/__init__.py": {
+      "imports": []
+    },
+    "security/resource/resource_guard.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "concurrent.futures",
+        "contextlib",
+        "functools",
+        "logging",
+        "os",
+        "psutil",
+        "signal",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "services/__init__.py": {
+      "imports": []
+    },
+    "services/agent_frameworks/autogen_example.py": {
+      "imports": [
+        "autogen",
+        "logging"
+      ]
+    },
+    "services/agent_frameworks/custom_orchestration_runtime.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/agent_frameworks/langgraph_example.py": {
+      "imports": [
+        "langchain_core.messages",
+        "langgraph.graph",
+        "operator",
+        "typing"
+      ]
+    },
+    "services/agent_service.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.prompts.prompt_builder",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/agents/__init__.py": {
+      "imports": [
+        ".agent_orchestrator",
+        ".base_agent",
+        ".execution_agent",
+        ".memory_agent",
+        ".planner_agent",
+        ".retrieval_agent",
+        ".tool_agent"
+      ]
+    },
+    "services/agents/agent_orchestrator.py": {
+      "imports": [
+        ".contracts",
+        ".tool_runtime",
+        "__future__",
+        "asyncio",
+        "brain.memory.memory_fabric",
+        "brain.policy.policy_engine",
+        "inspect",
+        "logging",
+        "services.rag.rag_pipeline",
+        "time",
+        "typing"
+      ]
+    },
+    "services/agents/autonomous/__init__.py": {
+      "imports": [
+        ".autonomous_agent",
+        ".recursive_planner",
+        ".reflection_loop",
+        ".task_executor"
+      ]
+    },
+    "services/agents/autonomous/autonomous_agent.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "services.agents.autonomous.recursive_planner",
+        "services.agents.autonomous.reflection_loop",
+        "services.agents.autonomous.task_executor",
+        "services.agents.base_agent",
+        "typing"
+      ]
+    },
+    "services/agents/autonomous/recursive_planner.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "json",
+        "logging",
+        "re",
+        "services.agents.base_agent",
+        "typing"
+      ]
+    },
+    "services/agents/autonomous/reflection_loop.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "json",
+        "logging",
+        "re",
+        "services.agents.base_agent",
+        "typing"
+      ]
+    },
+    "services/agents/autonomous/task_executor.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "services.agents.base_agent",
+        "time",
+        "typing"
+      ]
+    },
+    "services/agents/base_agent.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "asyncio",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/agents/contracts.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/agents/execution_agent.py": {
+      "imports": [
+        ".base_agent",
+        "__future__",
+        "asyncio",
+        "core.inference_engine",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/agents/memory_agent.py": {
+      "imports": [
+        ".base_agent",
+        "__future__",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/agents/multi_agent/collaborative_layer.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "services.agents.base_agent",
+        "services.agents.multi_agent.messenger",
+        "services.agents.multi_agent.shared_memory",
+        "typing"
+      ]
+    },
+    "services/agents/multi_agent/messenger.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/agents/multi_agent/shared_memory.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "datetime",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/agents/planner_agent.py": {
+      "imports": [
+        ".base_agent",
+        ".contracts",
+        "__future__",
+        "brain.prompts.unified_prompt_builder",
+        "json",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/agents/retrieval_agent.py": {
+      "imports": [
+        ".base_agent",
+        "__future__",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/agents/tool_agent.py": {
+      "imports": [
+        ".base_agent",
+        "__future__",
+        "asyncio",
+        "core.inference_engine",
+        "json",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/agents/tool_runtime.py": {
+      "imports": [
+        ".contracts",
+        "__future__",
+        "asyncio",
+        "brain.policy.policy_engine",
+        "inspect",
+        "time",
+        "typing"
+      ]
+    },
+    "services/alignment/dpo_pipeline.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "datasets",
+        "logging",
+        "pathlib",
+        "transformers",
+        "trl",
+        "typing"
+      ]
+    },
+    "services/alignment/rlhf_infrastructure.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "datasets",
+        "logging",
+        "pathlib",
+        "torch",
+        "trl",
+        "typing"
+      ]
+    },
+    "services/chat/__init__.py": {
+      "imports": [
+        ".chat_service",
+        ".chat_session",
+        ".citation_injector",
+        ".moderation_layer",
+        ".response_postprocessor"
+      ]
+    },
+    "services/chat/chat_service.py": {
+      "imports": [
+        ".citation_injector",
+        "__future__",
+        "asyncio",
+        "brain.brain_v3",
+        "brain.memory.unified_interface",
+        "core.llm.base",
+        "dataclasses",
+        "logging",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/chat/chat_session.py": {
+      "imports": [
+        "__future__",
+        "core.llm.base",
+        "dataclasses",
+        "services.memory.conversation_memory",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/chat/citation_injector.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "re",
+        "typing"
+      ]
+    },
+    "services/chat/moderation_layer.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "re",
+        "typing"
+      ]
+    },
+    "services/chat/response_postprocessor.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "re",
+        "typing"
+      ]
+    },
+    "services/completion_service.py": {
+      "imports": [
+        "__future__",
+        "core.inference_engine",
+        "core.llm.llm_manager",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "services/data_intelligence/components.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "json",
+        "logging",
+        "re",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/data_intelligence/data_factory.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "json",
+        "logging",
+        "re",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/data_service/__init__.py": {
+      "imports": [
+        ".conversation_builder",
+        ".dataset_builder",
+        ".dataset_cleaner",
+        ".dataset_exporter",
+        ".dataset_formatter",
+        ".instruction_builder"
+      ]
+    },
+    "services/data_service/conversation_builder.py": {
+      "imports": [
+        "__future__",
+        "time",
+        "typing"
+      ]
+    },
+    "services/data_service/dataset_builder.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "logging",
+        "pathlib",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/data_service/dataset_cleaner.py": {
+      "imports": [
+        "__future__",
+        "hashlib",
+        "langdetect",
+        "re",
+        "typing",
+        "unicodedata"
+      ]
+    },
+    "services/data_service/dataset_exporter.py": {
+      "imports": [
+        "__future__",
+        "datasets",
+        "json",
+        "logging",
+        "pandas",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "services/data_service/dataset_formatter.py": {
+      "imports": [
+        "__future__",
+        "typing"
+      ]
+    },
+    "services/data_service/dataset_versioner.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hashlib",
+        "json",
+        "logging",
+        "os",
+        "pandas",
+        "pathlib",
+        "random",
+        "shutil",
+        "time",
+        "typing"
+      ]
+    },
+    "services/data_service/instruction_builder.py": {
+      "imports": [
+        "__future__",
+        "random",
+        "typing"
+      ]
+    },
+    "services/distributed_inference/ray_serve_deployment.py": {
+      "imports": [
+        "__future__",
+        "llama_cpp",
+        "logging",
+        "os",
+        "ray",
+        "torch",
+        "transformers",
+        "typing"
+      ]
+    },
+    "services/distributed_messaging/celery_config.py": {
+      "imports": [
+        "celery",
+        "os",
+        "time"
+      ]
+    },
+    "services/distributed_messaging/kafka_integration.py": {
+      "imports": [
+        "logging",
+        "typing"
+      ]
+    },
+    "services/distributed_messaging/redis_streams_integration.py": {
+      "imports": [
+        "asyncio",
+        "logging",
+        "redis",
+        "typing"
+      ]
+    },
+    "services/embedding_service.py": {
+      "imports": [
+        "__future__",
+        "core.embeddings.embedding_engine",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "services/evaluation/evaluation_engine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "services.agents.base_agent",
+        "services.evaluation.metrics",
+        "time",
+        "typing"
+      ]
+    },
+    "services/evaluation/metrics.py": {
+      "imports": [
+        "__future__",
+        "re",
+        "services.agents.base_agent",
+        "typing"
+      ]
+    },
+    "services/inference_service.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.inference_engine",
+        "core.llm.llm_manager",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "services/memory/__init__.py": {
+      "imports": [
+        ".context_window_manager",
+        ".conversation_memory",
+        ".session_manager",
+        ".summarization_memory",
+        ".vector_memory"
+      ]
+    },
+    "services/memory/context_window_manager.py": {
+      "imports": [
+        "__future__",
+        "core.llm.base",
+        "dataclasses",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/memory/conversation_memory.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.memory.unified_interface",
+        "core.llm.base",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/memory/session_manager.py": {
+      "imports": [
+        ".conversation_memory",
+        "__future__",
+        "asyncio",
+        "brain.memory.unified_interface",
+        "dataclasses",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/memory/summarization_memory.py": {
+      "imports": [
+        ".conversation_memory",
+        "__future__",
+        "core.llm.base",
+        "dataclasses",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/memory/vector_memory.py": {
+      "imports": [
+        "__future__",
+        "core.embeddings.embedding_manager",
+        "dataclasses",
+        "logging",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "services/memory_service.py": {
+      "imports": [
+        "__future__",
+        "core.memory.memory_manager",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/moderation_service.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "typing"
+      ]
+    },
+    "services/production/production_manager.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/prompts/__init__.py": {
+      "imports": [
+        ".context_injector",
+        ".prompt_builder",
+        ".prompt_validator",
+        ".system_prompt_manager",
+        ".template_engine"
+      ]
+    },
+    "services/prompts/context_injector.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/prompts/prompt_builder.py": {
+      "imports": [
+        ".context_injector",
+        ".prompt_validator",
+        ".system_prompt_manager",
+        ".template_engine",
+        "__future__",
+        "core.llm.base",
+        "core.prompts.base",
+        "dataclasses",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/prompts/prompt_validator.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "re",
+        "typing"
+      ]
+    },
+    "services/prompts/system_prompt_manager.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "typing"
+      ]
+    },
+    "services/prompts/template_engine.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "re",
+        "string",
+        "typing"
+      ]
+    },
+    "services/rag/__init__.py": {
+      "imports": [
+        "services.rag.citation_builder",
+        "services.rag.citation_manager",
+        "services.rag.context_builder",
+        "services.rag.hybrid_search",
+        "services.rag.prompt_builder",
+        "services.rag.rag_pipeline",
+        "services.rag.reranker",
+        "services.rag.response_formatter",
+        "services.rag.retriever"
+      ]
+    },
+    "services/rag/citation_builder.py": {
+      "imports": [
+        ".retriever",
+        "__future__",
+        "re",
+        "typing"
+      ]
+    },
+    "services/rag/citation_manager.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    "services/rag/context_assembler.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "re",
+        "typing"
+      ]
+    },
+    "services/rag/context_builder.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "services.retrieval.context_assembler",
+        "typing"
+      ]
+    },
+    "services/rag/hybrid_search.py": {
+      "imports": [
+        ".retriever",
+        "__future__",
+        "logging",
+        "math",
+        "typing"
+      ]
+    },
+    "services/rag/mmr_retriever.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "math",
+        "typing"
+      ]
+    },
+    "services/rag/prompt_builder.py": {
+      "imports": [
+        "__future__",
+        "core.prompts.base",
+        "dataclasses",
+        "enum",
+        "logging",
+        "services.rag.context_builder",
+        "typing"
+      ]
+    },
+    "services/rag/rag_pipeline.py": {
+      "imports": [
+        "__future__",
+        "brain.prompts.unified_prompt_builder",
+        "dataclasses",
+        "logging",
+        "services.rag.citation_manager",
+        "services.rag.context_builder",
+        "services.rag.prompt_builder",
+        "services.rag.response_formatter",
+        "services.retrieval.base_retriever",
+        "services.retrieval.context_assembler",
+        "time",
+        "typing"
+      ]
+    },
+    "services/rag/reranker.py": {
+      "imports": [
+        ".retriever",
+        "__future__",
+        "logging",
+        "math",
+        "sentence_transformers",
+        "typing"
+      ]
+    },
+    "services/rag/response_formatter.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    "services/rag/retriever.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "typing"
+      ]
+    },
+    "services/rag_service.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.embeddings.embedding_engine",
+        "core.inference_engine",
+        "core.prompts.prompt_builder",
+        "logging",
+        "services.rag.citation_builder",
+        "services.rag.context_builder",
+        "services.rag.hybrid_search",
+        "services.rag.reranker",
+        "services.rag.retriever",
+        "time",
+        "typing"
+      ]
+    },
+    "services/redis/__init__.py": {
+      "imports": [
+        "services.redis.redis_service"
+      ]
+    },
+    "services/redis/redis_service.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "logging",
+        "os",
+        "redis.asyncio",
+        "time",
+        "typing"
+      ]
+    },
+    "services/retrieval/__init__.py": {
+      "imports": [
+        "services.retrieval.base_retriever",
+        "services.retrieval.context_assembler",
+        "services.retrieval.hybrid_retriever",
+        "services.retrieval.multi_query_retriever",
+        "services.retrieval.vector_retriever"
+      ]
+    },
+    "services/retrieval/base_retriever.py": {
+      "imports": [
+        "__future__",
+        "abc",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    "services/retrieval/context_assembler.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "services.retrieval.base_retriever",
+        "typing"
+      ]
+    },
+    "services/retrieval/hybrid_retriever.py": {
+      "imports": [
+        "__future__",
+        "services.retrieval.base_retriever",
+        "services.search.semantic_search",
+        "time",
+        "typing"
+      ]
+    },
+    "services/retrieval/multi_query_retriever.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "logging",
+        "services.retrieval.base_retriever",
+        "services.search.query_processor",
+        "services.search.semantic_search",
+        "time",
+        "typing"
+      ]
+    },
+    "services/retrieval/vector_retriever.py": {
+      "imports": [
+        "__future__",
+        "services.retrieval.base_retriever",
+        "services.search.semantic_search",
+        "time",
+        "typing"
+      ]
+    },
+    "services/search/__init__.py": {
+      "imports": [
+        "services.search.query_processor",
+        "services.search.reranker",
+        "services.search.search_response",
+        "services.search.semantic_search"
+      ]
+    },
+    "services/search/query_processor.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "re",
+        "typing",
+        "unicodedata"
+      ]
+    },
+    "services/search/reranker.py": {
+      "imports": [
+        "__future__",
+        "data_engine.storage.vector_store.base_vector_store",
+        "math",
+        "typing"
+      ]
+    },
+    "services/search/search_response.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "time",
+        "typing"
+      ]
+    },
+    "services/search/semantic_search.py": {
+      "imports": [
+        "__future__",
+        "core.embeddings.embedding_manager",
+        "data_engine.storage.vector_store.base_vector_store",
+        "logging",
+        "services.search.query_processor",
+        "services.search.reranker",
+        "services.search.search_response",
+        "time",
+        "typing"
+      ]
+    },
+    "services/security/policy_engine.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "re",
+        "typing"
+      ]
+    },
+    "services/self_evolution/__init__.py": {
+      "imports": []
+    },
+    "services/self_evolution/continuous_learning_loop.py": {
+      "imports": [
+        "__future__",
+        "typing"
+      ]
+    },
+    "services/self_evolution/curiosity_engine.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "typing"
+      ]
+    },
+    "services/self_evolution/episodic_memory.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "pathlib",
+        "typing"
+      ]
+    },
+    "services/self_evolution/self_reflection_engine.py": {
+      "imports": [
+        "__future__",
+        "json",
+        "typing"
+      ]
+    },
+    "shared/__init__.py": {
+      "imports": []
+    },
+    "shared/database.py": {
+      "imports": [
+        "dotenv",
+        "os",
+        "sqlalchemy",
+        "sqlalchemy.ext.declarative",
+        "sqlalchemy.orm"
+      ]
+    },
+    "shared/exceptions.py": {
+      "imports": [
+        "__future__",
+        "typing"
+      ]
+    },
+    "shared/logging/__init__.py": {
+      "imports": [
+        "shared.logging.structured_logger"
+      ]
+    },
+    "shared/logging/structured_logger.py": {
+      "imports": [
+        "__future__",
+        "contextvars",
+        "json",
+        "logging",
+        "logging.handlers",
+        "os",
+        "pathlib",
+        "sys",
+        "time",
+        "traceback",
+        "typing",
+        "uuid"
+      ]
+    },
+    "shared/schemas/__init__.py": {
+      "imports": [
+        ".article",
+        ".channel",
+        ".pipeline",
+        ".unified_article"
+      ]
+    },
+    "shared/schemas/article.py": {
+      "imports": [
+        "__future__",
+        "datetime",
+        "enum",
+        "hashlib",
+        "json",
+        "pydantic",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.validators",
+        "typing",
+        "uuid"
+      ]
+    },
+    "shared/schemas/channel.py": {
+      "imports": [
+        "__future__",
+        "datetime",
+        "enum",
+        "pydantic",
+        "shared.utils.datetime_utils",
+        "shared.utils.validators",
+        "typing"
+      ]
+    },
+    "shared/schemas/pipeline.py": {
+      "imports": [
+        "__future__",
+        "datetime",
+        "enum",
+        "pydantic",
+        "typing"
+      ]
+    },
+    "shared/schemas/unified_article.py": {
+      "imports": [
+        "__future__",
+        "datetime",
+        "enum",
+        "hashlib",
+        "pydantic",
+        "re",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "typing"
+      ]
+    },
+    "shared/utils/__init__.py": {
+      "imports": [
+        ".datetime_utils",
+        ".id_generator",
+        ".text_utils",
+        ".validators"
+      ]
+    },
+    "shared/utils/datetime_utils.py": {
+      "imports": [
+        "__future__",
+        "datetime"
+      ]
+    },
+    "shared/utils/id_generator.py": {
+      "imports": [
+        "__future__",
+        "hashlib",
+        "uuid"
+      ]
+    },
+    "shared/utils/text_utils.py": {
+      "imports": [
+        "re"
+      ]
+    },
+    "shared/utils/validators.py": {
+      "imports": [
+        "re",
+        "urllib.parse"
+      ]
+    },
+    "storage/__init__.py": {
+      "imports": []
+    },
+    "storage/distributed/__init__.py": {
+      "imports": []
+    },
+    "storage/distributed/backup_manager.py": {
+      "imports": [
+        "__future__",
+        "boto3",
+        "dataclasses",
+        "gzip",
+        "hashlib",
+        "logging",
+        "os",
+        "pathlib",
+        "subprocess",
+        "time",
+        "typing"
+      ]
+    },
+    "storage/distributed/consistency_manager.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "hashlib",
+        "json",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "storage/distributed/disaster_recovery.py": {
+      "imports": [
+        "__future__",
+        "boto3",
+        "dataclasses",
+        "datetime",
+        "enum",
+        "logging",
+        "os",
+        "re",
+        "subprocess",
+        "time",
+        "typing"
+      ]
+    },
+    "storage/distributed/distributed_cache.py": {
+      "imports": [
+        "__future__",
+        "collections",
+        "json",
+        "logging",
+        "redis",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "storage/distributed/replication.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "dataclasses",
+        "enum",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "storage/distributed/shard_manager.py": {
+      "imports": [
+        "__future__",
+        "bisect",
+        "dataclasses",
+        "hashlib",
+        "logging",
+        "typing"
+      ]
+    },
+    "tests/__init__.py": {
+      "imports": []
+    },
+    "tests/ai/__init__.py": {
+      "imports": []
+    },
+    "tests/ai/test_agents.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "pytest",
+        "services.agents.agent_orchestrator",
+        "services.agents.base_agent",
+        "services.agents.execution_agent",
+        "services.agents.memory_agent",
+        "services.agents.planner_agent",
+        "services.agents.retrieval_agent",
+        "services.agents.tool_agent",
+        "unittest.mock"
+      ]
+    },
+    "tests/ai/test_alignment.py": {
+      "imports": [
+        "core.alignment.alignment_pipeline",
+        "core.alignment.evaluation_system",
+        "core.alignment.preference_dataset",
+        "core.alignment.reward_model",
+        "json",
+        "os",
+        "pytest",
+        "services.alignment.dpo_pipeline",
+        "services.alignment.rlhf_infrastructure"
+      ]
+    },
+    "tests/ai/test_chat.py": {
+      "imports": [
+        "__future__",
+        "core.memory.long_term_memory",
+        "core.memory.memory_manager",
+        "core.memory.short_term_memory",
+        "core.prompts.conversation_formatter",
+        "core.prompts.prompt_builder",
+        "core.prompts.system_prompts",
+        "core.prompts.templates",
+        "pytest",
+        "services.moderation_service",
+        "tempfile",
+        "time",
+        "unittest.mock"
+      ]
+    },
+    "tests/ai/test_data_intelligence.py": {
+      "imports": [
+        "pytest",
+        "services.data_intelligence.components",
+        "services.data_intelligence.data_factory",
+        "unittest.mock"
+      ]
+    },
+    "tests/ai/test_embeddings.py": {
+      "imports": [
+        "__future__",
+        "core.embeddings.batch_embedder",
+        "core.embeddings.embedding_cache",
+        "core.embeddings.similarity",
+        "math",
+        "pytest",
+        "unittest.mock"
+      ]
+    },
+    "tests/ai/test_evaluation.py": {
+      "imports": [
+        "pytest",
+        "services.agents.base_agent",
+        "services.evaluation.evaluation_engine",
+        "services.evaluation.metrics"
+      ]
+    },
+    "tests/ai/test_inference.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.inference_engine.batching",
+        "core.inference_engine.context_manager",
+        "core.inference_engine.inference_config",
+        "core.inference_engine.response_parser",
+        "core.inference_engine.sampler",
+        "core.inference_engine.stopping",
+        "pytest",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/ai/test_multi_agent.py": {
+      "imports": [
+        "pytest",
+        "services.agents.base_agent",
+        "services.agents.multi_agent.collaborative_layer",
+        "services.agents.multi_agent.messenger",
+        "services.agents.multi_agent.shared_memory"
+      ]
+    },
+    "tests/ai/test_production.py": {
+      "imports": [
+        "pytest",
+        "services.production.production_manager"
+      ]
+    },
+    "tests/ai/test_rag.py": {
+      "imports": [
+        "__future__",
+        "pytest",
+        "services.rag.citation_builder",
+        "services.rag.context_builder",
+        "services.rag.hybrid_search",
+        "services.rag.reranker",
+        "services.rag.retriever",
+        "unittest.mock"
+      ]
+    },
+    "tests/ai/test_security.py": {
+      "imports": [
+        "services.security.policy_engine"
+      ]
+    },
+    "tests/ai/test_training.py": {
+      "imports": [
+        "__future__",
+        "core.training_engine.checkpoint_manager",
+        "core.training_engine.dataset_loader",
+        "core.training_engine.evaluator",
+        "core.training_engine.lora_trainer",
+        "core.training_engine.metrics",
+        "core.training_engine.trainer",
+        "json",
+        "math",
+        "os",
+        "pathlib",
+        "pytest",
+        "services.data_service.conversation_builder",
+        "services.data_service.dataset_builder",
+        "services.data_service.dataset_cleaner",
+        "services.data_service.dataset_exporter",
+        "services.data_service.dataset_formatter",
+        "services.data_service.instruction_builder",
+        "tempfile"
+      ]
+    },
+    "tests/benchmark/__init__.py": {
+      "imports": []
+    },
+    "tests/benchmark/test_components_benchmark.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.cognitive_layer.intent_analyzer",
+        "brain.cognitive_layer.reasoning_engine",
+        "brain.decision_engine_v3",
+        "brain.learning.continuous_learning",
+        "pytest",
+        "statistics",
+        "time",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/conftest.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.brain_v3",
+        "os",
+        "pathlib",
+        "pytest"
+      ]
+    },
+    "tests/distributed_messaging/test_celery.py": {
+      "imports": [
+        "pytest",
+        "services.distributed_messaging.celery_config",
+        "unittest.mock"
+      ]
+    },
+    "tests/distributed_messaging/test_kafka.py": {
+      "imports": [
+        "services.distributed_messaging.kafka_integration",
+        "unittest.mock"
+      ]
+    },
+    "tests/distributed_messaging/test_redis_streams.py": {
+      "imports": [
+        "pytest",
+        "services.distributed_messaging.redis_streams_integration",
+        "unittest.mock"
+      ]
+    },
+    "tests/integration/__init__.py": {
+      "imports": []
+    },
+    "tests/integration/test_api_workflow.py": {
+      "imports": [
+        "__future__",
+        "api.main",
+        "asyncio",
+        "httpx",
+        "pytest"
+      ]
+    },
+    "tests/integration/test_brain_v3_cognitive.py": {
+      "imports": [
+        "__future__",
+        "brain.brain_v3",
+        "pytest",
+        "unittest.mock",
+        "uuid"
+      ]
+    },
+    "tests/integration/test_full_pipeline.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.pipelines.pipeline_result",
+        "data_engine.processing.filtering.policy_filter",
+        "data_engine.storage.storage_manager",
+        "json",
+        "pathlib",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "tempfile",
+        "typing",
+        "uuid"
+      ]
+    },
+    "tests/integration/test_full_processing_pipeline.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.cleaning.cleaning_pipeline",
+        "data_engine.processing.enrichment.enrichment_pipeline",
+        "data_engine.processing.filtering.content_filter",
+        "data_engine.processing.filtering.filtering_pipeline",
+        "data_engine.processing.filtering.quality_scorer",
+        "data_engine.processing.transformation.transformation_pipeline",
+        "datetime",
+        "pytest",
+        "shared.schemas.article",
+        "time",
+        "typing"
+      ]
+    },
+    "tests/integration/test_learning_pipeline_integration.py": {
+      "imports": [
+        "__future__",
+        "brain.learning.continuous_learning",
+        "json",
+        "pathlib",
+        "pytest"
+      ]
+    },
+    "tests/integration/test_monitoring.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "json",
+        "logging",
+        "monitoring.health.health_checker",
+        "monitoring.metrics.prometheus_metrics",
+        "os",
+        "pytest",
+        "shared.logging.structured_logger",
+        "tempfile",
+        "time",
+        "unittest.mock"
+      ]
+    },
+    "tests/integration/test_phase2_runtime_contract.py": {
+      "imports": [
+        "__future__",
+        "api.v1.ai.router",
+        "asyncio",
+        "brain.brain_v3",
+        "brain.model_router",
+        "core.llm.base",
+        "core.llm.providers.hajeen_provider",
+        "core.llm.providers.ollama_provider",
+        "dataclasses",
+        "fastapi",
+        "fastapi.testclient",
+        "pytest",
+        "typing"
+      ]
+    },
+    "tests/integration/test_phase3_rag_runtime.py": {
+      "imports": [
+        "__future__",
+        "brain.brain_v3",
+        "core.embeddings.embedding_manager",
+        "data_engine.storage.vector_store.base_vector_store",
+        "data_engine.storage.vector_store.faiss_client",
+        "os",
+        "pathlib",
+        "pytest",
+        "services.rag.rag_pipeline",
+        "services.retrieval.hybrid_retriever",
+        "services.retrieval.vector_retriever",
+        "services.search.semantic_search",
+        "time",
+        "types"
+      ]
+    },
+    "tests/integration/test_phase4_native_streaming.py": {
+      "imports": [
+        "asyncio",
+        "brain.model_router",
+        "core.llm.base",
+        "pytest",
+        "services.chat.chat_service"
+      ]
+    },
+    "tests/integration/test_phase5_agents_tools.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.brain_v3",
+        "brain.decision_engine",
+        "brain.goal_manager",
+        "brain.memory.memory_fabric",
+        "brain.model_router",
+        "brain.policy.policy_engine",
+        "brain.prompts.unified_prompt_builder",
+        "pytest",
+        "services.agents.agent_orchestrator",
+        "services.agents.contracts",
+        "services.agents.planner_agent",
+        "services.agents.tool_runtime",
+        "types"
+      ]
+    },
+    "tests/integration/test_phase6_learning_coordinator.py": {
+      "imports": [
+        "__future__",
+        "brain.learning.learning_lifecycle",
+        "brain.learning.phase6_lifecycle",
+        "core.model.model_registry",
+        "data_engine.lifecycle",
+        "json",
+        "pytest"
+      ]
+    },
+    "tests/integration/test_phase6_learning_data.py": {
+      "imports": [
+        "__future__",
+        "data_engine.lifecycle",
+        "json",
+        "services.data_service.dataset_versioner"
+      ]
+    },
+    "tests/integration/test_phase6_training_registry.py": {
+      "imports": [
+        "__future__",
+        "brain.learning.phase6_lifecycle",
+        "brain.model_router",
+        "core.model.model_registry",
+        "json",
+        "pytest"
+      ]
+    },
+    "tests/integration/test_phase7_self_evolution.py": {
+      "imports": [
+        "asyncio",
+        "brain.evolution.phase7_lifecycle",
+        "brain.learning.continuous_learning",
+        "pytest"
+      ]
+    },
+    "tests/integration/test_pipeline.py": {
+      "imports": [
+        "__future__",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.pipelines.stages",
+        "data_engine.processing.filtering.policy_filter",
+        "json",
+        "pathlib",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/integration/test_rag_pipeline.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.embeddings.embedding_engine",
+        "core.retrieval.retrieval_engine",
+        "data_engine.storage.vector_store.base_vector_store",
+        "pytest",
+        "services.data_service.dataset_builder",
+        "services.data_service.dataset_versioner",
+        "services.rag.context_assembler",
+        "services.rag.mmr_retriever",
+        "services.rag_service",
+        "tempfile",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/integration/test_security.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "os",
+        "pytest",
+        "security.config.secret_manager",
+        "security.middleware.security_middleware",
+        "security.resource.resource_guard",
+        "tempfile",
+        "time",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/integration/test_storage_persistence.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.storage.storage_manager",
+        "json",
+        "pathlib",
+        "pytest",
+        "tempfile",
+        "typing",
+        "uuid"
+      ]
+    },
+    "tests/integration/test_verified_base_registry.py": {
+      "imports": [
+        "brain.model_router",
+        "core.model.artifact_validation",
+        "core.model.model_registry",
+        "json",
+        "pathlib"
+      ]
+    },
+    "tests/integration_test.py": {
+      "imports": [
+        "hajeen_model.datasets.dataset_manager",
+        "hajeen_model.evaluation.evaluation_framework",
+        "hajeen_model.inference.inference_engine",
+        "json",
+        "os",
+        "sys"
+      ]
+    },
+    "tests/load/__init__.py": {
+      "imports": []
+    },
+    "tests/load/test_brain_load.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.brain_v3",
+        "brain.learning.continuous_learning",
+        "os",
+        "pytest",
+        "time",
+        "uuid"
+      ]
+    },
+    "tests/production/__init__.py": {
+      "imports": []
+    },
+    "tests/production/failover/__init__.py": {
+      "imports": []
+    },
+    "tests/production/failover/test_failover.py": {
+      "imports": [
+        "asyncio",
+        "httpx",
+        "os",
+        "pytest",
+        "subprocess",
+        "time",
+        "typing"
+      ]
+    },
+    "tests/production/gpu/__init__.py": {
+      "imports": []
+    },
+    "tests/production/gpu/test_gpu.py": {
+      "imports": [
+        "gc",
+        "os",
+        "pytest",
+        "time",
+        "torch",
+        "typing"
+      ]
+    },
+    "tests/production/load/__init__.py": {
+      "imports": []
+    },
+    "tests/production/load/test_api_load.py": {
+      "imports": [
+        "json",
+        "locust",
+        "locust.runners",
+        "os",
+        "pytest",
+        "random",
+        "time"
+      ]
+    },
+    "tests/production/security/__init__.py": {
+      "imports": []
+    },
+    "tests/production/security/test_security.py": {
+      "imports": [
+        "httpx",
+        "jwt",
+        "os",
+        "pytest",
+        "time",
+        "typing"
+      ]
+    },
+    "tests/production/stress/__init__.py": {
+      "imports": []
+    },
+    "tests/production/stress/test_stress.py": {
+      "imports": [
+        "asyncio",
+        "httpx",
+        "os",
+        "psutil",
+        "pytest",
+        "time",
+        "typing"
+      ]
+    },
+    "tests/self_evolution/test_continuous_learning_loop.py": {
+      "imports": [
+        "pytest",
+        "services.self_evolution.continuous_learning_loop",
+        "services.self_evolution.curiosity_engine",
+        "services.self_evolution.episodic_memory",
+        "services.self_evolution.self_reflection_engine",
+        "unittest.mock"
+      ]
+    },
+    "tests/self_evolution/test_curiosity_engine.py": {
+      "imports": [
+        "pytest",
+        "services.self_evolution.curiosity_engine",
+        "services.self_evolution.episodic_memory",
+        "services.self_evolution.self_reflection_engine",
+        "unittest.mock"
+      ]
+    },
+    "tests/self_evolution/test_episodic_memory.py": {
+      "imports": [
+        "json",
+        "os",
+        "pytest",
+        "services.self_evolution.episodic_memory"
+      ]
+    },
+    "tests/self_evolution/test_self_reflection_engine.py": {
+      "imports": [
+        "pytest",
+        "services.self_evolution.self_reflection_engine",
+        "unittest.mock"
+      ]
+    },
+    "tests/stress/__init__.py": {
+      "imports": []
+    },
+    "tests/stress/test_brain_stress.py": {
+      "imports": [
+        "__future__",
+        "brain.cognitive_layer.context_analyzer",
+        "brain.cognitive_layer.intent_analyzer",
+        "brain.cognitive_layer.reasoning_engine",
+        "brain.learning.continuous_learning",
+        "pytest",
+        "unittest.mock"
+      ]
+    },
+    "tests/test_api.py": {
+      "imports": [
+        "api.main",
+        "fastapi.testclient"
+      ]
+    },
+    "tests/test_basic.py": {
+      "imports": []
+    },
+    "tests/test_dataset_manager.py": {
+      "imports": [
+        "hajeen_model.datasets.dataset_manager",
+        "json",
+        "os",
+        "shutil",
+        "sys"
+      ]
+    },
+    "tests/test_final_integration.py": {
+      "imports": [
+        "asyncio",
+        "core.inference_engine.engine",
+        "hajeen_model.evaluation.evaluation_framework",
+        "os",
+        "sys",
+        "traceback"
+      ]
+    },
+    "tests/test_health.py": {
+      "imports": [
+        "api.main",
+        "fastapi.testclient"
+      ]
+    },
+    "tests/test_phase65.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ai.embeddings.base_embedder",
+        "data_engine.ai.embeddings.embedding_cache",
+        "data_engine.ai.embeddings.embedding_metadata",
+        "data_engine.ai.embeddings.embedding_pipeline",
+        "data_engine.ai.embeddings.embedding_storage",
+        "data_engine.metadata.tracker",
+        "data_engine.processing.filtering.deduplication_engine",
+        "data_engine.processing.transformation.chunking_engine",
+        "datetime",
+        "os",
+        "pathlib",
+        "shared.schemas.article",
+        "shared.schemas.unified_article",
+        "sys",
+        "tempfile",
+        "traceback",
+        "typing"
+      ]
+    },
+    "tests/test_phase6_celery.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.registry",
+        "datetime",
+        "os",
+        "pytest",
+        "workers.celery_app",
+        "workers.celery_config",
+        "workers.tasks.ingestion_tasks",
+        "workers.tasks.pipeline_tasks",
+        "workers.tasks.processing_tasks"
+      ]
+    },
+    "tests/test_phase6_monitor.py": {
+      "imports": [
+        "__future__",
+        "data_engine.storage.metadata_store.job_store",
+        "monitoring.task_monitor",
+        "os",
+        "pathlib",
+        "pytest",
+        "tempfile",
+        "time"
+      ]
+    },
+    "tests/test_phase6_priority_queue.py": {
+      "imports": [
+        "__future__",
+        "pytest",
+        "time",
+        "workers.priority_queue"
+      ]
+    },
+    "tests/test_phase6_redis.py": {
+      "imports": [
+        "__future__",
+        "configs.redis",
+        "fakeredis",
+        "pytest"
+      ]
+    },
+    "tests/test_phase6_retry.py": {
+      "imports": [
+        "__future__",
+        "pathlib",
+        "pytest",
+        "tempfile",
+        "time",
+        "workers.backpressure",
+        "workers.failure_handler",
+        "workers.retry_manager"
+      ]
+    },
+    "tests/test_phase6_scheduler.py": {
+      "imports": [
+        "__future__",
+        "apscheduler.events",
+        "apscheduler.executors.pool",
+        "apscheduler.jobstores.memory",
+        "apscheduler.schedulers.background",
+        "data_engine.ingestion.schedulers.cron_scheduler",
+        "datetime",
+        "pytest",
+        "time"
+      ]
+    },
+    "tests/test_phase7.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.embeddings.base",
+        "core.embeddings.embedding_manager",
+        "core.embeddings.embedding_registry",
+        "core.embeddings.sentence_transformer",
+        "data_engine.pipelines.stages.embed_stage",
+        "data_engine.processing.transformation.chunking_engine",
+        "data_engine.storage.vector_store.base_vector_store",
+        "data_engine.storage.vector_store.faiss_client",
+        "data_engine.storage.vector_store.sqlite_vector_index",
+        "hashlib",
+        "math",
+        "monitoring.search_metrics.latency_tracker",
+        "monitoring.search_metrics.metrics_collector",
+        "monitoring.search_metrics.retrieval_evaluator",
+        "numpy",
+        "os",
+        "pathlib",
+        "services.rag.citation_manager",
+        "services.rag.context_builder",
+        "services.rag.prompt_builder",
+        "services.rag.rag_pipeline",
+        "services.retrieval.context_assembler",
+        "services.retrieval.hybrid_retriever",
+        "services.retrieval.multi_query_retriever",
+        "services.retrieval.vector_retriever",
+        "services.search.query_processor",
+        "services.search.reranker",
+        "services.search.semantic_search",
+        "sys",
+        "tempfile",
+        "time",
+        "traceback",
+        "typing"
+      ]
+    },
+    "tests/test_phase8.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.inference_engine.engine",
+        "core.inference_engine.stream_handler",
+        "core.llm.base",
+        "core.llm.llm_manager",
+        "core.llm.provider_registry",
+        "hajeen_model.core",
+        "hajeen_model.core.hajeen_model_v1",
+        "hajeen_model.core.local_inference_engine",
+        "monitoring.ai_metrics.ai_metrics_collector",
+        "monitoring.ai_metrics.latency_tracker",
+        "monitoring.ai_metrics.provider_monitor",
+        "monitoring.ai_metrics.token_usage_tracker",
+        "pathlib",
+        "pytest",
+        "services.chat.chat_service",
+        "services.chat.citation_injector",
+        "services.memory.conversation_memory",
+        "services.memory.session_manager",
+        "services.prompts.prompt_builder",
+        "services.prompts.prompt_validator",
+        "services.prompts.template_engine",
+        "time",
+        "uuid"
+      ]
+    },
+    "tests/test_preparation_pipeline.py": {
+      "imports": [
+        "data_engine.preparation.data_preparation_pipeline",
+        "os",
+        "sys"
+      ]
+    },
+    "tests/test_single_runtime_path.py": {
+      "imports": [
+        "__future__",
+        "ast",
+        "asyncio",
+        "brain",
+        "brain.brain_v3",
+        "brain.memory.memory_fabric",
+        "brain.memory.unified_interface",
+        "brain.model_router",
+        "brain.prompts.unified_prompt_builder",
+        "core.llm.base",
+        "core.prompts.base",
+        "pathlib",
+        "services.memory.conversation_memory",
+        "services.memory.session_manager",
+        "services.rag.prompt_builder",
+        "sys",
+        "unittest"
+      ]
+    },
+    "tests/test_worker.py": {
+      "imports": [
+        "pytest",
+        "workers.tasks.test_task"
+      ]
+    },
+    "tests/unit/__init__.py": {
+      "imports": []
+    },
+    "tests/unit/test_article_schema_phase2.py": {
+      "imports": [
+        "__future__",
+        "datetime",
+        "json",
+        "pytest",
+        "shared.schemas.article"
+      ]
+    },
+    "tests/unit/test_base_connector.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.connectors.base_connector",
+        "httpx",
+        "pytest",
+        "respx",
+        "shared.schemas.article",
+        "time",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_base_processor.py": {
+      "imports": [
+        "data_engine.processing",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_builder.py": {
+      "imports": [
+        "data_engine.channels.base",
+        "data_engine.channels.builder",
+        "pydantic",
+        "pytest",
+        "shared.exceptions",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "typing"
+      ]
+    },
+    "tests/unit/test_channels.py": {
+      "imports": [
+        "data_engine.channels.base",
+        "datetime",
+        "pydantic",
+        "pytest",
+        "shared.exceptions",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "typing"
+      ]
+    },
+    "tests/unit/test_chunker.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.transformation.chunker",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/unit/test_cleaning_pipeline.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.cleaning.cleaning_pipeline",
+        "datetime",
+        "pytest",
+        "shared.schemas.article"
+      ]
+    },
+    "tests/unit/test_cli.py": {
+      "imports": [
+        "data_engine.channels.registry",
+        "data_engine.cli",
+        "typer.testing",
+        "yaml"
+      ]
+    },
+    "tests/unit/test_cognitive_layer_complete.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.cognitive_layer.context_analyzer",
+        "brain.cognitive_layer.intent_analyzer",
+        "brain.cognitive_layer.reasoning_engine",
+        "pytest",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_content_enricher.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.enrichment.content_enricher",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_content_filter.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.filtering.content_filter",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_continuous_learning_pipeline.py": {
+      "imports": [
+        "__future__",
+        "brain.learning.continuous_learning",
+        "json",
+        "pathlib",
+        "pytest"
+      ]
+    },
+    "tests/unit/test_custom_connector.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.connectors.base_connector",
+        "data_engine.ingestion.connectors.custom_connector",
+        "datetime",
+        "httpx",
+        "json",
+        "pytest",
+        "respx",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "tests/unit/test_data_transformer.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.transformation.data_transformer",
+        "datetime",
+        "json",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_deduplicator.py": {
+      "imports": [
+        "data_engine.processing.filtering.deduplicator",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_demo_channel.py": {
+      "imports": [
+        "data_engine.channels.base",
+        "data_engine.channels.predefined.demo_channel",
+        "datetime",
+        "pytest",
+        "shared.schemas.channel"
+      ]
+    },
+    "tests/unit/test_demo_storage_integration.py": {
+      "imports": [
+        "data_engine.channels.predefined.demo_channel",
+        "data_engine.storage.storage_manager",
+        "os",
+        "pathlib",
+        "pytest",
+        "shared.schemas.channel",
+        "shutil"
+      ]
+    },
+    "tests/unit/test_entity_extractor.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.enrichment.entity_extractor",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/unit/test_github_connector.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.connectors.base_connector",
+        "data_engine.ingestion.connectors.github_connector",
+        "datetime",
+        "httpx",
+        "json",
+        "pytest",
+        "respx",
+        "shared.schemas.article"
+      ]
+    },
+    "tests/unit/test_html_cleaner.py": {
+      "imports": [
+        "data_engine.processing.cleaning.html_cleaner",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_ingestion_http.py": {
+      "imports": [
+        "asyncio",
+        "data_engine.ingestion.http_client",
+        "data_engine.ingestion.response_models",
+        "httpx",
+        "pytest",
+        "respx"
+      ]
+    },
+    "tests/unit/test_keyword_extractor.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.enrichment.keyword_extractor",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/unit/test_language_filter.py": {
+      "imports": [
+        "data_engine.processing.filtering.language_filter",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_memory_unification_runtime.py": {
+      "imports": [
+        "asyncio",
+        "brain.memory.unified_interface",
+        "core.memory.memory_manager",
+        "os",
+        "services.memory.session_manager",
+        "sys"
+      ]
+    },
+    "tests/unit/test_news_channel.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.base",
+        "data_engine.channels.predefined.news_channel",
+        "data_engine.processing.filtering.policy_filter",
+        "pytest",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/unit/test_newsapi_connector.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.connectors.base_connector",
+        "data_engine.ingestion.connectors.newsapi_connector",
+        "datetime",
+        "httpx",
+        "json",
+        "os",
+        "pytest",
+        "respx",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "tests/unit/test_phase1_runtime_contract.py": {
+      "imports": [
+        "brain.model_router",
+        "pytest"
+      ]
+    },
+    "tests/unit/test_phase3_channels.py": {
+      "imports": [
+        "__future__",
+        "data_engine.channels.base",
+        "data_engine.channels.predefined.finance_channel",
+        "data_engine.channels.predefined.science_channel",
+        "data_engine.channels.predefined.tech_channel",
+        "data_engine.channels.registry",
+        "datetime",
+        "pytest",
+        "shared.exceptions",
+        "shared.schemas.article",
+        "shared.schemas.channel",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_phase3_connectors.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.connectors.arxiv_connector",
+        "data_engine.ingestion.connectors.base_connector",
+        "data_engine.ingestion.connectors.reddit_connector",
+        "data_engine.ingestion.connectors.youtube_connector",
+        "datetime",
+        "pytest",
+        "time",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_phase3_crawlers.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.crawlers.playwright_crawler",
+        "data_engine.ingestion.crawlers.robots_checker",
+        "pytest"
+      ]
+    },
+    "tests/unit/test_phase3_scheduler.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.schedulers.cron_scheduler",
+        "data_engine.ingestion.schedulers.job_tracker",
+        "data_engine.ingestion.schedulers.priority_queue",
+        "datetime",
+        "os",
+        "pathlib",
+        "pytest",
+        "tempfile",
+        "threading",
+        "time",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_phase3_streams.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.streams.kafka_consumer",
+        "data_engine.ingestion.streams.webhook_receiver",
+        "data_engine.ingestion.streams.websocket_listener",
+        "datetime",
+        "hashlib",
+        "hmac",
+        "json",
+        "pytest"
+      ]
+    },
+    "tests/unit/test_phase4_embeddings.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.embeddings.base",
+        "core.embeddings.embedding_manager",
+        "data_engine.embeddings.embedding_pipeline",
+        "hashlib",
+        "pytest",
+        "time",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_phase4_retrieval.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.retrieval.retrieval_engine",
+        "data_engine.storage.vector_store.base_vector_store",
+        "pytest",
+        "services.rag.context_assembler",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_phase4_vector_store.py": {
+      "imports": [
+        "__future__",
+        "data_engine.storage.vector_store.base_vector_store",
+        "data_engine.storage.vector_store.faiss_client",
+        "data_engine.storage.vector_store.vector_store_manager",
+        "math",
+        "os",
+        "pytest",
+        "tempfile",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_phase5_ai_core.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.model.model_manager",
+        "core.prompts.prompt_builder",
+        "pytest",
+        "services.agent_service",
+        "services.inference_service",
+        "time",
+        "typing",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_pii_filter.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.filtering.pii_filter",
+        "datetime",
+        "pytest",
+        "shared.schemas.article"
+      ]
+    },
+    "tests/unit/test_pipeline_orchestrator.py": {
+      "imports": [
+        "__future__",
+        "data_engine.pipelines.base_pipeline",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.pipelines.stages",
+        "data_engine.processing.filtering.policy_filter",
+        "data_engine.processing.processing_context",
+        "pathlib",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/unit/test_pipeline_stages.py": {
+      "imports": [
+        "__future__",
+        "data_engine.pipelines.stages",
+        "data_engine.processing.filtering.policy_filter",
+        "data_engine.processing.processing_context",
+        "pytest",
+        "pytest_asyncio",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/unit/test_policy_filter.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.filtering.policy_filter",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/unit/test_quality_scorer.py": {
+      "imports": [
+        "data_engine.processing.filtering.quality_scorer",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_reasoning_engine.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.cognitive_layer.reasoning_engine",
+        "brain.config",
+        "brain.execution_trace",
+        "brain.metrics_engine",
+        "os",
+        "pydantic",
+        "pytest",
+        "sys",
+        "typing"
+      ]
+    },
+    "tests/unit/test_reddit_connector.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.connectors.reddit_connector",
+        "datetime",
+        "httpx",
+        "json",
+        "pytest",
+        "respx",
+        "shared.schemas.article"
+      ]
+    },
+    "tests/unit/test_registry.py": {
+      "imports": [
+        "data_engine.channels.base",
+        "data_engine.channels.registry",
+        "pytest",
+        "shared.exceptions",
+        "shared.schemas.channel",
+        "typing"
+      ]
+    },
+    "tests/unit/test_requests_fetcher.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.crawlers.requests_fetcher",
+        "data_engine.ingestion.response_models",
+        "httpx",
+        "json",
+        "pytest",
+        "respx"
+      ]
+    },
+    "tests/unit/test_robots_checker.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.crawlers.robots_checker",
+        "pathlib",
+        "pytest",
+        "unittest.mock",
+        "urllib.robotparser"
+      ]
+    },
+    "tests/unit/test_rss_parser.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "data_engine.ingestion.crawlers.rss_parser",
+        "feedparser",
+        "pathlib",
+        "pytest",
+        "shared.schemas.article",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_schemas.py": {
+      "imports": [
+        "datetime",
+        "pydantic",
+        "pytest",
+        "shared.schemas"
+      ]
+    },
+    "tests/unit/test_sitemap_parser.py": {
+      "imports": [
+        "__future__",
+        "data_engine.ingestion.crawlers.sitemap_parser",
+        "datetime",
+        "pathlib",
+        "pytest",
+        "unittest.mock"
+      ]
+    },
+    "tests/unit/test_spam_detector.py": {
+      "imports": [
+        "data_engine.processing.filtering.spam_detector",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_storage_phase3.py": {
+      "imports": [
+        "data_engine.storage.raw_store.local_storage",
+        "pathlib",
+        "pytest",
+        "shutil"
+      ]
+    },
+    "tests/unit/test_storage_phase3_part2.py": {
+      "imports": [
+        "data_engine.storage.metadata_store.sqlite_catalog",
+        "data_engine.storage.processed_store.bronze_layer",
+        "data_engine.storage.processed_store.silver_layer",
+        "pathlib",
+        "pytest",
+        "shutil"
+      ]
+    },
+    "tests/unit/test_summarizer.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.enrichment.summarizer",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils"
+      ]
+    },
+    "tests/unit/test_text_cleaner.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.cleaning.text_cleaner",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_text_normalizer.py": {
+      "imports": [
+        "data_engine.processing.cleaning.text_normalizer",
+        "pytest",
+        "shared.schemas.article",
+        "shared.utils.datetime_utils",
+        "shared.utils.id_generator"
+      ]
+    },
+    "tests/unit/test_tokenizer_wrapper.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.transformation.tokenizer_wrapper",
+        "pytest"
+      ]
+    },
+    "tests/unit/test_topic_sentiment.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.enrichment.sentiment_analyzer",
+        "data_engine.processing.enrichment.topic_classifier",
+        "datetime",
+        "pytest",
+        "shared.schemas.article"
+      ]
+    },
+    "tests/unit/test_transformation_pipeline.py": {
+      "imports": [
+        "__future__",
+        "data_engine.processing.transformation.markdown_converter",
+        "data_engine.processing.transformation.transformation_pipeline",
+        "datetime",
+        "json",
+        "pytest",
+        "shared.schemas.article"
+      ]
+    },
+    "tests/unit/test_utils.py": {
+      "imports": [
+        "datetime",
+        "pytest",
+        "shared.exceptions",
+        "shared.utils"
+      ]
+    },
+    "train_hajeen_cloud.py": {
+      "imports": [
+        "__future__",
+        "argparse",
+        "cloud.cloud_sync",
+        "cloud.dataset_manager",
+        "cloud.hf_client",
+        "cloud.model_manager",
+        "datetime",
+        "dotenv",
+        "hajeen_model.hybrid_models.tokenizer.cloud_tokenizer_trainer",
+        "hajeen_model.hybrid_models.training.cloud_trainer",
+        "json",
+        "logging",
+        "math",
+        "os",
+        "pathlib",
+        "random",
+        "re",
+        "sys",
+        "time",
+        "torch",
+        "torch.nn",
+        "typing",
+        "yaml"
+      ]
+    },
+    "train_rlhf_ppo.py": {
+      "imports": [
+        "argparse",
+        "core.alignment.ppo_trainer",
+        "core.alignment.reward_model",
+        "core.model.model_loader",
+        "core.tokenizer.tokenizer_manager",
+        "logging"
+      ]
+    },
+    "workers/__init__.py": {
+      "imports": [
+        ".celery_app"
+      ]
+    },
+    "workers/async_tasks.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "brain.decision_engine",
+        "brain.goal_manager",
+        "brain.reflection.self_reflection",
+        "logging",
+        "services.distributed_messaging.celery_config",
+        "typing"
+      ]
+    },
+    "workers/backpressure.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "logging",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    "workers/celery_app.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "celery",
+        "celery.signals",
+        "data_engine.storage.storage_manager",
+        "dotenv",
+        "json",
+        "logging",
+        "os",
+        "pathlib",
+        "signal",
+        "sys",
+        "time",
+        "workers"
+      ]
+    },
+    "workers/celery_config.py": {
+      "imports": [
+        "__future__",
+        "datetime",
+        "os"
+      ]
+    },
+    "workers/distributed/__init__.py": {
+      "imports": []
+    },
+    "workers/distributed/cpu_worker.py": {
+      "imports": [
+        "__future__",
+        "concurrent.futures",
+        "data_engine.processing.document_processor",
+        "logging",
+        "multiprocessing",
+        "os",
+        "services.rag.retriever",
+        "time",
+        "typing"
+      ]
+    },
+    "workers/distributed/distributed_executor.py": {
+      "imports": [
+        "__future__",
+        "logging",
+        "typing",
+        "uuid",
+        "workers.distributed.queue_router"
+      ]
+    },
+    "workers/distributed/gpu_worker.py": {
+      "imports": [
+        "__future__",
+        "contextlib",
+        "core.embeddings.generator",
+        "core.model.loader",
+        "gc",
+        "logging",
+        "os",
+        "time",
+        "torch",
+        "typing"
+      ]
+    },
+    "workers/distributed/queue_router.py": {
+      "imports": [
+        "__future__",
+        "celery",
+        "dataclasses",
+        "enum",
+        "hashlib",
+        "logging",
+        "redis",
+        "typing"
+      ]
+    },
+    "workers/distributed/scheduler_manager.py": {
+      "imports": [
+        "__future__",
+        "celery",
+        "celery.schedules",
+        "dataclasses",
+        "logging",
+        "os",
+        "redis",
+        "sys",
+        "time",
+        "typing"
+      ]
+    },
+    "workers/distributed/worker_monitor.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "logging",
+        "os",
+        "redis",
+        "time",
+        "typing"
+      ]
+    },
+    "workers/embedding_tasks.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.embeddings.embedding_manager",
+        "data_engine.storage.vector_store.base_vector_store",
+        "data_engine.storage.vector_store.faiss_client",
+        "data_engine.storage.vector_store.sqlite_vector_index",
+        "logging",
+        "time",
+        "typing",
+        "workers.celery_app"
+      ]
+    },
+    "workers/failure_handler.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "json",
+        "logging",
+        "pathlib",
+        "sqlite3",
+        "time",
+        "typing"
+      ]
+    },
+    "workers/priority_queue.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "heapq",
+        "logging",
+        "threading",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    "workers/retry_manager.py": {
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "logging",
+        "math",
+        "random",
+        "time",
+        "typing"
+      ]
+    },
+    "workers/tasks/__init__.py": {
+      "imports": [
+        ".ingestion_tasks",
+        ".pipeline_tasks",
+        ".processing_tasks"
+      ]
+    },
+    "workers/tasks/inference_tasks.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "core.inference_engine.engine",
+        "json",
+        "logging",
+        "services.chat.chat_service",
+        "time",
+        "typing",
+        "uuid",
+        "workers.celery_app"
+      ]
+    },
+    "workers/tasks/ingestion_tasks.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "celery",
+        "celery.utils.log",
+        "data_engine.channels.predefined.demo_channel",
+        "data_engine.channels.predefined.news_channel",
+        "data_engine.channels.registry",
+        "logging",
+        "time",
+        "typing"
+      ]
+    },
+    "workers/tasks/pipeline_tasks.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "celery",
+        "celery.utils.log",
+        "concurrent.futures",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.pipelines.pipeline_result",
+        "data_engine.storage.storage_manager",
+        "logging",
+        "shared.schemas.article",
+        "threading",
+        "time",
+        "typing",
+        "uuid",
+        "workers.celery_app"
+      ]
+    },
+    "workers/tasks/processing_tasks.py": {
+      "imports": [
+        "__future__",
+        "asyncio",
+        "celery",
+        "celery.utils.log",
+        "data_engine.pipelines.pipeline_orchestrator",
+        "data_engine.processing.cleaning.html_cleaner",
+        "data_engine.processing.cleaning.text_normalizer",
+        "data_engine.processing.enrichment.entity_extractor",
+        "data_engine.processing.enrichment.keyword_extractor",
+        "data_engine.processing.enrichment.summarizer",
+        "data_engine.processing.filtering.deduplicator",
+        "data_engine.processing.filtering.policy_filter",
+        "json",
+        "logging",
+        "shared.schemas.article",
+        "typing"
+      ]
+    },
+    "workers/tasks/test_task.py": {
+      "imports": [
+        "workers.celery_app"
+      ]
+    }
+  }
+}

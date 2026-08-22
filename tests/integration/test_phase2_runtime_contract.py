@@ -278,5 +278,6 @@ async def test_hajeen_provider_health_is_false_without_checkpoint():
     from core.llm.base import LLMConfig
 
     provider = HajeenLLMProvider(LLMConfig(provider="hajeen", model="hajeen-v1", extra={"model_path": "/path/that/does/not/exist"}))
-    await provider.initialize()
+    with pytest.raises(Exception, match="checkpoint is unavailable"):
+        await provider.initialize()
     assert await provider.health_check() is False
