@@ -304,3 +304,96 @@ TEST_STATUS=0
 ## Regression decision
 
 **TEST_PASS** للاختبارات المستهدفة. **PARTIAL** للتكامل الموزع وpersistence الإنتاجي. **NOT_PROVEN** لـ durable audit وcross-tenant persisted resources، و**NOT_AVAILABLE** لـ Qwen runtime وRedis الإنتاجي.
+
+
+---
+
+# Phase 9 — Persistence, Audit, and Runtime Closure
+
+## Scope and execution status
+
+تم تنفيذ اختبارات Phase 9 الممكنة فعلياً دون حذف أو نقل أو إعادة تسمية. أُضيفت اختبارات persistence معزولة لسلسلة `AuditLogger` باستخدام ملف SQLite مؤقت، واختبار كشف العبث بالسجل، واختبار عدم تسريب كلمات المرور أو رموز الوصول في حدث التدقيق. هذه الاختبارات تثبت عقد logger والتخزين في fixture معزول، ولا تُعتبر دليلاً على أن قاعدة الإنتاج أو Redis الإنتاجي موصولان في بيئة التشغيل.
+
+## Evidence matrix
+
+| Gate | Evidence | Result | Classification |
+|---|---|---|---|
+| Audit event persistence | `tests/architecture/test_phase9_persistence_audit.py::test_audit_persists_and_verifies_chain` | SQLite file-backed fixture حفظ حدثين وسلسلة hash صحيحة | TEST_PASS / FIXTURE_ONLY |
+| Audit tamper detection | `test_audit_chain_detects_tampering` | تعديل metadata أدى إلى `verified=False` وتحديد event المتلاعب به | TEST_PASS |
+| Credential non-disclosure | `test_audit_event_does_not_contain_credentials` | لا توجد password أو access_token أو refresh_token في serialized event | TEST_PASS |
+| Process-local fallback classification | `test_in_memory_fallback_is_not_claimed_as_durable` | fallback معروف صراحة بأنه process-local | TEST_PASS |
+| Production durable audit | لا يوجد adapter إنتاجي مثبت ضمن هذه البيئة | لم يُثبت | NOT_PROVEN |
+| Production Redis rate limiting | لا توجد خدمة Redis إنتاجية متاحة أثناء الفحص | لم يُثبت | NOT_AVAILABLE |
+| Distributed broker worker | لا توجد بيئة broker/worker تكاملية مستقلة | لم يُثبت | NOT_PROVEN |
+
+## Commands and result
+
+```bash
+pytest -q tests/architecture/test_phase9_persistence_audit.py \
+  tests/architecture/test_phase7_context_integrity.py \
+  tests/architecture/test_phase7_security_gates.py \
+  tests/architecture/test_phase7_worker_admission.py \
+  tests/architecture/test_phase7_streaming_security.py \
+  tests/architecture/test_phase5_api_boundary.py \
+  tests/architecture/test_phase4_security_boundaries.py
+```
+
+```text
+32 passed, 9 warnings in 1.69s
+TEST_STATUS=0
+```
+
+التحذيرات المسجلة لا تُخفي أي فشل، وتشمل deprecation في Starlette/FastAPI/Pydantic وpytest-asyncio.
+
+---
+
+# Phase 10 — Canonical Consolidation and Migration Control
+
+## Decision
+
+تم تنفيذ Phase 10 كتوحيد معماري مضبوط، وليس إعادة كتابة أو حذفاً شاملاً. بقيت implementations القديمة في أماكنها، وتم اعتماد الحدود التالية كمرجع للتغييرات المستقبلية: `API → ChatService → BrainV3 → ModelRouter → ModelRegistry → ProviderRegistry → Provider`. كما بقي `security/runtime_admission.py` حاجز القبول قبل worker/runtime، وبقيت حواجز الاستدعاءات المباشرة واختبارات السياق فعالة.
+
+## Protected migration rules
+
+| Rule | Current status |
+|---|---|
+| لا حذف أو نقل أو rename | محفوظ |
+| لا schema migration | لم يُنفذ |
+| لا Qwen weights أو training | لم يُنفذ |
+| لا Test Provider في production | مرفوض عبر admission tests |
+| لا model غير متحقق | مرفوض عبر admission tests |
+| لا tenant من client كسلطة مستقلة | مرفوض عبر context tests |
+| direct provider/SDK imports في application layers | محظور بالـguardrails المستهدفة |
+| rollback | متاح عبر Git commits المتسلسلة |
+
+## Migration status
+
+تم ترحيل `brain/llm_analyzer.py` سابقاً من استدعاء SDK مباشر إلى `ProviderRegistry` مع الحفاظ على عقد التحليل العام. أما الواجهات المتعددة للذاكرة وRAG وPrompt وStorage وBrain legacy فلم تُحذف ولم تُرحّل قسراً، لأن consumer inventory وparity proof وpersistence proof الكاملة غير متاحة. هذا التصنيف مقصود لحماية rollback وعدم تحويل وجود adapter إلى إثبات جاهزية إنتاجية.
+
+## Final Phase 9/10 classification
+
+| Area | Status |
+|---|---|
+| Local security boundaries | TEST_PASS |
+| Audit logger contract | TEST_PASS / FIXTURE_ONLY |
+| Production durable audit | NOT_PROVEN |
+| Production Redis and distributed worker | NOT_AVAILABLE / NOT_PROVEN |
+| Canonical ownership map | CONTROLLED_CONSOLIDATION |
+| Full production readiness | NOT_READY |
+
+## Reproduction
+
+```bash
+python3 -m compileall -q api brain security services workers data_engine
+pytest -q tests/architecture/test_phase9_persistence_audit.py \
+  tests/architecture/test_phase4_security_boundaries.py \
+  tests/architecture/test_phase5_api_boundary.py \
+  tests/architecture/test_phase7_*.py
+git diff --check
+```
+
+> CODE_EXISTS لا يساوي TEST_PASS، وTEST_PASS لا يساوي E2E_PROVEN، وE2E_PROVEN لا يساوي PRODUCTION_READY.
+
+## Unified delivery policy
+
+هذا الملف هو التقرير الموحد الوحيد لهذه السلسلة. ملفات الاختبارات البرمجية تبقى مستقلة لأنها artifacts تنفيذية، أما التقارير فلا تُنشأ في ملفات مرحلة منفصلة بعد الآن.
