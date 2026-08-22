@@ -179,6 +179,20 @@ def execute_pipeline(
                 ctx, pipeline_name=pipeline_name, stored_count=stored
             )
             summary = result.to_dict()
+            # Compatibility envelope: keep the canonical PipelineResult fields
+            # and expose the historical Celery keys for existing consumers.
+            summary["elapsed_ms"] = summary["total_duration_ms"]
+            summary["stage_traces"] = [
+                {
+                    "stage": stage["stage"],
+                    "in": stage["input"],
+                    "out": stage["output"],
+                    "ms": stage["duration_ms"],
+                    "rejected": stage["rejected"],
+                    "errors": stage["errors"],
+                }
+                for stage in summary["stages"]
+            ]
             summary["task_id"] = task_id
             summary["attempt"] = attempt
 

@@ -83,7 +83,14 @@ TASK_SEND_SENT_EVENT = True
 
 # ── Beat schedule ─────────────────────────────────────────────────────────────
 BEAT_SCHEDULE = {
+    # Canonical production cadence.
     "health-check-every-5-min": {
+        "task": "workers.tasks.ingestion_tasks.health_check_task",
+        "schedule": timedelta(minutes=5),
+        "options": {"queue": "monitoring"},
+    },
+    # Backward-compatible contract name retained for existing consumers.
+    "health-check-every-minute": {
         "task": "workers.tasks.ingestion_tasks.health_check_task",
         "schedule": timedelta(minutes=5),
         "options": {"queue": "monitoring"},
