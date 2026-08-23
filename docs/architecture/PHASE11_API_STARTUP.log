@@ -1,0 +1,72 @@
+2026-08-23 00:15:57 [INFO] data_engine.processing.cleaning.html_cleaner: html_cleaner: trafilatura not available; using bs4-only extraction
+2026-08-23 00:15:57 [INFO] data_engine.processing.enrichment.keyword_extractor: keyword_extractor: yake not available; using frequency fallback
+2026-08-23 00:15:57 [INFO] data_engine.processing.enrichment.entity_extractor: entity_extractor: spaCy not available; using regex fallback
+2026-08-23 00:15:57 [INFO] data_engine.processing.enrichment.sentiment_analyzer: sentiment_analyzer: vaderSentiment غير متاح — استخدام قاموس fallback
+2026-08-23 00:15:57 [INFO] data_engine.processing.transformation.tokenizer_wrapper: tokenizer_wrapper: tiktoken not available; using char-based fallback
+2026-08-23 00:15:58 [INFO] data_engine.ingestion.crawlers.playwright_crawler: playwright_crawler: Playwright متاح
+2026-08-23 00:15:58 [INFO] api.main: startup: Hajeen Model v1 router مسجّل ✓
+2026-08-23 00:15:58 [INFO] api.main: startup: Auth router مسجّل ✓
+2026-08-23 00:15:58 [INFO] api.main: Hajeen AI Platform API v1.1.0 — تمّ تسجيل جميع الـ routers
+2026-08-23 00:15:58 [INFO] uvicorn.error: Started server process [20601]
+2026-08-23 00:15:58 [INFO] uvicorn.error: Waiting for application startup.
+2026-08-23 00:15:58 [INFO] api.main: Hajeen API v1.1.0 startup — تهيئة النظام …
+2026-08-23 00:15:58 [INFO] data_engine.channels.registry: channel_registry: استُعيدت القناة ch_1 من SQLite
+2026-08-23 00:15:58 [INFO] data_engine.channels.registry: channel_registry: استُعيدت القناة ch_3 من SQLite
+2026-08-23 00:15:58 [INFO] data_engine.channels.registry: channel_registry: استُعيدت القناة ch_4 من SQLite
+2026-08-23 00:15:58 [INFO] data_engine.channels.registry: channel_registry: استُعيدت القناة ch_5 من SQLite
+2026-08-23 00:15:58 [INFO] data_engine.channels.registry: channel_registry: استُعيدت القناة ch_6 من SQLite
+2026-08-23 00:15:58 [INFO] data_engine.channels.registry: channel_registry: استُعيدت القناة ch_7 من SQLite
+2026-08-23 00:15:58 [INFO] data_engine.channels.registry: channel_registry: استُعيدت 6 قناة من SQLite
+2026-08-23 00:15:58 [INFO] api.main: startup: استُعيدت 6 قناة
+2026-08-23 00:15:58 [INFO] data_engine.storage.storage_manager: StorageManager: مجلد التخزين = /home/ubuntu/ai-chat-review/storage_data
+2026-08-23 00:15:58 [INFO] data_engine.storage.storage_manager: StorageManager: اتّصل بجميع أنظمة التخزين
+2026-08-23 00:15:58 [INFO] api.main: startup: StorageManager جاهز ✓
+2026-08-23 00:15:58 [INFO] faiss.loader: Loading faiss with AVX512 support.
+2026-08-23 00:15:58 [INFO] faiss.loader: Could not load library with AVX512 support due to:
+ModuleNotFoundError("No module named 'faiss.swigfaiss_avx512'")
+2026-08-23 00:15:58 [INFO] faiss.loader: Loading faiss with AVX2 support.
+2026-08-23 00:15:58 [INFO] faiss.loader: Could not load library with AVX2 support due to:
+ModuleNotFoundError("No module named 'faiss.swigfaiss_avx2'")
+2026-08-23 00:15:58 [INFO] faiss.loader: Loading faiss.
+2026-08-23 00:15:58 [INFO] faiss.loader: Successfully loaded faiss.
+2026-08-23 00:15:58 [INFO] api.main: startup: FAISS index جديد
+2026-08-23 00:15:58 [INFO] api.main: startup: Search Engine جاهز ✓
+2026-08-23 00:15:58 [INFO] core.prompts.base: UnifiedPromptBuilder initialized (max_context=3500)
+2026-08-23 00:15:58 [INFO] brain.prompts.unified_prompt_builder: UnifiedPromptBuilder v1.0.0 initialized (lang=ar, format=chatml)
+2026-08-23 00:15:58 [INFO] api.main: startup: RAG Pipeline جاهز ✓ (mode=semantic)
+2026-08-23 00:15:58 [INFO] api.main: startup: Mistral Fine-tuned provider مسجّل ✓
+2026-08-23 00:15:58 [INFO] core.model.model_registry: ModelRegistry initialized with 3 defaults
+2026-08-23 00:15:58 [ERROR] hajeen_model.inference.hajeen_provider: Hajeen checkpoint is unavailable or incomplete at hajeen_model/checkpoints/final; required config, tokenizer, and model weights were not found
+2026-08-23 00:15:58 [ERROR] api.main: startup: فشل تهيئة LLM Manager — Hajeen checkpoint is unavailable or failed validation
+2026-08-23 00:15:58 [ERROR] hajeen_model.inference.hajeen_provider: Hajeen checkpoint is unavailable or incomplete at hajeen_model/checkpoints/final; required config, tokenizer, and model weights were not found
+2026-08-23 00:15:58 [ERROR] api.main: startup: فشل تهيئة Inference Engine — Hajeen checkpoint is unavailable or failed validation
+2026-08-23 00:15:58 [INFO] api.main: startup: AI Metrics جاهز ✓
+2026-08-23 00:15:58 [INFO] services.redis.redis_service: Redis connected: main=redis://127.0.0.1:16379/0 cache=redis://127.0.0.1:16379/1 queue=redis://127.0.0.1:16379/2
+2026-08-23 00:15:58 [INFO] api.main: startup: Redis Service جاهز ✓
+2026-08-23 00:15:58 [INFO] brain.brain_v3: HajeenBrain v3.0.0: تهيئة العقل المدبّر المركزي...
+2026-08-23 00:15:58 [INFO] brain.memory.memory_fabric: procedural_memory: learned procedure 'train_model' (7 steps)
+2026-08-23 00:15:58 [INFO] brain.memory.memory_fabric: procedural_memory: learned procedure 'answer_question' (5 steps)
+2026-08-23 00:15:58 [INFO] core.prompts.base: UnifiedPromptBuilder initialized (max_context=3500)
+2026-08-23 00:15:58 [INFO] brain.prompts.unified_prompt_builder: UnifiedPromptBuilder v1.0.0 initialized (lang=ar, format=chatml)
+2026-08-23 00:15:58 [INFO] brain.cognitive_layer.intent_analyzer: IntentAnalyzer: initialized
+2026-08-23 00:15:58 [INFO] brain.cognitive_layer.context_analyzer: ContextAnalyzer: initialized
+2026-08-23 00:15:58 [INFO] brain.cognitive_layer.reasoning_engine: ReasoningEngine initialized
+2026-08-23 00:15:58 [INFO] services.agents.base_agent: Agent 'planner' initialized
+2026-08-23 00:15:58 [INFO] brain.brain_v3: HajeenBrain v3.0.0: جاهز — Runtime الوحيد المعتمد ✓
+2026-08-23 00:15:58 [INFO] api.main: startup: HajeenBrainV3 v3.0.0 جاهز ✓ (rag=True)
+2026-08-23 00:15:58 [INFO] api.main: Hajeen AI Platform v1.1.0 — جاهز بالكامل ✅
+2026-08-23 00:15:58 [INFO] uvicorn.error: Application startup complete.
+2026-08-23 00:15:58 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:18001 (Press CTRL+C to quit)
+2026-08-23 00:15:58 [INFO] uvicorn.access: 127.0.0.1:55322 - "GET /ping HTTP/1.1" 200
+2026-08-23 00:15:58 [INFO] uvicorn.access: 127.0.0.1:55326 - "GET /health HTTP/1.1" 200
+2026-08-23 00:15:58 [INFO] uvicorn.access: 127.0.0.1:55332 - "GET /ping HTTP/1.1" 200
+2026-08-23 00:15:58 [INFO] uvicorn.access: 127.0.0.1:55348 - "GET /health HTTP/1.1" 200
+2026-08-23 00:15:58 [INFO] uvicorn.access: 127.0.0.1:55364 - "GET /docs HTTP/1.1" 200
+2026-08-23 00:15:58 [INFO] uvicorn.access: 127.0.0.1:55374 - "GET /openapi.json HTTP/1.1" 200
+2026-08-23 00:15:58 [INFO] uvicorn.access: 127.0.0.1:55378 - "GET /api/v1/storage/stats HTTP/1.1" 200
+2026-08-23 00:15:58 [INFO] uvicorn.error: Shutting down
+2026-08-23 00:15:59 [INFO] uvicorn.error: Waiting for application shutdown.
+2026-08-23 00:15:59 [INFO] api.main: shutdown: StorageManager أُغلق
+2026-08-23 00:15:59 [INFO] api.main: Hajeen AI Platform — أُغلق بأمان
+2026-08-23 00:15:59 [INFO] uvicorn.error: Application shutdown complete.
+2026-08-23 00:15:59 [INFO] uvicorn.error: Finished server process [20601]

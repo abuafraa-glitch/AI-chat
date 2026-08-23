@@ -1,0 +1,9 @@
+GET /health 200
+POST /channels 201
+CREATE_BODY {"id":"ch_8bc3acf28106","name":"phase11-e2e-channel","description":"ephemeral phase11 evidence","source_type":"demo","source_url":"https://example.com/rss","status":"active","total_runs":0,"total_fetched":0,"last_run":null,"created_at":"2026-08-23T00:17:52.625638+00:00","updated_at":"2026-08-23T00:17:52.625638+00:00"}
+CHANNEL_ID ch_8bc3acf28106
+GET /channels/{id} 200
+PATCH /pause 200
+PATCH /resume 200
+GET /audit 200
+DELETE /channels/{id} 204

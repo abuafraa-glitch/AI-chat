@@ -1,0 +1,54 @@
+[2026-08-23 00:16:16,809: INFO/MainProcess] Hajeen worker process initialized — PID=20646
+ 
+ -------------- phase11@305f57cac429 v5.6.3 (recovery)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.102-x86_64-with-glibc2.39 2026-08-23 00:16:16
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         hajeen_workers:0x7f1f7aaee4b0
+- ** ---------- .> transport:   redis://127.0.0.1:16379/2
+- ** ---------- .> results:     redis://127.0.0.1:16379/2
+- *** --- * --- .> concurrency: 1 (solo)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . workers.tasks.ingestion_tasks.health_check_task
+  . workers.tasks.ingestion_tasks.refresh_channel_task
+  . workers.tasks.ingestion_tasks.run_channel_ingestion
+  . workers.tasks.ingestion_tasks.validate_sources_task
+  . workers.tasks.pipeline_tasks.cancel_pipeline
+  . workers.tasks.pipeline_tasks.execute_pipeline
+  . workers.tasks.pipeline_tasks.pipeline_status
+  . workers.tasks.pipeline_tasks.retry_pipeline
+  . workers.tasks.processing_tasks.clean_articles_task
+  . workers.tasks.processing_tasks.deduplicate_articles_task
+  . workers.tasks.processing_tasks.enrich_articles_task
+  . workers.tasks.processing_tasks.process_article_batch
+
+[2026-08-23 00:16:16,853: WARNING/MainProcess] /usr/local/lib/python3.12/dist-packages/celery/app/utils.py:203: CDeprecationWarning: 
+    The 'CELERY_RESULT_BACKEND' setting is deprecated and scheduled for removal in
+    version 6.0.0. Use the result_backend instead
+
+  deprecated.warn(description=f'The {setting!r} setting',
+
+[2026-08-23 00:16:16,853: WARNING/MainProcess] /usr/local/lib/python3.12/dist-packages/celery/app/utils.py:203: CDeprecationWarning: 
+    The 'ENABLE_UTC' setting is deprecated and scheduled for removal in
+    version 6.0.0. Use the enable_utc instead
+
+  deprecated.warn(description=f'The {setting!r} setting',
+
+[2026-08-23 00:16:16,853: WARNING/MainProcess] Please run `celery upgrade settings path/to/settings.py` to avoid these warnings and to allow a smoother upgrade to Celery 6.0.
+[2026-08-23 00:16:16,865: INFO/MainProcess] Connected to redis://127.0.0.1:16379/2
+[2026-08-23 00:16:16,867: INFO/MainProcess] mingle: searching for neighbors
+[2026-08-23 00:16:17,872: INFO/MainProcess] mingle: all alone
+[2026-08-23 00:16:17,881: INFO/MainProcess] Hajeen worker ready — PID=20646 queues=[default, ingestion, processing, pipeline, monitoring, inference, inference_batch, inference_heavy]
+[2026-08-23 00:16:17,881: INFO/MainProcess] phase11@305f57cac429 ready.
+
+worker: Warm shutdown (MainProcess)
+[2026-08-23 00:16:30,014: INFO/MainProcess] Hajeen worker shutting down gracefully — PID=20646
+[2026-08-23 00:16:30,548: INFO/MainProcess] StorageManager: مجلد التخزين = /home/ubuntu/ai-chat-review/storage_data
+[2026-08-23 00:16:30,548: INFO/MainProcess] Hajeen worker shutdown complete ✓

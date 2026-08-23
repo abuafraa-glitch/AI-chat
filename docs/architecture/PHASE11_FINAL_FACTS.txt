@@ -1,0 +1,99 @@
+START_COMMIT_FROM_LOG
+[33m5f75201[m Merge Phase 11 and 12 deliverables into one report
+HEAD
+5f75201ec7d80749f9b1ad9a039a9154bc7e50c5
+BRANCH
+master
+STATUS
+ [31mM[m services/data_service/dataset_cleaner.py
+[31m??[m docs/architecture/PHASE11_ENVIRONMENT_DISCOVERY.txt
+[31m??[m docs/architecture/PHASE11_RUNTIME_INVENTORY.md
+[31m??[m scripts/phase11_redis_probe.py
+LARGE_TRACKED_FILES
+192	core_scan.txt
+192	.phase6_audit/raw_audit.txt
+188	docs/architecture/PHASE2_IMPORT_GRAPH.json
+148	docs/architecture/PHASE2_COLLECTION_BASELINE.txt
+120	runtime_security_scan.txt
+116	docs/architecture/PHASE4_BASELINE.txt
+112	docs/architecture/PHASE2_COLLECTION_AFTER_ISOLATION.txt
+108	reports/phase0_levels/LEVEL_12_FULL_REGRESSION.log
+108	docs/architecture/PHASE2_COLLECTION_FINAL.txt
+108	docs/architecture/PHASE2_COLLECTION_AFTER_GUARD_V2.txt
+100	risk_scan.txt
+100	.phase6_audit/selected_sources.txt
+68	model_contract_scan.txt
+64	line_refs_scan.txt
+60	master_tree_actual.txt
+56	file_tree.txt
+48	docs/architecture/PHASE2_COLLECTION_AFTER_LAZY_INIT.txt
+44	tests/test_phase65.py
+44	inventory_scan.txt
+40	tests/test_phase8.py
+TARGETED_PHASE11
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+api/main.py:460
+  /home/ubuntu/ai-chat-review/api/main.py:460: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+brain/brain_v3.py:58
+  /home/ubuntu/ai-chat-review/brain/brain_v3.py:58: DeprecationWarning: brain.evolution is deprecated. Use brain.reflection directly.
+    from .evolution.phase7_lifecycle import EvolutionLifecycle, EvolutionRecord
+
+api/v1/ai/router.py:56
+  /home/ubuntu/ai-chat-review/api/v1/ai/router.py:56: PydanticDeprecatedSince20: `min_items` is deprecated and will be removed, use `min_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    messages: List[MessageSchema] = Field(..., min_items=1)
+
+tests/architecture/test_phase11_production_integration.py::test_persisted_reads_are_tenant_isolated
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/architecture/test_phase11_production_integration.py::test_persisted_reads_are_tenant_isolated
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 37 passed, 9 warnings in 1.69s ========================
+MODEL_TARGETED
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 56 items
+
+tests/ai/test_training.py ..............................                 [ 53%]
+tests/integration/test_phase6_training_registry.py ...........           [ 73%]
+tests/integration/test_verified_base_registry.py ...                     [ 78%]
+tests/test_dataset_manager.py .                                          [ 80%]
+tests/unit/test_registry.py ...........                                  [100%]
+
+=============================== warnings summary ===============================
+tests/ai/test_training.py::TestDatasetLoader::test_load_jsonl
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/ai/test_training.py::TestDatasetLoader::test_load_jsonl
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 56 passed, 2 warnings in 0.48s ========================
+API_E2E
+GET /health 200
+POST /channels 201
+CREATE_BODY {"id":"ch_8bc3acf28106","name":"phase11-e2e-channel","description":"ephemeral phase11 evidence","source_type":"demo","source_url":"https://example.com/rss","status":"active","total_runs":0,"total_fetched":0,"last_run":null,"created_at":"2026-08-23T00:17:52.625638+00:00","updated_at":"2026-08-23T00:17:52.625638+00:00"}
+CHANNEL_ID ch_8bc3acf28106
+GET /channels/{id} 200
+PATCH /pause 200
+PATCH /resume 200
+GET /audit 200
+DELETE /channels/{id} 204

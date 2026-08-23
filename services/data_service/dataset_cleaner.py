@@ -27,6 +27,10 @@ class DatasetCleaner:
         text = re.sub(r"\r\n|\r", "\n", text)
         text = re.sub(r"\n{3,}", "\n\n", text)
         text = re.sub(r"[ \t]+", " ", text)
+        # Remove indentation/trailing horizontal whitespace per line while
+        # preserving intentional blank-line paragraph boundaries.
+        text = re.sub(r"[ \t]+\n", "\n", text)
+        text = re.sub(r"\n[ \t]+", "\n", text)
         text = re.sub(r"[^\x09\x0A\x0D\x20-\x7E\u0080-\uFFFF]", "", text)
         return text.strip()
 

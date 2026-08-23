@@ -1,0 +1,53 @@
+=== STARTING_COMMIT ===
+5f75201ec7d80749f9b1ad9a039a9154bc7e50c5
+=== ENVIRONMENT ===
+Python 3.12.3
+Linux 305f57cac429 6.1.102 #1 SMP PREEMPT_DYNAMIC Mon Apr 20 12:34:49 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+6
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       1.4Gi       2.2Gi        11Mi       700Mi       2.4Gi
+Swap:          2.0Gi          0B       2.0Gi
+bash: nvidia-smi: command not found
+=== BINARIES ===
+redis-server    celery          /usr/local/bin/celery
+docker          psql            sqlite3         uvicorn         /usr/local/bin/uvicorn
+=== PYTHON PACKAGES ===
+fastapi: True
+uvicorn: True
+pydantic: True
+sqlalchemy: True
+redis: True
+celery: True
+torch: True
+transformers: True
+tokenizers: True
+faiss: True
+sentence_transformers: True
+httpx: True
+websockets: True
+yaml: True
+=== CONFIG FILES ===
+./brain/requirements.txt
+./configs/__pycache__/redis.cpython-312.pyc
+./configs/redis.py
+./infra/docker/Dockerfile.api
+./infra/docker/Dockerfile.inference
+./infra/docker/Dockerfile.nginx
+./infra/docker/Dockerfile.scheduler
+./infra/docker/Dockerfile.training
+./infra/docker/Dockerfile.worker
+./pyproject.toml
+./requirements-prod.txt
+./requirements.txt
+./scripts/setup/init_database.py
+./services/distributed_messaging/celery_config.py
+./services/distributed_messaging/redis_streams_integration.py
+./services/redis/redis_service.py
+./shared/__pycache__/database.cpython-312.pyc
+./shared/database.py
+./tests/__pycache__/test_phase6_redis.cpython-312-pytest-9.1.1.pyc
+./tests/__pycache__/test_phase6_redis.cpython-312.pyc
+./tests/distributed_messaging/test_redis_streams.py
+./tests/test_phase6_redis.py
+./workers/celery_app.py
+./workers/celery_config.py
