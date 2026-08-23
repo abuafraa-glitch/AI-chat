@@ -1,0 +1,930 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 624 items / 1 skipped
+
+<Package ai-chat-review>
+  <Package tests>
+    <Package ai>
+      <Module test_agents.py>
+        <Class TestAgentContext>
+          <Function test_is_exhausted>
+          <Function test_not_exhausted_when_below_max>
+          <Function test_elapsed_positive>
+        <Class TestBaseAgent>
+          <Coroutine test_run_returns_result>
+          <Function test_register_tool>
+          <Coroutine test_call_tool_sync>
+          <Coroutine test_call_tool_async>
+          <Coroutine test_call_missing_tool_raises>
+          <Coroutine test_run_catches_exception>
+        <Class TestPlannerAgent>
+          <Coroutine test_generates_plan>
+          <Coroutine test_stores_plan_in_memory>
+        <Class TestRetrievalAgent>
+          <Coroutine test_runs_without_rag_service>
+          <Coroutine test_with_mock_rag_service>
+        <Class TestExecutionAgent>
+          <Coroutine test_executes_plan_steps>
+          <Coroutine test_uses_tool_when_available>
+        <Class TestToolAgent>
+          <Coroutine test_runs_without_tools>
+          <Coroutine test_runs_with_tool>
+        <Class TestAgentOrchestrator>
+          <Coroutine test_run_default_pipeline>
+          <Coroutine test_register_custom_agent>
+          <Function test_set_invalid_pipeline_raises>
+          <Coroutine test_parallel_run>
+        <Class TestAgentStep>
+          <Function test_defaults>
+          <Function test_with_tool>
+      <Module test_alignment.py>
+        <Function test_preference_dataset_builder>
+        <Function test_reward_model_pipeline>
+        <Function test_alignment_evaluator>
+        <Function test_alignment_pipeline>
+        <Coroutine test_dpo_pipeline_init>
+        <Coroutine test_dpo_prepare_preference_data>
+        <Coroutine test_dpo_run_pipeline>
+        <Coroutine test_rlhf_infrastructure_init>
+        <Coroutine test_rlhf_collect_human_feedback>
+        <Coroutine test_rlhf_train_reward_model>
+        <Coroutine test_rlhf_run_pipeline>
+      <Module test_chat.py>
+        <Class TestShortTermMemory>
+          <Function test_add_and_get>
+          <Function test_max_turns_eviction>
+          <Function test_get_as_messages>
+          <Function test_clear>
+          <Function test_multiple_sessions>
+        <Class TestLongTermMemory>
+          <Function test_save_and_load>
+          <Function test_load_missing_returns_default>
+          <Function test_delete>
+          <Function test_list_keys>
+        <Class TestPromptBuilder>
+          <Function test_build_chat>
+          <Function test_build_rag>
+          <Function test_build_completion>
+          <Function test_build_from_template>
+        <Class TestTemplateRegistry>
+          <Function test_get_existing>
+          <Function test_get_missing_returns_none>
+          <Function test_render>
+          <Function test_list_templates>
+        <Class TestSystemPromptLibrary>
+          <Function test_get_default>
+          <Function test_get_missing_returns_default>
+          <Function test_register_and_get>
+          <Function test_arabic_prompt_available>
+        <Class TestConversationFormatter>
+          <Function test_to_chatml>
+          <Function test_to_mistral>
+          <Function test_trim_history>
+          <Function test_to_openai_format>
+        <Class TestModerationService>
+          <Function test_allows_normal_text>
+          <Function test_blocks_harmful_content>
+          <Function test_blocks_long_input>
+          <Function test_is_allowed>
+          <Function test_filter_output>
+      <Module test_data_intelligence.py>
+        <Coroutine test_autonomous_data_factory_init>
+        <Coroutine test_register_generator>
+        <Coroutine test_generate_data>
+        <Coroutine test_register_refiner>
+        <Coroutine test_refine_dataset>
+        <Coroutine test_register_ingestion_pipeline>
+        <Coroutine test_ingest_data>
+        <Coroutine test_run_autonomous_loop>
+      <Module test_embeddings.py>
+        <Class TestEmbeddingCache>
+          <Function test_put_and_get>
+          <Function test_miss_returns_none>
+          <Function test_lru_eviction>
+          <Function test_hit_rate_tracking>
+          <Function test_clear>
+        <Class TestSimilarityScorer>
+          <Function test_cosine_identical_vectors>
+          <Function test_cosine_orthogonal>
+          <Function test_cosine_opposite>
+          <Function test_cosine_empty_vector>
+          <Function test_normalize>
+          <Function test_normalize_zero_vector>
+          <Function test_rank_by_similarity>
+          <Function test_find_similar>
+          <Function test_dot_product>
+        <Class TestBatchEmbedder>
+          <Function test_embed_texts_calls_engine>
+          <Function test_batch_splitting>
+          <Function test_embed_documents>
+      <Module test_evaluation.py>
+        <Coroutine test_evaluation_engine_init>
+        <Coroutine test_register_metric>
+        <Coroutine test_evaluate_agent_result>
+        <Coroutine test_register_benchmark>
+        <Coroutine test_run_benchmark>
+        <Coroutine test_run_all_benchmarks>
+      <Module test_inference.py>
+        <Class TestInferenceConfig>
+          <Function test_default_values>
+          <Function test_greedy_preset>
+          <Function test_creative_preset>
+          <Function test_precise_preset>
+        <Class TestSampler>
+          <Function test_temperature_scaling>
+          <Function test_temperature_zero_raises>
+          <Function test_top_k_filter>
+          <Function test_softmax_sums_to_one>
+          <Function test_greedy_selects_max>
+          <Function test_top_p_filter>
+          <Function test_repetition_penalty>
+        <Class TestStoppingCriteria>
+          <Function test_stop_on_max_tokens>
+          <Function test_stop_on_sequence>
+          <Function test_truncate_at_stop>
+          <Function test_eos_token_stops>
+          <Function test_reset>
+        <Class TestResponseParser>
+          <Function test_clean_removes_stop_sequences>
+          <Function test_extract_code_blocks>
+          <Function test_extract_json>
+          <Function test_extract_json_from_block>
+          <Function test_extract_list>
+          <Function test_to_structured>
+        <Class TestContextManager>
+          <Function test_estimate_tokens>
+          <Function test_available_context>
+          <Function test_fit_text_no_truncation>
+      <Module test_multi_agent.py>
+        <Coroutine test_shared_memory_bus>
+        <Coroutine test_agent_messenger>
+        <Coroutine test_collaborative_layer>
+      <Module test_production.py>
+        <Coroutine test_production_manager_init>
+        <Coroutine test_register_component>
+        <Coroutine test_start_monitoring>
+        <Coroutine test_ensure_scalability>
+        <Coroutine test_handle_failure>
+      <Module test_rag.py>
+        <Class TestRetrievalResult>
+          <Function test_to_dict>
+          <Function test_metadata_defaults_to_empty>
+        <Class TestSemanticRetriever>
+          <Function test_returns_empty_without_vector_store>
+          <Function test_set_vector_store>
+          <Coroutine test_aretrieve_returns_list>
+        <Class TestCrossEncoderReranker>
+          <Function test_rerank_fallback_keyword>
+          <Function test_rerank_empty_returns_empty>
+          <Function test_top_k_limits_results>
+        <Class TestContextBuilder>
+          <Function test_build_with_results>
+          <Function test_max_context_chars_truncates>
+          <Function test_empty_results_returns_empty>
+        <Class TestCitationBuilder>
+          <Function test_build_references>
+          <Function test_source_list>
+          <Function test_inject_citations>
+        <Class TestHybridSearcher>
+          <Function test_keyword_search_scores_correctly>
+      <Module test_security.py>
+        <Function test_policy_engine_init>
+        <Function test_register_policy>
+        <Function test_prompt_injection_policy_denies>
+        <Function test_prompt_injection_policy_allows>
+        <Function test_tool_permission_policy_denies>
+        <Function test_tool_permission_policy_allows>
+        <Function test_content_moderation_policy_denies>
+        <Function test_content_moderation_policy_allows>
+        <Function test_enforce_all_policies_allow>
+        <Function test_enforce_one_policy_denies>
+        <Function test_evaluate_returns_all_results>
+      <Module test_training.py>
+        <Class TestDatasetLoader>
+          <Function test_load_jsonl>
+          <Function test_load_json>
+          <Function test_load_missing_file_raises>
+          <Function test_split_train_eval>
+        <Class TestCheckpointManager>
+          <Function test_list_empty>
+          <Function test_save_creates_directory>
+          <Function test_step_from_name>
+          <Function test_load_missing_raises>
+        <Class TestTrainingMetrics>
+          <Function test_record_step>
+          <Function test_perplexity>
+          <Function test_summary_keys>
+          <Function test_history>
+        <Class TestLoRAConfig>
+          <Function test_defaults>
+          <Function test_custom_config>
+        <Class TestTrainingConfig>
+          <Function test_defaults>
+        <Class TestDatasetCleaner>
+          <Function test_clean_text>
+          <Function test_deduplicate>
+          <Function test_skip_short_records>
+          <Function test_process_pipeline>
+        <Class TestDatasetFormatter>
+          <Function test_to_alpaca>
+          <Function test_to_alpaca_text_with_input>
+          <Function test_to_chatml_from_messages>
+          <Function test_batch_format>
+        <Class TestInstructionBuilder>
+          <Function test_build_qa_pairs>
+          <Function test_build_summary_pairs>
+        <Class TestConversationBuilder>
+          <Function test_from_qa_pairs>
+          <Function test_build_multi_turn>
+          <Function test_to_sharegpt_format>
+        <Class TestDatasetExporter>
+          <Function test_to_jsonl>
+          <Function test_to_json>
+    <Package benchmark>
+      <Module test_components_benchmark.py>
+        <Class TestIntentAnalyzerBenchmark>
+          <Function test_analyze_latency>
+        <Class TestReasoningEngineBenchmark>
+          <Function test_reason_latency>
+        <Class TestContinuousLearningBenchmark>
+          <Function test_deduplication_speed>
+          <Function test_cleaning_speed>
+        <Class TestDecisionEngineBenchmark>
+          <Function test_quality_lookup_speed>
+    <Dir distributed_messaging>
+      <Module test_celery.py>
+        <Function test_celery_app_config>
+        <Function test_process_data_task>
+        <Function test_process_data_task_async>
+      <Module test_kafka.py>
+        <Function test_kafka_producer_init>
+        <Function test_kafka_producer_produce_message>
+        <Function test_kafka_consumer_init>
+        <Function test_kafka_consumer_subscribe_and_poll>
+      <Module test_redis_streams.py>
+        <Coroutine test_redis_streams_client_init>
+        <Coroutine test_add_message>
+        <Coroutine test_read_messages>
+    <Package integration>
+      <Module test_api_workflow.py>
+        <Coroutine test_health_endpoint>
+        <Coroutine test_ping_endpoint>
+        <Coroutine test_create_channel>
+        <Coroutine test_list_channels>
+        <Coroutine test_get_channel_by_id>
+        <Coroutine test_get_channel_not_found>
+        <Coroutine test_update_channel>
+        <Coroutine test_channel_status_endpoint>
+        <Coroutine test_channel_audit_log>
+        <Coroutine test_pause_and_resume_channel>
+        <Coroutine test_trigger_channel>
+        <Coroutine test_trigger_inactive_channel_returns_400>
+        <Coroutine test_trigger_paused_channel_returns_400>
+        <Coroutine test_create_channel_invalid_request>
+        <Coroutine test_update_channel_invalid_status>
+        <Coroutine test_delete_channel>
+        <Coroutine test_delete_nonexistent_channel>
+      <Module test_brain_v3_cognitive.py>
+        <Class TestBrainV3CognitivePipeline>
+          <Function test_brain_v3_has_cognitive_components>
+          <Coroutine test_process_calls_intent_analyzer>
+          <Coroutine test_process_calls_context_analyzer>
+          <Coroutine test_process_calls_reasoning_engine>
+          <Coroutine test_trace_contains_all_cognitive_layers>
+          <Coroutine test_policy_blocked_request>
+      <Module test_full_pipeline.py>
+        <Coroutine test_pipeline_with_english_articles>
+        <Coroutine test_pipeline_with_arabic_articles>
+        <Coroutine test_pipeline_filters_short_articles>
+        <Coroutine test_pipeline_empty_input>
+        <Coroutine test_pipeline_result_unified>
+        <Coroutine test_pipeline_stage_timing>
+        <Coroutine test_pipeline_with_local_storage>
+        <Coroutine test_pipeline_with_fetch_fn>
+        <Coroutine test_pipeline_no_crash_on_stage_error>
+        <Coroutine test_pipeline_rejection_rate>
+      <Module test_full_processing_pipeline.py>
+        <Class TestCleaningPipelineIntegration>
+          <Function test_cleans_batch_without_errors>
+          <Function test_clean_preserves_key_content>
+        <Class TestFilteringPipelineIntegration>
+          <Function test_filters_short_articles>
+          <Function test_deduplication_removes_duplicates>
+          <Function test_metrics_have_rejection_breakdown>
+          <Function test_keeps_arabic_articles>
+        <Class TestEnrichmentPipelineIntegration>
+          <Function test_enriches_batch_without_errors>
+          <Function test_topic_added_to_articles>
+          <Function test_sentiment_added_to_articles>
+          <Function test_cache_improves_second_run_speed>
+        <Class TestTransformationPipelineIntegration>
+          <Function test_transforms_batch_without_errors>
+          <Function test_all_articles_get_markdown>
+          <Function test_chunks_have_unique_ids>
+        <Class TestFullProcessingPipeline>
+          <Function test_full_pipeline_end_to_end>
+          <Function test_pipeline_handles_arabic_articles>
+          <Function test_pipeline_with_pii_content>
+      <Module test_learning_pipeline_integration.py>
+        <Class TestPipelineEndToEnd>
+          <Coroutine test_pipeline_runs_all_stages>
+          <Coroutine test_pipeline_rejects_insufficient_samples>
+          <Coroutine test_dataset_file_created>
+          <Coroutine test_training_queue_file_created>
+          <Coroutine test_run_saved_to_disk>
+          <Coroutine test_get_stats_after_run>
+          <Coroutine test_human_approval_flow>
+          <Coroutine test_multiple_runs_independent>
+      <Module test_monitoring.py>
+        <Class TestStructuredLogger>
+          <Function test_get_logger_returns_logger>
+          <Function test_set_and_get_correlation_id>
+          <Function test_set_and_get_request_id>
+          <Function test_set_and_get_pipeline_id>
+          <Function test_structured_formatter_produces_json>
+          <Function test_structured_formatter_includes_service>
+          <Function test_configure_logging_creates_log_dir>
+          <Function test_audit_logger_writes_entries>
+          <Function test_get_audit_logger_singleton>
+        <Class TestPrometheusMetrics>
+          <Function test_metrics_import_without_crash>
+          <Function test_track_latency_context_manager>
+          <Function test_get_metrics_text_returns_string>
+          <Function test_fallback_metric_is_silent>
+        <Class TestHealthChecker>
+          <Coroutine test_check_all_returns_system_health>
+          <Coroutine test_check_memory_component>
+          <Coroutine test_check_database_component>
+          <Coroutine test_custom_check_registration>
+          <Coroutine test_unknown_check_returns_unknown>
+          <Coroutine test_check_timeout_returns_down>
+          <Coroutine test_startup_check_runs_all>
+          <Function test_self_test_returns_ready>
+          <Function test_component_health_to_dict>
+          <Coroutine test_overall_status_is_down_when_one_component_down>
+      <Module test_phase2_runtime_contract.py>
+        <Function test_api_chat_delegates_to_brain_and_router>
+        <Coroutine test_external_provider_exposes_native_contract_without_fake_fallback>
+        <Coroutine test_router_uses_explicit_registered_provider>
+        <Coroutine test_router_rejects_unknown_forced_model>
+        <Coroutine test_router_does_not_fabricate_after_provider_failure>
+        <Coroutine test_router_native_stream_contract>
+        <Coroutine test_router_model_listing_reports_registered_health>
+        <Function test_model_router_is_the_explicit_selection_authority>
+        <Coroutine test_brain_process_uses_router_and_stores_successful_turn>
+        <Coroutine test_brain_fails_closed_without_fake_content>
+        <Coroutine test_brain_native_stream_returns_provider_chunks_and_sentinel>
+        <Coroutine test_brain_stream_cancellation_does_not_persist_assistant_content>
+        <Coroutine test_brain_stream_failure_does_not_persist_assistant_content>
+        <Coroutine test_rag_is_required_when_requested_instead_of_silent_bypass>
+        <Coroutine test_router_forced_registered_model_overrides_local_preference>
+        <Coroutine test_hajeen_provider_health_is_false_without_checkpoint>
+      <Module test_phase3_rag_runtime.py>
+        <Coroutine test_real_embedding_vector_store_retrieval_and_provenance>
+        <Coroutine test_hybrid_retriever_is_real_pipeline_option>
+        <Coroutine test_no_results_and_invalid_query_are_safe>
+        <Coroutine test_real_rag_latency_measurements_are_recorded>
+        <Coroutine test_failure_does_not_create_context_or_citations>
+        <Coroutine test_brain_boundary_receives_rag_prompt_and_memory>
+      <Module test_phase4_native_streaming.py>
+        <Coroutine test_model_router_forwards_native_start_delta_finish>
+        <Coroutine test_model_router_rejects_non_native_provider_chunks>
+        <Coroutine test_model_router_applies_idle_timeout_and_closes_stream>
+        <Coroutine test_model_router_is_fail_closed_for_unknown_forced_model>
+        <Coroutine test_chat_service_saves_memory_only_after_successful_finish>
+        <Coroutine test_chat_service_does_not_save_memory_after_error>
+      <Module test_phase5_agents_tools.py>
+        <Coroutine test_orchestrator_executes_typed_plan_and_records_lifecycle>
+        <Coroutine test_dangerous_tool_is_denied_without_permission>
+        <Coroutine test_tool_timeout_is_fail_closed>
+        <Coroutine test_tool_retry_is_limited_to_idempotent_tools_and_replays_by_key>
+        <Coroutine test_tool_permissions_and_policy_failure_are_fail_closed>
+        <Coroutine test_unknown_tool_invalid_input_and_max_steps_fail_closed>
+        <Coroutine test_orchestrator_propagates_cancellation>
+        <Coroutine test_decision_engine_selects_agent_only_on_explicit_opt_in>
+        <Function test_brain_injects_canonical_agent_authorities>
+        <Coroutine test_planner_fails_closed_without_central_dependencies>
+      <Module test_phase6_learning_coordinator.py>
+        <Function test_coordinator_blocks_training_for_nonapproved_dataset>
+        <Function test_coordinator_blocks_evaluation_without_real_evaluator>
+        <Function test_coordinator_requires_passing_evaluation_before_registration>
+        <Function test_coordinator_full_data_to_approved_model_lineage>
+      <Module test_phase6_learning_data.py>
+        <Function test_ingestion_failure_is_not_success>
+        <Function test_data_lifecycle_is_traceable_and_deterministic>
+        <Function test_unknown_language_and_low_quality_are_rejected>
+        <Function test_pii_is_redacted_and_never_in_manifest>
+        <Function test_three_way_split_is_deterministic_and_disjoint>
+        <Function test_invalid_chunk_configuration_fails_closed>
+      <Module test_phase6_training_registry.py>
+        <Function test_training_gate_blocks_missing_dataset>
+        <Function test_training_cannot_complete_with_invalid_artifact>
+        <Function test_evaluation_gate_blocks_missing_or_incompatible_artifact>
+        <Function test_evaluation_does_not_run_when_blocked>
+        <Function test_registry_requires_evaluation_before_approval>
+        <Function test_registry_rejects_failed_evaluation_and_no_promotion>
+        <Coroutine test_model_router_excludes_unapproved_registered_artifact>
+        <Coroutine test_evaluation_benchmark_dataset_is_validated_and_traced>
+        <Function test_evaluation_thresholds_fail_closed_when_metric_is_missing>
+        <Function test_registry_rejects_artifact_tampering_after_registration>
+        <Function test_registry_rolls_back_to_validated_previous_artifact>
+      <Module test_phase7_self_evolution.py>
+        <Function test_observation_requires_explicit_hypothesis_and_is_idempotent>
+        <Coroutine test_no_executor_is_fail_closed_without_result>
+        <Coroutine test_full_evidence_gated_lifecycle_and_rollback>
+        <Coroutine test_cancellation_does_not_create_result>
+        <Coroutine test_missing_reflection_or_policy_fails_closed>
+        <Function test_unsafe_capability_is_rejected_before_experiment>
+        <Coroutine test_missing_metric_fails_closed>
+        <Coroutine test_deployment_requires_approval_and_is_idempotent>
+        <Coroutine test_policy_denial_is_rejected_without_version_or_deployment>
+        <Coroutine test_legacy_learning_pipeline_never_deploys_without_canonical_gate>
+      <Module test_pipeline.py>
+        <Class TestFullPipelineIntegration>
+          <Coroutine test_single_english_article>
+          <Coroutine test_single_arabic_article>
+          <Coroutine test_mixed_language_batch>
+          <Coroutine test_duplicate_articles_removed>
+          <Coroutine test_blocked_domain_rejected>
+          <Coroutine test_summary_added>
+          <Coroutine test_chunks_metadata_added>
+          <Coroutine test_token_count_added>
+          <Coroutine test_metrics_captured>
+          <Coroutine test_all_six_stages_traced>
+          <Coroutine test_large_batch>
+          <Coroutine test_html_cleaned>
+          <Coroutine test_store_stage_writes_files>
+      <Module test_rag_pipeline.py>
+        <Class TestRAGPipelineIntegration>
+          <Coroutine test_full_rag_query_without_llm>
+          <Coroutine test_context_assembler_in_pipeline>
+          <Coroutine test_retrieval_engine_full_flow>
+          <Coroutine test_hybrid_retrieval_fusion>
+          <Coroutine test_dataset_builder_creates_records>
+          <Coroutine test_dataset_versioner_creates_version>
+          <Coroutine test_dataset_versioner_deduplicates>
+          <Coroutine test_mmr_retriever_reduces_redundancy>
+          <Coroutine test_batch_rag_queries>
+      <Module test_security.py>
+        <Class TestJWTAuthentication>
+          <Function test_create_and_verify_token>
+          <Function test_token_contains_expiry>
+          <Function test_expired_token_raises>
+          <Function test_tampered_token_raises>
+          <Function test_token_with_extra_claims>
+          <Function test_admin_role_included>
+        <Class TestRBAC>
+          <Function test_admin_has_all_permissions>
+          <Function test_viewer_has_read_only>
+          <Function test_editor_can_write>
+          <Function test_multiple_roles_combined>
+          <Function test_unknown_role_has_no_permissions>
+          <Function test_empty_roles_no_permissions>
+        <Class TestRateLimiter>
+          <Function test_allows_requests_under_limit>
+          <Function test_blocks_requests_over_limit>
+          <Function test_different_keys_independent>
+          <Function test_get_remaining_decreases>
+          <Function test_reset_clears_bucket>
+          <Function test_cleanup_expired_removes_old_entries>
+        <Class TestInputSanitization>
+          <Function test_sanitize_removes_script_tags>
+          <Function test_sanitize_removes_javascript_protocol>
+          <Function test_sanitize_truncates_long_input>
+          <Function test_sanitize_clean_input_unchanged>
+          <Function test_validate_api_key_correct>
+          <Function test_validate_api_key_wrong>
+        <Class TestSecretManager>
+          <Function test_get_existing_env_var>
+          <Function test_get_missing_returns_default>
+          <Function test_require_existing_returns_value>
+          <Function test_require_missing_raises>
+          <Function test_mask_sensitive_key>
+          <Function test_mask_non_sensitive_key>
+          <Function test_load_from_env_file>
+          <Function test_summary_structure>
+          <Function test_rotation_callback_called>
+        <Class TestResourceGuard>
+          <Coroutine test_protected_request_succeeds>
+          <Coroutine test_timeout_protection>
+          <Function test_rate_limiter_throttling>
+          <Function test_memory_guard_check>
+          <Coroutine test_worker_isolation_runs_function>
+          <Function test_graceful_degradation_circuit_open>
+          <Function test_graceful_degradation_circuit_closed_after_recovery>
+          <Function test_resource_guard_health>
+          <Function test_secure_headers_present>
+      <Module test_storage_persistence.py>
+        <Coroutine test_raw_storage_write_and_read>
+        <Coroutine test_raw_storage_binary>
+        <Coroutine test_bronze_layer_save_and_load>
+        <Coroutine test_silver_layer_save_and_load>
+        <Coroutine test_gold_layer_save_and_load>
+        <Coroutine test_jsonl_write_and_read>
+        <Coroutine test_jsonl_deduplication>
+        <Coroutine test_jsonl_append>
+        <Coroutine test_jsonl_empty_file>
+        <Coroutine test_deduplication_prevents_duplicate_raw>
+        <Function test_is_duplicate_detection>
+        <Coroutine test_data_persists_after_reconnect>
+        <Coroutine test_cleanup_old_files>
+        <Coroutine test_get_storage_stats>
+        <Function test_storage_manager_singleton>
+        <Coroutine test_health_check>
+      <Module test_verified_base_registry.py>
+        <Function test_verified_manifest_and_sharded_artifact>
+        <Function test_registry_registers_verified_base_idempotently>
+        <Function test_router_rejects_unregistered_hajeen_local>
+    <Package load>
+      <Module test_brain_load.py>
+        <Class TestBrainLoadHandling>
+          <Coroutine test_concurrent_requests>
+          <Coroutine test_throughput_benchmark>
+        <Class TestLearningPipelineLoad>
+          <Coroutine test_pipeline_with_large_dataset>
+          <Coroutine test_concurrent_pipeline_runs>
+    <Package production>
+      <Package failover>
+        <Module test_failover.py>
+          <Coroutine test_api_worker_restart_recovery>
+          <Coroutine test_redis_failover_continuity>
+      <Package gpu>
+        <Module test_gpu.py>
+          <Function test_gpu_available>
+          <Function test_tensor_operations>
+          <Function test_gpu_memory_management>
+          <Function test_inference_throughput>
+      <Package security>
+        <Module test_security.py>
+          <Function test_unauthenticated_request_rejected>
+          <Function test_invalid_token_rejected>
+          <Function test_expired_token_rejected>
+          <Function test_sql_injection_sanitized>
+          <Function test_rate_limiting_enforced>
+          <Function test_xss_headers_present>
+          <Function test_tenant_isolation>
+      <Package stress>
+        <Module test_stress.py>
+          <Coroutine test_concurrent_requests_1000>
+          <Coroutine test_memory_leak_detection>
+          <Coroutine test_graceful_degradation>
+    <Dir self_evolution>
+      <Module test_continuous_learning_loop.py>
+        <Coroutine test_execute_and_learn_success>
+        <Coroutine test_execute_and_learn_failure_triggers_exploration>
+        <Coroutine test_execute_and_learn_low_confidence_triggers_exploration>
+        <Coroutine test_execute_and_learn_reflection_overrides_success>
+      <Module test_curiosity_engine.py>
+        <Coroutine test_decide_to_explore_low_confidence>
+        <Coroutine test_decide_to_explore_repeated_failures>
+        <Coroutine test_decide_to_explore_no_exploration>
+        <Coroutine test_suggest_exploration_strategy>
+        <Coroutine test_evaluate_exploration_outcome>
+        <Coroutine test_suggest_exploration_strategy_error_handling>
+      <Module test_episodic_memory.py>
+        <Function test_episodic_memory_init_empty>
+        <Function test_episodic_memory_init_with_data>
+        <Function test_add_experience>
+        <Function test_retrieve_experiences_by_keyword>
+        <Function test_get_successful_experiences>
+        <Function test_get_failed_experiences>
+      <Module test_self_reflection_engine.py>
+        <Coroutine test_self_reflection_engine_init>
+        <Coroutine test_reflect_on_output>
+        <Coroutine test_critique_plan>
+        <Coroutine test_reflection_error_handling>
+    <Package stress>
+      <Module test_brain_stress.py>
+        <Class TestLearningPipelineStress>
+          <Coroutine test_pipeline_with_all_low_quality>
+          <Coroutine test_pipeline_handles_malformed_data>
+          <Coroutine test_pipeline_with_very_long_text>
+          <Coroutine test_pipeline_duplicate_heavy_dataset>
+        <Class TestCognitiveLayerStress>
+          <Coroutine test_intent_analyzer_empty_message>
+          <Coroutine test_intent_analyzer_very_long_message>
+          <Coroutine test_reasoning_engine_malformed_llm_response>
+          <Coroutine test_context_analyzer_memory_failure>
+    <Module test_api.py>
+      <Function test_health_check>
+      <Function test_ping>
+      <Function test_v1_health_check>
+    <Module test_basic.py>
+      <Function test_placeholder>
+    <Module test_dataset_manager.py>
+      <Function test_dataset_manager>
+    <Module test_final_integration.py>
+      <Coroutine test_inference>
+      <Coroutine test_evaluation>
+    <Module test_health.py>
+      <Function test_health>
+      <Function test_ping>
+    <Module test_phase65.py>
+      <Function test_unified_article_fields>
+      <Function test_unified_article_from_legacy>
+      <Function test_unified_article_hashes>
+      <Function test_unified_article_stage_progression>
+      <Function test_unified_article_serialization>
+      <Function test_chunking_recursive>
+      <Function test_chunking_semantic>
+      <Function test_chunking_fixed>
+      <Function test_chunking_token_aware>
+      <Function test_chunk_document_fields>
+      <Function test_chunk_deduplicator>
+      <Function test_chunking_batch>
+      <Function test_dedup_url_detection>
+      <Function test_dedup_content_detection>
+      <Function test_dedup_unique_articles>
+      <Function test_dedup_unified_articles>
+      <Function test_dedup_chunks>
+      <Function test_dedup_stats>
+      <Function test_mock_embedder_single>
+      <Function test_mock_embedder_batch>
+      <Function test_embedding_cache>
+      <Function test_embedding_storage>
+      <Function test_embedding_pipeline_chunks>
+      <Function test_embedding_pipeline_article>
+      <Function test_embedding_cache_hit>
+      <Function test_metadata_tracker_article>
+      <Function test_metadata_tracker_chunk>
+      <Function test_metadata_tracker_stage>
+      <Function test_metadata_tracker_stats>
+      <Function test_full_pipeline_integration>
+    <Module test_phase6_celery.py>
+      <Class TestHealthCheckTask>
+        <Function test_health_check_returns_ok>
+      <Class TestValidateSourcesTask>
+        <Function test_validate_with_no_channels>
+        <Function test_validate_with_channel_ids_filter>
+      <Class TestProcessArticleBatch>
+        <Function test_process_empty_batch>
+        <Function test_process_batch_returns_metrics>
+        <Function test_process_batch_has_task_id>
+      <Class TestExecutePipeline>
+        <Function test_execute_pipeline_no_articles>
+        <Function test_execute_pipeline_with_articles>
+        <Function test_execute_pipeline_returns_stage_traces>
+        <Function test_cancel_pipeline>
+        <Function test_execute_pipeline_source_id_in_result>
+      <Class TestCeleryConfig>
+        <Function test_queue_names_defined>
+        <Function test_task_routes_defined>
+        <Function test_beat_schedule_has_health_check>
+        <Function test_in_memory_mode_env>
+        <Function test_worker_config_defaults>
+    <Module test_phase6_monitor.py>
+      <Class TestTaskMonitor>
+        <Function test_on_task_start_creates_record>
+        <Function test_on_task_success>
+        <Function test_on_task_failure>
+        <Function test_on_task_dead>
+        <Function test_on_task_retry>
+        <Function test_running_tasks>
+        <Function test_failed_tasks>
+════════════════════════════════════════════════════════════
+  Phase 7 — Vector Search + RAG Foundation Tests
+════════════════════════════════════════════════════════════
+
+[7.1 Embedding Models Layer]
+
+
+[7.2 Chunk Embedding Pipeline]
+
+
+[7.3 Vector Storage Layer — FAISS]
+
+
+[7.4 Semantic Search Engine]
+
+
+[7.5 Retriever Layer]
+
+
+[7.6 RAG Pipeline]
+2026-08-22 00:06:55 [INFO] core.prompts.base: UnifiedPromptBuilder initialized (max_context=3500)
+2026-08-22 00:06:55 [INFO] brain.prompts.unified_prompt_builder: UnifiedPromptBuilder v1.0.0 initialized (lang=ar, format=chatml)
+
+
+[7.9 Search Metrics & Evaluation]
+
+
+[7.10 Full Integration — End-to-End]
+
+
+════════════════════════════════════════════════════════════
+  النتيجة: 0/0 اختبارات ناجحة
+  ✅ جميع الاختبارات ناجحة — Phase 7 جاهز للـ LLM!
+════════════════════════════════════════════════════════════
+
+        <Function test_retrying_tasks>
+        <Function test_summary_counts>
+        <Function test_get_task_not_found>
+        <Function test_task_duration_ms>
+      <Class TestJobStore>
+        <Function test_save_and_get_job>
+        <Function test_list_jobs>
+        <Function test_list_enabled_only>
+        <Function test_update_job_status>
+        <Function test_record_job_run>
+        <Function test_delete_job>
+        <Function test_delete_nonexistent>
+        <Function test_record_task>
+        <Function test_stats>
+    <Module test_phase6_priority_queue.py>
+      <Class TestPriority>
+        <Function test_ordering>
+        <Function test_values>
+      <Class TestPriorityTask>
+        <Function test_creation>
+        <Function test_delayed_task_not_ready>
+        <Function test_ordering_by_priority>
+      <Class TestPriorityTaskQueue>
+        <Function test_push_pop_basic>
+        <Function test_priority_ordering>
+        <Function test_fifo_within_same_priority>
+        <Function test_delayed_task_not_popped_early>
+        <Function test_size_and_is_empty>
+        <Function test_peek>
+        <Function test_remove>
+        <Function test_remove_nonexistent>
+        <Function test_max_size_raises>
+        <Function test_inspect>
+        <Function test_ready_count>
+        <Function test_custom_task_id>
+        <Function test_len_dunder>
+    <Module test_phase6_redis.py>
+      <Class TestRedisConfig>
+        <Function test_default_values>
+        <Function test_url_property_no_auth>
+        <Function test_url_property_with_password>
+        <Function test_from_env_defaults>
+        <Function test_from_env_with_url>
+        <Function test_retry_config>
+      <Class TestRedisManager>
+        <Function test_sync_connect_uses_test_only_redis_double>
+        <Function test_ping_returns_true_with_test_only_redis_double>
+        <Function test_health_check_has_status>
+        <Function test_health_check_ok_with_test_only_redis_double>
+        <Function test_context_manager_sync>
+        <Function test_client_property_auto_connects>
+        <Function test_get_singleton>
+        <Function test_disconnect_clears_client>
+        <Function test_production_manager_has_no_fake_flag>
+        <Function test_redis_operations_with_test_only_redis_double>
+    <Module test_phase6_retry.py>
+      <Class TestRetryConfig>
+        <Function test_defaults>
+        <Function test_custom>
+      <Class TestRetryManager>
+        <Function test_register>
+        <Function test_record_failure_increments_attempts>
+        <Function test_exhausted_after_max_attempts>
+        <Function test_should_retry_true_before_exhaustion>
+        <Function test_should_retry_false_when_dead>
+        <Function test_compute_delay_exponential>
+        <Function test_compute_delay_respects_max>
+        <Function test_record_success>
+        <Function test_dead_tasks_list>
+        <Function test_summary>
+        <Function test_clear_completed>
+      <Class TestFailureHandler>
+        <Function test_record_and_retrieve>
+        <Function test_dead_after_max_retries>
+        <Function test_stats>
+      <Class TestBackpressure>
+        <Function test_circuit_breaker_starts_closed>
+        <Function test_circuit_opens_after_failures>
+        <Function test_circuit_closes_after_recovery>
+        <Function test_rate_limiter_allows_within_capacity>
+        <Function test_rate_limiter_blocks_when_empty>
+        <Function test_backpressure_manager_can_submit>
+        <Function test_backpressure_manager_status>
+    <Module test_phase6_scheduler.py>
+      <Class TestCronScheduler>
+        <Function test_start_and_is_running>
+        <Function test_stop>
+        <Function test_add_interval_job>
+        <Function test_add_cron_job>
+        <Function test_invalid_cron_raises>
+        <Function test_add_one_time_job>
+        <Function test_pause_and_resume_job>
+        <Function test_remove_job>
+        <Function test_remove_nonexistent_job>
+        <Function test_list_jobs_empty>
+        <Function test_multiple_jobs>
+        <Function test_replace_existing_job>
+        <Function test_get_nonexistent_job>
+INTERNALERROR> Traceback (most recent call last):
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/main.py", line 330, in wrap_session
+INTERNALERROR>     session.exitstatus = doit(config, session) or 0
+INTERNALERROR>                          ^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/main.py", line 383, in _main
+INTERNALERROR>     config.hook.pytest_collection(session=session)
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_hooks.py", line 512, in __call__
+INTERNALERROR>     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_manager.py", line 120, in _hookexec
+INTERNALERROR>     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 167, in _multicall
+INTERNALERROR>     raise exception
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/logging.py", line 803, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/warnings.py", line 99, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/config/__init__.py", line 1445, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 121, in _multicall
+INTERNALERROR>     res = hook_impl.function(*args)
+INTERNALERROR>           ^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/main.py", line 394, in pytest_collection
+INTERNALERROR>     session.perform_collect()
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/main.py", line 869, in perform_collect
+INTERNALERROR>     self.items.extend(self.genitems(node))
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/main.py", line 1035, in genitems
+INTERNALERROR>     yield from self.genitems(subnode)
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/main.py", line 1032, in genitems
+INTERNALERROR>     rep, duplicate = self._collect_one_node(node, handle_dupes)
+INTERNALERROR>                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/main.py", line 895, in _collect_one_node
+INTERNALERROR>     rep = collect_one_node(node)
+INTERNALERROR>           ^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/runner.py", line 589, in collect_one_node
+INTERNALERROR>     rep: CollectReport = ihook.pytest_make_collect_report(collector=collector)
+INTERNALERROR>                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_hooks.py", line 512, in __call__
+INTERNALERROR>     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_manager.py", line 120, in _hookexec
+INTERNALERROR>     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)mainloop: caught unexpected SystemExit!
+
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 167, in _multicall
+INTERNALERROR>     raise exception
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/fixtures.py", line 1798, in pytest_make_collect_report
+INTERNALERROR>     result = yield
+INTERNALERROR>              ^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/capture.py", line 880, in pytest_make_collect_report
+INTERNALERROR>     rep = yield
+INTERNALERROR>           ^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/pluggy/_callers.py", line 121, in _multicall
+INTERNALERROR>     res = hook_impl.function(*args)
+INTERNALERROR>           ^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/runner.py", line 408, in pytest_make_collect_report
+INTERNALERROR>     call = CallInfo.from_call(
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/runner.py", line 361, in from_call
+INTERNALERROR>     result: TResult | None = func()
+INTERNALERROR>                              ^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/runner.py", line 406, in collect
+INTERNALERROR>     return list(collector.collect())
+INTERNALERROR>                 ^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/python.py", line 564, in collect
+INTERNALERROR>     self._register_setup_module_fixture()
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/python.py", line 577, in _register_setup_module_fixture
+INTERNALERROR>     self.obj, ("setUpModule", "setup_module")
+INTERNALERROR>     ^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/python.py", line 290, in obj
+INTERNALERROR>     self._obj = obj = self._getobj()
+INTERNALERROR>                       ^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/python.py", line 561, in _getobj
+INTERNALERROR>     return importtestmodule(self.path, self.config)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/python.py", line 508, in importtestmodule
+INTERNALERROR>     mod = import_path(
+INTERNALERROR>           ^^^^^^^^^^^^
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/pathlib.py", line 596, in import_path
+INTERNALERROR>     importlib.import_module(module_name)
+INTERNALERROR>   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+INTERNALERROR>     return _bootstrap._gcd_import(name[level:], package, level)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+INTERNALERROR>   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+INTERNALERROR>   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+INTERNALERROR>   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+INTERNALERROR>   File "/usr/local/lib/python3.12/dist-packages/_pytest/assertion/rewrite.py", line 188, in exec_module
+INTERNALERROR>     exec(co, module.__dict__)
+INTERNALERROR>   File "/home/ubuntu/ai-chat-review/tests/test_phase7.py", line 763, in <module>
+INTERNALERROR>     sys.exit(0 if not failed_list else 1)
+INTERNALERROR> SystemExit: 0
+
+========================= 624 tests collected in 4.51s =========================
+collection_exit=3

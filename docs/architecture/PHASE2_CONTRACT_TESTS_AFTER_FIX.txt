@@ -1,0 +1,81 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 25 items
+
+tests/integration/test_phase2_runtime_contract.py ...............F       [ 64%]
+tests/unit/test_phase1_runtime_contract.py ..F                           [ 76%]
+tests/integration/test_phase4_native_streaming.py ......                 [100%]
+
+=================================== FAILURES ===================================
+___________ test_hajeen_provider_health_is_false_without_checkpoint ____________
+
+    @pytest.mark.asyncio
+    async def test_hajeen_provider_health_is_false_without_checkpoint():
+        from core.llm.providers.hajeen_provider import HajeenLLMProvider
+        from core.llm.base import LLMConfig
+    
+        provider = HajeenLLMProvider(LLMConfig(provider="hajeen", model="hajeen-v1", extra={"model_path": "/path/that/does/not/exist"}))
+>       await provider.initialize()
+
+tests/integration/test_phase2_runtime_contract.py:281: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <HajeenLLMProvider provider=hajeen model=hajeen-v1>
+
+    async def initialize(self) -> None:
+        """Load and validate the approved local checkpoint before readiness."""
+        try:
+            if not self.local_model.load_model():
+>               raise LLMProviderError(
+                    "Hajeen checkpoint is unavailable or failed validation"
+                )
+E               core.llm.base.LLMProviderError: Hajeen checkpoint is unavailable or failed validation
+
+core/llm/providers/hajeen_provider.py:32: LLMProviderError
+------------------------------ Captured log call -------------------------------
+ERROR    hajeen_model.inference.hajeen_provider:hajeen_provider.py:55 Hajeen checkpoint is unavailable or incomplete at /path/that/does/not/exist; required config, tokenizer, and model weights were not found
+___________ test_route_signature_preserves_model_provider_separation ___________
+
+    def test_route_signature_preserves_model_provider_separation():
+        router = ModelRouter(prefer_local=False)
+        key = "hajeen-local"
+        config = router._models[key]
+    
+>       assert config.model_id == "hajeen-v1"
+E       AssertionError: assert 'Qwen/Qwen3-30B-A3B' == 'hajeen-v1'
+E         
+E         - hajeen-v1
+E         + Qwen/Qwen3-30B-A3B
+
+tests/unit/test_phase1_runtime_contract.py:57: AssertionError
+=============================== warnings summary ===============================
+../../../usr/local/lib/python3.12/dist-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/dist-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+brain/brain_v3.py:58
+  /home/ubuntu/ai-chat-review/brain/brain_v3.py:58: DeprecationWarning: brain.evolution is deprecated. Use brain.reflection directly.
+    from .evolution.phase7_lifecycle import EvolutionLifecycle, EvolutionRecord
+
+tests/integration/test_phase2_runtime_contract.py::test_api_chat_delegates_to_brain_and_router
+  /usr/local/lib/python3.12/dist-packages/pytest_asyncio/plugin.py:916: PytestDeprecationWarning: Overriding the "event_loop_policy" fixture is deprecated and will be removed in a future version of pytest-asyncio. Use the "pytest_asyncio_loop_factories" hook to customize event loop creation.
+    warnings.warn(
+
+tests/integration/test_phase2_runtime_contract.py::test_api_chat_delegates_to_brain_and_router
+  /home/ubuntu/ai-chat-review/tests/conftest.py:40: DeprecationWarning: There is no current event loop
+    asyncio.get_event_loop()
+
+tests/integration/test_phase2_runtime_contract.py::test_api_chat_delegates_to_brain_and_router
+  /home/ubuntu/ai-chat-review/api/v1/ai/router.py:56: PydanticDeprecatedSince20: `min_items` is deprecated and will be removed, use `min_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    messages: List[MessageSchema] = Field(..., min_items=1)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_phase2_runtime_contract.py::test_hajeen_provider_health_is_false_without_checkpoint
+FAILED tests/unit/test_phase1_runtime_contract.py::test_route_signature_preserves_model_provider_separation
+================== 2 failed, 23 passed, 5 warnings in 32.80s ===================
+exit=1

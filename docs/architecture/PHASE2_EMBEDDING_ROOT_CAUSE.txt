@@ -1,0 +1,89 @@
+=== embedding source ===
+"""SentenceTransformer embedding model implementation."""
+from __future__ import annotations
+
+import logging
+import os
+from pathlib import Path
+from typing import List, Optional
+
+from core.embeddings.base import BaseEmbeddingModel, EmbeddingConfig
+
+logger = logging.getLogger(__name__)
+
+
+class SentenceTransformerModel(BaseEmbeddingModel):
+    """نموذج sentence-transformers — يدعم all-MiniLM-L6-v2 وغيره."""
+
+    def __init__(self, config: Optional[EmbeddingConfig] = None):
+        super().__init__(config or EmbeddingConfig())
+        self._model = None
+
+    def load(self) -> None:
+        """تحميل النموذج من HuggingFace (lazy)."""
+        if self._loaded:
+            return
+        try:
+            from sentence_transformers import SentenceTransformer
+            configured_path = os.getenv("HAJEEN_EMBEDDING_MODEL_PATH")
+            model_source = configured_path if configured_path and Path(configured_path).is_dir() else self.config.model_name
+            logger.info(f"تحميل نموذج: {model_source}")
+            model_kwargs = {"local_files_only": self.config.local_files_only}
+            self._model = SentenceTransformer(
+                model_source,
+                device=self.config.device,
+                cache_folder=self.config.cache_dir,
+                model_kwargs=model_kwargs,
+            )
+            self._model.max_seq_length = self.config.max_seq_length
+            # تحديث الأبعاد الفعلية من النموذج
+            actual_dim = self._model.get_sentence_embedding_dimension()
+            if actual_dim:
+                self.config.dimensions = actual_dim
+            self._loaded = True
+            logger.info(f"النموذج جاهز — أبعاد: {self.config.dimensions}")
+        except Exception as e:
+            logger.error(f"فشل تحميل النموذج: {e}")
+            raise
+
+    def _encode_batch(self, texts: List[str]) -> List[List[float]]:
+        """ترميز دُفعة من النصوص."""
+        if self._model is None:
+            raise RuntimeError("النموذج لم يُحمَّل بعد.")
+        import numpy as np
+        vectors = self._model.encode(
+            texts,
+            batch_size=self.config.batch_size,
+            normalize_embeddings=self.config.normalize_embeddings,
+            show_progress_bar=self.config.show_progress,
+        )
+        if isinstance(vectors, np.ndarray):
+            return vectors.tolist()
+        return [v.tolist() for v in vectors]
+
+    @property
+    def dimensions(self) -> int:
+        if self._loaded and self._model:
+            dim = self._model.get_sentence_embedding_dimension()
+            return dim if dim else self.config.dimensions
+        return self.config.dimensions
+=== cache candidates ===
+/home/ubuntu/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/blobs/952a9b81c0bfd99800fabf352f69c7ccd46c5e43
+/home/ubuntu/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/blobs/fd1b291129c607e5d49799f87cb219b27f98acdf
+/home/ubuntu/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/blobs/44af2e3b0fa3a0b6239e48422972bf755f28fde0
+/home/ubuntu/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/blobs/59d594003bf59880a884c574bf88ef7555bb0202
+/home/ubuntu/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/blobs/72b987fd805cfa2b58c4c8c952b274a11bfd5a00
+/home/ubuntu/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/refs/main
+/home/ubuntu/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/.no_exist/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/adapter_config.json
+/home/ubuntu/.cache/huggingface/hub/.locks/models--sentence-transformers--all-MiniLM-L6-v2/952a9b81c0bfd99800fabf352f69c7ccd46c5e43.lock
+/home/ubuntu/.cache/huggingface/hub/.locks/models--sentence-transformers--all-MiniLM-L6-v2/fd1b291129c607e5d49799f87cb219b27f98acdf.lock
+/home/ubuntu/.cache/huggingface/hub/.locks/models--sentence-transformers--all-MiniLM-L6-v2/44af2e3b0fa3a0b6239e48422972bf755f28fde0.lock
+/home/ubuntu/.cache/huggingface/hub/.locks/models--sentence-transformers--all-MiniLM-L6-v2/59d594003bf59880a884c574bf88ef7555bb0202.lock
+/home/ubuntu/.cache/huggingface/hub/.locks/models--sentence-transformers--all-MiniLM-L6-v2/72b987fd805cfa2b58c4c8c952b274a11bfd5a00.lock
+=== cache sizes ===
+88K	/home/ubuntu/.cache/huggingface
+=== package versions ===
+sentence-transformers 6.0.0
+transformers 5.15.1
+huggingface-hub 1.28.0
+torch 2.13.0

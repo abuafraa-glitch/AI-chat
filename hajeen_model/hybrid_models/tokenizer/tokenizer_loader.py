@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from typing import List, Optional, Union
 
-from hajeen_model.tokenizer.bpe_tokenizer import BPETokenizer
+from .bpe_tokenizer import BPETokenizer
 
 
 class HajeenTokenizer:

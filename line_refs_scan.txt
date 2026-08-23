@@ -1,0 +1,1047 @@
+=== main relevant lines ===
+    60	
+    61	logger = logging.getLogger(__name__)
+    62	
+    63	# ── Shared Search State ────────────────────────────────────────────────────
+    64	_search_state: Dict[str, Any] = {}
+    65	
+    66	# ── FastAPI ────────────────────────────────────────────────────────────────
+    67	
+    68	app = FastAPI(
+    69	    title="Hajeen AI Platform API",
+    70	    description=(
+    71	        "منصة بيانات ذكية — RSS Ingestion + Vector Search + RAG + LLM Inference\n\n"
+    72	        "**Phase 10 — Production Stable**: Pipeline Orchestration · Distributed Storage · "
+    73	        "Multi-Tenant · Security · AI Inference · CI/CD"
+    74	    ),
+    75	    version="1.1.0",
+    76	    docs_url="/docs",
+    77	    redoc_url="/redoc",
+    78	)
+    79	
+    80	app.add_middleware(
+    81	    CORSMiddleware,
+    82	    allow_origins=[
+    83	        "http://localhost:3000",
+    84	        "http://localhost:5173",
+    85	        "http://localhost:8080",
+    86	        "https://hajeen.ai",
+    87	        "https://app.hajeen.ai",
+    88	    ],
+    89	    allow_credentials=True,
+    90	    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    91	    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Session-ID"],
+    92	)
+    93	
+    94	
+    95	# ── Global Exception Handlers ─────────────────────────────────────────────
+    96	
+    97	@app.exception_handler(RequestValidationError)
+    98	async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    99	    """معالج أخطاء التحقق من الطلبات."""
+   100	    errors = []
+   101	    for err in exc.errors():
+   102	        errors.append({
+   103	            "field": " → ".join(str(loc) for loc in err.get("loc", [])),
+   104	            "message": err.get("msg", ""),
+   105	            "type": err.get("type", ""),
+   106	        })
+   107	    logger.warning(
+   108	        "validation_error: %s %s — %d errors",
+   109	        request.method, request.url.path, len(errors),
+   110	    )
+   111	    return JSONResponse(
+   112	        status_code=422,
+   113	        content={
+   114	            "error": "validation_error",
+   115	            "message": "بيانات الطلب غير صالحة",
+   116	            "details": errors,
+   117	            "path": str(request.url.path),
+   118	        },
+   119	    )
+   120	
+   121	
+   122	@app.exception_handler(StarletteHTTPException)
+   123	async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+   124	    """معالج أخطاء HTTP العامة."""
+   125	    logger.warning(
+   126	        "http_error: %s %s → %d %s",
+   127	        request.method, request.url.path, exc.status_code, exc.detail,
+   128	    )
+   129	    return JSONResponse(
+   130	        status_code=exc.status_code,
+   131	        content={
+   132	            "error": "http_error",
+   133	            "status_code": exc.status_code,
+   134	            "message": exc.detail,
+   135	            "path": str(request.url.path),
+   136	        },
+   137	    )
+   138	
+   139	
+   140	@app.exception_handler(Exception)
+   141	async def unhandled_exception_handler(request: Request, exc: Exception):
+   142	    """معالج الاستثناءات غير المتوقعة — يمنع crash الـ API."""
+   143	    error_id = str(uuid.uuid4())[:8]
+   144	    logger.error(
+   145	        "unhandled_exception [%s]: %s %s — %s\n%s",
+   146	        error_id,
+   147	        request.method,
+   148	        request.url.path,
+   149	        exc,
+   150	        traceback.format_exc(),
+   151	    )
+   152	    return JSONResponse(
+   153	        status_code=500,
+   154	        content={
+   155	            "error": "internal_server_error",
+   156	            "message": "خطأ داخلي في الخادم",
+   157	            "error_id": error_id,
+   158	            "path": str(request.url.path),
+   159	        },
+   160	    )
+   161	
+   162	
+   163	# ── Middleware: Request timing ─────────────────────────────────────────────
+   164	
+   165	@app.middleware("http")
+   166	async def add_request_timing(request: Request, call_next):
+   167	    """إضافة وقت معالجة الطلب إلى الـ response headers."""
+   168	    start = time.monotonic()
+   169	    response = await call_next(request)
+   170	    elapsed_ms = round((time.monotonic() - start) * 1000, 2)
+   171	    response.headers["X-Process-Time-Ms"] = str(elapsed_ms)
+   172	    response.headers["X-Platform"] = "Hajeen-AI/1.1.0"
+   173	    return response
+   174	
+   175	
+   176	# ── Health Endpoint ────────────────────────────────────────────────────────
+   177	
+   178	@app.get("/health", tags=["Health"])
+   179	async def health_check():
+   180	    """فحص صحة شامل للنظام."""
+   181	    checks: Dict[str, Any] = {
+   182	        "status": "ok",
+   183	        "version": "1.1.0",
+   184	        "service": "Hajeen AI Platform",
+   185	        "phase": "10 — Production Stable",
+   186	        "timestamp": time.time(),
+   187	    }
+   188	
+   189	    # Search Engine
+   190	    search_ready = _search_state.get("engine") is not None
+   480	
+   481	    # إغلاق Inference Engine
+   482	    try:
+   483	        from core.inference_engine.engine import get_inference_engine
+   484	        engine = get_inference_engine()
+   485	        if engine._initialized:
+   486	            await engine.shutdown()
+   487	            logger.info("shutdown: Inference Engine أُغلق")
+   488	    except Exception:
+   489	        pass
+   490	
+   491	    logger.info("Hajeen AI Platform — أُغلق بأمان")
+   492	
+   493	
+   494	# ── Routers ──────────────────────────────────────────────────────────────
+   495	
+   496	# ── Auth Middleware (يحمي جميع الـ routes) ────────────────────────────────
+   497	import os as _os
+   498	
+   499	if _os.getenv("ENABLE_AUTH", "true").lower() == "true":
+   500	    try:
+   501	        from security.middleware.auth_middleware import AuthMiddleware
+   502	        app.add_middleware(AuthMiddleware, enable_rate_limiting=True)
+   503	        logger.info("startup: Auth Middleware مفعّل ✓")
+   504	    except Exception as _e:
+   505	        logger.warning("Auth Middleware غير متاح: %s", _e)
+   506	
+   507	from api.v1.router import router as v1_router  # noqa: E402
+   508	
+   509	app.include_router(v1_router, prefix="/api/v1")
+   510	
+   511	try:
+   512	    from api.v1.tasks.router import router as tasks_router
+   513	    app.include_router(tasks_router, prefix="/api/v1")
+   514	except Exception as _e:
+   515	    logger.warning("tasks router غير متاح: %s", _e)
+   516	
+   517	from api.v1.embeddings.router import router as embeddings_router  # noqa: E402
+   518	from api.v1.search.router import router as search_router  # noqa: E402
+   519	
+   520	app.include_router(search_router, prefix="/api/v1")
+   521	app.include_router(embeddings_router, prefix="/api/v1")
+   522	
+   523	from api.v1.ai.router import router as ai_router  # noqa: E402
+   524	
+   525	app.include_router(ai_router, prefix="/api/v1/ai")
+   526	
+   527	try:
+   528	    from api.v1.hajeen_model_router import router as hajeen_model_router
+   529	    app.include_router(hajeen_model_router, prefix="/api/v1")
+   530	    logger.info("startup: Hajeen Model v1 router مسجّل ✓")
+   531	except Exception as _e:
+   532	    logger.warning("Hajeen Model router غير متاح: %s", _e)
+   533	
+   534	# ── Auth Router ────────────────────────────────────────────────────────────
+   535	try:
+   536	    from api.v1.auth.router import router as auth_router
+   537	    app.include_router(auth_router, prefix="/api/v1")
+   538	    logger.info("startup: Auth router مسجّل ✓")
+   539	except Exception as _e:
+   540	    logger.warning("Auth router غير متاح: %s", _e)
+   541	
+   542	logger.info("Hajeen AI Platform API v1.1.0 — تمّ تسجيل جميع الـ routers")
+   543	
+   544	if __name__ == "__main__":
+   545	    import uvicorn
+   546	    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
+   547	
+   548	    # Hajeen Brain v2 Router is deprecated and removed.
+=== start script ===
+     1	#!/usr/bin/env bash
+     2	# ═══════════════════════════════════════════════════════════════
+     3	# Hajeen AI Platform — Full Platform Startup Script (Section 6.15)
+     4	# ═══════════════════════════════════════════════════════════════
+     5	#
+     6	# Starts: API + Worker + Scheduler
+     7	# Redis: Uses fakeredis fallback when Redis server is unavailable
+     8	#
+     9	# Usage:
+    10	#   ./scripts/start_platform.sh              # start all
+    11	#   ./scripts/start_platform.sh worker       # worker only
+    12	#   ./scripts/start_platform.sh api          # api only
+    13	#   ./scripts/start_platform.sh scheduler    # scheduler only
+    14	#   ./scripts/start_platform.sh demo         # full demo run
+    15	
+    16	set -euo pipefail
+    17	
+    18	# ── Colours ──────────────────────────────────────────────────────────────────
+    19	RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+    20	CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+    21	
+    22	info()    { echo -e "${CYAN}[INFO]${NC}  $*"; }
+    23	success() { echo -e "${GREEN}[OK]${NC}    $*"; }
+    24	warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+    25	error()   { echo -e "${RED}[ERR]${NC}   $*"; exit 1; }
+    26	
+    27	COMPONENT="${1:-all}"
+    28	
+    29	# ── Directories ──────────────────────────────────────────────────────────────
+    30	mkdir -p logs data
+    31	
+    32	# ── Redis check ──────────────────────────────────────────────────────────────
+    33	check_redis() {
+    34	    if command -v redis-cli &>/dev/null && redis-cli ping 2>/dev/null | grep -q PONG; then
+    35	        success "Redis is running at localhost:6379"
+    36	        export REDIS_URL="redis://localhost:6379/0"
+    37	    else
+    38	        warn "Redis not available — using in-memory mode (fakeredis)"
+    39	        export CELERY_USE_MEMORY=1
+    40	    fi
+    41	}
+    42	
+    43	# ── API ──────────────────────────────────────────────────────────────────────
+    44	start_api() {
+    45	    info "Starting API server..."
+    46	    uvicorn api.main:app \
+    47	        --host 0.0.0.0 \
+    48	        --port "${API_PORT:-8000}" \
+    49	        --reload \
+    50	        --log-level info \
+    51	        &
+    52	    API_PID=$!
+    53	    success "API running (PID $API_PID) → http://localhost:${API_PORT:-8000}/docs"
+    54	}
+    55	
+    56	# ── Worker ───────────────────────────────────────────────────────────────────
+    57	start_worker() {
+    58	    info "Starting Celery worker..."
+    59	    python -m celery \
+    60	        -A workers.celery_app \
+    61	        worker \
+    62	        --queues "default,ingestion,processing,pipeline" \
+    63	        --concurrency "${WORKER_CONCURRENCY:-4}" \
+    64	        --loglevel info \
+    65	        --events \
+    66	        --logfile "logs/celery_worker.log" \
+    67	        &
+    68	    WORKER_PID=$!
+    69	    success "Celery worker running (PID $WORKER_PID)"
+    70	}
+    71	
+    72	# ── Scheduler ────────────────────────────────────────────────────────────────
+    73	start_scheduler() {
+    74	    info "Starting APScheduler..."
+    75	    python -c "
+    76	import time, signal, sys, logging
+    77	logging.basicConfig(level=logging.INFO)
+    78	from data_engine.ingestion.schedulers.cron_scheduler import get_scheduler
+    79	
+    80	scheduler = get_scheduler()
+    81	scheduler.start()
+    82	print('[OK]    Scheduler started')
+    83	
+    84	def _stop(sig, frame):
+    85	    scheduler.shutdown()
+    86	    print('[OK]    Scheduler stopped')
+    87	    sys.exit(0)
+    88	
+    89	signal.signal(signal.SIGINT, _stop)
+    90	signal.signal(signal.SIGTERM, _stop)
+    91	
+    92	while True:
+    93	    time.sleep(5)
+    94	" &
+    95	    SCHED_PID=$!
+    96	    success "Scheduler running (PID $SCHED_PID)"
+    97	}
+    98	
+    99	# ── Demo run ─────────────────────────────────────────────────────────────────
+   100	run_demo() {
+   101	    info "Running full platform demo..."
+   102	    python -c "
+   103	import asyncio, logging
+   104	logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+   105	
+   106	async def demo():
+   107	    print()
+   108	    print('=== Hajeen AI Platform — Demo Run ===')
+   109	    print()
+   110	
+   111	    # 1. Setup a channel
+   112	    from shared.schemas.channel import ChannelConfig, SourceConfig, ScheduleConfig
+   113	    from shared.utils.id_generator import generate_channel_id
+   114	    from data_engine.channels.predefined.demo_channel import DemoChannel
+   115	    from data_engine.channels.registry import ChannelRegistry
+   116	
+   117	    channel_id = generate_channel_id()
+   118	    config = ChannelConfig(
+   119	        id=channel_id,
+   120	        name='Demo Platform Channel',
+   121	        description='Demo channel for platform test',
+   122	        source=SourceConfig(type='demo', url='https://example.com/demo'),
+   123	        schedule=ScheduleConfig(cron='*/5 * * * *'),
+   124	    )
+   125	    channel = DemoChannel(config=config)
+   126	    ChannelRegistry.register(channel)
+   127	    print(f'[1] Channel created: {channel_id}')
+   128	
+   129	    # 2. Fetch articles
+   130	    fetch_result = await channel.fetch()
+   131	    articles = fetch_result.articles
+   132	    print(f'[2] Fetched {len(articles)} articles')
+   133	
+   134	    # 3. Run pipeline
+   135	    processed = await channel.run_pipeline(articles)
+   136	    print(f'[3] Processed {len(processed)} articles')
+   137	
+   138	    # 4. Simulate task monitoring
+   139	    from monitoring.task_monitor import TaskMonitor, TaskStatus
+   140	    monitor = TaskMonitor()
+   141	    rec = monitor.on_task_start('demo-task-001', 'demo.task', queue='default')
+   142	    monitor.on_task_success('demo-task-001', result_summary=f'Processed {len(processed)} articles')
+   143	    summary = monitor.summary()
+   144	    print(f'[4] Monitor summary: {summary}')
+   145	
+   146	    # 5. Priority queue demo
+   147	    from workers.priority_queue import PriorityTaskQueue, Priority
+   148	    q = PriorityTaskQueue()
+   149	    q.push('high_task',  payload={'urgency': 'high'},   priority=Priority.HIGH)
+   150	    q.push('normal_task', payload={'urgency': 'low'},   priority=Priority.NORMAL)
+   151	    q.push('critical',   payload={'urgency': 'critical'}, priority=Priority.CRITICAL)
+   152	    tasks = [q.pop() for _ in range(3)]
+   153	    print(f'[5] Priority order: {[t.name for t in tasks if t]}')
+   154	
+   155	    # 6. Scheduler demo
+   156	    from data_engine.ingestion.schedulers.cron_scheduler import CronScheduler
+   157	    sched = CronScheduler()
+   158	    sched.start()
+   159	    sched.add_interval_job(lambda: None, seconds=60, job_id='demo-job', name='Demo Job')
+   160	    jobs = sched.list_jobs()
+   161	    print(f'[6] Scheduler jobs: {len(jobs)}')
+   162	    sched.shutdown()
+   163	
+   164	    # 7. Retry manager demo
+   165	    from workers.retry_manager import RetryManager
+   166	    rm = RetryManager()
+   167	    state = rm.register('demo-001', 'demo.task')
+   168	    rm.record_failure('demo-001', 'Connection timeout')
+   169	    delay = rm.compute_delay(1)
+   170	    print(f'[7] Retry delay for attempt 1: {delay:.1f}s')
+   171	
+   172	    print()
+   173	    print('=== Demo completed successfully! ===')
+   174	    print()
+   175	
+   176	asyncio.run(demo())
+   177	"
+   178	}
+   179	
+   180	# ── Cleanup ──────────────────────────────────────────────────────────────────
+=== model router markers ===
+12:    12	from core.llm.provider_registry import ProviderRegistry
+17:    17	VERIFIED_BASE_MODEL_ID = "Qwen/Qwen3-30B-A3B"
+18:    18	VERIFIED_BASE_TARGET_COMMIT = "9d6a564f66303a3691cbb646d39a28f3eb792ca7"
+26:    26	    provider: str
+40:    40	    def context_length(self) -> int:
+47:    47	    provider: str
+56:    56	    def prompt_tokens(self) -> int:
+60:    60	    def completion_tokens(self) -> int:
+70:    70	    "hajeen-local": ModelConfig(VERIFIED_BASE_MODEL_ID, "local", None, None, ["arabic", "general", "rag"], 32768, 8192, 500, 0.0, 0.90, True),
+74:    74	def _score_model(model: ModelConfig, capability: str, budget_tokens: int, prefer_local: bool = False) -> float:
+87:    87	    """The only authority allowed to select and execute a model provider."""
+89:    89	    def __init__(self, prefer_local: bool = True, model_registry: Optional[ModelRegistry] = None) -> None:
+94:    94	        self._provider_registry: Dict[str, Any] = {}
+95:    95	        self._provider_init_lock = asyncio.Lock()
+98:    98	    def models(self) -> Dict[str, ModelConfig]:
+101:   101	    def register_provider(self, model_key: str, provider_instance: Any) -> None:
+102:   102	        """Register a real provider instance, primarily for application wiring/tests."""
+105:   105	        self._provider_registry[model_key] = provider_instance
+107:   107	    def add_model(self, key: str, config: ModelConfig) -> None:
+110:   110	    def set_model_registry(self, registry: ModelRegistry) -> None:
+111:   111	        """Inject the lifecycle registry; selection remains owned by this router."""
+114:   114	    def _registry_record_for(self, key: str, cfg: ModelConfig) -> Any:
+120:   120	    def _registry_eligible(self, key: str, cfg: ModelConfig) -> bool:
+121:   121	        """Require a commit-pinned VERIFIED_BASE for the real local Hajeen path."""
+125:   125	            if item.get("model_id") in {key, cfg.model_id, VERIFIED_BASE_MODEL_ID}
+127:   127	        if key == "hajeen-local" or cfg.model_id == VERIFIED_BASE_MODEL_ID:
+128:   128	            if key in self._provider_registry:
+131:   131	                item.get("status") == ModelArtifactStatus.VERIFIED_BASE.value
+132:   132	                and item.get("lineage", {}).get("target_commit") == VERIFIED_BASE_TARGET_COMMIT
+139:   139	    def _resolve_key(self, identifier: str) -> Optional[str]:
+145:   145	            if cfg.model_id == identifier or f"{cfg.provider}/{cfg.model_id}" == identifier:
+149:   149	    def select_model(self, capability: str = "general", budget_tokens: int = 4096, force_local: bool = False, exclude: Optional[List[str]] = None) -> Optional[str]:
+152:   152	        registered = [(key, cfg) for key, cfg in candidates if key in self._provider_registry]
+163:   163	    async def _get_provider(self, key: str, cfg: ModelConfig) -> Any:
+164:   164	        provider = self._provider_registry.get(key)
+165:   165	        if provider is not None:
+166:   166	            if not getattr(provider, "_initialized", False) and hasattr(provider, "initialize"):
+167:   167	                await provider.initialize()
+168:   168	            return provider
+169:   169	        async with self._provider_init_lock:
+170:   170	            provider = self._provider_registry.get(key)
+171:   171	            if provider is not None:
+172:   172	                return provider
+174:   174	            # `local` is the platform-level provider classification for the
+176:   176	            adapter_name = "hajeen" if key == "hajeen-local" else cfg.provider
+177:   177	            provider_cls = ProviderRegistry.get(adapter_name)
+178:   178	            if provider_cls is None:
+179:   179	                raise RuntimeError(f"No registered provider adapter for {adapter_name!r}")
+181:   181	            provider = provider_cls(LLMConfig(provider=adapter_name, model=cfg.model_id, api_key=api_key, api_base=cfg.base_url, max_tokens=cfg.max_tokens))
+182:   182	            await provider.initialize()
+183:   183	            self._provider_registry[key] = provider
+184:   184	            return provider
+187:   187	    def _request(messages: List[Dict[str, str]], cfg: ModelConfig, budget_tokens: int, request_id: Optional[str] = None, stream: bool = False) -> LLMRequest:
+190:   190	    async def route(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> RouteResult:
+210:   210	                provider = await asyncio.wait_for(self._get_provider(key, cfg), timeout=timeout)
+212:   212	                if hasattr(provider, "complete"):
+213:   213	                    response: LLMResponse = await asyncio.wait_for(provider.complete(request), timeout=timeout)
+214:   214	                elif key in self._provider_registry and hasattr(provider, "chat"):
+216:   216	                    raw = await asyncio.wait_for(provider.chat(messages[-1]["content"] if messages else ""), timeout=timeout)
+218:   218	                    response = LLMResponse(content=text, model=cfg.model_id, provider=cfg.provider, completion_tokens=len(text.split()), total_tokens=len(text.split()))
+225:   225	                return RouteResult(key, cfg.provider, latency, response.total_tokens or len(response.content.split()), response.content, True, metadata={"prompt_tokens": response.prompt_tokens, "completion_tokens": response.completion_tokens, "finish_reason": response.finish_reason})
+229:   229	                logger.warning("model_router: %s failed closed: %s", key, exc)
+235:   235	    async def stream(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> AsyncGenerator[LLMStreamChunk, None]:
+236:   236	        """Relay a provider-native stream without synthesizing chunks."""
+247:   247	        provider = await asyncio.wait_for(self._get_provider(key, cfg), timeout=timeout)
+249:   249	        if not hasattr(provider, "stream"):
+250:   250	            raise RuntimeError(f"Provider {cfg.provider!r} does not expose native streaming")
+252:   252	        stream = provider.stream(request)
+260:   260	                provider=cfg.provider,
+263:   263	                metadata={"model": cfg.model_id, "provider": cfg.provider},
+276:   276	                    provider=raw_chunk.provider or cfg.provider,
+289:   289	                    provider=cfg.provider,
+307:   307	    async def _iter_stream_with_timeout(stream: Any, timeout: float) -> AsyncGenerator[LLMStreamChunk, None]:
+308:   308	        """Apply an idle/total guard while preserving provider-native chunks."""
+322:   322	    async def list_available_models(self, capability: str = "general", budget_tokens: int = 4096) -> List[Dict[str, Any]]:
+325:   325	            entry = {"key": key, "model_id": cfg.model_id, "provider": cfg.provider, "capabilities": cfg.capabilities, "context_limit": cfg.context_limit, "max_tokens": cfg.max_tokens, "is_local": cfg.is_local, "available": key in self._provider_registry, "registry_eligible": self._registry_eligible(key, cfg)}
+329:   329	            provider = self._provider_registry.get(key)
+330:   330	            if provider is not None and hasattr(provider, "health_check"):
+332:   332	                    entry["health"] = await provider.health_check()
+340:   340	    def _record_routing(self, model_key: str, capability: str, latency_ms: float, success: bool) -> None:
+344:   344	    def get_routing_stats(self) -> Dict[str, Any]:
+351:   351	_router: Optional[ModelRouter] = None
+354:   354	def get_model_router() -> ModelRouter:
+355:   355	    global _router
+356:   356	    if _router is None:
+357:   357	        _router = ModelRouter()
+358:   358	    return _router
+361:   361	def set_model_router(router: ModelRouter) -> None:
+362:   362	    global _router
+363:   363	    _router = router
+366:   366	__all__ = ["ModelConfig", "RouteResult", "ModelRouter", "get_model_router", "set_model_router"]
+=== hajeen router auth markers ===
+     1	"""
+     2	Hajeen Model v1 API Router — واجهة API للنموذج المحلي.
+     3	
+     4	القاعدة الصارمة:
+     5	- جميع طلبات AI تمر عبر HajeenBrainV3
+     6	- هذا الـ Router مجرد HTTP Adapter — لا منطق AI مستقل هنا
+     7	- لا يوجد LLM call مباشر خارج Brain
+     8	
+     9	Routes:
+    10	  GET  /api/v1/model/health          — حالة النموذج
+    11	  GET  /api/v1/model/info            — معلومات النموذج
+    12	  POST /api/v1/model/chat            — محادثة (موجهة عبر HajeenBrainV3)
+    13	  POST /api/v1/model/complete        — استدلال كامل (عبر HajeenBrainV3)
+    14	  POST /api/v1/model/stream          — streaming (SSE) (عبر HajeenBrainV3)
+    15	  GET  /api/v1/model/ollama/status   — حالة Ollama
+    16	  POST /api/v1/model/ollama/pull     — تحميل نموذج
+    17	  GET  /api/v1/model/training/status — حالة التدريب
+    18	  POST /api/v1/model/training/build-dataset — بناء dataset
+    19	  POST /api/v1/model/training/simulate — محاكاة التدريب
+    20	  POST /api/v1/model/evaluate        — تقييم النموذج
+    21	"""
+    22	from __future__ import annotations
+    23	
+    24	import asyncio
+    25	import json
+    26	import logging
+    27	import time
+    28	import uuid
+    29	from typing import Dict, List, Optional
+    30	
+    31	from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+    32	from fastapi.responses import StreamingResponse
+    33	from pydantic import BaseModel, Field
+    34	
+    35	logger = logging.getLogger(__name__)
+    36	
+    37	router = APIRouter(prefix="/model", tags=["Hajeen Model v1"])
+    38	
+    39	
+    40	# ─── Request / Response Models ────────────────────────────────────────────────
+    41	
+    42	
+    43	class ChatMessage(BaseModel):
+    44	    role: str = Field(..., description="user | assistant | system")
+    45	    content: str = Field(..., description="محتوى الرسالة")
+    46	
+    47	
+    48	class ChatRequest(BaseModel):
+    49	    message: str = Field(..., description="رسالة المستخدم")
+    50	    history: Optional[List[Dict]] = Field(default=None, description="سجل المحادثة")
+    51	    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    52	    max_tokens: int = Field(default=1024, ge=1, le=4096)
+    53	    stream: bool = Field(default=False)
+    54	    session_id: Optional[str] = Field(default=None)
+    55	    model: Optional[str] = Field(default=None)
+    56	
+    57	
+    58	class CompleteRequest(BaseModel):
+    59	    messages: List[ChatMessage]
+    60	    temperature: float = Field(default=0.7)
+    61	    max_tokens: int = Field(default=1024)
+    62	
+    63	
+    64	class DatasetBuildRequest(BaseModel):
+    65	    storage_dir: str = Field(default="storage_data/gold")
+    66	    processed_dir: str = Field(default="data/processed/pipeline")
+    67	    add_synthetic: int = Field(default=50, ge=0, le=5000)
+    68	    output_format: str = Field(default="alpaca")
+    69	
+    70	
+    71	class TrainingRequest(BaseModel):
+    72	    base_model: str = Field(default="Qwen/Qwen2.5-1.5B")
+    73	    num_epochs: int = Field(default=3, ge=1, le=20)
+    74	    batch_size: int = Field(default=4)
+    75	    learning_rate: float = Field(default=2e-4)
+    76	    simulation: bool = Field(default=True, description="True=محاكاة, False=تدريب فعلي")
+    77	
+    78	
+    79	# ─── Helpers ──────────────────────────────────────────────────────────────────
+    80	
+    81	
+    82	async def _get_brain_from_request(request: Request):
+    83	    """الحصول على HajeenBrainV3 من app state."""
+    84	    brain = getattr(request.app.state, "brain", None)
+    85	    if brain is None:
+    86	        from brain.brain_v3 import get_brain_v3
+    87	        brain = await get_brain_v3()
+    88	    return brain
+    89	
+    90	
+    91	# ─── Endpoints ────────────────────────────────────────────────────────────────
+    92	
+    93	
+    94	@router.get("/health")
+    95	async def model_health():
+    96	    """فحص شامل لحالة النموذج."""
+    97	    try:
+    98	        from brain.brain_v3 import get_brain_v3
+    99	        brain = await get_brain_v3()
+   100	        stats = brain.get_stats()
+   101	        return {
+   102	            "ok": True,
+   103	            "model": "Hajeen Model v1 (via HajeenBrainV3)",
+   104	            "brain_version": brain.VERSION,
+   105	            "memory_overview": stats.get("memory_overview", {}),
+   106	            "routing_stats": stats.get("routing_stats", {}),
+   107	        }
+   108	    except Exception as e:
+   109	        logger.error("Model health check failed: %s", e)
+   110	        return {"ok": False, "error": str(e), "model": "Hajeen Model v1"}
+   111	
+   112	
+   113	@router.get("/info")
+   114	async def model_info():
+   115	    """معلومات النموذج."""
+   116	    from pathlib import Path
+   117	
+   118	    import yaml
+   119	    config_path = Path("hajeen_model/config/model_config.yaml")
+   120	    config = {}
+   121	    if config_path.exists():
+   122	        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+   123	    return {
+   124	        "model": config.get("model", {"name": "Hajeen Model v1", "version": "1.0"}),
+   125	        "inference": config.get("inference", {"runtime": "HajeenBrainV3"}),
+   126	        "capabilities": config.get("capabilities", ["arabic", "general", "rag"]),
+   127	        "system_prompt": config.get("system_prompt", ""),
+   128	        "runtime": "HajeenBrainV3 (Unified Runtime)",
+   129	    }
+   130	
+   131	
+   132	@router.post("/chat")
+   133	async def chat(req: ChatRequest, request: Request):
+   134	    """
+   135	    محادثة مع Hajeen Model v1.
+   136	
+   137	    الضمان: الطلب يمر عبر HajeenBrainV3.process() كاملاً.
+   138	    لا يوجد LLM call مباشر هنا.
+   139	    """
+   140	    from brain.brain_v3 import BrainRequest
+   141	
+   142	    brain = await _get_brain_from_request(request)
+   143	
+   144	    brain_request = BrainRequest(
+   145	        request_id=f"hajeen_model_chat_{uuid.uuid4().hex[:12]}",
+   146	        user_message=req.message,
+   147	        session_id=req.session_id or str(uuid.uuid4()),
+   148	        context={
+   149	            "history": req.history or [],
+   150	            "temperature": req.temperature,
+   151	            "max_tokens": req.max_tokens,
+   152	        },
+   153	        max_tokens=req.max_tokens,
+   154	        temperature=req.temperature,
+   155	        force_model=req.model,
+   156	    )
+   157	
+   158	    t0 = time.perf_counter()
+   159	    try:
+   160	        response = await brain.process(brain_request)
+   161	        return {
+   162	            "ok": True,
+   163	            "response": response.content,
+   164	            "session_id": brain_request.session_id,
+   165	            "model_used": response.model_used,
+   166	            "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
+   167	            "runtime": "HajeenBrainV3",
+   168	        }
+   169	    except Exception as e:
+   170	        logger.error("Model chat error: %s", e)
+   171	        raise HTTPException(status_code=500, detail=f"HajeenBrainV3 error: {e}")
+   172	
+   173	
+   174	@router.post("/complete")
+   175	async def complete(req: CompleteRequest, request: Request):
+   176	    """
+   177	    استدلال كامل عبر HajeenBrainV3.
+   178	    """
+   179	    from brain.brain_v3 import BrainRequest
+   180	
+   181	    brain = await _get_brain_from_request(request)
+   182	    last_user = next(
+   183	        (m.content for m in reversed(req.messages) if m.role == "user"),
+   184	        ""
+   185	    )
+   186	    history = [
+   187	        {"role": m.role, "content": m.content}
+   188	        for m in req.messages[:-1]
+   189	    ]
+   190	
+   191	    brain_request = BrainRequest(
+   192	        request_id=f"complete_{uuid.uuid4().hex[:12]}",
+   193	        user_message=last_user,
+   194	        session_id=str(uuid.uuid4()),
+   195	        context={"history": history},
+   196	        max_tokens=req.max_tokens,
+   197	        temperature=req.temperature,
+   198	    )
+   199	
+   200	    t0 = time.perf_counter()
+   201	    try:
+   202	        response = await brain.process(brain_request)
+   203	        return {
+   204	            "ok": True,
+   205	            "content": response.content,
+   206	            "model_used": response.model_used,
+   207	            "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
+   208	            "runtime": "HajeenBrainV3",
+   209	        }
+   210	    except Exception as e:
+   211	        raise HTTPException(status_code=500, detail=str(e))
+   212	
+   213	
+   214	@router.post("/stream")
+   215	async def stream_chat(req: ChatRequest, request: Request):
+   216	    """
+   217	    Streaming محادثة عبر HajeenBrainV3.stream().
+   218	    الضمان: كل chunk يمر عبر Brain — لا LLM مباشر.
+   219	    """
+   220	    from brain.brain_v3 import BrainRequest
+   221	
+   222	    brain = await _get_brain_from_request(request)
+   223	
+   224	    brain_request = BrainRequest(
+   225	        request_id=f"stream_{uuid.uuid4().hex[:12]}",
+   226	        user_message=req.message,
+   227	        session_id=req.session_id or str(uuid.uuid4()),
+   228	        context={
+   229	            "history": req.history or [],
+   230	            "stream": True,
+   231	            "temperature": req.temperature,
+   232	            "max_tokens": req.max_tokens,
+   233	        },
+   234	        stream=True,
+   235	        max_tokens=req.max_tokens,
+   236	        temperature=req.temperature,
+   237	        force_model=req.model,
+   238	    )
+   239	
+   240	    async def event_generator():
+   241	        from core.llm.base import LLMStreamChunk
+   242	
+   243	        completed = False
+   244	        try:
+   245	            async for chunk in brain.stream(brain_request):
+   246	                if not isinstance(chunk, LLMStreamChunk):
+   247	                    raise RuntimeError("Brain returned a non-native stream chunk")
+   248	                if chunk.event_type == "start":
+   249	                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+   250	                elif chunk.event_type == "finish" or chunk.finish_reason:
+   251	                    payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+   252	                    completed = True
+   253	                elif chunk.event_type == "delta":
+   254	                    payload = {"event": "delta", "content": chunk.delta, "index": chunk.sequence}
+   255	                else:
+   256	                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+   257	                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+   258	            if not completed:
+   259	                raise RuntimeError("Native stream ended without finish event")
+   260	            yield "data: [DONE]\n\n"
+   261	        except asyncio.CancelledError:
+   262	            raise
+   263	        except Exception as e:
+   264	            yield f"data: {json.dumps({'event': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+   265	
+   266	    return StreamingResponse(event_generator(), media_type="text/event-stream")
+   267	
+   268	
+   269	@router.get("/ollama/status")
+   270	async def ollama_status():
+   271	    """حالة Ollama."""
+   272	    try:
+   273	        import httpx
+   274	        async with httpx.AsyncClient(timeout=5.0) as client:
+   275	            resp = await client.get("http://localhost:11434/api/tags")
+   276	            data = resp.json()
+   277	            return {"ok": True, "models": data.get("models", []), "status": "running"}
+   278	    except Exception as e:
+   279	        return {"ok": False, "status": "unavailable", "error": str(e)}
+   280	
+   281	
+   282	@router.post("/ollama/pull")
+   283	async def ollama_pull(background_tasks: BackgroundTasks, model: str = "qwen2.5:7b"):
+   284	    """تحميل نموذج Ollama في الخلفية."""
+   285	    async def pull():
+   286	        try:
+   287	            import httpx
+   288	            async with httpx.AsyncClient(timeout=600.0) as client:
+   289	                await client.post(
+   290	                    "http://localhost:11434/api/pull",
+   291	                    json={"name": model}
+   292	                )
+   293	            logger.info("Ollama: تم تحميل النموذج %s", model)
+   294	        except Exception as e:
+   295	            logger.error("Ollama pull failed: %s", e)
+   296	
+   297	    background_tasks.add_task(pull)
+   298	    return {"ok": True, "message": f"جاري تحميل {model} في الخلفية"}
+   299	
+   300	
+   301	@router.get("/training/status")
+   302	async def training_status():
+   303	    """حالة التدريب."""
+   304	    from pathlib import Path
+   305	    checkpoints = list(Path("hajeen_model/checkpoints").glob("*.bin")) if Path("hajeen_model/checkpoints").exists() else []
+   306	    return {
+   307	        "ok": True,
+   308	        "checkpoints": len(checkpoints),
+   309	        "training_active": False,
+   310	        "note": "يمكن بدء التدريب عبر /model/training/simulate",
+   311	    }
+   312	
+   313	
+   314	@router.post("/training/build-dataset")
+   315	async def build_dataset(req: DatasetBuildRequest):
+   316	    """بناء dataset للتدريب."""
+   317	    try:
+   318	        from hajeen_model.training_pipeline import DatasetBuilder
+   319	        builder = DatasetBuilder()
+   320	        result = await builder.build(
+   321	            storage_dir=req.storage_dir,
+   322	            add_synthetic=req.add_synthetic,
+   323	            output_format=req.output_format,
+   324	        )
+   325	        return {"ok": True, **result}
+   326	    except Exception as e:
+   327	        return {"ok": False, "error": str(e), "note": "Dataset builder غير متاح في البيئة الحالية"}
+   328	
+   329	
+   330	@router.post("/training/simulate")
+   331	async def simulate_training(req: TrainingRequest, background_tasks: BackgroundTasks):
+   332	    """محاكاة التدريب."""
+   333	    try:
+   334	        from hajeen_model.training_pipeline import TrainingConfig, TrainingPipeline
+   335	        config = TrainingConfig(
+   336	            base_model=req.base_model,
+   337	            num_epochs=req.num_epochs,
+   338	            batch_size=req.batch_size,
+   339	            learning_rate=req.learning_rate,
+   340	        )
+   341	        pipeline = TrainingPipeline(config)
+   342	        background_tasks.add_task(pipeline.run_training)
+   343	        return {
+   344	            "ok": True,
+   345	            "experiment_id": config.experiment_id,
+   346	            "message": "التدريب بدأ في الخلفية",
+   347	        }
+   348	    except Exception as e:
+   349	        return {"ok": False, "error": str(e)}
+   350	
+   351	
+   352	@router.post("/evaluate")
+   353	async def evaluate_model():
+   354	    """تقييم النموذج بأسئلة متنوعة."""
+   355	    try:
+   356	        from hajeen_model.training_pipeline import ModelEvaluator
+   357	        evaluator = ModelEvaluator()
+   358	        report = await evaluator.evaluate_with_ollama()
+   359	        return {"ok": True, **report}
+   360	    except Exception as e:
+   361	        raise HTTPException(status_code=500, detail=str(e))
+   362	
+   363	
+   364	@router.get("/training/checkpoints")
+   365	async def list_checkpoints():
+   366	    """قائمة نقاط الحفظ."""
+   367	    try:
+   368	        from hajeen_model.training_pipeline import CheckpointManager
+   369	        manager = CheckpointManager()
+   370	        return {
+   371	            "checkpoints": manager.list_checkpoints(),
+   372	            "best": manager.get_best_checkpoint(),
+   373	        }
+   374	    except Exception as e:
+   375	        return {"checkpoints": [], "best": None, "error": str(e)}
+=== fallback source locations ===
+./api/main.py:82:    allow_origins=[
+./api/v1/ai/chat.py:12:  - لا يوجد fallback يتجاوز Pipeline الكاملة.
+./api/v1/ai/chat.py:156:    # 4. تنفيذ عبر Brain — لا يوجد fallback هنا
+./api/v1/ai/chat.py:196:    # 1. الحصول على Brain (يرفع 503 إذا لم يكن جاهزاً — لا fallback)
+./api/v1/ai/chat.py:214:    # 3. Streaming عبر Brain فقط — لا يوجد fallback للـ LLM المباشر
+./brain/brain_v3.py:200:        # يُحقن عند startup من RAGPipeline الرسمي؛ لا يوجد fallback وهمي
+./brain/brain_v3.py:341:        لا يوجد shortcut أو fallback يتجاوز هذا الدالة.
+./brain/cognitive_layer/decision_engine.py:29:    FALLBACK = "fallback"                       # fallback
+./brain/cognitive_layer/decision_engine.py:65:    fallback_chain: List[str] = field(default_factory=list)
+./brain/cognitive_layer/decision_engine.py:138:        # 4. Build fallback chain
+./brain/cognitive_layer/decision_engine.py:139:        fallback_chain = [m.model_id for m in scored_models[1:3]]
+./brain/cognitive_layer/decision_engine.py:156:            fallback_chain=fallback_chain,
+./brain/cognitive_layer/expert_models_layer.py:9:3. إدارة fallback بين النماذج
+./brain/cognitive_layer/expert_models_layer.py:32:    CASCADE = "cascade"          # fallback تسلسلي
+./brain/cognitive_layer/planning_engine.py:198:                logger.warning("LLM decomposition failed: %s, using fallback", exc)
+./brain/cognitive_layer/planning_engine.py:199:                tasks = self._fallback_decomposition(goal)
+./brain/cognitive_layer/planning_engine.py:201:            tasks = self._fallback_decomposition(goal)
+./brain/cognitive_layer/planning_engine.py:205:    def _fallback_decomposition(self, goal: str) -> Dict[str, Task]:
+./brain/cognitive_layer/reasoning_engine.py:197:                logger.warning("LLM reasoning failed: %s, using fallback", exc)
+./brain/cognitive_layer/reasoning_engine.py:198:                steps = self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:200:            steps = self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:232:            return self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:283:        return self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:324:        return self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:363:        return steps if steps else self._fallback_chain_of_thought(text)
+./brain/cognitive_layer/reasoning_engine.py:365:    def _fallback_chain_of_thought(self, problem: str) -> List[ReasoningStep]:
+./brain/config.py:30:    fallback_strategy: ReasoningStrategyType = ReasoningStrategyType.DECOMPOSITION
+./brain/config.py:39:    fallback_models: List[str] = ["gpt-4o-mini", "gpt-4o"]
+./brain/config.py:98:    enable_fallback: bool = True
+./brain/config.py:99:    fallback_confidence: float = Field(default=0.3, ge=0.0, le=1.0)
+./brain/decision_engine.py:39:    fallback_model: Optional[str]
+./brain/decision_engine.py:56:            "fallback_model": self.fallback_model,
+./brain/decision_engine.py:83:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:88:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:93:            "fallback": None,
+./brain/decision_engine.py:98:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:103:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:108:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:142:        fallback_model = rule.get("fallback")
+./brain/decision_engine.py:176:            fallback_model=fallback_model,
+./brain/execution_trace.py:37:    FALLBACK_TRIGGERED = "fallback_triggered"
+./brain/execution_trace.py:113:    fallback_triggered: bool = False
+./brain/execution_trace.py:136:            self.fallback_triggered = True
+./brain/execution_trace.py:201:            "fallback_triggered": self.fallback_triggered,
+./brain/execution_trace.py:410:    def record_fallback(
+./brain/execution_trace.py:414:        fallback_strategy: str,
+./brain/execution_trace.py:417:        """تسجيل fallback."""
+./brain/execution_trace.py:425:            "fallback",
+./brain/execution_trace.py:426:            f"تحويل من {original_strategy} إلى {fallback_strategy}",
+./brain/execution_trace.py:430:                "fallback_strategy": fallback_strategy,
+./brain/execution_trace.py:522:            "fallback_rate": (
+./brain/execution_trace.py:523:                sum(1 for t in completed if t.fallback_triggered) / len(completed)
+./brain/reflection/self_evolution.py:112:                "cloud_fallback_enabled": True,
+./brain/task_decomposer.py:86:                # Circular dependency fallback — أضف الجميع
+./core/embeddings/embedding_models.py:21:                "sentence-transformers not installed. Using HuggingFace AutoModel fallback."
+./core/llm/llm_manager.py:28:    - Provider fallback system
+./core/llm/llm_manager.py:38:        fallback_providers: Optional[List[str]] = None,
+./core/llm/llm_manager.py:43:        self._fallback_names = fallback_providers or []
+./core/llm/llm_manager.py:60:        # تهيئة مزودي الـ fallback
+./core/llm/llm_manager.py:61:        for name in self._fallback_names:
+./core/llm/llm_manager.py:69:            "LLM Manager initialized: primary=%s, fallbacks=%s",
+./core/llm/llm_manager.py:71:            self._fallback_names,
+./core/llm/llm_manager.py:118:        تنفيذ inference مع fallback system.
+./core/llm/providers/mistral_finetuned_provider.py:3:الأولوية: Fine-tuned model native streaming أو Ollama native streaming؛ لا يوجد fallback وهمي
+./core/llm/providers/mistral_finetuned_provider.py:48:        self._use_ollama_fallback = False
+./core/llm/providers/mistral_finetuned_provider.py:54:            logger.info("Fine-tuned model not configured — using Ollama fallback (mistral:7b)")
+./core/llm/providers/mistral_finetuned_provider.py:55:            self._use_ollama_fallback = True
+./core/llm/providers/mistral_finetuned_provider.py:100:            self._use_ollama_fallback = True
+./core/llm/providers/mistral_finetuned_provider.py:104:            self._use_ollama_fallback = True
+./core/llm/providers/mistral_finetuned_provider.py:134:        if self._use_ollama_fallback:
+./core/llm/providers/mistral_finetuned_provider.py:212:        if self._use_ollama_fallback:
+./core/llm/providers/mistral_finetuned_provider.py:264:        if self._use_ollama_fallback:
+./core/llm/providers/mock_provider.py:17:class MockProvider(BaseLLMProvider):
+./core/model/model_manager.py:1:"""Model Manager — إدارة مركزية للنماذج مع lazy loading وGPU/CPU fallback."""
+./core/model/model_manager.py:53:    - GPU/CPU fallback
+./core/serving/model_server.py:84:    allow_origins=["*"],
+./core/tokenizer/models/generic_tokenizer.py:11:    """AutoTokenizer-backed generic tokenizer with a regex fallback."""
+./core/tokenizer/models/generic_tokenizer.py:28:                "Cannot load AutoTokenizer for '%s' (%s). Using regex fallback.",
+./core/tokenizer/models/llama_tokenizer.py:38:                "Cannot load HF LlamaTokenizer for '%s' (%s). Using fallback.",
+./core/tokenizer/models/llama_tokenizer.py:46:        return self._fallback_encode(text)
+./core/tokenizer/models/llama_tokenizer.py:51:        return self._fallback_decode(token_ids)
+./core/tokenizer/models/llama_tokenizer.py:53:    def _fallback_encode(self, text: str) -> List[int]:
+./core/tokenizer/models/llama_tokenizer.py:57:    def _fallback_decode(self, token_ids: List[int]) -> str:
+./core/tokenizer/models/mistral_tokenizer.py:31:                "Cannot load HF tokenizer for '%s' (%s). Using fallback.",
+./core/tokenizer/models/mistral_tokenizer.py:39:        return self._fallback_encode(text)
+./core/tokenizer/models/mistral_tokenizer.py:46:    def _fallback_encode(self, text: str) -> List[int]:
+./core/tokenizer/token_counter.py:8:    """Count tokens using a tokenizer or a fast heuristic fallback."""
+./data_engine/cli.py:319:    reload: bool = typer.Option(False, "--reload", help="Hot reload"),
+./data_engine/ingestion/crawlers/playwright_crawler.py:40:    logger.warning("playwright_crawler: Playwright غير مثبّت — fallback لـ httpx")
+./data_engine/ingestion/crawlers/playwright_crawler.py:125:async def _httpx_fallback_crawl(url: str, cfg: PlaywrightCrawlerConfig) -> CrawlResult:
+./data_engine/ingestion/crawlers/playwright_crawler.py:212:    """Crawler يعتمد Playwright لعرض JavaScript مع fallback لـ httpx.
+./data_engine/ingestion/crawlers/playwright_crawler.py:236:            logger.info("PlaywrightCrawler: Playwright غير متاح — fallback mode")
+./data_engine/ingestion/crawlers/playwright_crawler.py:302:            logger.debug("PlaywrightCrawler.crawl: fallback url=%s", url)
+./data_engine/ingestion/crawlers/playwright_crawler.py:303:            return await _httpx_fallback_crawl(url, self.config)
+./data_engine/processing/cleaning/html_cleaner.py:10:- extract_main_content() — trafilatura-first extraction with bs4 fallback
+./data_engine/processing/cleaning/html_cleaner.py:157:                no_fallback=False,
+./data_engine/processing/cleaning/html_cleaner.py:165:    # bs4 fallback
+./data_engine/processing/cleaning/html_cleaner.py:239:        When ``True`` (default) try trafilatura before the bs4 fallback.
+./data_engine/processing/enrichment/enrichment_pipeline.py:6:  3. EntityExtractor   — spaCy أو regex fallback
+./data_engine/processing/enrichment/entity_extractor.py:31:    logger.info("entity_extractor: spaCy not available; using regex fallback")
+./data_engine/processing/enrichment/entity_extractor.py:35:# Regex fallback patterns
+./data_engine/processing/enrichment/entity_extractor.py:155:# Regex-based fallback extraction
+./data_engine/processing/enrichment/entity_extractor.py:262:        # Regex fallback
+./data_engine/processing/enrichment/keyword_extractor.py:32:    logger.info("keyword_extractor: yake not available; using frequency fallback")
+./data_engine/processing/enrichment/keyword_extractor.py:35:# Stop words (for fallback)
+./data_engine/processing/enrichment/keyword_extractor.py:148:# Frequency-based fallback
+./data_engine/processing/enrichment/keyword_extractor.py:158:    """Extract keywords using word frequency (fallback).
+./data_engine/processing/enrichment/keyword_extractor.py:250:                logger.debug("YAKE extraction failed: %s; using fallback", exc)
+./data_engine/processing/enrichment/sentiment_analyzer.py:7:- قاموس عربي وإنجليزي مدمج fallback
+./data_engine/processing/enrichment/sentiment_analyzer.py:33:    logger.info("sentiment_analyzer: vaderSentiment غير متاح — استخدام قاموس fallback")
+./data_engine/processing/enrichment/summarizer.py:57:    fallback_chars: int = 300
+./data_engine/processing/enrichment/topic_classifier.py:129:    fallback_topic: str = "general"    # الموضوع الافتراضي عند عدم اليقين
+./data_engine/processing/enrichment/topic_classifier.py:292:        primary = topics[0].topic if topics else self.config.fallback_topic
+./data_engine/processing/filtering/deduplication_engine.py:483:            # dict fallback
+./data_engine/processing/filtering/language_filter.py:32:    logger.info("language_filter: langdetect unavailable; using heuristic fallback")
+./data_engine/processing/filtering/language_filter.py:50:    fallback_to_metadata: bool = True
+./data_engine/processing/filtering/language_filter.py:122:    # Heuristic fallback
+./data_engine/processing/filtering/language_filter.py:254:            if cfg.fallback_to_metadata and article.metadata.language:
+./data_engine/processing/filtering/language_filter.py:266:        # If uncertain, try metadata fallback
+./data_engine/processing/filtering/language_filter.py:267:        if det.language == "unknown" and cfg.fallback_to_metadata:
+./data_engine/processing/transformation/tokenizer_wrapper.py:32:    logger.info("tokenizer_wrapper: tiktoken not available; using char-based fallback")
+./data_engine/processing/transformation/tokenizer_wrapper.py:49:    language: str = "en"            # "ar" | "en" — affects fallback estimate
+./data_engine/processing/transformation/tokenizer_wrapper.py:72:def _estimate_tokens_fallback(text: str, language: str = "en") -> int:
+./data_engine/processing/transformation/tokenizer_wrapper.py:109:        ISO language code (used for fallback estimation).
+./data_engine/processing/transformation/tokenizer_wrapper.py:125:    return _estimate_tokens_fallback(text, language)
+./data_engine/processing/transformation/tokenizer_wrapper.py:145:        ISO language code (used for fallback).
+./data_engine/processing/transformation/tokenizer_wrapper.py:193:        return "tiktoken" if self._enc is not None else "fallback"
+./data_engine/processing/transformation/tokenizer_wrapper.py:214:        return _estimate_tokens_fallback(text, self.config.language)
+./data_engine/storage/vector_store/faiss_client.py:69:                # fallback إلى FlatIP
+./data_engine/storage/vector_store/qdrant_client.py:30:    - graceful fallback إلى in-memory عند غياب الخادم
+./hajeen_model/core/hajeen_model_v1.py:247:        """Provider-native local streaming only; no synthetic fallback."""
+./hajeen_model/core/local_inference_engine.py:280:    def _fallback_response(self, prompt: str) -> LocalResponse:
+./hajeen_model/core/local_inference_engine.py:282:        raise RuntimeError("MODEL_NOT_READY: no fallback response is permitted")
+./monitoring/ai_metrics/provider_monitor.py:16:    event_type: str  # "success" | "failure" | "timeout" | "fallback"
+./monitoring/ai_metrics/provider_monitor.py:30:    fallback_count: int = 0
+./monitoring/ai_metrics/provider_monitor.py:136:    def record_fallback(self, from_provider: str, to_provider: str) -> None:
+./monitoring/ai_metrics/provider_monitor.py:139:            health.fallback_count += 1
+./run.sh:26:    python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+./scripts/start_platform.sh:7:# Redis: Uses fakeredis fallback when Redis server is unavailable
+./scripts/start_platform.sh:38:        warn "Redis not available — using in-memory mode (fakeredis)"
+./scripts/start_platform.sh:49:        --reload \
+./security/audit/audit_logger.py:59:class _InMemoryAuditStore:
+./security/audit/audit_logger.py:177:    """Return the process audit logger, creating an explicit local fallback.
+./security/audit/audit_logger.py:180:    adapters.  The fallback is intentionally observable and process-local; it
+./security/audit/audit_logger.py:187:            db = _InMemoryAuditStore()
+./security/middleware/security_middleware.py:43:        # HMAC fallback
+./security/resource/resource_guard.py:144:    تدهور رشيق — يُعيد fallback عند فشل العملية الأساسية.
+./security/resource/resource_guard.py:147:    def __init__(self, fallback: Any = None, max_failures: int = 5) -> None:
+./security/resource/resource_guard.py:148:        self._fallback = fallback
+./security/resource/resource_guard.py:177:            logger.warning("Circuit breaker مفتوح — إعادة الـ fallback")
+./security/resource/resource_guard.py:178:            yield self._fallback
+./security/resource/resource_guard.py:186:            if self._fallback is not None:
+./security/resource/resource_guard.py:187:                yield self._fallback
+./services/agents/autonomous/recursive_planner.py:138:            logger.warning("Max replans (%d) reached — returning fallback plan.", self._max_replans)
+./services/agents/autonomous/recursive_planner.py:139:            return self._minimal_fallback_plan(goal)
+./services/agents/autonomous/recursive_planner.py:154:            return self._minimal_fallback_plan(goal)
+./services/agents/autonomous/recursive_planner.py:242:    def _minimal_fallback_plan(goal: str) -> List[Dict]:
+./services/agents/autonomous/recursive_planner.py:243:        return [{"id": "fallback_1", "task": f"Best-effort completion of: {goal}", "tool": "llm",
+./services/agents/autonomous/reflection_loop.py:77:            reflection = self._fallback_reflection(current_result)
+./services/agents/autonomous/reflection_loop.py:160:    def _fallback_reflection(result: AgentResult) -> Dict:
+./services/memory/vector_memory.py:151:        """استرجاع أحدث الذكريات كـ fallback."""
+./services/prompts/system_prompt_manager.py:117:                name="fallback", content="You are a helpful assistant."
+./services/rag/reranker.py:27:            logger.warning("sentence-transformers not installed; using keyword scorer fallback")
+./tests/ai/test_chat.py:69:        result = self.mem.load("no-session", "no-key", default="fallback")
+./tests/ai/test_chat.py:70:        assert result == "fallback"
+./tests/ai/test_rag.py:57:    def test_rerank_fallback_keyword(self):
+./tests/integration/test_monitoring.py:124:    def test_fallback_metric_is_silent(self):
+./tests/integration/test_phase2_runtime_contract.py:93:async def test_external_provider_exposes_native_contract_without_fake_fallback():
+./tests/integration/test_security.py:302:        dg = GracefulDegradation(fallback="fallback_value", max_failures=2)
+./tests/integration_test.py:47:    class MockProvider:
+./tests/integration_test.py:51:    engine = InferenceEngine(provider=MockProvider())
+./tests/test_phase6_redis.py:10:    import fakeredis
+./tests/test_phase6_redis.py:19:        lambda: fakeredis.FakeRedis(decode_responses=True),
+./tests/test_phase8.py:820:        assert "local_fallback" not in source
+./tests/unit/test_cognitive_layer_complete.py:76:    async def test_analyze_fallback_on_llm_error(self):
+./tests/unit/test_cognitive_layer_complete.py:275:    async def test_reason_fallback_on_error(self):
+./tests/unit/test_continuous_learning_pipeline.py:211:    async def test_evaluation_heuristic_fallback(self, tmp_path):
+./tests/unit/test_language_filter.py:76:        assert result.language in ("fr", "en")  # allow low-confidence fallback
+./tests/unit/test_language_filter.py:91:    def test_arabic_heuristic_fallback(self):
+./tests/unit/test_language_filter.py:193:    def test_metadata_fallback_for_short_text(self):
+./tests/unit/test_language_filter.py:196:            fallback_to_metadata=True,
+./tests/unit/test_phase3_connectors.py:42:    def test_zero_rps_fallback(self):
+./tests/unit/test_phase3_crawlers.py:4:- PlaywrightCrawler (fallback mode)
+./tests/unit/test_phase3_crawlers.py:144:    """اختبار crawler في fallback mode (بدون Playwright حقيقي)."""
+./tests/unit/test_summarizer.py:78:    def test_short_content_fallback(self):
+./tests/unit/test_tokenizer_wrapper.py:7:    _estimate_tokens_fallback,
+./tests/unit/test_tokenizer_wrapper.py:18:        assert _estimate_tokens_fallback("") == 0
+./tests/unit/test_tokenizer_wrapper.py:21:        tokens = _estimate_tokens_fallback(EN_TEXT, language="en")
+./tests/unit/test_tokenizer_wrapper.py:25:        tokens = _estimate_tokens_fallback(AR_TEXT, language="ar")
+./tests/unit/test_tokenizer_wrapper.py:30:        ar = _estimate_tokens_fallback("ا" * 40, language="ar")
+./tests/unit/test_tokenizer_wrapper.py:31:        en = _estimate_tokens_fallback("a" * 40, language="en")
+./tests/unit/test_tokenizer_wrapper.py:101:        assert self.wrapper.backend in ("tiktoken", "fallback")
+./tests/unit/test_topic_sentiment.py:180:    def test_fallback_topic_for_ambiguous_content(self):
+./train_hajeen_cloud.py:240:                result["status"] = "fallback_to_local"
+./workers/distributed/queue_router.py:110:                    "GPU queue overloaded (%.0f%%), routing to CPU fallback",
+./workers/tasks/pipeline_tasks.py:10:- dead-letter fallback

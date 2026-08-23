@@ -1,0 +1,5348 @@
+=== entrypoints ===
+"""Hajeen AI Platform — FastAPI Application v1.1.0 (Phase 10 — Production Stable).
+
+Routes:
+  GET  /health                       — root health check (شامل)
+  GET  /ping                         — pong
+  GET  /api/v1/storage/stats         — إحصائيات التخزين
+  /api/v1/channels                   — إدارة القنوات
+  /api/v1/search                     — Semantic Search
+  /api/v1/embeddings                 — Embeddings
+  /api/v1/ai                         — AI Runtime
+  /ws/chat                           — WebSocket Chat
+"""
+from __future__ import annotations
+
+import logging
+import logging.config
+import os
+import time
+import traceback
+import uuid
+from pathlib import Path
+from typing import Any, Dict
+
+import yaml
+from fastapi import FastAPI, HTTPException, Request, WebSocket
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+# ── الديركتوريات الأساسية ──────────────────────────────────────────────────
+
+for _d in [
+    "./logs",
+    "./storage_data",
+    "./storage_data/metadata",
+    "./storage_data/vector_index",
+    "./storage_data/raw",
+    "./storage_data/bronze",
+    "./storage_data/silver",
+    "./storage_data/gold",
+]:
+    os.makedirs(_d, exist_ok=True)
+
+# ── Logging ───────────────────────────────────────────────────────────────
+
+_LOGGING_CFG = Path("configs/logging.yaml")
+try:
+    if _LOGGING_CFG.exists():
+        with open(_LOGGING_CFG, encoding="utf-8") as _f:
+            logging.config.dictConfig(yaml.safe_load(_f))
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        )
+except Exception as _e:
+    logging.basicConfig(level=logging.INFO)
+    logging.warning("Failed to load logging config: %s", _e)
+
+logger = logging.getLogger(__name__)
+
+# ── Shared Search State ────────────────────────────────────────────────────
+_search_state: Dict[str, Any] = {}
+
+# ── FastAPI ────────────────────────────────────────────────────────────────
+
+app = FastAPI(
+    title="Hajeen AI Platform API",
+    description=(
+        "منصة بيانات ذكية — RSS Ingestion + Vector Search + RAG + LLM Inference\n\n"
+        "**Phase 10 — Production Stable**: Pipeline Orchestration · Distributed Storage · "
+        "Multi-Tenant · Security · AI Inference · CI/CD"
+    ),
+    version="1.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "https://hajeen.ai",
+        "https://app.hajeen.ai",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Session-ID"],
+)
+
+
+# ── Global Exception Handlers ─────────────────────────────────────────────
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """معالج أخطاء التحقق من الطلبات."""
+    errors = []
+    for err in exc.errors():
+        errors.append({
+            "field": " → ".join(str(loc) for loc in err.get("loc", [])),
+            "message": err.get("msg", ""),
+            "type": err.get("type", ""),
+        })
+    logger.warning(
+        "validation_error: %s %s — %d errors",
+        request.method, request.url.path, len(errors),
+    )
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "validation_error",
+            "message": "بيانات الطلب غير صالحة",
+            "details": errors,
+            "path": str(request.url.path),
+        },
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """معالج أخطاء HTTP العامة."""
+    logger.warning(
+        "http_error: %s %s → %d %s",
+        request.method, request.url.path, exc.status_code, exc.detail,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": "http_error",
+            "status_code": exc.status_code,
+            "message": exc.detail,
+            "path": str(request.url.path),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """معالج الاستثناءات غير المتوقعة — يمنع crash الـ API."""
+    error_id = str(uuid.uuid4())[:8]
+    logger.error(
+        "unhandled_exception [%s]: %s %s — %s\n%s",
+        error_id,
+        request.method,
+        request.url.path,
+        exc,
+        traceback.format_exc(),
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "internal_server_error",
+            "message": "خطأ داخلي في الخادم",
+            "error_id": error_id,
+            "path": str(request.url.path),
+        },
+    )
+
+
+# ── Middleware: Request timing ─────────────────────────────────────────────
+
+@app.middleware("http")
+async def add_request_timing(request: Request, call_next):
+    """إضافة وقت معالجة الطلب إلى الـ response headers."""
+    start = time.monotonic()
+    response = await call_next(request)
+    elapsed_ms = round((time.monotonic() - start) * 1000, 2)
+    response.headers["X-Process-Time-Ms"] = str(elapsed_ms)
+    response.headers["X-Platform"] = "Hajeen-AI/1.1.0"
+    return response
+
+
+# ── Health Endpoint ────────────────────────────────────────────────────────
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """فحص صحة شامل للنظام."""
+    checks: Dict[str, Any] = {
+        "status": "ok",
+        "version": "1.1.0",
+        "service": "Hajeen AI Platform",
+        "phase": "10 — Production Stable",
+        "timestamp": time.time(),
+    }
+
+    # Search Engine
+    search_ready = _search_state.get("engine") is not None
+    index_size = 0
+    if search_ready:
+        try:
+            index_size = _search_state["engine"].vector_store.stats().total_vectors
+        except Exception:
+            pass
+    checks["search_engine"] = "ready" if search_ready else "empty_index"
+    checks["index_size"] = index_size
+    checks["rag_pipeline"] = "ready" if _search_state.get("rag_pipeline") else "unavailable"
+
+    # Channel Registry
+    try:
+        from data_engine.channels.registry import ChannelRegistry
+        checks["channels"] = ChannelRegistry.count()
+    except Exception:
+        checks["channels"] = "unavailable"
+
+    # Storage
+    try:
+        from data_engine.storage.storage_manager import get_storage_manager
+        sm = get_storage_manager()
+        checks["storage"] = "connected" if sm._connected else "ready"
+    except Exception:
+        checks["storage"] = "unavailable"
+
+    # LLM
+    llm_status = "unknown"
+    try:
+        from core.llm.llm_manager import get_llm_manager
+        manager = get_llm_manager()
+        llm_status = f"ready ({manager.settings.provider})" if manager._initialized else "not_initialized"
+    except Exception:
+        llm_status = "unavailable"
+    checks["llm_engine"] = llm_status
+
+    # Inference Engine
+    inference_status = "unknown"
+    try:
+        from core.inference_engine.engine import get_inference_engine
+        engine = get_inference_engine()
+        inference_status = "ready" if engine._initialized else "not_initialized"
+    except Exception:
+        inference_status = "unavailable"
+    checks["inference_engine"] = inference_status
+
+    # تحديد الحالة العامة
+    critical_ok = (
+        checks.get("storage") in ("connected", "ready")
+        and checks.get("channels") != "unavailable"
+    )
+    checks["status"] = "ok" if critical_ok else "degraded"
+
+    return checks
+
+
+@app.get("/ping", tags=["Health"])
+async def ping():
+    return {"message": "pong", "timestamp": time.time()}
+
+
+# ── Storage Stats ──────────────────────────────────────────────────────────
+
+@app.get("/api/v1/storage/stats", tags=["Storage"])
+async def get_storage_stats():
+    """إحصائيات التخزين لكل طبقة."""
+    try:
+        from data_engine.storage.storage_manager import get_storage_manager
+        sm = get_storage_manager()
+        stats = await sm.get_storage_stats()
+        return {"status": "ok", "layers": stats}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"خطأ في قراءة إحصائيات التخزين: {exc}")
+
+
+# ── Index Articles ────────────────────────────────────────────────────────
+
+@app.post("/api/v1/index/articles", tags=["Indexing"], summary="فهرسة مقالات في Vector Store")
+async def index_articles(request: dict):
+    """يُفهرس قائمة مقالات/نصوص في FAISS Vector Store."""
+    articles = request.get("articles", [])
+    if not articles:
+        return {"indexed": 0, "message": "لا توجد مقالات"}
+
+    engine = _search_state.get("engine")
+    if engine is None:
+        raise HTTPException(503, "Search engine غير جاهز")
+
+    from core.embeddings.embedding_manager import get_embedding_manager
+    from data_engine.storage.vector_store.base_vector_store import VectorEntry
+
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════
+# Hajeen AI Platform — سكريبت التشغيل السريع
+# الاستخدام: ./run.sh [api|worker|trigger|demo]
+# ═══════════════════════════════════════════════════════════════
+
+set -e
+cd "$(dirname "$0")"
+
+# إعداد متغيرات البيئة
+export CELERY_USE_MEMORY=1
+export PYTHONPATH="$(pwd):$PYTHONPATH"
+
+# إنشاء المجلدات الضرورية
+mkdir -p storage_data/{raw,bronze,silver,gold,metadata}
+mkdir -p logs
+
+ACTION="${1:-help}"
+
+case "$ACTION" in
+  api)
+    echo "═══ تشغيل FastAPI ═══"
+    echo "  URL: http://localhost:8000"
+    echo "  Docs: http://localhost:8000/docs"
+    echo ""
+    python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    ;;
+
+  worker)
+    echo "═══ تشغيل Celery Worker (in-memory) ═══"
+    python -m celery -A workers.celery_app worker \
+      --loglevel=info \
+      --concurrency=2 \
+      --pool=threads
+    ;;
+
+  demo)
+    echo "═══ تشغيل Demo: إنشاء قناة TechCrunch ومعالجتها ═══"
+    python demo_pipeline.py
+    ;;
+
+  trigger)
+    CHANNEL_ID="${2:-}"
+    if [ -z "$CHANNEL_ID" ]; then
+      echo "الاستخدام: ./run.sh trigger CHANNEL_ID"
+      python -m data_engine.cli list-channels
+      exit 1
+    fi
+    python -m data_engine.cli trigger "$CHANNEL_ID"
+    ;;
+
+  install)
+    echo "═══ تثبيت المتطلبات ═══"
+    pip install -r requirements/api.txt
+    pip install -r requirements/worker.txt
+    pip install -r requirements/dev.txt
+    ;;
+
+  check)
+    echo "═══ فحص المشروع ═══"
+    python -c "
+import sys
+sys.path.insert(0, '.')
+print('▶ فحص الاستيراد...')
+
+# فحص جميع الوحدات الأساسية
+modules = [
+    'shared.schemas.article',
+    'shared.schemas.channel',
+    'shared.exceptions',
+    'data_engine.channels.base',
+    'data_engine.channels.registry',
+    'data_engine.channels.builder',
+    'data_engine.ingestion.crawlers.rss_parser',
+    'data_engine.processing.cleaning.html_cleaner',
+    'data_engine.processing.filtering.deduplicator',
+    'data_engine.pipelines.pipeline_orchestrator',
+    'data_engine.storage.storage_manager',
+    'api.main',
+]
+
+ok = 0
+fail = 0
+for mod in modules:
+    try:
+        __import__(mod)
+        print(f'  ✓ {mod}')
+        ok += 1
+    except Exception as e:
+        print(f'  ✗ {mod} — {e}')
+        fail += 1
+
+print(f'\nنتيجة: {ok} ناجح، {fail} فاشل')
+sys.exit(0 if fail == 0 else 1)
+"
+    ;;
+
+  *)
+    echo "══════════════════════════════════════════"
+    echo "  Hajeen AI Platform — أوامر التشغيل"
+    echo "══════════════════════════════════════════"
+    echo ""
+    echo "  ./run.sh api           — تشغيل FastAPI"
+    echo "  ./run.sh worker        — تشغيل Celery Worker"
+    echo "  ./run.sh demo          — تشغيل Demo Pipeline"
+    echo "  ./run.sh trigger ID    — تشغيل قناة محددة"
+    echo "  ./run.sh install       — تثبيت المتطلبات"
+    echo "  ./run.sh check         — فحص الاستيراد"
+    echo ""
+    echo "  python -m data_engine.cli create-channel --name 'TechCrunch' --type rss --url 'https://techcrunch.com/feed/'"
+    echo "  python -m data_engine.cli list-channels"
+    echo "  python -m data_engine.cli trigger CHANNEL_ID"
+    echo ""
+    ;;
+esac
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════
+# Hajeen AI Platform — Full Platform Startup Script (Section 6.15)
+# ═══════════════════════════════════════════════════════════════
+#
+# Starts: API + Worker + Scheduler
+# Redis: Uses fakeredis fallback when Redis server is unavailable
+#
+# Usage:
+#   ./scripts/start_platform.sh              # start all
+#   ./scripts/start_platform.sh worker       # worker only
+#   ./scripts/start_platform.sh api          # api only
+#   ./scripts/start_platform.sh scheduler    # scheduler only
+#   ./scripts/start_platform.sh demo         # full demo run
+
+set -euo pipefail
+
+# ── Colours ──────────────────────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+
+info()    { echo -e "${CYAN}[INFO]${NC}  $*"; }
+success() { echo -e "${GREEN}[OK]${NC}    $*"; }
+warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+error()   { echo -e "${RED}[ERR]${NC}   $*"; exit 1; }
+
+COMPONENT="${1:-all}"
+
+# ── Directories ──────────────────────────────────────────────────────────────
+mkdir -p logs data
+
+# ── Redis check ──────────────────────────────────────────────────────────────
+check_redis() {
+    if command -v redis-cli &>/dev/null && redis-cli ping 2>/dev/null | grep -q PONG; then
+        success "Redis is running at localhost:6379"
+        export REDIS_URL="redis://localhost:6379/0"
+    else
+        warn "Redis not available — using in-memory mode (fakeredis)"
+        export CELERY_USE_MEMORY=1
+    fi
+}
+
+# ── API ──────────────────────────────────────────────────────────────────────
+start_api() {
+    info "Starting API server..."
+    uvicorn api.main:app \
+        --host 0.0.0.0 \
+        --port "${API_PORT:-8000}" \
+        --reload \
+        --log-level info \
+        &
+    API_PID=$!
+    success "API running (PID $API_PID) → http://localhost:${API_PORT:-8000}/docs"
+}
+
+# ── Worker ───────────────────────────────────────────────────────────────────
+start_worker() {
+    info "Starting Celery worker..."
+    python -m celery \
+        -A workers.celery_app \
+        worker \
+        --queues "default,ingestion,processing,pipeline" \
+        --concurrency "${WORKER_CONCURRENCY:-4}" \
+        --loglevel info \
+        --events \
+        --logfile "logs/celery_worker.log" \
+        &
+    WORKER_PID=$!
+    success "Celery worker running (PID $WORKER_PID)"
+}
+
+# ── Scheduler ────────────────────────────────────────────────────────────────
+start_scheduler() {
+    info "Starting APScheduler..."
+    python -c "
+import time, signal, sys, logging
+logging.basicConfig(level=logging.INFO)
+from data_engine.ingestion.schedulers.cron_scheduler import get_scheduler
+
+scheduler = get_scheduler()
+scheduler.start()
+print('[OK]    Scheduler started')
+
+def _stop(sig, frame):
+    scheduler.shutdown()
+    print('[OK]    Scheduler stopped')
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, _stop)
+signal.signal(signal.SIGTERM, _stop)
+
+while True:
+    time.sleep(5)
+" &
+    SCHED_PID=$!
+    success "Scheduler running (PID $SCHED_PID)"
+}
+
+# ── Demo run ─────────────────────────────────────────────────────────────────
+run_demo() {
+    info "Running full platform demo..."
+    python -c "
+import asyncio, logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+async def demo():
+    print()
+    print('=== Hajeen AI Platform — Demo Run ===')
+    print()
+
+    # 1. Setup a channel
+    from shared.schemas.channel import ChannelConfig, SourceConfig, ScheduleConfig
+    from shared.utils.id_generator import generate_channel_id
+    from data_engine.channels.predefined.demo_channel import DemoChannel
+    from data_engine.channels.registry import ChannelRegistry
+
+    channel_id = generate_channel_id()
+    config = ChannelConfig(
+        id=channel_id,
+        name='Demo Platform Channel',
+        description='Demo channel for platform test',
+        source=SourceConfig(type='demo', url='https://example.com/demo'),
+        schedule=ScheduleConfig(cron='*/5 * * * *'),
+    )
+    channel = DemoChannel(config=config)
+    ChannelRegistry.register(channel)
+    print(f'[1] Channel created: {channel_id}')
+
+    # 2. Fetch articles
+    fetch_result = await channel.fetch()
+    articles = fetch_result.articles
+    print(f'[2] Fetched {len(articles)} articles')
+
+    # 3. Run pipeline
+    processed = await channel.run_pipeline(articles)
+    print(f'[3] Processed {len(processed)} articles')
+
+    # 4. Simulate task monitoring
+    from monitoring.task_monitor import TaskMonitor, TaskStatus
+    monitor = TaskMonitor()
+    rec = monitor.on_task_start('demo-task-001', 'demo.task', queue='default')
+    monitor.on_task_success('demo-task-001', result_summary=f'Processed {len(processed)} articles')
+    summary = monitor.summary()
+    print(f'[4] Monitor summary: {summary}')
+
+    # 5. Priority queue demo
+    from workers.priority_queue import PriorityTaskQueue, Priority
+    q = PriorityTaskQueue()
+    q.push('high_task',  payload={'urgency': 'high'},   priority=Priority.HIGH)
+    q.push('normal_task', payload={'urgency': 'low'},   priority=Priority.NORMAL)
+    q.push('critical',   payload={'urgency': 'critical'}, priority=Priority.CRITICAL)
+    tasks = [q.pop() for _ in range(3)]
+    print(f'[5] Priority order: {[t.name for t in tasks if t]}')
+
+    # 6. Scheduler demo
+    from data_engine.ingestion.schedulers.cron_scheduler import CronScheduler
+    sched = CronScheduler()
+    sched.start()
+    sched.add_interval_job(lambda: None, seconds=60, job_id='demo-job', name='Demo Job')
+    jobs = sched.list_jobs()
+    print(f'[6] Scheduler jobs: {len(jobs)}')
+    sched.shutdown()
+
+    # 7. Retry manager demo
+    from workers.retry_manager import RetryManager
+    rm = RetryManager()
+    state = rm.register('demo-001', 'demo.task')
+    rm.record_failure('demo-001', 'Connection timeout')
+    delay = rm.compute_delay(1)
+    print(f'[7] Retry delay for attempt 1: {delay:.1f}s')
+
+    print()
+    print('=== Demo completed successfully! ===')
+    print()
+
+asyncio.run(demo())
+"
+}
+
+# ── Cleanup ──────────────────────────────────────────────────────────────────
+cleanup() {
+    info "Shutting down..."
+    kill "${API_PID:-}" "${WORKER_PID:-}" "${SCHED_PID:-}" 2>/dev/null || true
+    success "Shutdown complete"
+}
+
+# ── Main ─────────────────────────────────────────────────────────────────────
+echo -e "${BOLD}══════════════════════════════════════${NC}"
+echo -e "${BOLD}  Hajeen AI Platform v0.6.0${NC}"
+echo -e "${BOLD}══════════════════════════════════════${NC}"
+
+check_redis
+
+case "$COMPONENT" in
+    api)       start_api ;;
+    worker)    start_worker ;;
+    scheduler) start_scheduler ;;
+    demo)      run_demo ;;
+    all)
+        trap cleanup EXIT INT TERM
+        start_api
+        sleep 1
+        start_worker
+        sleep 1
+        start_scheduler
+        success "All services started!"
+        info "API docs: http://localhost:${API_PORT:-8000}/docs"
+        info "Press Ctrl+C to stop"
+        wait
+        ;;
+    *) error "Unknown component: $COMPONENT. Use: all | api | worker | scheduler | demo" ;;
+esac
+=== model registry/router ===
+from __future__ import annotations
+
+import logging
+import time
+from dataclasses import asdict, dataclass, field
+from enum import Enum
+from pathlib import Path
+from threading import Lock
+from typing import Any, Dict, List, Mapping, Optional
+
+from .artifact_validation import load_verified_base_manifest, validate_artifact_directory
+from .model_config import ModelConfig
+
+logger = logging.getLogger(__name__)
+
+
+class ModelArtifactStatus(str, Enum):
+    VERIFIED_BASE = "VERIFIED_BASE"
+    CREATED = "CREATED"
+    TRAINED = "TRAINED"
+    EVALUATED = "EVALUATED"
+    APPROVED = "APPROVED"
+    STAGING = "STAGING"
+    PRODUCTION = "PRODUCTION"
+    REJECTED = "REJECTED"
+    DEPRECATED = "DEPRECATED"
+
+
+@dataclass
+class ModelArtifactRecord:
+    model_id: str
+    model_version: str
+    model_type: str
+    artifact_location: str
+    base_model: str
+    dataset_version: str
+    training_run_id: str
+    evaluation_id: str = ""
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    status: ModelArtifactStatus = ModelArtifactStatus.CREATED
+    created_at: float = field(default_factory=time.time)
+    error: str = ""
+    artifact_checksum: str = ""
+    artifact_metadata: Dict[str, Any] = field(default_factory=dict)
+    dataset_checksum: str = ""
+    benchmark_checksum: str = ""
+    lineage: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        value = asdict(self)
+        value["status"] = self.status.value
+        return value
+
+
+class ModelRegistry:
+    """Thread-safe in-process registry for ModelConfig objects."""
+
+    _instance: Optional["ModelRegistry"] = None
+    _lock: Lock = Lock()
+
+    def __new__(cls) -> "ModelRegistry":
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+                cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self) -> None:
+        if self._initialized:
+            return
+        self._configs: Dict[str, ModelConfig] = {}
+        self._artifacts: Dict[str, ModelArtifactRecord] = {}
+        self._initialized = True
+        self._seed_defaults()
+        logger.info("ModelRegistry initialized with %d defaults", len(self._configs))
+
+    def _seed_defaults(self) -> None:
+        defaults = [
+            ModelConfig(
+                model_id="llama3-8b",
+                display_name="LLaMA 3 8B",
+                tokenizer_type="llama",
+                context_length=8192,
+            ),
+            ModelConfig(
+                model_id="mistral-7b",
+                display_name="Mistral 7B",
+                tokenizer_type="mistral",
+                context_length=8192,
+            ),
+            ModelConfig(
+                model_id="ollama:llama3",
+                display_name="Ollama LLaMA 3",
+                backend="ollama",
+                tokenizer_type="generic",
+            ),
+        ]
+        for cfg in defaults:
+            self._configs[cfg.model_id] = cfg
+
+    def register(self, config: ModelConfig) -> None:
+        self._configs[config.model_id] = config
+        logger.info("Model registered: %s", config.model_id)
+
+    def get(self, model_id: str) -> Optional[ModelConfig]:
+        return self._configs.get(model_id)
+
+    def get_or_raise(self, model_id: str) -> ModelConfig:
+        cfg = self.get(model_id)
+        if cfg is None:
+            raise KeyError(f"Model '{model_id}' not found in registry")
+        return cfg
+
+    def list_models(self) -> List[Dict]:
+        return [
+            {
+                "model_id": c.model_id,
+                "display_name": c.display_name or c.model_id,
+                "backend": c.backend,
+                "context_length": c.context_length,
+            }
+            for c in self._configs.values()
+        ]
+
+    def register_artifact(self, record: ModelArtifactRecord) -> ModelArtifactRecord:
+        """Register a trained artifact; evaluation/approval remain explicit gates."""
+        if not record.model_id or not record.model_version:
+            raise ValueError("model_id and model_version are required")
+        valid, reasons, checksum, metadata = validate_artifact_directory(record.artifact_location)
+        if not valid:
+            raise ValueError("artifact_invalid:" + ",".join(reasons))
+        record.artifact_checksum = checksum
+        record.artifact_metadata = dict(metadata)
+        if record.status not in {ModelArtifactStatus.CREATED, ModelArtifactStatus.TRAINED}:
+            raise ValueError("new artifacts must start as CREATED or TRAINED")
+        key = f"{record.model_id}:{record.model_version}"
+        if key in self._artifacts:
+            raise ValueError(f"artifact version already registered: {key}")
+        self._artifacts[key] = record
+        logger.info("Model artifact registered: %s", key)
+        return record
+
+    def register_verified_base(
+        self,
+        artifact_location: str,
+        model_id: str,
+        model_version: str,
+    ) -> ModelArtifactRecord:
+        manifest_valid, manifest_reasons, manifest = load_verified_base_manifest(artifact_location)
+        if not manifest_valid:
+            raise ValueError("verified_base_manifest_invalid:" + ",".join(manifest_reasons))
+        valid, reasons, checksum, metadata = validate_artifact_directory(artifact_location)
+        if not valid:
+            raise ValueError("artifact_invalid:" + ",".join(reasons))
+        if not model_id or not model_version:
+            raise ValueError("model_id and model_version are required")
+        key = f"{model_id}:{model_version}"
+        if key in self._artifacts:
+            existing = self._artifacts[key]
+            existing_manifest = existing.artifact_metadata.get("verification_manifest", {})
+            if (
+                existing.status is ModelArtifactStatus.VERIFIED_BASE
+                and existing.artifact_location == artifact_location
+                and existing_manifest.get("target_commit") == manifest.get("target_commit")
+            ):
+                return existing
+            raise ValueError(f"artifact version already registered: {key}")
+        record = ModelArtifactRecord(
+            model_id=model_id,
+            model_version=model_version,
+            model_type="base_model",
+            artifact_location=artifact_location,
+            base_model=manifest["source_model_id"],
+            dataset_version="not_applicable",
+            training_run_id="not_applicable",
+            status=ModelArtifactStatus.VERIFIED_BASE,
+            artifact_checksum=checksum,
+            artifact_metadata=metadata,
+            lineage={
+                "source_model_id": manifest["source_model_id"],
+                "source_revision": manifest["source_revision"],
+                "target_repo_id": manifest["target_repo_id"],
+                "target_commit": manifest["target_commit"],
+            },
+        )
+        self._artifacts[key] = record
+        logger.info("Verified base artifact registered: %s", key)
+        return record
+
+    def get_artifact(self, model_id: str, model_version: str) -> Optional[ModelArtifactRecord]:
+        return self._artifacts.get(f"{model_id}:{model_version}")
+
+    def mark_evaluated(
+        self,
+        model_id: str,
+        model_version: str,
+        evaluation_id: str,
+        metrics: Mapping[str, Any],
+        passes_threshold: bool,
+    ) -> ModelArtifactRecord:
+        record = self._require_artifact(model_id, model_version)
+        if not evaluation_id or not metrics:
+            raise ValueError("evaluation evidence is required")
+        record.evaluation_id = evaluation_id
+        record.metrics = dict(metrics)
+        record.status = ModelArtifactStatus.EVALUATED if passes_threshold else ModelArtifactStatus.REJECTED
+        if not passes_threshold:
+            record.error = "evaluation_threshold_failed"
+        return record
+
+    def approve(self, model_id: str, model_version: str) -> ModelArtifactRecord:
+        record = self._require_artifact(model_id, model_version)
+        if record.status is not ModelArtifactStatus.EVALUATED:
+            raise ValueError("only an evaluated-passing artifact can be approved")
+        self._assert_artifact_integrity(record)
+        record.status = ModelArtifactStatus.APPROVED
+        return record
+
+    def promote(self, model_id: str, model_version: str, target: ModelArtifactStatus) -> ModelArtifactRecord:
+        record = self._require_artifact(model_id, model_version)
+        if target not in {ModelArtifactStatus.STAGING, ModelArtifactStatus.PRODUCTION}:
+            raise ValueError("target must be STAGING or PRODUCTION")
+        if record.status is not ModelArtifactStatus.APPROVED:
+            raise ValueError("promotion requires APPROVED status")
+        self._assert_artifact_integrity(record)
+        record.status = target
+        return record
+
+    def reject(self, model_id: str, model_version: str, reason: str) -> ModelArtifactRecord:
+        record = self._require_artifact(model_id, model_version)
+        record.status = ModelArtifactStatus.REJECTED
+        record.error = reason
+        return record
+
+    def rollback(self, model_id: str, target_version: str) -> ModelArtifactRecord:
+        """Atomically move a validated approved artifact to production and deprecate the current one."""
+        target = self._require_artifact(model_id, target_version)
+        if target.status not in {ModelArtifactStatus.APPROVED, ModelArtifactStatus.STAGING, ModelArtifactStatus.PRODUCTION}:
+            raise ValueError("rollback target must be APPROVED, STAGING, or PRODUCTION")
+        self._assert_artifact_integrity(target)
+        for record in self._artifacts.values():
+            if record.model_id == model_id and record.model_version != target_version:
+                if record.status is ModelArtifactStatus.PRODUCTION:
+                    self._assert_artifact_integrity(record)
+                    record.status = ModelArtifactStatus.DEPRECATED
+        target.status = ModelArtifactStatus.PRODUCTION
+        return target
+
+    def list_artifacts(self) -> List[Dict[str, Any]]:
+        return [record.to_dict() for record in self._artifacts.values()]
+
+    def eligible_artifacts(self) -> List[ModelArtifactRecord]:
+        return [
+            record for record in self._artifacts.values()
+            if record.status in {ModelArtifactStatus.STAGING, ModelArtifactStatus.PRODUCTION}
+        ]
+
+    def compare_versions(self, model_id: str, first: str, second: str) -> Dict[str, Any]:
+        left = self._require_artifact(model_id, first)
+        right = self._require_artifact(model_id, second)
+        metric_names = sorted(set(left.metrics) | set(right.metrics))
+        return {
+            "model_id": model_id,
+            "first": left.to_dict(),
+            "second": right.to_dict(),
+            "metric_delta": {
+                name: (right.metrics.get(name), left.metrics.get(name))
+                for name in metric_names
+            },
+        }
+
+    def _assert_artifact_integrity(self, record: ModelArtifactRecord) -> None:
+        valid, reasons, checksum, _ = validate_artifact_directory(record.artifact_location)
+        if not valid:
+            raise ValueError("artifact_integrity_failed:" + ",".join(reasons))
+        if record.artifact_checksum and checksum != record.artifact_checksum:
+            raise ValueError("artifact_integrity_failed:checksum_mismatch")
+
+    def _require_artifact(self, model_id: str, model_version: str) -> ModelArtifactRecord:
+        record = self.get_artifact(model_id, model_version)
+        if record is None:
+            raise KeyError(f"artifact '{model_id}:{model_version}' not found")
+        return record
+
+    def unregister(self, model_id: str) -> bool:
+        if model_id in self._configs:
+            del self._configs[model_id]
+            logger.info("Model unregistered: %s", model_id)
+            return True
+        return False
+
+    def __len__(self) -> int:
+        return len(self._configs)
+"""Central model selection and execution authority for Hajeen Platform."""
+from __future__ import annotations
+
+import asyncio
+import logging
+import os
+import time
+from dataclasses import dataclass, field
+from typing import Any, AsyncGenerator, Dict, List, Optional
+
+from core.llm.base import LLMConfig, LLMMessage, LLMRequest, LLMResponse, LLMStreamChunk
+from core.llm.provider_registry import ProviderRegistry
+from core.model.model_registry import ModelArtifactStatus, ModelRegistry
+
+logger = logging.getLogger(__name__)
+
+VERIFIED_BASE_MODEL_ID = "Qwen/Qwen3-30B-A3B"
+VERIFIED_BASE_TARGET_COMMIT = "9d6a564f66303a3691cbb646d39a28f3eb792ca7"
+
+
+@dataclass(frozen=True)
+class ModelConfig:
+    """Runtime model descriptor; metadata alone never implies availability."""
+
+    model_id: str
+    provider: str
+    base_url: Optional[str]
+    api_key: Optional[str]
+    capabilities: List[str]
+    context_limit: int
+    max_tokens: int
+    avg_latency_ms: float
+    cost_per_1k_tokens: float
+    quality_score: float
+    is_local: bool
+    available: bool = False
+    health: Optional[bool] = None
+
+    @property
+    def context_length(self) -> int:
+        return self.context_limit
+
+
+@dataclass
+class RouteResult:
+    model_id: str
+    provider: str
+    latency_ms: float
+    tokens_used: int
+    response: str
+    success: bool
+    error: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def prompt_tokens(self) -> int:
+        return int(self.metadata.get("prompt_tokens", 0))
+
+    @property
+    def completion_tokens(self) -> int:
+        return int(self.metadata.get("completion_tokens", self.tokens_used))
+
+
+DEFAULT_MODELS: Dict[str, ModelConfig] = {
+    "ollama/llama3": ModelConfig("llama3", "ollama", "http://localhost:11434", None, ["general", "rag", "conversation"], 8192, 4096, 800, 0.0, 0.78, True),
+    "ollama/qwen2.5": ModelConfig("qwen2.5:7b", "ollama", "http://localhost:11434", None, ["arabic", "general", "code", "rag"], 32768, 8192, 1000, 0.0, 0.82, True),
+    "ollama/qwen2.5-coder": ModelConfig("qwen2.5-coder:7b", "ollama", "http://localhost:11434", None, ["code"], 32768, 8192, 900, 0.0, 0.85, True),
+    "openai/gpt-4o": ModelConfig("gpt-4o", "openai", None, "env:OPENAI_API_KEY", ["general", "code", "math", "analysis", "creative", "rag"], 128000, 4096, 2000, 5.0, 0.97, False),
+    "openai/gpt-4o-mini": ModelConfig("gpt-4o-mini", "openai", None, "env:OPENAI_API_KEY", ["general", "code", "math", "analysis", "rag"], 128000, 4096, 800, 0.15, 0.88, False),
+    "hajeen-local": ModelConfig(VERIFIED_BASE_MODEL_ID, "local", None, None, ["arabic", "general", "rag"], 32768, 8192, 500, 0.0, 0.90, True),
+}
+
+
+def _score_model(model: ModelConfig, capability: str, budget_tokens: int, prefer_local: bool = False) -> float:
+    if budget_tokens > model.max_tokens or budget_tokens > model.context_limit:
+        return float("-inf")
+    cap_score = 1.0 if capability in model.capabilities else 0.0
+    if capability not in model.capabilities and capability not in {"general", "conversation"}:
+        return float("-inf")
+    local_bonus = 0.12 if prefer_local and model.is_local else 0.0
+    cost_score = 1.0 if model.cost_per_1k_tokens == 0 else max(0.1, 1 - model.cost_per_1k_tokens / 10)
+    speed_score = max(0.1, 1 - model.avg_latency_ms / 5000)
+    return model.quality_score * 0.4 + cap_score * 0.3 + cost_score * 0.2 + speed_score * 0.1 + local_bonus
+
+
+class ModelRouter:
+    """The only authority allowed to select and execute a model provider."""
+
+    def __init__(self, prefer_local: bool = True, model_registry: Optional[ModelRegistry] = None) -> None:
+        self._models = dict(DEFAULT_MODELS)
+        self._model_registry = model_registry or ModelRegistry()
+        self._prefer_local = prefer_local
+        self._routing_history: List[Dict[str, Any]] = []
+        self._provider_registry: Dict[str, Any] = {}
+        self._provider_init_lock = asyncio.Lock()
+
+    @property
+    def models(self) -> Dict[str, ModelConfig]:
+        return dict(self._models)
+
+    def register_provider(self, model_key: str, provider_instance: Any) -> None:
+        """Register a real provider instance, primarily for application wiring/tests."""
+        if model_key not in self._models:
+            raise KeyError(f"Unknown model key: {model_key}")
+        self._provider_registry[model_key] = provider_instance
+
+    def add_model(self, key: str, config: ModelConfig) -> None:
+        self._models[key] = config
+
+    def set_model_registry(self, registry: ModelRegistry) -> None:
+        """Inject the lifecycle registry; selection remains owned by this router."""
+        self._model_registry = registry
+
+    def _registry_record_for(self, key: str, cfg: ModelConfig) -> Any:
+        getter = getattr(self._model_registry, "get_artifact", None)
+        if getter is None:
+            return None
+        return getter(cfg.model_id, "production") or getter(key, "production")
+
+    def _registry_eligible(self, key: str, cfg: ModelConfig) -> bool:
+        """Require a commit-pinned VERIFIED_BASE for the real local Hajeen path."""
+        records = getattr(self._model_registry, "list_artifacts", lambda: [])()
+        related = [
+            item for item in records
+            if item.get("model_id") in {key, cfg.model_id, VERIFIED_BASE_MODEL_ID}
+        ]
+        if key == "hajeen-local" or cfg.model_id == VERIFIED_BASE_MODEL_ID:
+            if key in self._provider_registry:
+                return True
+            return any(
+                item.get("status") == ModelArtifactStatus.VERIFIED_BASE.value
+                and item.get("lineage", {}).get("target_commit") == VERIFIED_BASE_TARGET_COMMIT
+                for item in related
+            )
+        if not related:
+            return True
+        return any(item.get("status") in {ModelArtifactStatus.STAGING.value, ModelArtifactStatus.PRODUCTION.value} for item in related)
+
+    def _resolve_key(self, identifier: str) -> Optional[str]:
+        if identifier == "hajeen-v1" and "hajeen-local" in self._models:
+            return "hajeen-local"
+        if identifier in self._models:
+            return identifier
+        for key, cfg in self._models.items():
+            if cfg.model_id == identifier or f"{cfg.provider}/{cfg.model_id}" == identifier:
+                return key
+        return None
+
+    def select_model(self, capability: str = "general", budget_tokens: int = 4096, force_local: bool = False, exclude: Optional[List[str]] = None) -> Optional[str]:
+        exclude_set = set(exclude or [])
+        candidates = [(key, cfg) for key, cfg in self._models.items() if key not in exclude_set and self._registry_eligible(key, cfg) and _score_model(cfg, capability, budget_tokens) != float("-inf")]
+        registered = [(key, cfg) for key, cfg in candidates if key in self._provider_registry]
+        if registered:
+            candidates = registered
+        if force_local or self._prefer_local:
+            local = [(key, cfg) for key, cfg in candidates if cfg.is_local]
+            if local:
+                candidates = local
+        if not candidates:
+            return None
+        return max(candidates, key=lambda pair: _score_model(pair[1], capability, budget_tokens, force_local or self._prefer_local))[0]
+
+    async def _get_provider(self, key: str, cfg: ModelConfig) -> Any:
+        provider = self._provider_registry.get(key)
+        if provider is not None:
+            if not getattr(provider, "_initialized", False) and hasattr(provider, "initialize"):
+                await provider.initialize()
+            return provider
+        async with self._provider_init_lock:
+            provider = self._provider_registry.get(key)
+            if provider is not None:
+                return provider
+            ProviderRegistry.auto_register_defaults()
+            # `local` is the platform-level provider classification for the
+            # Hajeen local model; the concrete adapter remains Hajeen Model.
+            adapter_name = "hajeen" if key == "hajeen-local" else cfg.provider
+            provider_cls = ProviderRegistry.get(adapter_name)
+            if provider_cls is None:
+                raise RuntimeError(f"No registered provider adapter for {adapter_name!r}")
+            api_key = os.getenv("OPENAI_API_KEY") if cfg.api_key == "env:OPENAI_API_KEY" else cfg.api_key
+            provider = provider_cls(LLMConfig(provider=adapter_name, model=cfg.model_id, api_key=api_key, api_base=cfg.base_url, max_tokens=cfg.max_tokens))
+            await provider.initialize()
+            self._provider_registry[key] = provider
+            return provider
+
+    @staticmethod
+    def _request(messages: List[Dict[str, str]], cfg: ModelConfig, budget_tokens: int, request_id: Optional[str] = None, stream: bool = False) -> LLMRequest:
+        return LLMRequest(messages=[LLMMessage(role=m["role"], content=m["content"]) for m in messages], model=cfg.model_id, max_tokens=min(budget_tokens, cfg.max_tokens), stream=stream, request_id=request_id)
+
+    async def route(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> RouteResult:
+        local_preference = self._prefer_local if prefer_local is None else prefer_local
+        forced_key = self._resolve_key(force_model) if force_model else None
+        if force_model and forced_key is None:
+            return RouteResult(force_model, "none", 0.0, 0, "", False, "Requested model is not registered", {"fail_closed": True})
+        tried: List[str] = []
+        key = forced_key or self.select_model(capability, budget_tokens, force_local=local_preference)
+        last_error = "No eligible model is registered"
+        while key and key not in tried:
+            tried.append(key)
+            cfg = self._models[key]
+            if not self._registry_eligible(key, cfg):
+                last_error = "Model artifact is not approved for runtime"
+                self._record_routing(key, capability, 0.0, False)
+                if forced_key:
+                    break
+                key = self.select_model(capability, budget_tokens, force_local=local_preference, exclude=tried)
+                continue
+            started = time.perf_counter()
+            try:
+                provider = await asyncio.wait_for(self._get_provider(key, cfg), timeout=timeout)
+                request = self._request(messages, cfg, budget_tokens, request_id=request_id)
+                if hasattr(provider, "complete"):
+                    response: LLMResponse = await asyncio.wait_for(provider.complete(request), timeout=timeout)
+                elif key in self._provider_registry and hasattr(provider, "chat"):
+                    # Explicitly registered test/application adapter compatibility.
+                    raw = await asyncio.wait_for(provider.chat(messages[-1]["content"] if messages else ""), timeout=timeout)
+                    text = raw.get("content", "") if isinstance(raw, dict) else str(raw)
+                    response = LLMResponse(content=text, model=cfg.model_id, provider=cfg.provider, completion_tokens=len(text.split()), total_tokens=len(text.split()))
+                else:
+                    raise RuntimeError("Provider adapter does not expose complete()")
+                if not response.content:
+                    raise RuntimeError("Provider returned an empty response")
+                latency = (time.perf_counter() - started) * 1000
+                self._record_routing(key, capability, latency, True)
+                return RouteResult(key, cfg.provider, latency, response.total_tokens or len(response.content.split()), response.content, True, metadata={"prompt_tokens": response.prompt_tokens, "completion_tokens": response.completion_tokens, "finish_reason": response.finish_reason})
+            except Exception as exc:
+                last_error = str(exc)
+                self._record_routing(key, capability, (time.perf_counter() - started) * 1000, False)
+                logger.warning("model_router: %s failed closed: %s", key, exc)
+                if forced_key:
+                    break
+                key = self.select_model(capability, budget_tokens, force_local=local_preference, exclude=tried)
+        return RouteResult(tried[-1] if tried else "none", "none", 0.0, 0, "", False, last_error, {"fail_closed": True, "tried": tried})
+
+    async def stream(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> AsyncGenerator[LLMStreamChunk, None]:
+        """Relay a provider-native stream without synthesizing chunks."""
+        started = time.perf_counter()
+        local_preference = self._prefer_local if prefer_local is None else prefer_local
+        key = self._resolve_key(force_model) if force_model else self.select_model(capability, budget_tokens, force_local=local_preference)
+        if force_model and key is None:
+            raise RuntimeError("Requested model is not registered")
+        if key is None:
+            raise RuntimeError("No eligible model is registered")
+        cfg = self._models[key]
+        if not self._registry_eligible(key, cfg):
+            raise RuntimeError("model artifact is not approved for runtime")
+        provider = await asyncio.wait_for(self._get_provider(key, cfg), timeout=timeout)
+        request = self._request(messages, cfg, budget_tokens, request_id=request_id, stream=True)
+        if not hasattr(provider, "stream"):
+            raise RuntimeError(f"Provider {cfg.provider!r} does not expose native streaming")
+
+        stream = provider.stream(request)
+        sequence = 0
+        completed = False
+        try:
+            yield LLMStreamChunk(
+                delta="",
+                index=sequence,
+                model=cfg.model_id,
+                provider=cfg.provider,
+                request_id=request_id,
+                event_type="start",
+                metadata={"model": cfg.model_id, "provider": cfg.provider},
+            )
+            async for raw_chunk in self._iter_stream_with_timeout(stream, timeout):
+                if not isinstance(raw_chunk, LLMStreamChunk):
+                    raise RuntimeError("Provider returned an invalid stream chunk")
+                sequence += 1
+                event_type = raw_chunk.event_type or ("finish" if raw_chunk.finish_reason else "delta")
+                yield LLMStreamChunk(
+                    delta=raw_chunk.delta,
+                    finish_reason=raw_chunk.finish_reason,
+                    index=sequence,
+                    model=raw_chunk.model or cfg.model_id,
+                    event_type=event_type,
+                    provider=raw_chunk.provider or cfg.provider,
+                    request_id=raw_chunk.request_id or request_id,
+                    metadata=dict(raw_chunk.metadata),
+                )
+                if raw_chunk.finish_reason:
+                    completed = True
+            if not completed:
+                sequence += 1
+                yield LLMStreamChunk(
+                    delta="",
+                    finish_reason="stop",
+                    index=sequence,
+                    model=cfg.model_id,
+                    provider=cfg.provider,
+                    request_id=request_id,
+                    event_type="finish",
+                    metadata={"latency_ms": (time.perf_counter() - started) * 1000},
+                )
+            self._record_routing(key, capability, (time.perf_counter() - started) * 1000, True)
+        except asyncio.CancelledError:
+            self._record_routing(key, capability, (time.perf_counter() - started) * 1000, False)
+            raise
+        except Exception:
+            self._record_routing(key, capability, (time.perf_counter() - started) * 1000, False)
+            raise
+        finally:
+            close = getattr(stream, "aclose", None)
+            if close is not None:
+                await close()
+
+    @staticmethod
+    async def _iter_stream_with_timeout(stream: Any, timeout: float) -> AsyncGenerator[LLMStreamChunk, None]:
+        """Apply an idle/total guard while preserving provider-native chunks."""
+        iterator = stream.__aiter__()
+        try:
+            while True:
+                try:
+                    chunk = await asyncio.wait_for(iterator.__anext__(), timeout=timeout)
+                except StopAsyncIteration:
+                    break
+                yield chunk
+        finally:
+            close = getattr(iterator, "aclose", None)
+            if close is not None:
+                await close()
+
+    async def list_available_models(self, capability: str = "general", budget_tokens: int = 4096) -> List[Dict[str, Any]]:
+        result = []
+        for key, cfg in self._models.items():
+            entry = {"key": key, "model_id": cfg.model_id, "provider": cfg.provider, "capabilities": cfg.capabilities, "context_limit": cfg.context_limit, "max_tokens": cfg.max_tokens, "is_local": cfg.is_local, "available": key in self._provider_registry, "registry_eligible": self._registry_eligible(key, cfg)}
+            artifact_records = [item for item in self._model_registry.list_artifacts() if item.get("model_id") in {key, cfg.model_id}]
+            if artifact_records:
+                entry["artifacts"] = artifact_records
+            provider = self._provider_registry.get(key)
+            if provider is not None and hasattr(provider, "health_check"):
+                try:
+                    entry["health"] = await provider.health_check()
+                    entry["available"] = bool(entry["health"])
+                except Exception:
+                    entry["health"] = False
+                    entry["available"] = False
+            result.append(entry)
+        return result
+
+    def _record_routing(self, model_key: str, capability: str, latency_ms: float, success: bool) -> None:
+        self._routing_history.append({"model": model_key, "capability": capability, "latency_ms": latency_ms, "success": success, "at": time.time()})
+        self._routing_history = self._routing_history[-1000:]
+
+    def get_routing_stats(self) -> Dict[str, Any]:
+        if not self._routing_history:
+            return {"total": 0}
+        total = len(self._routing_history)
+        return {"total": total, "success_rate": round(sum(r["success"] for r in self._routing_history) / total, 3), "by_model": {k: sum(1 for r in self._routing_history if r["model"] == k) for k in {r["model"] for r in self._routing_history}}, "avg_latency_ms": round(sum(r["latency_ms"] for r in self._routing_history) / total, 1)}
+
+
+_router: Optional[ModelRouter] = None
+
+
+def get_model_router() -> ModelRouter:
+    global _router
+    if _router is None:
+        _router = ModelRouter()
+    return _router
+
+
+=== services ===
+---services/__init__.py
+---services/agent_service.py
+"""Agent Service — Phase 5 — تنظيم الـ agents مع tool execution وmemory."""
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+import uuid
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class AgentStatus(str, Enum):
+    IDLE = "idle"
+    RUNNING = "running"
+    WAITING_TOOL = "waiting_tool"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+@dataclass
+class ToolCall:
+    tool_name: str
+    arguments: Dict
+    call_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    result: Optional[Any] = None
+    error: Optional[str] = None
+    duration_ms: float = 0.0
+
+
+@dataclass
+class AgentStep:
+    step_id: str
+    thought: str
+    action: Optional[str] = None
+    tool_calls: List[ToolCall] = field(default_factory=list)
+    observation: str = ""
+    is_final: bool = False
+    timestamp: float = field(default_factory=time.time)
+
+
+@dataclass
+class AgentTrace:
+    agent_id: str
+    session_id: str
+    query: str
+    steps: List[AgentStep] = field(default_factory=list)
+    final_answer: Optional[str] = None
+    status: AgentStatus = AgentStatus.IDLE
+    started_at: float = field(default_factory=time.time)
+    finished_at: Optional[float] = None
+    total_tokens: int = 0
+
+    @property
+    def duration_ms(self) -> float:
+        if self.finished_at:
+            return round((self.finished_at - self.started_at) * 1000, 2)
+        return round((time.time() - self.started_at) * 1000, 2)
+
+    def to_dict(self) -> Dict:
+        return {
+            "agent_id": self.agent_id,
+            "session_id": self.session_id,
+            "query": self.query,
+            "status": self.status.value,
+            "final_answer": self.final_answer,
+            "steps": len(self.steps),
+            "duration_ms": self.duration_ms,
+        }
+
+
+class ToolRegistry:
+    """سجل الأدوات المتاحة للـ agents."""
+
+    def __init__(self) -> None:
+        self._tools: Dict[str, Callable] = {}
+        self._descriptions: Dict[str, str] = {}
+
+    def register(
+        self,
+        name: str,
+        fn: Callable,
+        description: str = "",
+    ) -> None:
+        self._tools[name] = fn
+        self._descriptions[name] = description
+        logger.debug("ToolRegistry: registered '%s'", name)
+
+    def list_tools(self) -> List[Dict]:
+        return [
+            {"name": name, "description": desc}
+            for name, desc in self._descriptions.items()
+        ]
+
+    async def execute(self, call: ToolCall) -> ToolCall:
+        fn = self._tools.get(call.tool_name)
+        if fn is None:
+            call.error = f"أداة غير معروفة: {call.tool_name}"
+            return call
+
+        t0 = time.perf_counter()
+        try:
+            if asyncio.iscoroutinefunction(fn):
+                call.result = await fn(**call.arguments)
+            else:
+                loop = asyncio.get_event_loop()
+                call.result = await loop.run_in_executor(
+                    None, lambda: fn(**call.arguments)
+                )
+        except Exception as exc:
+            call.error = str(exc)
+            logger.error("Tool '%s' failed: %s", call.tool_name, exc)
+        finally:
+            call.duration_ms = round((time.perf_counter() - t0) * 1000, 2)
+
+        return call
+
+
+class AgentMemory:
+    """ذاكرة الـ agent — short-term + long-term."""
+
+    def __init__(self, max_short_term: int = 20) -> None:
+        self._short_term: List[Dict] = []
+        self._long_term: Dict[str, Any] = {}
+        self._max = max_short_term
+
+    def add_message(self, role: str, content: str) -> None:
+        self._short_term.append({"role": role, "content": content})
+        if len(self._short_term) > self._max:
+            self._short_term = self._short_term[-self._max:]
+
+    def get_history(self) -> List[Dict]:
+        return list(self._short_term)
+
+    def store(self, key: str, value: Any) -> None:
+        self._long_term[key] = value
+
+    def recall(self, key: str) -> Optional[Any]:
+        return self._long_term.get(key)
+
+    def clear_short_term(self) -> None:
+        self._short_term.clear()
+
+    def summary(self) -> Dict:
+        return {
+            "short_term_messages": len(self._short_term),
+            "long_term_keys": len(self._long_term),
+        }
+
+
+class AgentService:
+    """
+    خدمة الـ agent الرئيسية مع:
+    - agent orchestration
+    - tool execution framework
+    - memory layer
+    - async execution
+    - failure isolation
+    - state management
+    - multi-turn support
+    - tracing كامل
+    - retry handling
+    - cancellation support
+    """
+
+    def __init__(
+        self,
+        tool_registry: Optional[ToolRegistry] = None,
+        llm_manager: Optional[Any] = None,
+        max_steps: int = 10,
+        step_timeout: float = 30.0,
+        max_retries: int = 2,
+    ) -> None:
+        self._tools = tool_registry or ToolRegistry()
+        self._llm = llm_manager
+        self._max_steps = max_steps
+        self._step_timeout = step_timeout
+        self._max_retries = max_retries
+        self._active_agents: Dict[str, AgentTrace] = {}
+        self._sessions: Dict[str, AgentMemory] = {}
+        self._register_default_tools()
+        logger.info("AgentService initialized: max_steps=%d", max_steps)
+
+    def _register_default_tools(self) -> None:
+        self._tools.register(
+            "search",
+            self._tool_search,
+            "بحث عن معلومات في قاعدة البيانات",
+        )
+        self._tools.register(
+            "summarize",
+            self._tool_summarize,
+            "تلخيص نص",
+        )
+        self._tools.register(
+            "calculate",
+            self._tool_calculate,
+            "حساب تعبير رياضي",
+        )
+
+    # ─── Execution ────────────────────────────────────────────────────────────
+
+    async def run(
+        self,
+        query: str,
+        session_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
+    ) -> AgentTrace:
+        """تشغيل agent كامل على استعلام."""
+        agent_id = agent_id or str(uuid.uuid4())[:12]
+        session_id = session_id or str(uuid.uuid4())[:12]
+
+        trace = AgentTrace(
+            agent_id=agent_id,
+            session_id=session_id,
+            query=query,
+            status=AgentStatus.RUNNING,
+---services/completion_service.py
+from __future__ import annotations
+
+import logging
+import time
+from typing import Any, AsyncIterator, Dict, Optional
+
+from core.inference_engine import InferenceConfig
+from core.llm.llm_manager import LLMManager
+
+logger = logging.getLogger(__name__)
+
+
+class CompletionService:
+    """OpenAI-compatible text completion service."""
+
+    def __init__(self, llm_manager: Optional[LLMManager] = None) -> None:
+        self._llm = llm_manager or LLMManager()
+
+    async def complete(
+        self,
+        prompt: str,
+        model_id: Optional[str] = None,
+        max_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9,
+        stop: Optional[list] = None,
+        stream: bool = False,
+    ) -> Dict[str, Any]:
+        config = InferenceConfig(
+            max_new_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            stop_sequences=stop or [],
+            stream=stream,
+        )
+        start = time.perf_counter()
+        text = await self._llm.agenerate(prompt, config=config, model_id=model_id)
+        latency = time.perf_counter() - start
+        prompt_tokens = max(1, len(prompt.split()))
+        completion_tokens = max(1, len(text.split()))
+        return {
+            "id": f"cmpl-{int(time.time())}",
+            "object": "text_completion",
+            "model": model_id or self._llm.default_model,
+            "choices": [
+                {
+                    "text": text,
+                    "index": 0,
+                    "finish_reason": "stop",
+                    "logprobs": None,
+                }
+            ],
+            "usage": {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": prompt_tokens + completion_tokens,
+            },
+            "latency_ms": round(latency * 1000, 2),
+        }
+
+    async def stream_complete(
+        self,
+        prompt: str,
+        model_id: Optional[str] = None,
+        max_tokens: int = 256,
+        temperature: float = 0.7,
+    ) -> AsyncIterator[str]:
+        config = InferenceConfig(
+            max_new_tokens=max_tokens,
+            temperature=temperature,
+            stream=True,
+        )
+        async for chunk in self._llm.astream(prompt, config=config, model_id=model_id):
+            yield chunk
+---services/embedding_service.py
+from __future__ import annotations
+
+import logging
+import time
+from typing import Any, Dict, List, Optional
+
+from core.embeddings.embedding_engine import EmbeddingEngine
+
+logger = logging.getLogger(__name__)
+
+
+class EmbeddingService:
+    """Service layer for embedding generation with usage tracking."""
+
+    def __init__(
+        self,
+        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+    ) -> None:
+        self._engine = EmbeddingEngine.get_instance(model_name=model_name)
+        self._total_requests = 0
+        self._total_texts = 0
+
+    async def embed(self, text: str) -> Dict[str, Any]:
+        start = time.perf_counter()
+        vector = await self._engine.aembed(text)
+        latency = time.perf_counter() - start
+        self._total_requests += 1
+        self._total_texts += 1
+        return {
+            "embedding": vector,
+            "dimensions": len(vector),
+            "model": self._engine.model_name,
+            "latency_ms": round(latency * 1000, 2),
+        }
+
+    async def embed_batch(
+        self, texts: List[str], model: Optional[str] = None
+    ) -> Dict[str, Any]:
+        start = time.perf_counter()
+        vectors = await self._engine.aembed_batch(texts)
+        latency = time.perf_counter() - start
+        self._total_requests += 1
+        self._total_texts += len(texts)
+        return {
+            "embeddings": vectors,
+            "dimensions": len(vectors[0]) if vectors else 0,
+            "count": len(vectors),
+            "model": self._engine.model_name,
+            "latency_ms": round(latency * 1000, 2),
+            "usage": {"total_tokens": sum(max(1, len(t.split())) for t in texts)},
+        }
+
+    def stats(self) -> Dict:
+        return {
+            "total_requests": self._total_requests,
+            "total_texts_embedded": self._total_texts,
+            "model": self._engine.model_name,
+            "cache": self._engine.cache_stats(),
+        }
+---services/inference_service.py
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+from typing import Any, AsyncIterator, Dict, List, Optional
+
+from core.inference_engine import InferenceConfig
+from core.llm.llm_manager import LLMManager
+
+logger = logging.getLogger(__name__)
+
+
+class InferenceService:
+    """High-level service for synchronous and async text generation."""
+
+    def __init__(self, llm_manager: Optional[LLMManager] = None) -> None:
+        self._llm = llm_manager or LLMManager()
+        logger.info("InferenceService initialized")
+
+    async def generate(
+        self,
+        prompt: str,
+        model_id: Optional[str] = None,
+        config: Optional[InferenceConfig] = None,
+    ) -> Dict[str, Any]:
+        cfg = config or InferenceConfig()
+        start = time.perf_counter()
+        try:
+            text = await self._llm.agenerate(prompt, config=cfg, model_id=model_id)
+            latency = time.perf_counter() - start
+            return {
+                "text": text,
+                "model": model_id or self._llm.default_model,
+                "latency_ms": round(latency * 1000, 2),
+                "tokens_generated": max(1, len(text.split())),
+                "finish_reason": "stop",
+            }
+        except Exception as exc:
+            logger.error("Inference error: %s", exc)
+            raise
+
+    async def stream(
+        self,
+        prompt: str,
+        model_id: Optional[str] = None,
+        config: Optional[InferenceConfig] = None,
+    ) -> AsyncIterator[str]:
+        cfg = config or InferenceConfig(stream=True)
+        async for chunk in self._llm.astream(prompt, config=cfg, model_id=model_id):
+            yield chunk
+
+    async def batch_generate(
+        self,
+        prompts: List[str],
+        model_id: Optional[str] = None,
+        config: Optional[InferenceConfig] = None,
+    ) -> List[Dict[str, Any]]:
+        tasks = [self.generate(p, model_id, config) for p in prompts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        output = []
+        for i, r in enumerate(results):
+            if isinstance(r, Exception):
+                output.append({"error": str(r), "prompt_index": i})
+            else:
+                output.append(r)
+        return output
+
+    def health(self) -> Dict:
+        return {"status": "ok", "llm_ready": self._llm.is_ready()}
+---services/memory_service.py
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List, Optional
+
+from core.memory.memory_manager import MemoryManager
+
+logger = logging.getLogger(__name__)
+
+_manager: Optional[MemoryManager] = None
+
+
+def get_memory_manager() -> MemoryManager:
+    global _manager
+    if _manager is None:
+        _manager = MemoryManager()
+    return _manager
+
+
+class MemoryService:
+    """Service facade over the MemoryManager for API consumption."""
+
+    def __init__(self, manager: Optional[MemoryManager] = None) -> None:
+        self._manager = manager or get_memory_manager()
+
+    def add_user_message(self, session_id: str, content: str) -> None:
+        self._manager.add_message(session_id, "user", content)
+
+    def add_assistant_message(self, session_id: str, content: str) -> None:
+        self._manager.add_message(session_id, "assistant", content)
+
+    def get_context(self, session_id: str, last_n: int = 20) -> List[Dict]:
+        return self._manager.get_recent_messages(session_id, last_n)
+
+    def get_full_history(self, session_id: str) -> List[Dict]:
+        return self._manager.get_full_history(session_id)
+
+    def remember(self, session_id: str, key: str, value: Any) -> None:
+        self._manager.remember(session_id, key, value)
+
+    def recall(self, session_id: str, key: str, default: Any = None) -> Any:
+        return self._manager.recall(session_id, key, default)
+
+    def clear(self, session_id: str) -> None:
+        self._manager.clear_session(session_id)
+        logger.info("Memory cleared for session: %s", session_id)
+
+    def stats(self, session_id: str) -> Dict:
+        return self._manager.session_stats(session_id)
+---services/moderation_service.py
+from __future__ import annotations
+
+import logging
+import re
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
+
+_HARMFUL_PATTERNS = [
+    r"\b(how\s+to\s+make\s+(?:(?:a|an|the)\s+)?(bomb|weapon|poison|drug))",
+    r"\b(kill\s+yourself|suicide\s+method)",
+    r"\b(child\s+abuse|child\s+porn)",
+    r"\b(hack\s+(bank|credit\s+card|password))",
+]
+
+_COMPILED_PATTERNS = [re.compile(p, re.I) for p in _HARMFUL_PATTERNS]
+
+
+@dataclass
+class ModerationResult:
+    flagged: bool
+    categories: List[str] = field(default_factory=list)
+    score: float = 0.0
+    action: str = "allow"
+    reason: Optional[str] = None
+
+
+class ModerationService:
+    """Rule-based + optional LLM-backed content moderation."""
+
+    def __init__(
+        self,
+        max_input_length: int = 8000,
+        block_harmful: bool = True,
+        block_pii: bool = False,
+    ) -> None:
+        self.max_input_length = max_input_length
+        self.block_harmful = block_harmful
+        self.block_pii = block_pii
+
+    def check(self, text: str) -> ModerationResult:
+        categories: List[str] = []
+        score = 0.0
+
+        if len(text) > self.max_input_length:
+            return ModerationResult(
+                flagged=True,
+                categories=["length_exceeded"],
+                score=1.0,
+                action="block",
+                reason=f"Input exceeds {self.max_input_length} characters",
+            )
+
+        if self.block_harmful:
+            for pattern in _COMPILED_PATTERNS:
+                if pattern.search(text):
+                    categories.append("harmful_content")
+                    score = max(score, 0.9)
+                    break
+
+        if self.block_pii:
+            pii_hit, pii_cats = self._check_pii(text)
+            if pii_hit:
+                categories.extend(pii_cats)
+                score = max(score, 0.5)
+
+        flagged = bool(categories)
+        action = "block" if score >= 0.8 else ("warn" if flagged else "allow")
+        return ModerationResult(
+            flagged=flagged,
+            categories=categories,
+            score=round(score, 3),
+            action=action,
+            reason=f"Detected: {', '.join(categories)}" if categories else None,
+        )
+
+    def _check_pii(self, text: str) -> Tuple[bool, List[str]]:
+        cats: List[str] = []
+        if re.search(r"\b\d{3}-\d{2}-\d{4}\b", text):
+            cats.append("ssn")
+        if re.search(r"\b(?:\d{4}[-\s]?){3}\d{4}\b", text):
+            cats.append("credit_card")
+        if re.search(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", text):
+            cats.append("email")
+        return bool(cats), cats
+
+    def is_allowed(self, text: str) -> bool:
+        result = self.check(text)
+        return result.action != "block"
+
+    def filter_output(self, text: str) -> str:
+        result = self.check(text)
+        if result.action == "block":
+            return "I'm unable to provide that information."
+        return text
+---services/rag_service.py
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+from typing import Any, Dict, List, Optional
+
+from core.embeddings.embedding_engine import EmbeddingEngine
+from services.rag.retriever import SemanticRetriever
+from services.rag.reranker import CrossEncoderReranker
+from services.rag.context_builder import ContextBuilder
+from services.rag.citation_builder import CitationBuilder
+from services.rag.hybrid_search import HybridSearcher
+
+logger = logging.getLogger(__name__)
+
+
+class RAGService:
+    """Orchestrates the full RAG pipeline: retrieve → rerank → build → generate."""
+
+    def __init__(
+        self,
+        embedding_engine: Optional[EmbeddingEngine] = None,
+        vector_store: Optional[Any] = None,
+        llm_manager: Optional[Any] = None,
+        reranker_model: Optional[str] = None,
+        top_k: int = 5,
+        rerank: bool = True,
+    ) -> None:
+        self._embed = embedding_engine or EmbeddingEngine.get_instance()
+        self._vector_store = vector_store
+        self._llm = llm_manager
+        self._retriever = SemanticRetriever(
+            embedding_engine=self._embed,
+            vector_store=vector_store,
+            top_k=top_k * 2,
+        )
+        self._reranker = CrossEncoderReranker(model_name=reranker_model)
+        self._context_builder = ContextBuilder()
+        self._citation_builder = CitationBuilder()
+        self._hybrid = HybridSearcher(self._retriever) if vector_store else None
+        self.rerank = rerank
+        logger.info("RAGService initialized")
+
+    def set_vector_store(self, store: Any) -> None:
+        self._vector_store = store
+        self._retriever.set_vector_store(store)
+
+    async def query(
+        self,
+        question: str,
+        top_k: int = 5,
+        rerank: Optional[bool] = None,
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        start = time.perf_counter()
+        use_rerank = rerank if rerank is not None else self.rerank
+
+        results = await self._retriever.aretrieve(question, top_k=top_k * 2)
+
+        if use_rerank and results:
+            results = self._reranker.rerank(question, results, top_k=top_k)
+        else:
+            results = results[:top_k]
+
+        context = self._context_builder.build(results, query=question)
+        sources = self._citation_builder.build_source_list(results)
+
+        answer: Optional[str] = None
+        if self._llm is not None:
+            from core.inference_engine import InferenceConfig
+            from core.prompts.prompt_builder import PromptBuilder
+            builder = PromptBuilder(system_persona="rag_assistant")
+            chunks = [r.content for r in results]
+            prompt = builder.build_rag(question, chunks)
+            answer = await self._llm.agenerate(prompt, config=InferenceConfig())
+
+        latency = time.perf_counter() - start
+        return {
+            "question": question,
+            "answer": answer,
+            "context": context,
+            "sources": sources,
+            "retrieved_count": len(results),
+            "latency_ms": round(latency * 1000, 2),
+        }
+
+    async def batch_query(
+        self, questions: List[str], top_k: int = 5
+    ) -> List[Dict[str, Any]]:
+        tasks = [self.query(q, top_k=top_k) for q in questions]
+        return await asyncio.gather(*tasks, return_exceptions=False)
+=== database/security ===
+---database/__init__.py
+from database.models import (
+    Base, User, Session, APIKey, AuditLog,
+    Conversation, Message, VectorDocument,
+    get_engine, get_session_factory, get_db_session, init_db, close_db,
+)
+
+__all__ = [
+    "Base", "User", "Session", "APIKey", "AuditLog",
+    "Conversation", "Message", "VectorDocument",
+    "get_engine", "get_session_factory", "get_db_session", "init_db", "close_db",
+]
+---database/models.py
+"""PostgreSQL Async Models — SQLAlchemy 2.0 + asyncpg.
+
+جداول النظام:
+  users, sessions, api_keys, audit_log,
+  conversations, messages, vector_documents
+"""
+from __future__ import annotations
+
+import time
+import uuid
+from typing import Any, AsyncGenerator, Optional
+
+from sqlalchemy import (
+    JSON, Boolean, Column, Float, ForeignKey, Index,
+    Integer, String, Text, UniqueConstraint, text,
+)
+from sqlalchemy.ext.asyncio import (
+    AsyncSession, async_sessionmaker, create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase, relationship
+import os
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+asyncpg://hajeen:hajeen_pass@localhost:5432/hajeen_db",
+)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+# ── Users ─────────────────────────────────────────────────────────────────────
+
+class User(Base):
+    __tablename__ = "users"
+
+    id         = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    username   = Column(String(100), unique=True, nullable=False, index=True)
+    email      = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    roles      = Column(JSON, default=list)
+    tenant_id  = Column(String(100), nullable=False, default="default", index=True)
+    is_active  = Column(Boolean, default=True)
+    created_at = Column(Float, default=time.time)
+    updated_at = Column(Float, default=time.time, onupdate=time.time)
+    last_login_at = Column(Float, nullable=True)
+    metadata_  = Column("metadata", JSON, default=dict)
+
+    sessions      = relationship("Session", back_populates="user", cascade="all, delete")
+    api_keys      = relationship("APIKey", back_populates="user", cascade="all, delete")
+    conversations = relationship("Conversation", back_populates="user", cascade="all, delete")
+
+
+# ── Sessions ──────────────────────────────────────────────────────────────────
+
+class Session(Base):
+    __tablename__ = "sessions"
+
+    id          = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id     = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    tenant_id   = Column(String(100), nullable=False, default="default")
+    jti         = Column(String(36), unique=True, nullable=False, index=True)
+    ip_address  = Column(String(45), nullable=True)
+    user_agent  = Column(String(500), nullable=True)
+    created_at  = Column(Float, default=time.time)
+    expires_at  = Column(Float, nullable=False)
+    is_active   = Column(Boolean, default=True)
+
+    user = relationship("User", back_populates="sessions")
+
+    __table_args__ = (Index("ix_sessions_user_active", "user_id", "is_active"),)
+
+
+# ── API Keys ──────────────────────────────────────────────────────────────────
+
+class APIKey(Base):
+    __tablename__ = "api_keys"
+
+    id          = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    key_id      = Column(String(32), unique=True, nullable=False, index=True)
+    key_hash    = Column(String(64), unique=True, nullable=False)
+    name        = Column(String(200), nullable=False)
+    user_id     = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    tenant_id   = Column(String(100), nullable=False, default="default")
+    scopes      = Column(JSON, default=list)
+    is_active   = Column(Boolean, default=True)
+    created_at  = Column(Float, default=time.time)
+    expires_at  = Column(Float, nullable=True)
+    last_used_at = Column(Float, nullable=True)
+
+    user = relationship("User", back_populates="api_keys")
+
+
+# ── Audit Log ─────────────────────────────────────────────────────────────────
+
+class AuditLog(Base):
+    __tablename__ = "audit_log"
+
+    id            = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    event_id      = Column(String(36), unique=True, nullable=False, index=True)
+    action        = Column(String(100), nullable=False, index=True)
+    actor_id      = Column(String(100), nullable=False, index=True)
+    tenant_id     = Column(String(100), nullable=False, default="default", index=True)
+    resource      = Column(String(500), nullable=True)
+    ip_address    = Column(String(45), nullable=True)
+    user_agent    = Column(String(500), nullable=True)
+    status        = Column(String(20), nullable=False, default="success")
+    details       = Column(JSON, default=dict)
+    hash          = Column(String(64), nullable=True)
+    previous_hash = Column(String(64), nullable=True)
+    timestamp     = Column(Float, default=time.time, index=True)
+    duration_ms   = Column(Float, nullable=True)
+
+    __table_args__ = (Index("ix_audit_tenant_ts", "tenant_id", "timestamp"),)
+
+
+# ── Conversations ─────────────────────────────────────────────────────────────
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id          = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    session_id  = Column(String(100), unique=True, nullable=False, index=True)
+    user_id     = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    tenant_id   = Column(String(100), nullable=False, default="default")
+    title       = Column(String(500), nullable=True)
+    language    = Column(String(10), default="ar")
+    created_at  = Column(Float, default=time.time)
+    updated_at  = Column(Float, default=time.time, onupdate=time.time)
+    metadata_   = Column("metadata", JSON, default=dict)
+
+    user     = relationship("User", back_populates="conversations")
+    messages = relationship("Message", back_populates="conversation", cascade="all, delete", order_by="Message.created_at")
+
+
+# ── Messages ──────────────────────────────────────────────────────────────────
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id              = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    conversation_id = Column(String(36), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
+    role            = Column(String(20), nullable=False)
+    content         = Column(Text, nullable=False)
+    model           = Column(String(100), nullable=True)
+    provider        = Column(String(50), nullable=True)
+    tokens_used     = Column(Integer, nullable=True)
+    latency_ms      = Column(Float, nullable=True)
+    created_at      = Column(Float, default=time.time)
+    sources         = Column(JSON, default=list)
+
+    conversation = relationship("Conversation", back_populates="messages")
+
+    __table_args__ = (Index("ix_messages_conv_ts", "conversation_id", "created_at"),)
+
+
+# ── Vector Documents ──────────────────────────────────────────────────────────
+
+class VectorDocument(Base):
+    __tablename__ = "vector_documents"
+
+    id          = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    doc_id      = Column(String(200), unique=True, nullable=False, index=True)
+    title       = Column(String(1000), nullable=True)
+    content     = Column(Text, nullable=False)
+    source_url  = Column(String(2000), nullable=True)
+    channel_id  = Column(String(100), nullable=True, index=True)
+    tenant_id   = Column(String(100), nullable=False, default="default", index=True)
+    language    = Column(String(10), default="ar")
+    indexed_at  = Column(Float, default=time.time)
+    metadata_   = Column("metadata", JSON, default=dict)
+    chunk_count = Column(Integer, default=1)
+
+
+# ── Engine & Session Factory ──────────────────────────────────────────────────
+
+_engine = None
+_session_factory = None
+
+
+def get_engine():
+    global _engine
+    if _engine is None:
+        _engine = create_async_engine(
+            DATABASE_URL,
+            pool_size=10,
+            max_overflow=20,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+            echo=os.getenv("DB_ECHO", "false").lower() == "true",
+        )
+    return _engine
+
+
+def get_session_factory() -> async_sessionmaker:
+    global _session_factory
+    if _session_factory is None:
+        _session_factory = async_sessionmaker(
+            bind=get_engine(),
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autoflush=False,
+            autocommit=False,
+        )
+    return _session_factory
+
+
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    factory = get_session_factory()
+    async with factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+async def init_db() -> None:
+    """إنشاء جميع الجداول (للتطوير — استخدم Alembic في الإنتاج)."""
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+async def close_db() -> None:
+    global _engine
+    if _engine:
+        await _engine.dispose()
+        _engine = None
+---security/__init__.py
+---security/api_keys/__init__.py
+---security/api_keys/api_key_manager.py
+"""API Key Manager — hashed key storage, validation, rotation, and revocation."""
+from __future__ import annotations
+
+import hashlib
+import logging
+import os
+import secrets
+import time
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+API_KEY_PREFIX = "hj_"
+API_KEY_LENGTH = 48
+KEY_HASH_ALGO = "sha3_256"
+
+
+@dataclass
+class APIKey:
+    key_id: str
+    name: str
+    tenant_id: str
+    user_id: str
+    scopes: List[str]
+    created_at: float = field(default_factory=time.time)
+    expires_at: Optional[float] = None
+    last_used_at: Optional[float] = None
+    is_active: bool = True
+    hash: str = ""
+
+
+class APIKeyManager:
+    """Manages API key lifecycle with hashed storage."""
+
+    def __init__(self, db: Any, redis_client: Any) -> None:
+        self.db = db
+        self.redis = redis_client
+
+    def generate_key(
+        self,
+        tenant_id: str,
+        user_id: str,
+        name: str,
+        scopes: List[str],
+        expires_in_days: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        raw_key = API_KEY_PREFIX + secrets.token_urlsafe(API_KEY_LENGTH)
+        key_hash = self._hash_key(raw_key)
+        key_id = secrets.token_hex(16)
+
+        expires_at = None
+        if expires_in_days:
+            expires_at = time.time() + expires_in_days * 86400
+
+        api_key = APIKey(
+            key_id=key_id,
+            name=name,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            scopes=scopes,
+            expires_at=expires_at,
+            hash=key_hash,
+        )
+        self._persist(api_key)
+
+        return {
+            "key_id": key_id,
+            "key": raw_key,
+            "name": name,
+            "scopes": scopes,
+            "expires_at": expires_at,
+            "warning": "Store this key securely — it will not be shown again",
+        }
+
+    def validate_key(self, raw_key: str) -> Optional[APIKey]:
+        if not raw_key.startswith(API_KEY_PREFIX):
+            return None
+
+        cache_key = f"apikey:validated:{self._hash_key(raw_key)}"
+        cached = self.redis.get(cache_key)
+        if cached:
+            import json
+            return APIKey(**json.loads(cached))
+
+        key_hash = self._hash_key(raw_key)
+        api_key = self._load_by_hash(key_hash)
+
+        if not api_key or not api_key.is_active:
+            return None
+
+        if api_key.expires_at and time.time() > api_key.expires_at:
+            return None
+
+        self.redis.setex(cache_key, 300, self._serialize(api_key))
+        self._update_last_used(api_key.key_id)
+        return api_key
+
+    def revoke_key(self, key_id: str, tenant_id: str) -> bool:
+        result = self.db.execute(
+            "UPDATE api_keys SET is_active = FALSE WHERE key_id = %s AND tenant_id = %s",
+            (key_id, tenant_id),
+        )
+        self.redis.delete(f"apikey:id:{key_id}")
+        return result.rowcount > 0
+
+    def _hash_key(self, raw_key: str) -> str:
+        return hashlib.new(KEY_HASH_ALGO, raw_key.encode()).hexdigest()
+
+    def _persist(self, api_key: APIKey) -> None:
+        self.db.execute(
+            """INSERT INTO api_keys
+               (key_id, name, tenant_id, user_id, scopes, hash,
+                created_at, expires_at, is_active)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (
+                api_key.key_id, api_key.name, api_key.tenant_id,
+                api_key.user_id, api_key.scopes, api_key.hash,
+                api_key.created_at, api_key.expires_at, api_key.is_active,
+            ),
+        )
+
+    def _load_by_hash(self, key_hash: str) -> Optional[APIKey]:
+        row = self.db.fetchone(
+            "SELECT * FROM api_keys WHERE hash = %s", (key_hash,)
+        )
+        if row:
+            return APIKey(**row)
+        return None
+
+    def _serialize(self, api_key: APIKey) -> str:
+        import json
+        return json.dumps(
+            {k: v for k, v in api_key.__dict__.items() if k != "hash"}
+        )
+
+    def _update_last_used(self, key_id: str) -> None:
+        self.redis.setex(f"apikey:last_used:{key_id}", 3600, str(time.time()))
+---security/audit/__init__.py
+---security/audit/audit_logger.py
+"""Audit Logger — tamper-evident structured audit trail for all API operations."""
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import time
+import uuid
+from enum import Enum
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class AuditAction(str, Enum):
+    LOGIN_SUCCESS     = "login:success"
+    LOGIN_FAILED      = "login:failed"
+    LOGOUT            = "logout"
+    APIKEY_CREATED    = "apikey:created"
+    APIKEY_VALIDATED  = "apikey:validated"
+    APIKEY_REVOKED    = "apikey:revoked"
+    PERMISSION_DENIED = "permission:denied"
+    RATE_LIMITED      = "rate:limited"
+    MODEL_INFERENCE   = "model:inference"
+    MODEL_TRAINING    = "model:training"
+    POLICY_UPDATE     = "policy:update"
+    SYSTEM_HEALTH     = "system:health"
+    CONFIG_CHANGE     = "config:change"
+
+
+@dataclass
+class AuditEvent:
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: float = field(default_factory=time.time)
+    tenant_id: str = ""
+    user_id: str = ""
+    action: str = ""
+    resource_type: str = ""
+    resource_id: str = ""
+    ip_address: str = ""
+    user_agent: str = ""
+    request_id: str = ""
+    status: str = "success"
+    error: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    previous_hash: str = ""
+    hash: str = ""
+
+    def compute_hash(self) -> str:
+        payload = json.dumps(
+            {k: v for k, v in asdict(self).items() if k != "hash"},
+            sort_keys=True,
+            default=str,
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+
+class _InMemoryAuditStore:
+    """Fallback store used only when no database adapter is configured.
+
+    It preserves the audit API during local startup/tests; production should
+    provide a durable adapter through the application composition root.
+    """
+
+    def __init__(self) -> None:
+        self.rows: List[Dict[str, Any]] = []
+
+    def execute(self, _query: str, params: tuple) -> None:
+        columns = [
+            "event_id", "timestamp", "tenant_id", "user_id", "action",
+            "resource_type", "resource_id", "ip_address", "user_agent",
+            "request_id", "status", "error", "metadata", "hash", "previous_hash",
+        ]
+        self.rows.append(dict(zip(columns, params)))
+
+    def fetchone(self, _query: str) -> Optional[Dict[str, Any]]:
+        return self.rows[-1] if self.rows else None
+
+    def fetchall(self, _query: str, _params: tuple = ()) -> List[Dict[str, Any]]:
+        return list(self.rows)
+
+
+_AUDIT_LOGGER: Optional["AuditLogger"] = None
+
+
+class AuditLogger:
+    """Writes tamper-evident audit logs to persistent storage."""
+
+    def __init__(self, db: Any, redis_client: Any) -> None:
+        self.db = db
+        self.redis = redis_client
+        self._last_hash = self._get_last_hash()
+
+    def log(
+        self,
+        action: AuditAction,
+        resource_type: str,
+        resource_id: str,
+        tenant_id: str,
+        user_id: str,
+        ip_address: str = "",
+        user_agent: str = "",
+        request_id: str = "",
+        status: str = "success",
+        error: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> AuditEvent:
+        event = AuditEvent(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            request_id=request_id,
+            status=status,
+            error=error,
+            metadata=metadata or {},
+            previous_hash=self._last_hash,
+        )
+        event.hash = event.compute_hash()
+        self._last_hash = event.hash
+
+        self._persist(event)
+        logger.info(
+            "AUDIT action=%s resource=%s/%s user=%s tenant=%s status=%s",
+            action, resource_type, resource_id, user_id, tenant_id, status,
+        )
+        return event
+
+    def _persist(self, event: AuditEvent) -> None:
+        self.db.execute(
+            """INSERT INTO audit_log
+               (event_id, timestamp, tenant_id, user_id, action,
+                resource_type, resource_id, ip_address, user_agent,
+                request_id, status, error, metadata, hash, previous_hash)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (
+                event.event_id, event.timestamp, event.tenant_id, event.user_id,
+                event.action, event.resource_type, event.resource_id,
+                event.ip_address, event.user_agent, event.request_id,
+                event.status, event.error,
+                json.dumps(event.metadata), event.hash, event.previous_hash,
+            ),
+        )
+
+    def _get_last_hash(self) -> str:
+        row = self.db.fetchone(
+            "SELECT hash FROM audit_log ORDER BY timestamp DESC LIMIT 1"
+        )
+        return row["hash"] if row else "genesis"
+
+    def verify_chain(self, limit: int = 1000) -> Dict[str, Any]:
+        rows = self.db.fetchall(
+            "SELECT * FROM audit_log ORDER BY timestamp ASC LIMIT %s", (limit,)
+        )
+        broken_at: List[str] = []
+        for row in rows:
+            event = AuditEvent(**{**row, "hash": "", "metadata": json.loads(row.get("metadata", "{}"))})
+            computed = event.compute_hash()
+            if computed != row["hash"]:
+                broken_at.append(row["event_id"])
+
+        return {
+            "verified": len(broken_at) == 0,
+            "total_events": len(rows),
+            "broken_events": broken_at,
+        }
+
+
+def get_audit_logger(
+    db: Any = None,
+    redis_client: Any = None,
+) -> AuditLogger:
+    """Return the process audit logger, creating an explicit local fallback.
+
+    A production composition root should pass durable ``db`` and ``redis``
+    adapters.  The fallback is intentionally observable and process-local; it
+    is not presented as durable audit storage.
+    """
+    global _AUDIT_LOGGER
+    if _AUDIT_LOGGER is None:
+        if db is None:
+            logger.warning("No durable audit DB configured; using process-local audit store")
+            db = _InMemoryAuditStore()
+        _AUDIT_LOGGER = AuditLogger(db=db, redis_client=redis_client)
+    return _AUDIT_LOGGER
+---security/auth/__init__.py
+---security/auth/api_key_manager.py
+import hashlib
+import secrets
+import time
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
+
+@dataclass
+class APIKey:
+    key_id: str
+    hashed_key: str
+    user_id: str
+    tenant_id: str
+    roles: List[str]
+    created_at: float
+    expires_at: Optional[float] = None
+    last_used_at: Optional[float] = None
+    is_active: bool = True
+    metadata: Dict[str, str] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, any]:
+        return {
+            "key_id": self.key_id,
+            "user_id": self.user_id,
+            "tenant_id": self.tenant_id,
+            "roles": self.roles,
+            "created_at": self.created_at,
+            "expires_at": self.expires_at,
+            "last_used_at": self.last_used_at,
+            "is_active": self.is_active,
+            "metadata": self.metadata,
+        }
+
+class APIKeyManager:
+    """Manages API key generation, storage, validation, and revocation."""
+
+    def __init__(self):
+        # In a real application, this would be a persistent store (database)
+        self._api_keys: Dict[str, APIKey] = {}
+
+    def _hash_key(self, key: str) -> str:
+        return hashlib.sha256(key.encode()).hexdigest()
+
+    def generate_key(self, user_id: str, tenant_id: str, roles: List[str], expires_in_seconds: Optional[int] = None, metadata: Optional[Dict[str, str]] = None) -> Tuple[str, APIKey]:
+        raw_key = secrets.token_urlsafe(32)  # Generate a random URL-safe string
+        hashed_key = self._hash_key(raw_key)
+        key_id = secrets.token_hex(16) # Unique ID for the key
+        created_at = time.time()
+        expires_at = created_at + expires_in_seconds if expires_in_seconds else None
+
+        api_key = APIKey(
+            key_id=key_id,
+            hashed_key=hashed_key,
+            user_id=user_id,
+            tenant_id=tenant_id,
+            roles=roles,
+            created_at=created_at,
+            expires_at=expires_at,
+            metadata=metadata or {},
+        )
+        self._api_keys[key_id] = api_key
+        return raw_key, api_key
+
+    def validate_key(self, raw_key: str) -> Optional[APIKey]:
+        hashed_key = self._hash_key(raw_key)
+        for key_id, api_key in self._api_keys.items():
+            if api_key.hashed_key == hashed_key and api_key.is_active:
+                if api_key.expires_at and api_key.expires_at < time.time():
+                    api_key.is_active = False # Mark as expired
+                    return None
+                api_key.last_used_at = time.time()
+                return api_key
+        return None
+
+    def revoke_key(self, key_id: str) -> bool:
+        if key_id in self._api_keys:
+            self._api_keys[key_id].is_active = False
+            return True
+        return False
+
+    def get_key_by_id(self, key_id: str) -> Optional[APIKey]:
+        return self._api_keys.get(key_id)
+
+    def get_all_keys_for_user(self, user_id: str) -> List[APIKey]:
+        return [key for key in self._api_keys.values() if key.user_id == user_id]
+
+# Singleton instance
+_api_key_manager: Optional[APIKeyManager] = None
+
+def get_api_key_manager() -> APIKeyManager:
+    global _api_key_manager
+    if _api_key_manager is None:
+        _api_key_manager = APIKeyManager()
+    return _api_key_manager
+---security/auth/jwt_auth.py
+"""JWT Authentication — token issuance, validation, and refresh."""
+from __future__ import annotations
+
+import logging
+import os
+import time
+import uuid
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
+import jwt
+
+from security.auth.revoked_tokens import get_revoked_token_store
+
+logger = logging.getLogger(__name__)
+
+JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_TTL = 3600
+REFRESH_TOKEN_TTL = 86400 * 30
+
+
+@dataclass
+class TokenClaims:
+    sub: str
+    tenant_id: str
+    roles: List[str]
+    jti: str
+    iat: float
+    exp: float
+    type: str = "access"
+
+
+class JWTAuthenticator:
+    """Issues and validates JWT tokens."""
+
+    def __init__(
+        self,
+        secret: str = JWT_SECRET,
+        algorithm: str = JWT_ALGORITHM,
+        revoked_store: Optional[Any] = None,
+    ) -> None:
+        self.secret = secret
+        self.algorithm = algorithm
+        self.revoked_store = revoked_store or get_revoked_token_store()
+
+    def issue_token(
+        self,
+        user_id: str,
+        tenant_id: str,
+        roles: List[str],
+        token_type: str = "access",
+    ) -> str:
+        now = time.time()
+        ttl = ACCESS_TOKEN_TTL if token_type == "access" else REFRESH_TOKEN_TTL
+        payload: Dict[str, Any] = {
+            "sub": user_id,
+            "tenant_id": tenant_id,
+            "roles": roles,
+            "jti": str(uuid.uuid4()),
+            "iat": now,
+            "exp": now + ttl,
+            "type": token_type,
+        }
+        return jwt.encode(payload, self.secret, algorithm=self.algorithm)
+
+    def validate_token(self, token: str) -> TokenClaims:
+        try:
+            payload = jwt.decode(
+                token,
+                self.secret,
+                algorithms=[self.algorithm],
+                options={"verify_exp": True},
+            )
+        except jwt.ExpiredSignatureError:
+            raise PermissionError("Token expired")
+        except jwt.InvalidTokenError as exc:
+            raise PermissionError(f"Invalid token: {exc}")
+
+        if self.revoked_store and self.revoked_store.is_revoked(payload["jti"]):
+            raise PermissionError("Token revoked")
+
+        return TokenClaims(
+            sub=payload["sub"],
+            tenant_id=payload["tenant_id"],
+            roles=payload.get("roles", []),
+            jti=payload["jti"],
+            iat=payload["iat"],
+            exp=payload["exp"],
+            type=payload.get("type", "access"),
+        )
+
+    def revoke_token(self, token: str) -> None:
+        try:
+            payload = jwt.decode(
+                token, self.secret, algorithms=[self.algorithm],
+                options={"verify_exp": False},
+            )
+            if self.revoked_store:
+                ttl = max(0, int(payload["exp"] - time.time()))
+                self.revoked_store.revoke(payload["jti"], ttl)
+        except jwt.InvalidTokenError:
+            pass
+
+    def refresh_access_token(self, refresh_token: str) -> str:
+        claims = self.validate_token(refresh_token)
+        if claims.type != "refresh":
+            raise PermissionError("Not a refresh token")
+        return self.issue_token(claims.sub, claims.tenant_id, claims.roles)
+---security/auth/revoked_tokens.py
+import time
+from typing import Dict
+
+class RevokedTokenStore:
+    """A simple in-memory store for revoked JWT tokens."""
+    def __init__(self):
+        self._revoked_tokens: Dict[str, float] = {}
+
+    def revoke(self, jti: str, expires_at: float):
+        """Revokes a token by its JTI (JWT ID) until its expiration time."""
+        self._revoked_tokens[jti] = expires_at
+
+    def is_revoked(self, jti: str) -> bool:
+        """Checks if a token is revoked and not yet expired."""
+        expires_at = self._revoked_tokens.get(jti)
+        if expires_at and expires_at > time.time():
+            return True
+        # Clean up expired revoked tokens
+        if expires_at and expires_at <= time.time():
+            del self._revoked_tokens[jti]
+        return False
+
+    def cleanup_expired_tokens(self):
+        """Removes all expired revoked tokens from the store."""
+        current_time = time.time()
+        self._revoked_tokens = {jti: exp for jti, exp in self._revoked_tokens.items() if exp > current_time}
+
+# Singleton instance
+_revoked_store: RevokedTokenStore | None = None
+
+def get_revoked_token_store() -> RevokedTokenStore:
+    global _revoked_store
+    if _revoked_store is None:
+        _revoked_store = RevokedTokenStore()
+    return _revoked_store
+---security/config/__init__.py
+"""Security config & secrets."""
+---security/config/secret_manager.py
+"""Secret Manager — Phase 7 — إدارة آمنة للأسرار والمتغيرات."""
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class SecretManager:
+    """
+    إدارة الأسرار والإعدادات مع:
+    - تحميل من environment variables
+    - validation للإعدادات المطلوبة
+    - masking عند الـ logging
+    - secure defaults
+    - secret rotation hooks
+    - audit trail
+    """
+
+    # الأسرار المطلوبة في production
+    REQUIRED_SECRETS = [
+        "JWT_SECRET",
+        "DATABASE_URL",
+        "SESSION_SECRET",
+    ]
+
+    # الأسرار التي يجب إخفاؤها في الـ logs
+    SENSITIVE_KEYS = {
+        "JWT_SECRET", "DATABASE_URL", "API_KEY", "SESSION_SECRET",
+        "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "REDIS_PASSWORD",
+        "SMTP_PASSWORD", "S3_SECRET_KEY",
+    }
+
+    def __init__(self, env_file: Optional[str] = None) -> None:
+        self._secrets: Dict[str, str] = {}
+        self._rotation_callbacks: Dict[str, Any] = {}
+        self._access_log: List[Dict] = []
+
+        if env_file:
+            self._load_env_file(env_file)
+
+        self._load_from_environment()
+
+    def _load_from_environment(self) -> None:
+        for key, value in os.environ.items():
+            self._secrets[key] = value
+
+    def _load_env_file(self, path: str) -> None:
+        p = Path(path)
+        if not p.exists():
+            logger.warning("ملف الإعدادات غير موجود: %s", path)
+            return
+        with p.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    self._secrets[key] = value
+                    os.environ.setdefault(key, value)
+        logger.info("تُحمّلت الإعدادات من: %s", path)
+
+    def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        value = self._secrets.get(key) or os.environ.get(key, default)
+        self._audit_access(key, found=value is not None)
+        return value
+
+    def require(self, key: str) -> str:
+        value = self.get(key)
+        if not value:
+            raise ValueError(
+                f"المتغير المطلوب '{key}' غير موجود في البيئة"
+            )
+        return value
+
+    def _audit_access(self, key: str, found: bool) -> None:
+        """تسجيل الوصول للأسرار (بدون القيمة)."""
+        import time
+        self._access_log.append({
+            "key": key,
+            "found": found,
+            "sensitive": key in self.SENSITIVE_KEYS,
+            "timestamp": time.time(),
+        })
+        if len(self._access_log) > 1000:
+            self._access_log = self._access_log[-500:]
+
+    def validate_required(self, env: str = "production") -> List[str]:
+        """يتحقق من وجود الأسرار المطلوبة — يُعيد قائمة المفقودة."""
+        if env != "production":
+            return []
+        missing = [k for k in self.REQUIRED_SECRETS if not self.get(k)]
+        if missing:
+            logger.error("أسرار مفقودة في production: %s", missing)
+        return missing
+
+    def mask(self, key: str, value: str) -> str:
+        """يُخفي قيمة السر لأغراض الـ logging."""
+        if key in self.SENSITIVE_KEYS and value:
+            return value[:4] + "****" + value[-2:] if len(value) > 6 else "****"
+        return value
+
+    def register_rotation_callback(self, key: str, callback: Any) -> None:
+        """تسجيل callback للتشغيل عند تدوير السر."""
+        self._rotation_callbacks[key] = callback
+
+    def rotate(self, key: str, new_value: str) -> None:
+        """تدوير سر — يُشغّل الـ callback إذا كان مسجّلاً."""
+        old_value = self._secrets.get(key)
+        self._secrets[key] = new_value
+        os.environ[key] = new_value
+        cb = self._rotation_callbacks.get(key)
+        if cb:
+            try:
+                cb(old_value, new_value)
+            except Exception as exc:
+                logger.error("فشل rotation callback لـ '%s': %s", key, exc)
+        logger.info("تم تدوير السر: %s", key)
+
+    def summary(self) -> Dict:
+        """ملخص غير حساس لحالة الأسرار."""
+        present = {k: bool(v) for k, v in self._secrets.items() if k.isupper()}
+        return {
+            "total_secrets": len(present),
+            "required_present": [k for k in self.REQUIRED_SECRETS if self.get(k)],
+            "required_missing": [k for k in self.REQUIRED_SECRETS if not self.get(k)],
+        }
+
+
+# Singleton
+_manager: Optional[SecretManager] = None
+
+
+def get_secret_manager(env_file: Optional[str] = None) -> SecretManager:
+    global _manager
+    if _manager is None:
+        _manager = SecretManager(env_file=env_file)
+    return _manager
+
+
+def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
+    return get_secret_manager().get(key, default)
+---security/encryption/__init__.py
+---security/encryption/encryptor.py
+"""Encryptor — AES-256-GCM encryption for sensitive data at rest."""
+from __future__ import annotations
+
+import base64
+import os
+from typing import Tuple
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
+
+ENCRYPTION_KEY_ENV = "ENCRYPTION_KEY"
+KEY_SIZE = 32
+NONCE_SIZE = 12
+SALT_SIZE = 16
+
+
+class DataEncryptor:
+    """AES-256-GCM encryption for sensitive fields."""
+
+    def __init__(self, key: Optional[bytes] = None) -> None:
+        if key:
+            self._key = key
+        else:
+            raw = os.environ.get(ENCRYPTION_KEY_ENV, "")
+            if not raw:
+                raise RuntimeError(f"{ENCRYPTION_KEY_ENV} not set")
+            self._key = self._derive_key(raw.encode())
+
+    def encrypt(self, plaintext: str) -> str:
+        nonce = os.urandom(NONCE_SIZE)
+        aesgcm = AESGCM(self._key)
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None)
+        combined = nonce + ciphertext
+        return base64.urlsafe_b64encode(combined).decode()
+
+    def decrypt(self, encrypted: str) -> str:
+        combined = base64.urlsafe_b64decode(encrypted.encode())
+        nonce = combined[:NONCE_SIZE]
+        ciphertext = combined[NONCE_SIZE:]
+        aesgcm = AESGCM(self._key)
+        plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+        return plaintext.decode()
+
+    def _derive_key(self, raw: bytes) -> bytes:
+        salt = hashlib.sha256(raw).digest()[:SALT_SIZE]
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=KEY_SIZE,
+            salt=salt,
+            iterations=480000,
+            backend=default_backend(),
+        )
+        return kdf.derive(raw)
+
+
+import hashlib
+from typing import Optional
+---security/firewall/__init__.py
+---security/firewall/ip_filter.py
+"""IP Filter — IP allowlist/blocklist with CIDR support and dynamic updates."""
+from __future__ import annotations
+
+import ipaddress
+import logging
+import time
+from typing import Any, List, Optional, Set, Tuple, Union
+
+import redis
+
+logger = logging.getLogger(__name__)
+
+IPNetwork = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
+IPAddress = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
+
+PRIVATE_RANGES: List[IPNetwork] = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("::1/128"),
+]
+
+
+class IPFilter:
+    """Enforces IP-based access control with Redis-backed dynamic lists."""
+
+    BLOCKLIST_KEY = "security:ip:blocklist"
+    ALLOWLIST_KEY = "security:ip:allowlist"
+
+    def __init__(
+        self,
+        redis_client: redis.Redis,
+        mode: str = "blocklist",
+        allow_private: bool = True,
+    ) -> None:
+        self.redis = redis_client
+        self.mode = mode
+        self.allow_private = allow_private
+        self._static_blocklist: List[IPNetwork] = []
+        self._static_allowlist: List[IPNetwork] = []
+
+    def is_allowed(self, ip_str: str) -> Tuple[bool, str]:
+        try:
+            ip = ipaddress.ip_address(ip_str)
+        except ValueError:
+            return False, "invalid_ip"
+
+        if self.allow_private and any(ip in net for net in PRIVATE_RANGES):
+            return True, "private_network"
+
+        if self._is_blocked(ip):
+            return False, "blocklisted"
+
+        if self.mode == "allowlist" and not self._is_allowed(ip):
+            return False, "not_allowlisted"
+
+        return True, "allowed"
+
+    def block_ip(self, ip: str, reason: str = "", ttl: Optional[int] = None) -> None:
+        key = f"{self.BLOCKLIST_KEY}:{ip}"
+        value = f"{reason}:{time.time()}"
+        if ttl:
+            self.redis.setex(key, ttl, value)
+        else:
+            self.redis.set(key, value)
+        logger.warning("Blocked IP %s: %s", ip, reason)
+
+    def unblock_ip(self, ip: str) -> None:
+        self.redis.delete(f"{self.BLOCKLIST_KEY}:{ip}")
+        logger.info("Unblocked IP %s", ip)
+
+    def add_to_allowlist(self, cidr: str) -> None:
+        self.redis.sadd(self.ALLOWLIST_KEY, cidr)
+        try:
+            self._static_allowlist.append(ipaddress.ip_network(cidr, strict=False))
+        except ValueError as exc:
+            logger.warning("Invalid CIDR %s: %s", cidr, exc)
+
+    def _is_blocked(self, ip: IPAddress) -> bool:
+        if self.redis.exists(f"{self.BLOCKLIST_KEY}:{ip}"):
+            return True
+        return any(ip in net for net in self._static_blocklist)
+
+    def _is_allowed(self, ip: IPAddress) -> bool:
+        for cidr in self.redis.smembers(self.ALLOWLIST_KEY):
+            try:
+                net = ipaddress.ip_network(cidr.decode(), strict=False)
+                if ip in net:
+                    return True
+            except ValueError:
+                pass
+        return any(ip in net for net in self._static_allowlist)
+---security/middleware/__init__.py
+"""Security middleware."""
+from security.middleware.auth_middleware import AuthMiddleware
+
+__all__ = ["AuthMiddleware"]
+---security/middleware/auth_middleware.py
+"""Production Auth Middleware — JWT + API Key + RBAC + Rate Limiting.
+
+يحمي جميع routes تلقائياً ما عدا القائمة البيضاء.
+"""
+from __future__ import annotations
+
+import logging
+import time
+from typing import Callable, Optional, Tuple
+
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from security.audit.audit_logger import AuditAction, get_audit_logger
+from security.rbac.rbac import ROUTE_PERMISSIONS, has_permission
+
+logger = logging.getLogger(__name__)
+
+# ── المسارات المسموحة بدون مصادقة ──────────────────────────────────────────
+PUBLIC_PATHS: frozenset[str] = frozenset({
+    "/health",
+    "/ping",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    "/api/v1/health",
+    "/api/v1/ping",
+    "/api/v1/auth/login",
+    "/api/v1/auth/register",
+    "/api/v1/auth/refresh",
+    "/ws/chat",
+})
+
+# ── استخراج التوكن من الطلب ────────────────────────────────────────────────
+
+def _extract_token(request: Request) -> Tuple[Optional[str], str]:
+    """Returns (token, token_type): token_type is 'bearer' or 'apikey'."""
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:].strip(), "bearer"
+    api_key = (
+        request.headers.get("X-API-Key")
+        or request.headers.get("x-api-key")
+        or request.query_params.get("api_key")
+    )
+    if api_key:
+        return api_key, "apikey"
+    return None, "none"
+
+
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """Middleware شامل: JWT/APIKey auth + RBAC + Rate Limiting + Audit."""
+
+    def __init__(self, app, enable_rate_limiting: bool = True) -> None:
+        super().__init__(app)
+        self._rate_limiting = enable_rate_limiting
+        self._jwt_auth = None
+        self._api_key_manager = None
+        self._rate_limiter = None
+        self._audit = get_audit_logger()
+
+    def _lazy_init(self) -> None:
+        if self._jwt_auth is None:
+            try:
+                from security.auth.jwt_auth import JWTAuthenticator
+                self._jwt_auth = JWTAuthenticator()
+            except Exception as e:
+                logger.warning("JWT auth init failed: %s", e)
+
+        if self._api_key_manager is None:
+            try:
+                from security.auth.api_key_manager import get_api_key_manager
+                self._api_key_manager = get_api_key_manager()
+            except Exception as e:
+                logger.warning("JWT auth init failed: %s", e)
+
+        if self._rate_limiter is None and self._rate_limiting:
+            try:
+                import os
+
+                import redis as redis_lib
+                r = redis_lib.from_url(
+                    os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+                    decode_responses=True,
+                    socket_connect_timeout=2,
+                )
+                r.ping()
+                from security.rate_limit.rate_limiter import RateLimiter
+                self._rate_limiter = RateLimiter(r)
+            except Exception as e:
+                logger.warning("Rate limiter Redis unavailable: %s — skipping", e)
+
+    async def dispatch(self, request: Request, call_next: Callable):
+        self._lazy_init()
+        start = time.monotonic()
+        path = request.url.path
+        method = request.method
+        ip = _get_client_ip(request)
+
+        # ── 1. المسارات العامة ────────────────────────────────────────────
+        if path in PUBLIC_PATHS or method == "OPTIONS":
+            response = await call_next(request)
+            return response
+
+        # ── 2. استخراج التوكن ─────────────────────────────────────────────
+        token, token_type = _extract_token(request)
+        user_id = "anonymous"
+        tenant_id = "default"
+        roles: list[str] = []
+
+        if token:
+            if token_type == "bearer" and self._jwt_auth:
+                try:
+                    claims = self._jwt_auth.validate_token(token)
+                    user_id = claims.sub
+                    tenant_id = claims.tenant_id
+                    roles = claims.roles
+                    request.state.user_id = user_id
+                    request.state.tenant_id = tenant_id
+                    request.state.roles = roles
+                    request.state.claims = claims
+                except PermissionError as e:
+                    self._audit.log(
+                        AuditAction.LOGIN_FAILED, "auth", "jwt_validation", tenant_id, user_id, ip_address=ip,
+                        status="denied", error=str(e),
+                    )
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"error": "unauthorized", "message": str(e)},
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+            elif token_type == "apikey" and self._api_key_manager:
+                api_key = self._api_key_manager.validate_key(token)
+                if not api_key:
+                    self._audit.log(
+                        AuditAction.LOGIN_FAILED, "auth", "api_key_validation", tenant_id, user_id, ip_address=ip,
+                        status="denied", error="API key invalid or expired",
+                    )
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"error": "unauthorized", "message": "API key invalid or expired"},
+                    )
+                user_id = api_key.user_id
+                tenant_id = api_key.tenant_id
+                roles = api_key.roles # Use roles from APIKey object
+                request.state.user_id = user_id
+                request.state.tenant_id = tenant_id
+                request.state.roles = roles
+                request.state.api_key = api_key
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={
+                    "error": "unauthorized",
+                    "message": "يجب تقديم Authorization header أو X-API-Key",
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # ── 3. Rate Limiting ──────────────────────────────────────────────
+        if self._rate_limiter:
+            endpoint_key = "inference" if "/ai/" in path else "default"
+            allowed, meta = self._rate_limiter.check(
+                identifier=user_id, endpoint=endpoint_key, tenant_id=tenant_id
+            )
+            if not allowed:
+                self._audit.log(
+                    AuditAction.RATE_LIMITED, "system", "rate_limiter", tenant_id, user_id, ip_address=ip,
+                    status="denied", metadata=meta
+                )
+                return JSONResponse(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    content={
+                        "error": "rate_limit_exceeded",
+                        "message": "تجاوزت الحد المسموح به من الطلبات",
+                        "retry_after": meta["reset"],
+                        "limit": meta["limit"],
+                    },
+                    headers={
+                        "X-RateLimit-Limit": str(meta["limit"]),
+                        "X-RateLimit-Remaining": str(meta["remaining"]),
+                        "X-RateLimit-Reset": str(meta["reset"]),
+                        "Retry-After": str(meta["reset"] - int(time.time())),
+                    },
+                )
+
+        # ── 4. RBAC Permission Check ───────────────────────────────────────
+        route_key = f"{method}:{path}"
+        base_path = "/" + "/".join(path.split("/")[:5])
+        base_key = f"{method}:{base_path}"
+
+        required_permission = (
+            ROUTE_PERMISSIONS.get(route_key)
+            or ROUTE_PERMISSIONS.get(base_key)
+        )
+
+        if required_permission and not has_permission(roles, required_permission):
+            self._audit.log(
+                AuditAction.PERMISSION_DENIED, "auth", "rbac_check", tenant_id, user_id, ip_address=ip,
+                status="denied", details={"permission": required_permission.value, "path": path}
+            )
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={
+                    "error": "forbidden",
+                    "message": f"لا تملك صلاحية: {required_permission.value}",
+                    "required_permission": required_permission.value,
+                    "your_roles": roles,
+                },
+            )
+
+        # ── 5. تنفيذ الطلب ────────────────────────────────────────────────
+        response = await call_next(request)
+        duration_ms = round((time.monotonic() - start) * 1000, 2)
+
+        response.headers["X-User-ID"] = user_id
+        response.headers["X-Tenant-ID"] = tenant_id
+        response.headers["X-Process-Time-Ms"] = str(duration_ms)
+
+        return response
+---security/middleware/security_middleware.py
+"""Security Middleware — Phase 7 — JWT, RBAC, Rate Limiting, Headers."""
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import logging
+import os
+import time
+from collections import defaultdict
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, Set
+
+logger = logging.getLogger(__name__)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JWT Authentication
+# ──────────────────────────────────────────────────────────────────────────────
+
+_SECRET = os.getenv("JWT_SECRET", "hajeen-change-me-in-production")
+_ALGORITHM = "HS256"
+_TOKEN_TTL = int(os.getenv("JWT_TTL_SECONDS", "3600"))
+
+
+def create_token(
+    user_id: str,
+    roles: List[str],
+    extra: Optional[Dict] = None,
+    ttl: int = _TOKEN_TTL,
+) -> str:
+    """يُنشئ JWT token حقيقي (PyJWT إذا متاح، وإلا HMAC بسيط)."""
+    payload = {
+        "sub": user_id,
+        "roles": roles,
+        "iat": int(time.time()),
+        "exp": int(time.time()) + ttl,
+        **(extra or {}),
+    }
+    try:
+        import jwt
+        return jwt.encode(payload, _SECRET, algorithm=_ALGORITHM)
+    except ImportError:
+        # HMAC fallback
+        import base64
+        header = base64.urlsafe_b64encode(
+            json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
+        ).rstrip(b"=")
+        body = base64.urlsafe_b64encode(
+            json.dumps(payload).encode()
+        ).rstrip(b"=")
+        sig = hmac.new(
+            _SECRET.encode(), f"{header.decode()}.{body.decode()}".encode(),
+            hashlib.sha256,
+        ).digest()
+        sig_b64 = base64.urlsafe_b64encode(sig).rstrip(b"=")
+        return f"{header.decode()}.{body.decode()}.{sig_b64.decode()}"
+
+
+def verify_token(token: str) -> Dict:
+    """يتحقق من صحة الـ token ويُعيد الـ payload."""
+    try:
+        import jwt
+        payload = jwt.decode(token, _SECRET, algorithms=[_ALGORITHM])
+        return payload
+    except ImportError:
+        return _verify_hmac(token)
+    except Exception as exc:
+        raise ValueError(f"Token غير صالح: {exc}") from exc
+
+
+def _verify_hmac(token: str) -> Dict:
+    import base64
+    parts = token.split(".")
+    if len(parts) != 3:
+        raise ValueError("تنسيق Token خاطئ")
+    header, body, sig = parts
+    expected_sig = hmac.new(
+        _SECRET.encode(),
+        f"{header}.{body}".encode(),
+        hashlib.sha256,
+    ).digest()
+    expected_b64 = base64.urlsafe_b64encode(expected_sig).rstrip(b"=").decode()
+    if not hmac.compare_digest(sig, expected_b64):
+        raise ValueError("توقيع Token خاطئ")
+    payload = json.loads(base64.urlsafe_b64decode(body + "=="))
+    if payload.get("exp", 0) < time.time():
+        raise ValueError("Token منتهي الصلاحية")
+    return payload
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# RBAC Authorization
+# ──────────────────────────────────────────────────────────────────────────────
+
+_ROLE_PERMISSIONS: Dict[str, Set[str]] = {
+    "admin": {
+        "read", "write", "delete", "manage_users",
+        "manage_channels", "manage_models", "view_metrics",
+    },
+    "editor": {"read", "write", "manage_channels"},
+    "viewer": {"read", "view_metrics"},
+    "api_client": {"read", "write"},
+}
+
+
+def has_permission(roles: List[str], required: str) -> bool:
+    for role in roles:
+        if required in _ROLE_PERMISSIONS.get(role, set()):
+            return True
+    return False
+
+
+def require_permission(permission: str) -> Callable:
+    """Decorator للتحقق من الصلاحية."""
+    def decorator(fn: Callable) -> Callable:
+        @wraps(fn)
+        def wrapper(*args: Any, token: str, **kwargs: Any) -> Any:
+            payload = verify_token(token)
+            roles = payload.get("roles", [])
+            if not has_permission(roles, permission):
+                raise PermissionError(
+                    f"المستخدم لا يملك صلاحية '{permission}'"
+                )
+            return fn(*args, **kwargs, token=token)
+        return wrapper
+    return decorator
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rate Limiter
+# ──────────────────────────────────────────────────────────────────────────────
+
+class RateLimiter:
+    """
+    Token bucket rate limiter — async-safe.
+
+    max_requests: الحد الأقصى للطلبات
+    window_seconds: نافذة الوقت
+    """
+
+    def __init__(
+        self,
+        max_requests: int = 100,
+        window_seconds: int = 60,
+    ) -> None:
+        self._max = max_requests
+        self._window = window_seconds
+        self._buckets: Dict[str, list] = defaultdict(list)
+
+    def is_allowed(self, key: str) -> bool:
+        """يُعيد True إذا كان الطلب مسموحاً، False إذا تجاوز الحد."""
+        now = time.time()
+        cutoff = now - self._window
+        bucket = self._buckets[key]
+        # إزالة الطلبات القديمة
+        self._buckets[key] = [t for t in bucket if t > cutoff]
+        if len(self._buckets[key]) >= self._max:
+            logger.warning("Rate limit exceeded for key: %s", key[:50])
+            return False
+        self._buckets[key].append(now)
+        return True
+
+    def get_remaining(self, key: str) -> int:
+        now = time.time()
+        cutoff = now - self._window
+        used = len([t for t in self._buckets.get(key, []) if t > cutoff])
+        return max(0, self._max - used)
+
+    def reset(self, key: str) -> None:
+        self._buckets.pop(key, None)
+
+    def cleanup_expired(self) -> int:
+        """إزالة البيانات المنتهية من الذاكرة."""
+        now = time.time()
+        cutoff = now - self._window
+        removed = 0
+        keys_to_delete = []
+        for key, times in self._buckets.items():
+            fresh = [t for t in times if t > cutoff]
+            if not fresh:
+                keys_to_delete.append(key)
+            else:
+                self._buckets[key] = fresh
+            removed += len(times) - len(fresh)
+        for k in keys_to_delete:
+            del self._buckets[k]
+        return removed
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Input Sanitization
+# ──────────────────────────────────────────────────────────────────────────────
+
+_DANGEROUS_PATTERNS = [
+    "<script", "javascript:", "data:", "onerror=",
+    "onload=", "onclick=", "eval(", "document.cookie",
+    "../", "..\\", "/etc/passwd", "cmd.exe",
+]
+
+
+def sanitize_input(value: str, max_length: int = 10_000) -> str:
+    """تنظيف المدخلات من الأنماط الخطرة."""
+    if not isinstance(value, str):
+        return str(value)[:max_length]
+    value = value[:max_length]
+    lower = value.lower()
+    for pattern in _DANGEROUS_PATTERNS:
+        if pattern in lower:
+            logger.warning("خطر محتمل في المدخلات: %s", pattern)
+            value = value.replace(pattern, "")
+    return value.strip()
+
+
+def validate_api_key(api_key: str, valid_keys: Set[str]) -> bool:
+    """التحقق من API key باستخدام constant-time comparison."""
+    for valid in valid_keys:
+        if hmac.compare_digest(
+            hashlib.sha256(api_key.encode()).hexdigest(),
+            hashlib.sha256(valid.encode()).hexdigest(),
+        ):
+            return True
+    return False
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Secure Headers
+# ──────────────────────────────────────────────────────────────────────────────
+
+SECURE_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Content-Security-Policy": "default-src 'self'",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    "Cache-Control": "no-store",
+}
+
+
+---security/permissions/__init__.py
+---security/permissions/rbac.py
+"""RBAC — Role-Based Access Control with hierarchical permissions."""
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
+logger = logging.getLogger(__name__)
+
+
+class Permission(str, Enum):
+    INFERENCE_READ = "inference:read"
+    INFERENCE_WRITE = "inference:write"
+    TRAINING_READ = "training:read"
+    TRAINING_WRITE = "training:write"
+    TRAINING_ADMIN = "training:admin"
+    MODEL_READ = "model:read"
+    MODEL_WRITE = "model:write"
+    MODEL_ADMIN = "model:admin"
+    DATA_READ = "data:read"
+    DATA_WRITE = "data:write"
+    DATA_ADMIN = "data:admin"
+    USER_READ = "user:read"
+    USER_WRITE = "user:write"
+    USER_ADMIN = "user:admin"
+    TENANT_ADMIN = "tenant:admin"
+    SYSTEM_ADMIN = "system:admin"
+    API_KEY_READ = "apikey:read"
+    API_KEY_WRITE = "apikey:write"
+    AUDIT_READ = "audit:read"
+
+
+ROLE_PERMISSIONS: Dict[str, Set[Permission]] = {
+    "viewer": {
+        Permission.INFERENCE_READ,
+        Permission.MODEL_READ,
+        Permission.DATA_READ,
+    },
+    "user": {
+        Permission.INFERENCE_READ,
+        Permission.INFERENCE_WRITE,
+        Permission.MODEL_READ,
+        Permission.DATA_READ,
+        Permission.API_KEY_READ,
+        Permission.API_KEY_WRITE,
+    },
+    "developer": {
+        Permission.INFERENCE_READ,
+        Permission.INFERENCE_WRITE,
+        Permission.MODEL_READ,
+        Permission.MODEL_WRITE,
+        Permission.DATA_READ,
+        Permission.DATA_WRITE,
+        Permission.TRAINING_READ,
+        Permission.API_KEY_READ,
+        Permission.API_KEY_WRITE,
+    },
+    "admin": {
+        Permission.INFERENCE_READ,
+        Permission.INFERENCE_WRITE,
+        Permission.MODEL_READ,
+        Permission.MODEL_WRITE,
+        Permission.MODEL_ADMIN,
+        Permission.DATA_READ,
+        Permission.DATA_WRITE,
+        Permission.DATA_ADMIN,
+        Permission.TRAINING_READ,
+        Permission.TRAINING_WRITE,
+        Permission.USER_READ,
+        Permission.USER_WRITE,
+        Permission.API_KEY_READ,
+        Permission.API_KEY_WRITE,
+        Permission.AUDIT_READ,
+        Permission.TENANT_ADMIN,
+    },
+    "superadmin": {p for p in Permission},
+}
+
+
+@dataclass
+class RBACContext:
+    user_id: str
+    tenant_id: str
+    roles: List[str]
+    _permissions: Set[Permission] = field(init=False, default_factory=set)
+
+    def __post_init__(self) -> None:
+        for role in self.roles:
+            self._permissions.update(ROLE_PERMISSIONS.get(role, set()))
+
+    def has_permission(self, permission: Permission) -> bool:
+        return permission in self._permissions
+
+    def require_permission(self, permission: Permission) -> None:
+        if not self.has_permission(permission):
+            logger.warning(
+                "Permission denied: user=%s tenant=%s required=%s roles=%s",
+                self.user_id, self.tenant_id, permission, self.roles,
+            )
+            raise PermissionError(
+                f"Permission '{permission.value}' required — your roles: {self.roles}"
+            )
+
+    def get_permissions(self) -> List[str]:
+        return [p.value for p in self._permissions]
+---security/rate_limit/__init__.py
+---security/rate_limit/rate_limiter.py
+"""Rate Limiter — sliding window rate limiting using Redis."""
+from __future__ import annotations
+
+import hashlib
+import logging
+import time
+from dataclasses import dataclass
+from typing import Dict, Optional, Tuple
+
+import redis
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RateLimitConfig:
+    requests: int
+    window_seconds: int
+    burst: int = 0
+
+
+RATE_LIMITS: Dict[str, RateLimitConfig] = {
+    "default": RateLimitConfig(requests=100, window_seconds=60),
+    "inference": RateLimitConfig(requests=20, window_seconds=60, burst=5),
+    "training": RateLimitConfig(requests=5, window_seconds=3600),
+    "embedding": RateLimitConfig(requests=200, window_seconds=60, burst=50),
+    "admin": RateLimitConfig(requests=1000, window_seconds=60),
+}
+
+
+class RateLimiter:
+    """Sliding window rate limiter backed by Redis."""
+
+    SCRIPT = """
+    local key = KEYS[1]
+    local window = tonumber(ARGV[1])
+    local limit = tonumber(ARGV[2])
+    local now = tonumber(ARGV[3])
+    local cutoff = now - window * 1000
+
+    redis.call('ZREMRANGEBYSCORE', key, '-inf', cutoff)
+    local count = redis.call('ZCARD', key)
+
+    if count < limit then
+        redis.call('ZADD', key, now, now .. ':' .. math.random(1, 1000000))
+        redis.call('PEXPIRE', key, window * 1000)
+        return {1, count + 1, limit}
+    else
+        return {0, count, limit}
+    end
+    """
+
+    def __init__(self, redis_client: redis.Redis) -> None:
+        self.redis = redis_client
+        self._script = redis_client.register_script(self.SCRIPT)
+
+    def check(
+        self,
+        identifier: str,
+        endpoint: str = "default",
+        tenant_id: Optional[str] = None,
+    ) -> Tuple[bool, Dict[str, int]]:
+        config = RATE_LIMITS.get(endpoint, RATE_LIMITS["default"])
+        limit = config.requests + config.burst
+
+        key_parts = [identifier, endpoint]
+        if tenant_id:
+            key_parts.append(tenant_id)
+        key = "rl:" + hashlib.sha256(":".join(key_parts).encode()).hexdigest()[:16]
+
+        now_ms = int(time.time() * 1000)
+        allowed, current, max_req = self._script(
+            keys=[key],
+            args=[config.window_seconds, limit, now_ms],
+        )
+
+        reset_at = int(time.time()) + config.window_seconds
+        return bool(allowed), {
+            "limit": max_req,
+            "remaining": max(0, max_req - current),
+            "reset": reset_at,
+            "current": current,
+        }
+---security/rbac/rbac.py
+"""RBAC — Role-Based Access Control (Production-grade).
+
+Roles hierarchy:
+    superadmin > admin > developer > user > readonly > guest
+
+Permissions are additive — a role inherits all permissions of lower roles.
+"""
+from __future__ import annotations
+
+from enum import Enum
+from functools import lru_cache
+from typing import Dict, FrozenSet, List, Optional, Set
+
+
+class Role(str, Enum):
+    SUPERADMIN = "superadmin"
+    ADMIN      = "admin"
+    DEVELOPER  = "developer"
+    USER       = "user"
+    READONLY   = "readonly"
+    GUEST      = "guest"
+
+
+class Permission(str, Enum):
+    # AI Inference
+    CHAT              = "chat"
+    CHAT_STREAM       = "chat:stream"
+    COMPLETION        = "completion"
+    EMBEDDINGS        = "embeddings"
+    RAG_QUERY         = "rag:query"
+    MODELS_READ       = "models:read"
+    EVALUATE          = "evaluate"
+
+    # Data & Channels
+    CHANNELS_READ     = "channels:read"
+    CHANNELS_WRITE    = "channels:write"
+    CHANNELS_DELETE   = "channels:delete"
+    SEARCH            = "search"
+    INDEX_WRITE       = "index:write"
+
+    # Tasks & Jobs
+    TASKS_READ        = "tasks:read"
+    TASKS_WRITE       = "tasks:write"
+    TASKS_DELETE      = "tasks:delete"
+    JOBS_READ         = "jobs:read"
+    JOBS_MANAGE       = "jobs:manage"
+
+    # System
+    STORAGE_READ      = "storage:read"
+    STORAGE_WRITE     = "storage:write"
+    HEALTH_READ       = "health:read"
+    METRICS_READ      = "metrics:read"
+
+    # Admin
+    USERS_READ        = "users:read"
+    USERS_WRITE       = "users:write"
+    USERS_DELETE      = "users:delete"
+    APIKEYS_MANAGE    = "apikeys:manage"
+    APIKEYS_READ      = "apikeys:read"
+    APIKEYS_CREATE    = "apikeys:create"
+    APIKEYS_REVOKE    = "apikeys:revoke"
+    AUDIT_READ        = "audit:read"
+    CONFIG_WRITE      = "config:write"
+    TRAINING_RUN      = "training:run"
+
+
+_ROLE_PERMISSIONS: Dict[Role, FrozenSet[Permission]] = {
+    Role.GUEST: frozenset({
+        Permission.HEALTH_READ,
+    }),
+    Role.READONLY: frozenset({
+        Permission.HEALTH_READ,
+        Permission.MODELS_READ,
+        Permission.CHANNELS_READ,
+        Permission.SEARCH,
+        Permission.TASKS_READ,
+        Permission.JOBS_READ,
+        Permission.STORAGE_READ,
+        Permission.METRICS_READ,
+    }),
+    Role.USER: frozenset({
+        Permission.HEALTH_READ,
+        Permission.MODELS_READ,
+        Permission.CHANNELS_READ,
+        Permission.SEARCH,
+        Permission.TASKS_READ,
+        Permission.JOBS_READ,
+        Permission.STORAGE_READ,
+        Permission.CHAT,
+        Permission.CHAT_STREAM,
+        Permission.COMPLETION,
+        Permission.EMBEDDINGS,
+        Permission.RAG_QUERY,
+        Permission.INDEX_WRITE,
+    }),
+    Role.DEVELOPER: frozenset({
+        Permission.HEALTH_READ,
+        Permission.MODELS_READ,
+        Permission.CHANNELS_READ,
+        Permission.CHANNELS_WRITE,
+        Permission.SEARCH,
+        Permission.TASKS_READ,
+        Permission.TASKS_WRITE,
+        Permission.JOBS_READ,
+        Permission.JOBS_MANAGE,
+        Permission.STORAGE_READ,
+        Permission.STORAGE_WRITE,
+        Permission.METRICS_READ,
+        Permission.CHAT,
+        Permission.CHAT_STREAM,
+        Permission.COMPLETION,
+        Permission.EMBEDDINGS,
+        Permission.RAG_QUERY,
+        Permission.INDEX_WRITE,
+        Permission.EVALUATE,
+        Permission.APIKEYS_MANAGE,
+        Permission.APIKEYS_READ,
+        Permission.APIKEYS_CREATE,
+        Permission.APIKEYS_REVOKE,
+    }),
+    Role.ADMIN: frozenset({
+        Permission.HEALTH_READ,
+        Permission.MODELS_READ,
+        Permission.CHANNELS_READ,
+        Permission.CHANNELS_WRITE,
+        Permission.CHANNELS_DELETE,
+        Permission.SEARCH,
+        Permission.TASKS_READ,
+        Permission.TASKS_WRITE,
+        Permission.TASKS_DELETE,
+        Permission.JOBS_READ,
+        Permission.JOBS_MANAGE,
+        Permission.STORAGE_READ,
+        Permission.STORAGE_WRITE,
+        Permission.METRICS_READ,
+        Permission.CHAT,
+        Permission.CHAT_STREAM,
+        Permission.COMPLETION,
+        Permission.EMBEDDINGS,
+        Permission.RAG_QUERY,
+        Permission.INDEX_WRITE,
+        Permission.EVALUATE,
+        Permission.USERS_READ,
+        Permission.USERS_WRITE,
+        Permission.APIKEYS_MANAGE,
+        Permission.APIKEYS_READ,
+        Permission.APIKEYS_CREATE,
+        Permission.APIKEYS_REVOKE,
+        Permission.AUDIT_READ,
+        Permission.TRAINING_RUN,
+    }),
+    Role.SUPERADMIN: frozenset(Permission),
+}
+
+
+@lru_cache(maxsize=None)
+def get_permissions(role: Role) -> FrozenSet[Permission]:
+    return _ROLE_PERMISSIONS.get(role, frozenset())
+
+
+def has_permission(roles: List[str], permission: Permission) -> bool:
+    for r in roles:
+        try:
+            role = Role(r)
+            if permission in get_permissions(role):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+def get_all_permissions(roles: List[str]) -> Set[Permission]:
+    perms: Set[Permission] = set()
+    for r in roles:
+        try:
+            perms |= get_permissions(Role(r))
+        except ValueError:
+            continue
+    return perms
+
+
+ROUTE_PERMISSIONS: Dict[str, Permission] = {
+    "POST:/api/v1/ai/chat":                   Permission.CHAT,
+    "POST:/api/v1/ai/chat/stream":             Permission.CHAT_STREAM,
+    "POST:/api/v1/ai/completion":              Permission.COMPLETION,
+    "POST:/api/v1/ai/completions":             Permission.COMPLETION,
+    "POST:/api/v1/ai/embeddings":              Permission.EMBEDDINGS,
+    "POST:/api/v1/ai/rag/query":               Permission.RAG_QUERY,
+    "GET:/api/v1/ai/models":                   Permission.MODELS_READ,
+    "GET:/api/v1/ai/stats":                    Permission.METRICS_READ,
+    "POST:/api/v1/ai/evaluate":                Permission.EVALUATE,
+    "POST:/api/v1/index/articles":             Permission.INDEX_WRITE,
+    "GET:/api/v1/channels":                    Permission.CHANNELS_READ,
+    "POST:/api/v1/channels":                   Permission.CHANNELS_WRITE,
+    "PUT:/api/v1/channels":                    Permission.CHANNELS_WRITE,
+    "DELETE:/api/v1/channels":                 Permission.CHANNELS_DELETE,
+    "POST:/api/v1/search":                     Permission.SEARCH,
+    "GET:/api/v1/tasks":                       Permission.TASKS_READ,
+    "POST:/api/v1/tasks":                      Permission.TASKS_WRITE,
+    "GET:/api/v1/storage/stats":               Permission.STORAGE_READ,
+    "GET:/api/v1/auth/users":                  Permission.USERS_READ,
+    "POST:/api/v1/auth/users":                 Permission.USERS_WRITE,
+    "GET:/api/v1/auth/apikeys":                Permission.APIKEYS_READ,
+    "POST:/api/v1/auth/apikeys":               Permission.APIKEYS_CREATE,
+    "GET:/api/v1/auth/apikeys/{key_id}":       Permission.APIKEYS_READ,
+    "DELETE:/api/v1/auth/apikeys/{key_id}":    Permission.APIKEYS_REVOKE,
+    "GET:/api/v1/auth/audit":                  Permission.AUDIT_READ,
+    "POST:/api/v1/auth/training/start":        Permission.TRAINING_RUN,
+}
+---security/resource/__init__.py
+"""Resource guards."""
+---security/resource/resource_guard.py
+"""Resource Guard — Phase 7 — حماية الموارد من الاستنزاف."""
+from __future__ import annotations
+
+import asyncio
+import functools
+import logging
+import os
+import signal
+import threading
+import time
+from contextlib import asynccontextmanager, contextmanager
+from typing import Any, AsyncGenerator, Callable, Generator, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class MemoryGuard:
+    """مراقبة الذاكرة ومنع الاستنزاف."""
+
+    def __init__(self, max_memory_mb: float = 4096.0) -> None:
+        self._max_mb = max_memory_mb
+        self._start_mb = self._current_mb()
+
+    def _current_mb(self) -> float:
+        try:
+            import psutil
+            return psutil.Process().memory_info().rss / 1024 / 1024
+        except ImportError:
+            return 0.0
+
+    def check(self) -> bool:
+        current = self._current_mb()
+        if current > self._max_mb:
+            logger.warning(
+                "تجاوز حد الذاكرة: %.1f MB > %.1f MB", current, self._max_mb
+            )
+            return False
+        return True
+
+    def memory_delta_mb(self) -> float:
+        return self._current_mb() - self._start_mb
+
+    @contextmanager
+    def guard(self) -> Generator:
+        if not self.check():
+            raise MemoryError(f"الذاكرة تتجاوز الحد: {self._max_mb} MB")
+        try:
+            yield
+        finally:
+            delta = self.memory_delta_mb()
+            if delta > 100:
+                logger.warning("تسرّب ذاكرة محتمل: +%.1f MB", delta)
+
+
+class TimeoutGuard:
+    """تطبيق timeout على العمليات الطويلة."""
+
+    @staticmethod
+    @asynccontextmanager
+    async def async_timeout(seconds: float, name: str = "operation") -> AsyncGenerator:
+        try:
+            async with asyncio.timeout(seconds):
+                yield
+        except asyncio.TimeoutError:
+            logger.error("Timeout: '%s' تجاوز %.1fs", name, seconds)
+            raise TimeoutError(f"العملية '{name}' تجاوزت {seconds}s") from None
+
+    @staticmethod
+    @contextmanager
+    def sync_timeout(seconds: float, name: str = "operation") -> Generator:
+        """Timeout للعمليات المتزامنة (Unix only)."""
+        def _handler(signum: int, frame: Any) -> None:
+            raise TimeoutError(f"العملية '{name}' تجاوزت {seconds}s")
+
+        old = signal.signal(signal.SIGALRM, _handler) if hasattr(signal, "SIGALRM") else None
+        try:
+            if hasattr(signal, "alarm"):
+                signal.alarm(int(seconds))
+            yield
+        finally:
+            if hasattr(signal, "alarm"):
+                signal.alarm(0)
+            if old is not None:
+                signal.signal(signal.SIGALRM, old)
+
+
+class RequestThrottler:
+    """تقييد معدل الطلبات المتزامنة."""
+
+    def __init__(self, max_concurrent: int = 10) -> None:
+        self._sem = asyncio.Semaphore(max_concurrent)
+        self._max = max_concurrent
+        self._current = 0
+        self._lock = threading.Lock()
+
+    @property
+    def current_count(self) -> int:
+        return self._current
+
+    @asynccontextmanager
+    async def throttle(self) -> AsyncGenerator:
+        with self._lock:
+            self._current += 1
+        try:
+            async with self._sem:
+                yield
+        finally:
+            with self._lock:
+                self._current -= 1
+
+    def is_overloaded(self) -> bool:
+        return self._current >= self._max
+
+
+class WorkerIsolation:
+    """
+    Worker isolation — يُشغّل المهام في executor منفصل
+    مع حماية من الانهيار.
+    """
+
+    def __init__(self, max_workers: int = 4) -> None:
+        self._max = max_workers
+        self._executor: Optional[Any] = None
+
+    def _get_executor(self) -> Any:
+        if self._executor is None:
+            from concurrent.futures import ThreadPoolExecutor
+            self._executor = ThreadPoolExecutor(max_workers=self._max)
+        return self._executor
+
+    async def run(self, fn: Callable, *args: Any, **kwargs: Any) -> Any:
+        loop = asyncio.get_event_loop()
+        partial_fn = functools.partial(fn, *args, **kwargs)
+        return await loop.run_in_executor(self._get_executor(), partial_fn)
+
+    def shutdown(self, wait: bool = True) -> None:
+        if self._executor:
+            self._executor.shutdown(wait=wait)
+            self._executor = None
+
+
+class GracefulDegradation:
+    """
+    تدهور رشيق — يُعيد fallback عند فشل العملية الأساسية.
+    """
+
+    def __init__(self, fallback: Any = None, max_failures: int = 5) -> None:
+        self._fallback = fallback
+        self._max_failures = max_failures
+        self._failure_count = 0
+        self._last_failure: Optional[float] = None
+        self._recovery_window = 60.0  # ثانية
+
+    def is_open(self) -> bool:
+        """Circuit breaker — مفتوح = الدائرة مكسورة."""
+        if self._failure_count < self._max_failures:
+            return False
+        if self._last_failure and time.time() - self._last_failure > self._recovery_window:
+            self._failure_count = 0
+            return False
+        return True
+
+    def record_success(self) -> None:
+        self._failure_count = 0
+
+    def record_failure(self) -> None:
+        self._failure_count += 1
+        self._last_failure = time.time()
+        if self.is_open():
+            logger.error(
+                "Circuit breaker مفتوح: %d failures", self._failure_count
+            )
+
+    @asynccontextmanager
+    async def guard(self) -> AsyncGenerator:
+        if self.is_open():
+            logger.warning("Circuit breaker مفتوح — إعادة الـ fallback")
+            yield self._fallback
+            return
+        try:
+            yield None
+            self.record_success()
+        except Exception as exc:
+            self.record_failure()
+            logger.error("فشل محمي بـ circuit breaker: %s", exc)
+            if self._fallback is not None:
+                yield self._fallback
+            else:
+                raise
+
+
+class ResourceGuard:
+    """
+    Orchestrator لجميع آليات الحماية.
+    """
+
+    def __init__(
+        self,
+        max_memory_mb: float = 4096.0,
+        max_concurrent: int = 10,
+        max_workers: int = 4,
+        request_timeout: float = 30.0,
+    ) -> None:
+        self.memory = MemoryGuard(max_memory_mb)
+        self.throttler = RequestThrottler(max_concurrent)
+        self.isolation = WorkerIsolation(max_workers)
+        self.timeout_seconds = request_timeout
+        logger.info(
+            "ResourceGuard: memory=%.0fMB concurrent=%d workers=%d timeout=%.0fs",
+            max_memory_mb, max_concurrent, max_workers, request_timeout,
+        )
+
+    @asynccontextmanager
+    async def protected_request(self, name: str = "request") -> AsyncGenerator:
+        """Context manager يطبق جميع الحمايات."""
+        if not self.memory.check():
+            raise MemoryError("ذاكرة النظام منخفضة")
+
+        async with self.throttler.throttle():
+            async with TimeoutGuard.async_timeout(self.timeout_seconds, name):
+                yield
+
+    def health(self) -> dict:
+        return {
+            "memory_current_mb": round(self.memory._current_mb(), 1),
+            "memory_limit_mb": self.memory._max_mb,
+            "concurrent_requests": self.throttler.current_count,
+            "overloaded": self.throttler.is_overloaded(),
+            "timeout_s": self.timeout_seconds,
+        }
+---shared/__init__.py
+"""Shared utilities."""
+---shared/database.py
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Use SQLite for local development
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./hajeen.sqlite3")
+
+engine = create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+---shared/exceptions.py
+"""Custom project exceptions."""
+
+from __future__ import annotations
+
+from typing import Any
+
+
+class BaseProjectException(Exception):
+    """Base exception for all project-specific errors."""
+
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
+        super().__init__(message)
+        self.message = message
+        self.details = details or {}
+
+
+class ValidationException(BaseProjectException):
+    """Raised when data validation fails."""
+
+
+class StorageException(BaseProjectException):
+    """Raised when storage operations fail."""
+
+
+class ChannelException(BaseProjectException):
+    """Raised when channel-related operations fail."""
+
+
+class PipelineException(BaseProjectException):
+    """Raised when pipeline stages fail."""
+---shared/logging/__init__.py
+"""Shared logging utilities."""
+from shared.logging.structured_logger import (
+    get_logger, configure_logging, get_audit_logger,
+    set_correlation_id, get_correlation_id,
+    set_request_id, get_request_id,
+)
+__all__ = [
+    "get_logger", "configure_logging", "get_audit_logger",
+    "set_correlation_id", "get_correlation_id",
+    "set_request_id", "get_request_id",
+]
+---shared/logging/structured_logger.py
+"""Structured JSON Logger — Phase 6 — logging مُهيكل مع correlation IDs."""
+from __future__ import annotations
+
+import json
+import logging
+import logging.handlers
+import os
+import sys
+import time
+import traceback
+import uuid
+from contextvars import ContextVar
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+# Context variable للـ correlation ID عبر async calls
+_correlation_id: ContextVar[str] = ContextVar("correlation_id", default="")
+_request_id: ContextVar[str] = ContextVar("request_id", default="")
+_pipeline_id: ContextVar[str] = ContextVar("pipeline_id", default="")
+
+
+def set_correlation_id(cid: str) -> None:
+    _correlation_id.set(cid)
+
+
+def get_correlation_id() -> str:
+    return _correlation_id.get() or str(uuid.uuid4())[:8]
+
+
+def set_request_id(rid: str) -> None:
+    _request_id.set(rid)
+
+
+def get_request_id() -> str:
+    return _request_id.get()
+
+
+def set_pipeline_id(pid: str) -> None:
+    _pipeline_id.set(pid)
+
+
+def get_pipeline_id() -> str:
+    return _pipeline_id.get()
+
+
+class StructuredFormatter(logging.Formatter):
+    """يُنسّق log records كـ JSON strings."""
+
+    SERVICE_NAME = os.getenv("SERVICE_NAME", "hajeen-platform")
+    ENV = os.getenv("ENV", "development")
+
+    def format(self, record: logging.LogRecord) -> str:  # type: ignore[override]
+        exc_info_str: Optional[str] = None
+        if record.exc_info:
+            exc_info_str = "".join(traceback.format_exception(*record.exc_info))
+
+        entry: Dict[str, Any] = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(record.created))
+            + f".{int((record.created % 1) * 1000):03d}Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "service": self.SERVICE_NAME,
+            "env": self.ENV,
+            "module": record.module,
+            "func": record.funcName,
+            "line": record.lineno,
+        }
+
+        # Context fields
+        cid = get_correlation_id()
+        if cid:
+            entry["correlation_id"] = cid
+        rid = get_request_id()
+        if rid:
+            entry["request_id"] = rid
+        pid = get_pipeline_id()
+        if pid:
+            entry["pipeline_id"] = pid
+
+        # Exception
+        if exc_info_str:
+            entry["exception"] = exc_info_str.strip()
+
+        # Extra fields من الـ record
+        skip_keys = {
+            "msg", "args", "created", "exc_info", "exc_text", "filename",
+            "funcName", "id", "levelname", "levelno", "lineno", "message",
+            "module", "msecs", "name", "pathname", "process", "processName",
+            "relativeCreated", "stack_info", "thread", "threadName",
+        }
+        for k, v in record.__dict__.items():
+            if k not in skip_keys and not k.startswith("_"):
+                try:
+                    json.dumps(v)
+                    entry[k] = v
+                except (TypeError, ValueError):
+                    entry[k] = str(v)
+
+        return json.dumps(entry, ensure_ascii=False)
+
+
+class AuditLogger:
+    """Audit logger منفصل لتسجيل الأحداث الحرجة."""
+
+    def __init__(self, audit_log_path: str = "logs/audit.jsonl") -> None:
+        Path(audit_log_path).parent.mkdir(parents=True, exist_ok=True)
+        self._path = audit_log_path
+        self._logger = logging.getLogger("hajeen.audit")
+
+    def log(
+        self,
+        event: str,
+        actor: str,
+        resource: str,
+        outcome: str = "success",
+        **extra: Any,
+    ) -> None:
+        entry = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "event": event,
+            "actor": actor,
+            "resource": resource,
+            "outcome": outcome,
+            "correlation_id": get_correlation_id(),
+            **extra,
+        }
+        self._logger.info("AUDIT", extra=entry)
+        try:
+            with open(self._path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except OSError:
+            pass
+
+
+def configure_logging(
+    level: str = "INFO",
+    log_dir: str = "logs",
+    max_bytes: int = 50 * 1024 * 1024,
+    backup_count: int = 5,
+    json_console: bool = True,
+) -> None:
+    """تهيئة نظام الـ logging المُهيكل مع rotating file handlers."""
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
+
+    root = logging.getLogger()
+    root.setLevel(getattr(logging, level.upper(), logging.INFO))
+
+    formatter = StructuredFormatter()
+
+    # Console handler
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(formatter if json_console else logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
+    ))
+    root.addHandler(console)
+
+    # Rotating file handler — general
+    file_handler = logging.handlers.RotatingFileHandler(
+        filename=os.path.join(log_dir, "app.jsonl"),
+        maxBytes=max_bytes,
+        backupCount=backup_count,
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(formatter)
+    root.addHandler(file_handler)
+
+    # Error file handler
+    error_handler = logging.handlers.RotatingFileHandler(
+        filename=os.path.join(log_dir, "error.jsonl"),
+        maxBytes=max_bytes,
+        backupCount=backup_count,
+        encoding="utf-8",
+    )
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(formatter)
+    root.addHandler(error_handler)
+
+    logging.getLogger("hajeen").info(
+        "Structured logging configured: level=%s dir=%s", level, log_dir
+    )
+
+
+def get_logger(name: str) -> logging.Logger:
+    return logging.getLogger(f"hajeen.{name}")
+
+
+# Singleton audit logger
+_audit: Optional[AuditLogger] = None
+
+
+def get_audit_logger() -> AuditLogger:
+    global _audit
+    if _audit is None:
+        _audit = AuditLogger()
+    return _audit
+---shared/schemas/__init__.py
+from .article import Article, ArticleEntity, ArticleMetadata
+from .channel import ChannelConfig, ChannelStatus, ScheduleConfig, SourceConfig
+from .pipeline import PipelineConfig, PipelineResult, PipelineStage, PipelineStageStatus
+from .unified_article import (
+    UnifiedArticle,
+    SourceType,
+    ArticleProcessingStage,
+    ContentLanguage,
+    EntityMention,
+    KeywordEntry,
+    ArticleProcessingMetadata,
+    articles_to_unified,
+)
+
+__all__ = [
+    "ChannelConfig",
+    "ChannelStatus",
+    "SourceConfig",
+    "ScheduleConfig",
+    "Article",
+    "ArticleMetadata",
+    "ArticleEntity",
+    "PipelineConfig",
+    "PipelineStage",
+    "PipelineResult",
+    "PipelineStageStatus",
+    "UnifiedArticle",
+    "SourceType",
+    "ArticleProcessingStage",
+    "ContentLanguage",
+    "EntityMention",
+    "KeywordEntry",
+    "ArticleProcessingMetadata",
+    "articles_to_unified",
+]
+---shared/schemas/article.py
+"""Shared article schema definitions — Phase 2 enhanced."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import uuid
+from datetime import datetime
+from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+
+from shared.utils.datetime_utils import utc_now
+from shared.utils.validators import validate_language_code
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Processing State (Phase 2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ProcessingState(str, Enum):
+    """حالة معالجة المقال عبر pipeline."""
+    RAW = "raw"                 # لم تُطبَّق أي معالجة
+    CLEANED = "cleaned"         # مرّ بـ CleaningPipeline
+    FILTERED = "filtered"       # مرّ بـ FilteringPipeline
+    ENRICHED = "enriched"       # مرّ بـ EnrichmentPipeline
+    TRANSFORMED = "transformed" # مرّ بـ TransformationPipeline
+    FAILED = "failed"           # فشل في إحدى المراحل
+
+
+def generate_article_id(prefix: str = "art") -> str:
+    """توليد معرّف فريد للمقال.
+
+    Parameters
+    ----------
+    prefix:
+        بادئة المعرّف (الافتراضي ``"art"``).
+
+    Returns
+    -------
+    معرّف فريد من الشكل ``art_<uuid8>``.
+    """
+    return f"{prefix}_{uuid.uuid4().hex[:8]}"
+
+
+class ArticleEntity(BaseModel):
+    """Named entity extracted from article content."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(..., min_length=1, description="Entity text")
+    label: str = Field(..., min_length=1, description="Entity label")
+    start_char: int = Field(..., ge=0, description="Start offset in the content")
+    end_char: int = Field(..., ge=0, description="End offset in the content")
+    score: float = Field(default=1.0, ge=0.0, le=1.0, description="Confidence score")
+
+
+class ArticleMetadata(BaseModel):
+    """Metadata accompanying an article."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_id: str = Field(..., min_length=1, description="Origin channel identifier")
+    author: str | None = Field(default=None, description="Optional author name")
+    language: str = Field(default="ar", description="ISO 639-1 language code")
+    tags: list[str] = Field(default_factory=list, description="Tag list")
+    entities: list[ArticleEntity] = Field(default_factory=list, description="Extracted entities")
+    extra: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+    @field_validator("language")
+    @classmethod
+    def validate_language(cls, value: str) -> str:
+        """Validate and normalize the language code."""
+        normalized = value.strip().lower()
+        if not validate_language_code(normalized):
+            raise ValueError("Invalid language code.")
+        return normalized
+
+
+class Article(BaseModel):
+    """Normalized article representation used across the data engine."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "id": "art_123",
+                "title": "عنوان المقال",
+                "content": "محتوى المقال التفصيلي...",
+                "url": "https://example.com/article",
+                "published_at": "2024-05-20T10:00:00Z",
+                "metadata": {"source_id": "ch_news_1", "language": "ar"},
+            }
+        },
+    )
+
+    id: str = Field(..., min_length=1, description="Unique article identifier")
+    title: str = Field(..., min_length=1, description="Article title")
+    content: str = Field(..., min_length=1, description="Article body text")
+    url: HttpUrl = Field(..., description="Canonical article URL")
+    published_at: datetime = Field(..., description="Original publication timestamp")
+    extracted_at: datetime = Field(default_factory=utc_now, description="Extraction timestamp in UTC")
+    summary: str | None = Field(default=None, description="Optional summary")
+    metadata: ArticleMetadata = Field(..., description="Structured article metadata")
+
+    # Phase 2 — معالجة الحالة
+    processing_state: ProcessingState = Field(
+        default=ProcessingState.RAW,
+        description="حالة المعالجة الحالية للمقال",
+    )
+
+    @field_validator("id", "title", "content")
+    @classmethod
+    def strip_non_empty_strings(cls, value: str) -> str:
+        """Trim required text fields and reject blank values."""
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Value cannot be blank.")
+        return normalized
+
+    # ─── Phase 2 helpers ──────────────────────────────────────────────────
+
+    def content_hash(self) -> str:
+        """SHA-256 لمحتوى المقال (للكشف عن التكرار).
+
+        Returns
+        -------
+        سلسلة hex بطول 64 حرف.
+        """
+        key = (self.title.strip().lower() + self.content.strip()[:1000].lower())
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    def short_hash(self) -> str:
+        """أول 16 حرف من content_hash (للعرض)."""
+        return self.content_hash()[:16]
+
+    def to_dict(self, *, exclude_content: bool = False) -> dict[str, Any]:
+        """تحويل المقال إلى dict.
+
+        Parameters
+        ----------
+        exclude_content:
+            إذا True → حذف حقل ``content`` من المخرجات.
+
+        Returns
+        -------
+        dict قابل للتسلسل.
+        """
+        data = self.model_dump(mode="json")
+        if exclude_content:
+            data.pop("content", None)
+        return data
+
+    def to_json(self, *, indent: Optional[int] = None, **kwargs: Any) -> str:
+        """تحويل المقال إلى JSON string.
+
+        Parameters
+        ----------
+        indent:
+            مسافة البادئة (None = compact).
+        **kwargs:
+            معاملات إضافية لـ json.dumps.
+
+        Returns
+        -------
+        JSON string.
+        """
+        return json.dumps(self.to_dict(), ensure_ascii=False, indent=indent, **kwargs)
+
+    def to_jsonl(self) -> str:
+        """سطر JSONL واحد (بدون newline في النهاية).
+
+        Returns
+        -------
+        JSON في سطر واحد.
+        """
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        title: str,
+        content: str,
+        url: str,
+        published_at: datetime,
+        source_id: str,
+        language: str = "ar",
+        id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> "Article":
+        """Factory method لإنشاء Article بمعرّف تلقائي.
+
+        Parameters
+        ----------
+        title, content, url, published_at, source_id:
+            الحقول الإلزامية.
+        language:
+            اللغة (الافتراضي ``"ar"``).
+        id:
+            معرّف مخصص؛ إذا None → يُولَّد تلقائياً.
+
+        Returns
+        -------
+        Article جديد.
+        """
+        from shared.schemas.article import ArticleMetadata
+        return cls(
+            id=id or generate_article_id(),
+            title=title,
+            content=content,
+            url=url,  # type: ignore[arg-type]
+            published_at=published_at,
+            metadata=ArticleMetadata(source_id=source_id, language=language),
+            **kwargs,
+        )
+---shared/schemas/channel.py
+"""Shared channel schema definitions."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+
+from shared.utils.datetime_utils import utc_now
+from shared.utils.validators import validate_cron_expression
+
+
+class ChannelStatus(str, Enum):
+    """Lifecycle status for a channel."""
+
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    DRAFT = "draft"
+    ERROR = "error"
+    PAUSED = "paused"
+
+
+class ScheduleConfig(BaseModel):
+    """Scheduling details for channel execution."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cron: str = Field(..., description="Cron expression for scheduling")
+    enabled: bool = Field(default=True, description="Whether scheduling is enabled")
+    timezone: str = Field(default="UTC", description="Schedule timezone")
+
+    @field_validator("cron")
+    @classmethod
+    def validate_cron(cls, value: str) -> str:
+        normalized = value.strip()
+        if not validate_cron_expression(normalized):
+            raise ValueError("Invalid cron expression.")
+        return normalized
+
+
+class SourceConfig(BaseModel):
+    """Source configuration for a channel."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    url: HttpUrl = Field(..., description="Source endpoint URL")
+    type: str = Field(..., min_length=1, description="Source type such as rss, api, or demo")
+    params: dict[str, Any] = Field(default_factory=dict, description="Additional source parameters")
+
+    @field_validator("type")
+    @classmethod
+    def normalize_type(cls, value: str) -> str:
+        return value.strip().lower()
+
+
+class ChannelStats(BaseModel):
+    """Runtime statistics for a channel."""
+
+    model_config = ConfigDict(extra="allow")
+
+    total_runs: int = Field(default=0, description="Total pipeline executions")
+    successful_runs: int = Field(default=0, description="Successful executions")
+    failed_runs: int = Field(default=0, description="Failed executions")
+    total_fetched: int = Field(default=0, description="Total articles fetched")
+    total_processed: int = Field(default=0, description="Total articles processed")
+    total_stored: int = Field(default=0, description="Total articles stored")
+    last_run_at: Optional[datetime] = Field(default=None, description="Last run timestamp")
+    last_run_status: Optional[str] = Field(default=None, description="Last run status")
+    last_error: Optional[str] = Field(default=None, description="Last error message")
+    avg_duration_ms: float = Field(default=0.0, description="Average run duration in ms")
+
+
+class ChannelConfig(BaseModel):
+    """Primary configuration model used to instantiate channels."""
+
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+    id: str = Field(..., min_length=1, description="Unique channel identifier")
+    name: str = Field(..., min_length=1, description="Human-readable channel name")
+    description: str | None = Field(default=None, description="Optional channel description")
+    status: ChannelStatus = Field(default=ChannelStatus.DRAFT, description="Current channel status")
+    source: SourceConfig = Field(..., description="Channel source configuration")
+    schedule: ScheduleConfig | None = Field(default=None, description="Optional schedule configuration")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Arbitrary channel metadata")
+    stats: ChannelStats = Field(default_factory=ChannelStats, description="Runtime statistics")
+    created_at: datetime = Field(default_factory=utc_now, description="Creation timestamp in UTC")
+    updated_at: datetime = Field(default_factory=utc_now, description="Last update timestamp in UTC")
+
+    @field_validator("id", "name")
+    @classmethod
+    def strip_required_strings(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Value cannot be blank.")
+        return normalized
+---shared/schemas/pipeline.py
+"""Shared pipeline schema definitions."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class PipelineStageStatus(str, Enum):
+    """Execution status for an individual pipeline stage."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class PipelineStage(BaseModel):
+    """Configuration and execution details for a pipeline stage."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., min_length=1, description="Stage name")
+    status: PipelineStageStatus = Field(default=PipelineStageStatus.PENDING, description="Stage status")
+    started_at: datetime | None = Field(default=None, description="Stage start time")
+    finished_at: datetime | None = Field(default=None, description="Stage finish time")
+    config: dict[str, Any] = Field(default_factory=dict, description="Stage configuration")
+    error: str | None = Field(default=None, description="Error message when failed")
+
+
+class PipelineConfig(BaseModel):
+    """Pipeline definition used by channels and orchestrators."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(..., min_length=1, description="Unique pipeline identifier")
+    name: str = Field(..., min_length=1, description="Pipeline name")
+    stages: list[str] = Field(..., min_length=1, description="Ordered stage names")
+    config: dict[str, Any] = Field(default_factory=dict, description="Additional pipeline configuration")
+
+    @field_validator("stages")
+    @classmethod
+    def validate_stages(cls, value: list[str]) -> list[str]:
+        """Ensure stages are non-empty strings."""
+        normalized = [stage.strip() for stage in value if stage.strip()]
+        if not normalized:
+            raise ValueError("Pipeline must contain at least one stage.")
+        return normalized
+
+
+class PipelineResult(BaseModel):
+    """Result metadata produced by pipeline execution."""
+
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+
+    pipeline_id: str = Field(..., min_length=1, description="Pipeline identifier")
+    target_id: str = Field(..., min_length=1, description="Processed target identifier")
+    status: PipelineStageStatus = Field(..., description="Overall pipeline status")
+    stages_executed: list[PipelineStage] = Field(default_factory=list, description="Executed stages")
+    started_at: datetime = Field(..., description="Pipeline start time")
+    finished_at: datetime | None = Field(default=None, description="Pipeline finish time")
+    total_duration: float | None = Field(default=None, ge=0.0, description="Pipeline duration in seconds")
+---shared/schemas/unified_article.py
+"""Unified Article Schema — Phase 6.5.
+
+Schema موحّد يُستخدم عبر جميع مصادر البيانات:
+  - RSS Channels
+  - Web Crawlers
+  - API Connectors
+  - Processing Pipeline
+  - Storage Layer (raw → bronze → silver → gold)
+  - Embedding Pipeline
+"""
+from __future__ import annotations
+
+import hashlib
+import re
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
+
+from shared.utils.datetime_utils import utc_now
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Enums
+# ─────────────────────────────────────────────────────────────────────────────
+
+class SourceType(str, Enum):
+    """نوع مصدر المقال."""
+    RSS = "rss"
+    CRAWLER = "crawler"
+    API = "api"
+    MANUAL = "manual"
+    DEMO = "demo"
+    UNKNOWN = "unknown"
+
+
+class ArticleProcessingStage(str, Enum):
+    """مرحلة المعالجة الحالية للمقال."""
+    RAW = "raw"
+    BRONZE = "bronze"
+    SILVER = "silver"
+    GOLD = "gold"
+    EMBEDDED = "embedded"
+
+
+class ContentLanguage(str, Enum):
+    """اللغات المدعومة."""
+    ARABIC = "ar"
+    ENGLISH = "en"
+    MIXED = "mixed"
+    UNKNOWN = "unknown"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Sub-models
+# ─────────────────────────────────────────────────────────────────────────────
+
+class EntityMention(BaseModel):
+    """كيان مُستخرج من النص."""
+    model_config = ConfigDict(extra="ignore")
+
+    text: str = Field(..., min_length=1)
+    label: str = Field(..., min_length=1)
+    start_char: int = Field(default=0, ge=0)
+    end_char: int = Field(default=0, ge=0)
+    score: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+class KeywordEntry(BaseModel):
+    """كلمة مفتاحية مُستخرجة مع درجة الأهمية."""
+    model_config = ConfigDict(extra="ignore")
+
+    keyword: str = Field(..., min_length=1)
+    score: float = Field(default=1.0, ge=0.0, le=1.0)
+    count: int = Field(default=1, ge=1)
+
+
+class ArticleProcessingMetadata(BaseModel):
+    """بيانات وصفية لمراحل المعالجة."""
+    model_config = ConfigDict(extra="ignore")
+
+    pipeline_run_id: Optional[str] = None
+    processing_stage: ArticleProcessingStage = ArticleProcessingStage.RAW
+    processing_duration_ms: float = 0.0
+    processing_errors: List[str] = Field(default_factory=list)
+    stage_timestamps: Dict[str, str] = Field(default_factory=dict)
+    word_count: int = 0
+    char_count: int = 0
+    sentence_count: int = 0
+    content_hash: Optional[str] = None
+    url_hash: Optional[str] = None
+    dedup_checked: bool = False
+    is_duplicate: bool = False
+    duplicate_of: Optional[str] = None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Unified Article
+# ─────────────────────────────────────────────────────────────────────────────
+
+class UnifiedArticle(BaseModel):
+    """Schema موحّد للمقال — يُستخدم عبر جميع المصادر والطبقات.
+
+    الحقول الأساسية:
+    - id, source, source_type, url, title
+    - raw_content, cleaned_content, summary
+    - language, entities, keywords, categories
+    - chunk_ids, embedding_id, metadata
+    - created_at, updated_at
+    """
+    model_config = ConfigDict(
+        from_attributes=True,
+        extra="ignore",
+        populate_by_name=True,
+    )
+
+    # ── هوية المقال ─────────────────────────────────────────────────────────
+    id: str = Field(..., min_length=1, description="معرّف المقال الفريد")
+    source: str = Field(..., min_length=1, description="معرّف مصدر القناة")
+    source_type: SourceType = Field(
+        default=SourceType.UNKNOWN, description="نوع المصدر"
+    )
+    url: str = Field(..., description="رابط المقال الأصلي")
+
+    # ── المحتوى ─────────────────────────────────────────────────────────────
+    title: str = Field(..., min_length=1, description="عنوان المقال")
+    raw_content: str = Field(
+        default="", description="المحتوى الخام قبل المعالجة"
+    )
+    cleaned_content: str = Field(
+        default="", description="المحتوى بعد تنظيف HTML والتطبيع"
+    )
+    summary: Optional[str] = Field(
+        default=None, description="ملخص تلقائي للمقال"
+    )
+
+    # ── اللغة والتصنيف ──────────────────────────────────────────────────────
+    language: str = Field(default="en", description="رمز اللغة ISO 639-1")
+    entities: List[EntityMention] = Field(
+        default_factory=list, description="الكيانات المُستخرجة"
+    )
+    keywords: List[KeywordEntry] = Field(
+        default_factory=list, description="الكلمات المفتاحية مع درجاتها"
+    )
+    categories: List[str] = Field(
+        default_factory=list, description="تصنيفات المقال"
+    )
+    tags: List[str] = Field(
+        default_factory=list, description="الوسوم"
+    )
+    author: Optional[str] = Field(default=None, description="المؤلف")
+
+    # ── تكامل Chunking & Embeddings ─────────────────────────────────────────
+    chunk_ids: List[str] = Field(
+        default_factory=list, description="معرّفات الـ chunks المرتبطة"
+    )
+    embedding_id: Optional[str] = Field(
+        default=None, description="معرّف الـ embedding للمقال كاملاً"
+    )
+    chunk_count: int = Field(
+        default=0, description="عدد الـ chunks الفعلي"
+    )
+
+    # ── التواريخ ─────────────────────────────────────────────────────────────
+    published_at: Optional[datetime] = Field(
+        default=None, description="تاريخ النشر الأصلي"
+    )
+    extracted_at: datetime = Field(
+        default_factory=utc_now, description="وقت الاستخراج"
+    )
+    created_at: datetime = Field(
+        default_factory=utc_now, description="وقت الإنشاء في النظام"
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now, description="آخر تحديث"
+    )
+
+    # ── بيانات التخزين ──────────────────────────────────────────────────────
+    raw_storage_key: Optional[str] = Field(
+        default=None, description="مفتاح التخزين في الـ raw layer"
+    )
+    bronze_storage_key: Optional[str] = Field(
+        default=None, description="مفتاح التخزين في الـ bronze layer"
+    )
+    silver_storage_key: Optional[str] = Field(
+        default=None, description="مفتاح التخزين في الـ silver layer"
+    )
+    gold_storage_key: Optional[str] = Field(
+        default=None, description="مفتاح التخزين في الـ gold layer"
+    )
+
+    # ── البيانات الوصفية ────────────────────────────────────────────────────
+    processing: ArticleProcessingMetadata = Field(
+        default_factory=ArticleProcessingMetadata,
+        description="بيانات وصفية لمراحل المعالجة"
+    )
+    extra_metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="بيانات وصفية إضافية"
+    )
+
+    # ── Validators ──────────────────────────────────────────────────────────
+
+    @field_validator("id", "source", "title")
+    @classmethod
+    def strip_non_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("لا يمكن أن يكون الحقل فارغاً.")
+        return v
+
+    @field_validator("language")
+    @classmethod
+    def normalize_language(cls, v: str) -> str:
+        return v.strip().lower()[:2] if v else "en"
+
+    # ── Methods ──────────────────────────────────────────────────────────────
+
+    def content_for_processing(self) -> str:
+        """إرجاع أفضل محتوى متاح للمعالجة."""
+        return self.cleaned_content or self.raw_content or self.title
+
+    def compute_content_hash(self) -> str:
+        """حساب هاش SHA-256 للمحتوى الموحّد."""
+        text = _normalize_for_hash(self.title) + "\n" + _normalize_for_hash(
+            (self.cleaned_content or self.raw_content)[:500]
+        )
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+    def compute_url_hash(self) -> str:
+        """حساب هاش SHA-256 للرابط."""
+        url = self.url.strip().lower().rstrip("/")
+        return hashlib.sha256(url.encode("utf-8")).hexdigest()
+
+    def mark_as_chunked(self, chunk_ids: List[str]) -> None:
+        """تحديث معرّفات الـ chunks."""
+        self.chunk_ids = chunk_ids
+        self.chunk_count = len(chunk_ids)
+        self.updated_at = utc_now()
+
+---shared/utils/__init__.py
+from .text_utils import normalize_text, clean_whitespace, truncate_text
+from .validators import validate_url, validate_language_code, validate_cron_expression
+from .datetime_utils import utc_now, iso_timestamp
+from .id_generator import generate_channel_id, generate_article_id
+
+__all__ = [
+    "normalize_text",
+    "clean_whitespace",
+    "truncate_text",
+    "validate_url",
+    "validate_language_code",
+    "validate_cron_expression",
+    "utc_now",
+    "iso_timestamp",
+    "generate_channel_id",
+    "generate_article_id",
+]
+---shared/utils/datetime_utils.py
+"""Datetime helpers used across the project."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+
+def utc_now() -> datetime:
+    """Return the current timezone-aware UTC datetime."""
+    return datetime.now(timezone.utc)
+
+
+def iso_timestamp(dt: datetime | None = None) -> str:
+    """Return a UTC ISO 8601 timestamp string.
+
+    If *dt* is omitted, the current UTC time is used.
+    """
+    value = dt.astimezone(timezone.utc) if dt is not None else utc_now()
+    return value.isoformat()
+---shared/utils/id_generator.py
+"""Identifier generation helpers."""
+
+from __future__ import annotations
+
+import hashlib
+import uuid
+
+
+def generate_id(prefix: str = "") -> str:
+    """Generate a short unique identifier with an optional prefix."""
+    uid = uuid.uuid4().hex[:12]
+    return f"{prefix}{uid}" if prefix else uid
+
+
+def generate_channel_id() -> str:
+    """Generate a unique channel identifier."""
+    return generate_id("ch_")
+
+
+def generate_article_id(url: str) -> str:
+    """Generate a stable article identifier from a source URL."""
+    hash_object = hashlib.md5(url.encode("utf-8"), usedforsecurity=False)
+    return f"art_{hash_object.hexdigest()[:16]}"
+---shared/utils/text_utils.py
+import re
+
+def normalize_text(text: str) -> str:
+    """Basic text normalization."""
+    if not text:
+        return ""
+    # Remove extra whitespace and normalize case (optional, but keeping it simple for now)
+    return text.strip()
+
+def clean_whitespace(text: str) -> str:
+    """Replace multiple whitespaces with a single space."""
+    if not text:
+        return ""
+    return re.sub(r'\s+', ' ', text).strip()
+
+def truncate_text(text: str, max_length: int, suffix: str = "...") -> str:
+    """Truncate text to a maximum length."""
+    if len(text) <= max_length:
+        return text
+    return text[:max_length].rsplit(' ', 1)[0] + suffix
+---shared/utils/validators.py
+import re
+from urllib.parse import urlparse
+
+def validate_url(url: str) -> bool:
+    """Check if a string is a valid URL."""
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
+
+def validate_language_code(code: str) -> bool:
+    """Simple check for ISO 639-1 language codes (2 letters)."""
+    return bool(re.match(r'^[a-z]{2}$', code))
+
+def validate_cron_expression(expression: str) -> bool:
+    """Basic validation for cron expressions."""
+    # This is a very basic regex for standard 5-field cron
+    cron_regex = r'^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$'
+    return bool(re.match(cron_regex, expression))
+=== deployments ===
+---deployments/kubernetes_hajeen_ai.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hajeen-ai-deployment
+  labels:
+    app: hajeen-ai
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hajeen-ai
+  template:
+    metadata:
+      labels:
+        app: hajeen-ai
+    spec:
+      containers:
+      - name: hajeen-ai-container
+        image: hajeen-ai-image:latest # Replace with your actual Docker image
+        ports:
+        - containerPort: 8000
+        env:
+        - name: RAY_ADDRESS
+          value: "ray://ray-cluster-k8s.ray.svc.cluster.local:10001"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hajeen-ai-service
+spec:
+  selector:
+    app: hajeen-ai
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer
+---deployments/kubernetes_triton.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triton-inference-server
+  labels:
+    app: triton
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: triton
+  template:
+    metadata:
+      labels:
+        app: triton
+    spec:
+      containers:
+      - name: triton-container
+        image: nvcr.io/nvidia/tritonserver:23.09-py3 # Use a suitable Triton image
+        command: ["tritonserver"]
+        args: ["--model-repository=/models"]
+        ports:
+        - containerPort: 8000 # HTTP/REST
+        - containerPort: 8001 # GRPC
+        - containerPort: 8002 # Metrics
+        volumeMounts:
+        - name: model-volume
+          mountPath: /models
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # Request 1 GPU
+            memory: "16Gi"
+          requests:
+            memory: "8Gi"
+      volumes:
+      - name: model-volume
+        persistentVolumeClaim:
+          claimName: triton-model-pvc # Assumes a PVC is created for model storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: triton-service
+spec:
+  selector:
+    app: triton
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8000
+    - name: grpc
+      protocol: TCP
+      port: 8001
+      targetPort: 8001
+  type: LoadBalancer
+---deployments/kubernetes_vllm.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-deployment
+  labels:
+    app: vllm
+spec:
+  replicas: 1 # Typically 1 replica per GPU for vLLM
+  selector:
+    matchLabels:
+      app: vllm
+  template:
+    metadata:
+      labels:
+        app: vllm
+    spec:
+      containers:
+      - name: vllm-container
+        image: vllm/vllm-openai:latest # Use vLLM's OpenAI compatible server image
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL
+          value: "mistralai/Mistral-7B-Instruct-v0.2" # Specify the model to load
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # Request 1 GPU
+            memory: "32Gi"
+          requests:
+            memory: "16Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-service
+spec:
+  selector:
+    app: vllm
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer

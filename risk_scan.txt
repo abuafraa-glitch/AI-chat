@@ -1,0 +1,1106 @@
+=== fallback/mock markers ===
+./api/main.py:82:    allow_origins=[
+./api/main.py:196:            pass
+./api/main.py:396:            pass
+./api/main.py:479:        pass
+./api/main.py:489:        pass
+./api/main.py:546:    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
+./api/v1/ai/chat.py:12:  - لا يوجد fallback يتجاوز Pipeline الكاملة.
+./api/v1/ai/chat.py:42:    max_tokens: int = Field(default=512, ge=1, le=8192)
+./api/v1/ai/chat.py:151:            "max_tokens": body.max_tokens,
+./api/v1/ai/chat.py:156:    # 4. تنفيذ عبر Brain — لا يوجد fallback هنا
+./api/v1/ai/chat.py:181:            "prompt_tokens": len(last_user.split()),
+./api/v1/ai/chat.py:182:            "completion_tokens": len(response_text.split()),
+./api/v1/ai/chat.py:183:            "total_tokens": len(last_user.split()) + len(response_text.split()),
+./api/v1/ai/chat.py:196:    # 1. الحصول على Brain (يرفع 503 إذا لم يكن جاهزاً — لا fallback)
+./api/v1/ai/chat.py:210:            "max_tokens": body.max_tokens,
+./api/v1/ai/chat.py:214:    # 3. Streaming عبر Brain فقط — لا يوجد fallback للـ LLM المباشر
+./api/v1/ai/completion.py:21:    max_tokens: int = Field(default=256, ge=1, le=8192)
+./api/v1/ai/completion.py:60:            "max_tokens": body.max_tokens,
+./api/v1/ai/completion.py:66:        max_tokens=body.max_tokens or 2048,
+./api/v1/ai/completion.py:84:                "prompt_tokens": brain_response.trace.tokens_used, # Assuming trace has this
+./api/v1/ai/completion.py:85:                "completion_tokens": brain_response.trace.tokens_used, # Assuming trace has this
+./api/v1/ai/completion.py:86:                "total_tokens": brain_response.trace.tokens_used,
+./api/v1/ai/completion.py:108:            "max_tokens": body.max_tokens,
+./api/v1/ai/completion.py:115:        max_tokens=body.max_tokens or 2048,
+./api/v1/ai/embeddings.py:50:        usage=result.get("usage", {"total_tokens": len(texts)}),
+./api/v1/ai/router.py:48:    max_tokens: Optional[int] = Field(None, ge=1, le=4096)
+./api/v1/ai/router.py:59:    max_tokens: int = Field(1024, ge=1, le=4096)
+./api/v1/ai/router.py:70:    max_tokens: Optional[int] = Field(None, ge=1, le=2048)
+./api/v1/ai/router.py:97:            "max_tokens": body.max_tokens,
+./api/v1/ai/router.py:104:        max_tokens=body.max_tokens or 2048,
+./api/v1/ai/router.py:121:            "tokens_used": brain_response.trace.tokens_used,
+./api/v1/ai/router.py:154:            "max_tokens": body.max_tokens,
+./api/v1/ai/router.py:162:        max_tokens=body.max_tokens or 2048,
+./api/v1/ai/router.py:225:            "max_tokens": body.max_tokens,
+./api/v1/ai/router.py:230:        max_tokens=body.max_tokens or 2048,
+./api/v1/ai/router.py:244:            "tokens_used": brain_response.trace.tokens_used,
+./api/v1/ai/websocket.py:41:    async def send_token(self, client_id: str, token: str, index: int) -> bool:
+./api/v1/ai/websocket.py:43:            "type": "token",
+./api/v1/ai/websocket.py:44:            "data": token,
+./api/v1/ai/websocket.py:75:    Server → {"type": "token", "data": "...", "index": N}
+./api/v1/auth/router.py:18:JWT_SECRET = os.getenv("JWT_SECRET", "hajeen-change-me-in-production-secret-key")
+./api/v1/auth/router.py:26:    password: str = Field(..., min_length=8)
+./api/v1/auth/router.py:33:    password: str
+./api/v1/auth/router.py:38:    refresh_token: str
+./api/v1/auth/router.py:42:    token: str
+./api/v1/auth/router.py:52:    access_token: str
+./api/v1/auth/router.py:53:    refresh_token: str
+./api/v1/auth/router.py:54:    token_type: str = "bearer"
+./api/v1/auth/router.py:68:        "password_hash": "__admin_placeholder__",
+./api/v1/auth/router.py:76:def _hash_password(password: str) -> str:
+./api/v1/auth/router.py:79:    return hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
+./api/v1/auth/router.py:82:def _verify_password(password: str, stored_hash: str) -> bool:
+./api/v1/auth/router.py:84:        return password == os.getenv("ADMIN_PASSWORD", "HajeenAdmin2024!")
+./api/v1/auth/router.py:85:    return _hash_password(password) == stored_hash
+./api/v1/auth/router.py:92:    from security.auth.revoked_tokens import get_revoked_token_store
+./api/v1/auth/router.py:93:    return JWTAuthenticator(secret=os.getenv("JWT_SECRET", JWT_SECRET), revoked_store=get_revoked_token_store())
+./api/v1/auth/router.py:108:        "password_hash": _hash_password(body.password),
+./api/v1/auth/router.py:135:    if not _verify_password(body.password, user["password_hash"]):
+./api/v1/auth/router.py:143:    access_token = jwt.issue_token(
+./api/v1/auth/router.py:147:        token_type="access",
+./api/v1/auth/router.py:149:    refresh_token = jwt.issue_token(
+./api/v1/auth/router.py:153:        token_type="refresh",
+./api/v1/auth/router.py:158:        access_token=access_token,
+./api/v1/auth/router.py:159:        refresh_token=refresh_token,
+./api/v1/auth/router.py:170:async def refresh_token(body: RefreshRequest) -> TokenResponse:
+./api/v1/auth/router.py:173:        new_access = jwt.refresh_access_token(body.refresh_token)
+./api/v1/auth/router.py:174:        claims = jwt.validate_token(new_access)
+./api/v1/auth/router.py:175:        new_refresh = jwt.issue_token(
+./api/v1/auth/router.py:179:            access_token=new_access,
+./api/v1/auth/router.py:180:            refresh_token=new_refresh,
+./api/v1/auth/router.py:193:async def revoke_token(body: RevokeRequest) -> Dict[str, Any]:
+./api/v1/auth/router.py:195:    jwt_auth.revoke_token(body.token)
+./api/v1/auth/router.py:293:        {k: v for k, v in u.items() if k not in ("password_hash",)}
+./api/v1/hajeen_model_router.py:52:    max_tokens: int = Field(default=1024, ge=1, le=4096)
+./api/v1/hajeen_model_router.py:61:    max_tokens: int = Field(default=1024)
+./api/v1/hajeen_model_router.py:151:            "max_tokens": req.max_tokens,
+./api/v1/hajeen_model_router.py:153:        max_tokens=req.max_tokens,
+./api/v1/hajeen_model_router.py:196:        max_tokens=req.max_tokens,
+./api/v1/hajeen_model_router.py:232:            "max_tokens": req.max_tokens,
+./api/v1/hajeen_model_router.py:235:        max_tokens=req.max_tokens,
+./api/v1/search/router.py:30:    max_context_tokens: int = Field(default=2000, ge=100, le=8000)
+./api/v1/search/router.py:143:            max_context_tokens=req.max_context_tokens,
+./api/v1/tasks/router.py:210:            pass
+./brain/api/brain_router.py:52:    max_tokens: int = Field(default=2048, ge=1, le=8192)
+./brain/api/brain_router.py:99:        max_tokens=req.max_tokens,
+./brain/api/brain_router.py:130:        max_tokens=req.max_tokens,
+./brain/brain_v3.py:91:    max_tokens: int = 2048
+./brain/brain_v3.py:116:    tokens_used: int = 0
+./brain/brain_v3.py:200:        # يُحقن عند startup من RAGPipeline الرسمي؛ لا يوجد fallback وهمي
+./brain/brain_v3.py:341:        لا يوجد shortcut أو fallback يتجاوز هذا الدالة.
+./brain/brain_v3.py:549:                max_context_tokens=2000,
+./brain/brain_v3.py:591:                    budget_tokens=request.max_tokens,
+./brain/brain_v3.py:617:                    budget_tokens=request.max_tokens,
+./brain/brain_v3.py:626:                trace.tokens_used = route_result.tokens_used
+./brain/brain_v3.py:699:                    pass
+./brain/brain_v3.py:707:                    pass
+./brain/brain_v3.py:709:                    pass
+./brain/cognitive_layer/context_analyzer.py:53:    estimated_tokens: int
+./brain/cognitive_layer/context_analyzer.py:78:            "estimated_tokens": self.estimated_tokens,
+./brain/cognitive_layer/context_analyzer.py:187:                estimated_tokens=complexity_analysis["estimated_tokens"],
+./brain/cognitive_layer/context_analyzer.py:231:                estimated_tokens=1024,
+./brain/cognitive_layer/context_analyzer.py:269:                max_tokens=100,
+./brain/cognitive_layer/context_analyzer.py:334:                pass
+./brain/cognitive_layer/context_analyzer.py:385:                max_tokens=200,
+./brain/cognitive_layer/context_analyzer.py:422:  "estimated_tokens": 1024,
+./brain/cognitive_layer/context_analyzer.py:432:                max_tokens=250,
+./brain/cognitive_layer/context_analyzer.py:441:                "estimated_tokens": 1024,
+./brain/cognitive_layer/context_analyzer.py:483:                max_tokens=250,
+./brain/cognitive_layer/context_analyzer.py:523:                max_tokens=300,
+./brain/cognitive_layer/decision_engine.py:29:    FALLBACK = "fallback"                       # fallback
+./brain/cognitive_layer/decision_engine.py:50:    cost_per_token: float
+./brain/cognitive_layer/decision_engine.py:65:    fallback_chain: List[str] = field(default_factory=list)
+./brain/cognitive_layer/decision_engine.py:138:        # 4. Build fallback chain
+./brain/cognitive_layer/decision_engine.py:139:        fallback_chain = [m.model_id for m in scored_models[1:3]]
+./brain/cognitive_layer/decision_engine.py:156:            fallback_chain=fallback_chain,
+./brain/cognitive_layer/decision_engine.py:157:            estimated_cost=best_model.cost_per_token * len(context.query.split()) * 2,  # rough estimate
+./brain/cognitive_layer/decision_engine.py:195:            max_cost = max(m.cost_per_token for m in models) if models else 1.0
+./brain/cognitive_layer/decision_engine.py:196:            score += (1.0 - model.cost_per_token / max_cost) * 0.2
+./brain/cognitive_layer/decision_engine.py:203:            query_tokens = len(context.query.split())
+./brain/cognitive_layer/decision_engine.py:204:            if model.context_window >= query_tokens * 2:
+./brain/cognitive_layer/decision_engine.py:207:                score += (model.context_window / (query_tokens * 2)) * 0.2
+./brain/cognitive_layer/decision_engine.py:269:                cost_per_token=0.03,
+./brain/cognitive_layer/decision_engine.py:286:                cost_per_token=0.002,
+./brain/cognitive_layer/decision_engine.py:303:                cost_per_token=0.0,
+./brain/cognitive_layer/expert_models_layer.py:9:3. إدارة fallback بين النماذج
+./brain/cognitive_layer/expert_models_layer.py:32:    CASCADE = "cascade"          # fallback تسلسلي
+./brain/cognitive_layer/expert_models_layer.py:42:    max_tokens: int = 2048
+./brain/cognitive_layer/expert_models_layer.py:54:    tokens_used: int
+./brain/cognitive_layer/expert_models_layer.py:66:    total_tokens: int
+./brain/cognitive_layer/expert_models_layer.py:115:                total_tokens=0,
+./brain/cognitive_layer/expert_models_layer.py:146:            total_tokens=sum(r.tokens_used for r in results),
+./brain/cognitive_layer/expert_models_layer.py:192:            response, latency, tokens = await self._call_model(expert, prompt)
+./brain/cognitive_layer/expert_models_layer.py:199:                tokens_used=tokens,
+./brain/cognitive_layer/expert_models_layer.py:218:            response, latency, tokens = resp
+./brain/cognitive_layer/expert_models_layer.py:224:                tokens_used=tokens,
+./brain/cognitive_layer/expert_models_layer.py:245:            response, latency, tokens = await self._call_model(expert, critique_prompt)
+./brain/cognitive_layer/expert_models_layer.py:251:                tokens_used=tokens,
+./brain/cognitive_layer/expert_models_layer.py:280:            response, latency, tokens = await self._call_model(expert, sub_task)
+./brain/cognitive_layer/expert_models_layer.py:287:                tokens_used=tokens,
+./brain/cognitive_layer/expert_models_layer.py:316:                    max_tokens=expert.max_tokens,
+./brain/cognitive_layer/expert_models_layer.py:320:                tokens = len(response.split())  # rough estimate
+./brain/cognitive_layer/expert_models_layer.py:321:                return response, latency, tokens
+./brain/cognitive_layer/intent_analyzer.py:106:                max_tokens=1000,
+./brain/cognitive_layer/planning_engine.py:198:                logger.warning("LLM decomposition failed: %s, using fallback", exc)
+./brain/cognitive_layer/planning_engine.py:199:                tasks = self._fallback_decomposition(goal)
+./brain/cognitive_layer/planning_engine.py:201:            tasks = self._fallback_decomposition(goal)
+./brain/cognitive_layer/planning_engine.py:205:    def _fallback_decomposition(self, goal: str) -> Dict[str, Task]:
+./brain/cognitive_layer/planning_engine.py:253:            pass
+./brain/cognitive_layer/reasoning_engine.py:197:                logger.warning("LLM reasoning failed: %s, using fallback", exc)
+./brain/cognitive_layer/reasoning_engine.py:198:                steps = self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:200:            steps = self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:229:                    pass
+./brain/cognitive_layer/reasoning_engine.py:232:            return self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:261:                    pass
+./brain/cognitive_layer/reasoning_engine.py:281:                    pass
+./brain/cognitive_layer/reasoning_engine.py:283:        return self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:305:                pass
+./brain/cognitive_layer/reasoning_engine.py:322:                pass
+./brain/cognitive_layer/reasoning_engine.py:324:        return self._fallback_chain_of_thought(problem)
+./brain/cognitive_layer/reasoning_engine.py:363:        return steps if steps else self._fallback_chain_of_thought(text)
+./brain/cognitive_layer/reasoning_engine.py:365:    def _fallback_chain_of_thought(self, problem: str) -> List[ReasoningStep]:
+./brain/config.py:30:    fallback_strategy: ReasoningStrategyType = ReasoningStrategyType.DECOMPOSITION
+./brain/config.py:39:    fallback_models: List[str] = ["gpt-4o-mini", "gpt-4o"]
+./brain/config.py:41:    max_tokens: int = Field(default=2000, ge=100, le=32000)
+./brain/config.py:98:    enable_fallback: bool = True
+./brain/config.py:99:    fallback_confidence: float = Field(default=0.3, ge=0.0, le=1.0)
+./brain/decision_engine.py:39:    fallback_model: Optional[str]
+./brain/decision_engine.py:45:    estimated_cost_tokens: int
+./brain/decision_engine.py:56:            "fallback_model": self.fallback_model,
+./brain/decision_engine.py:62:            "estimated_cost_tokens": self.estimated_cost_tokens,
+./brain/decision_engine.py:83:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:88:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:93:            "fallback": None,
+./brain/decision_engine.py:98:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:103:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:108:            "fallback": "openai/gpt-4o",
+./brain/decision_engine.py:115:        ComplexityLevel.SIMPLE: 1000,     # tokens
+./brain/decision_engine.py:142:        fallback_model = rule.get("fallback")
+./brain/decision_engine.py:176:            fallback_model=fallback_model,
+./brain/decision_engine.py:182:            estimated_cost_tokens=estimated_cost,
+./brain/decision_engine.py:309:                        tokens_used=result["tokens_used"],
+./brain/decision_engine.py:327:        max_tokens: int = 500,
+./brain/decision_engine.py:338:            max_tokens=max_tokens,
+./brain/evolution/phase7_lifecycle.py:20:    pass
+./brain/evolution/test_self_evolution.py:3:from unittest.mock import AsyncMock, MagicMock
+./brain/evolution/test_self_evolution.py:14:    # Mock dependencies
+./brain/evolution/test_self_evolution.py:15:    mock_policy_engine = AsyncMock()
+./brain/evolution/test_self_evolution.py:16:    mock_self_reflection = AsyncMock()
+./brain/evolution/test_self_evolution.py:17:    mock_decision_engine = AsyncMock()
+./brain/evolution/test_self_evolution.py:19:    # Mock LLM response for proposal generation
+./brain/evolution/test_self_evolution.py:20:    mock_decision_engine.decide.side_effect = [
+./brain/evolution/test_self_evolution.py:22:        MagicMock(primary_model="mock_model", llm_response=LLMResponse(
+./brain/evolution/test_self_evolution.py:32:            model="mock_model",
+./brain/evolution/test_self_evolution.py:33:            provider="mock_provider"
+./brain/evolution/test_self_evolution.py:36:        MagicMock(primary_model="mock_model", llm_response=LLMResponse(
+./brain/evolution/test_self_evolution.py:42:            model="mock_model",
+./brain/evolution/test_self_evolution.py:43:            provider="mock_provider"
+./brain/evolution/test_self_evolution.py:46:        MagicMock(primary_model="mock_model", llm_response=LLMResponse(
+./brain/evolution/test_self_evolution.py:52:            model="mock_model",
+./brain/evolution/test_self_evolution.py:53:            provider="mock_provider"
+./brain/evolution/test_self_evolution.py:57:    # Create an instance of SelfEvolution with mocked dependencies
+./brain/evolution/test_self_evolution.py:59:    evolution_engine._policy_engine = mock_policy_engine
+./brain/evolution/test_self_evolution.py:60:    evolution_engine._self_reflection = mock_self_reflection
+./brain/evolution/test_self_evolution.py:61:    evolution_engine._decision_engine = mock_decision_engine
+./brain/evolution/test_self_evolution.py:80:        actual_tokens_used=1000,
+./brain/evolution/test_self_evolution.py:81:        estimated_tokens=500,
+./brain/evolution/test_self_evolution.py:84:        cost_saving_suggestion="Reduce max_tokens",
+./brain/evolution/test_self_evolution.py:104:        mock_policy_engine.add_policy.assert_called_once()
+./brain/evolution/test_self_evolution.py:125:        actual_tokens_used=200,
+./brain/evolution/test_self_evolution.py:126:        estimated_tokens=200,
+./brain/execution_trace.py:37:    FALLBACK_TRIGGERED = "fallback_triggered"
+./brain/execution_trace.py:113:    fallback_triggered: bool = False
+./brain/execution_trace.py:136:            self.fallback_triggered = True
+./brain/execution_trace.py:201:            "fallback_triggered": self.fallback_triggered,
+./brain/execution_trace.py:410:    def record_fallback(
+./brain/execution_trace.py:414:        fallback_strategy: str,
+./brain/execution_trace.py:417:        """تسجيل fallback."""
+./brain/execution_trace.py:425:            "fallback",
+./brain/execution_trace.py:426:            f"تحويل من {original_strategy} إلى {fallback_strategy}",
+./brain/execution_trace.py:430:                "fallback_strategy": fallback_strategy,
+./brain/execution_trace.py:522:            "fallback_rate": (
+./brain/execution_trace.py:523:                sum(1 for t in completed if t.fallback_triggered) / len(completed)
+./brain/goal_manager.py:43:    "nlp": ["نموذج لغوي", "llm", "تدريب", "fine-tuning", "ضبط دقيق", "embedding", "tokenizer", "نص", "لغة"],
+./brain/graph_planner.py:232:                "max_tokens": task.estimated_tokens,
+./brain/improvement/autonomous_improvement.py:274:                    # Advisory only: any router change must enter Phase 7 and pass
+./brain/learning/continuous_learning.py:455:            tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True, use_fast=True)
+./brain/learning/continuous_learning.py:456:            if tokenizer.pad_token is None:
+./brain/learning/continuous_learning.py:457:                tokenizer.pad_token = tokenizer.eos_token
+./brain/learning/continuous_learning.py:486:            def tokenize_fn(examples):
+./brain/learning/continuous_learning.py:491:                return tokenizer(texts, truncation=True, max_length=512, padding="max_length")
+./brain/learning/continuous_learning.py:495:            tokenized = hf_dataset.map(tokenize_fn, batched=True, remove_columns=cols)
+./brain/learning/continuous_learning.py:496:            tokenized = tokenized.train_test_split(test_size=0.1, seed=42)
+./brain/learning/continuous_learning.py:519:                train_dataset=tokenized["train"],
+./brain/learning/continuous_learning.py:520:                eval_dataset=tokenized["test"],
+./brain/learning/continuous_learning.py:521:                data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+./brain/learning/continuous_learning.py:527:            tokenizer.save_pretrained(output_dir)
+./brain/learning/continuous_learning.py:533:                "train_samples": len(tokenized["train"]),
+./brain/learning/continuous_learning.py:596:            tokenizer = AutoTokenizer.from_pretrained(
+./brain/learning/continuous_learning.py:599:            if tokenizer.pad_token is None:
+./brain/learning/continuous_learning.py:600:                tokenizer.pad_token = tokenizer.eos_token
+./brain/learning/continuous_learning.py:625:            total_tokens = 0
+./brain/learning/continuous_learning.py:634:                    inputs = tokenizer(
+./brain/learning/continuous_learning.py:639:                    n_tokens = inputs["input_ids"].numel()
+./brain/learning/continuous_learning.py:640:                    total_loss += outputs.loss.item() * n_tokens
+./brain/learning/continuous_learning.py:641:                    total_tokens += n_tokens
+./brain/learning/continuous_learning.py:646:            perplexity = math.exp(total_loss / max(total_tokens, 1))
+./brain/learning/continuous_learning.py:647:            accuracy = correct / max(total_tokens, 1)
+./brain/learning/continuous_learning.py:652:                "total_tokens": total_tokens,
+./brain/learning/continuous_learning.py:653:                "avg_loss": round(total_loss / max(total_tokens, 1), 4),
+./brain/learning/continuous_learning.py:666:                    enc = tokenizer(
+./brain/learning/continuous_learning.py:670:                        gen = model.generate(**enc, max_new_tokens=64, do_sample=False)
+./brain/learning/continuous_learning.py:671:                    hyp = tokenizer.decode(
+./brain/learning/continuous_learning.py:672:                        gen[0][enc["input_ids"].shape[1]:], skip_special_tokens=True
+./brain/learning/phase6_lifecycle.py:116:    TOKENIZER_NAMES = ("tokenizer.json", "tokenizer.model", "tokenizer_config.json")
+./brain/memory/unified_interface.py:96:                pass
+./brain/memory/unified_interface.py:106:                pass
+./brain/memory/unified_interface.py:134:                pass
+./brain/metrics/model_performance_db.py:29:    total_tokens: int = 0
+./brain/metrics/model_performance_db.py:82:            "total_tokens": self.total_tokens,
+./brain/metrics/model_performance_db.py:117:        tokens_used: int,
+./brain/metrics/model_performance_db.py:126:        m.total_tokens += tokens_used
+./brain/metrics/model_performance_db.py:208:        total_tokens = sum(m.total_tokens for m in self._metrics.values())
+./brain/metrics/model_performance_db.py:212:            "total_tokens": total_tokens,
+./brain/metrics/model_performance_db.py:251:                    total_tokens=md.get("total_tokens", 0),
+./brain/metrics_engine.py:224:        pass
+./brain/model_router.py:31:    max_tokens: int
+./brain/model_router.py:33:    cost_per_1k_tokens: float
+./brain/model_router.py:49:    tokens_used: int
+./brain/model_router.py:56:    def prompt_tokens(self) -> int:
+./brain/model_router.py:57:        return int(self.metadata.get("prompt_tokens", 0))
+./brain/model_router.py:60:    def completion_tokens(self) -> int:
+./brain/model_router.py:61:        return int(self.metadata.get("completion_tokens", self.tokens_used))
+./brain/model_router.py:74:def _score_model(model: ModelConfig, capability: str, budget_tokens: int, prefer_local: bool = False) -> float:
+./brain/model_router.py:75:    if budget_tokens > model.max_tokens or budget_tokens > model.context_limit:
+./brain/model_router.py:81:    cost_score = 1.0 if model.cost_per_1k_tokens == 0 else max(0.1, 1 - model.cost_per_1k_tokens / 10)
+./brain/model_router.py:149:    def select_model(self, capability: str = "general", budget_tokens: int = 4096, force_local: bool = False, exclude: Optional[List[str]] = None) -> Optional[str]:
+./brain/model_router.py:151:        candidates = [(key, cfg) for key, cfg in self._models.items() if key not in exclude_set and self._registry_eligible(key, cfg) and _score_model(cfg, capability, budget_tokens) != float("-inf")]
+./brain/model_router.py:161:        return max(candidates, key=lambda pair: _score_model(pair[1], capability, budget_tokens, force_local or self._prefer_local))[0]
+./brain/model_router.py:181:            provider = provider_cls(LLMConfig(provider=adapter_name, model=cfg.model_id, api_key=api_key, api_base=cfg.base_url, max_tokens=cfg.max_tokens))
+./brain/model_router.py:187:    def _request(messages: List[Dict[str, str]], cfg: ModelConfig, budget_tokens: int, request_id: Optional[str] = None, stream: bool = False) -> LLMRequest:
+./brain/model_router.py:188:        return LLMRequest(messages=[LLMMessage(role=m["role"], content=m["content"]) for m in messages], model=cfg.model_id, max_tokens=min(budget_tokens, cfg.max_tokens), stream=stream, request_id=request_id)
+./brain/model_router.py:190:    async def route(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> RouteResult:
+./brain/model_router.py:196:        key = forced_key or self.select_model(capability, budget_tokens, force_local=local_preference)
+./brain/model_router.py:206:                key = self.select_model(capability, budget_tokens, force_local=local_preference, exclude=tried)
+./brain/model_router.py:211:                request = self._request(messages, cfg, budget_tokens, request_id=request_id)
+./brain/model_router.py:218:                    response = LLMResponse(content=text, model=cfg.model_id, provider=cfg.provider, completion_tokens=len(text.split()), total_tokens=len(text.split()))
+./brain/model_router.py:225:                return RouteResult(key, cfg.provider, latency, response.total_tokens or len(response.content.split()), response.content, True, metadata={"prompt_tokens": response.prompt_tokens, "completion_tokens": response.completion_tokens, "finish_reason": response.finish_reason})
+./brain/model_router.py:232:                key = self.select_model(capability, budget_tokens, force_local=local_preference, exclude=tried)
+./brain/model_router.py:235:    async def stream(self, messages: List[Dict[str, str]], capability: str = "general", budget_tokens: int = 4096, force_model: Optional[str] = None, timeout: float = 60.0, prefer_local: Optional[bool] = None, request_id: Optional[str] = None) -> AsyncGenerator[LLMStreamChunk, None]:
+./brain/model_router.py:239:        key = self._resolve_key(force_model) if force_model else self.select_model(capability, budget_tokens, force_local=local_preference)
+./brain/model_router.py:248:        request = self._request(messages, cfg, budget_tokens, request_id=request_id, stream=True)
+./brain/model_router.py:322:    async def list_available_models(self, capability: str = "general", budget_tokens: int = 4096) -> List[Dict[str, Any]]:
+./brain/model_router.py:325:            entry = {"key": key, "model_id": cfg.model_id, "provider": cfg.provider, "capabilities": cfg.capabilities, "context_limit": cfg.context_limit, "max_tokens": cfg.max_tokens, "is_local": cfg.is_local, "available": key in self._provider_registry, "registry_eligible": self._registry_eligible(key, cfg)}
+./brain/multi_model.py:32:    tokens: int
+./brain/multi_model.py:45:    total_tokens: int
+./brain/multi_model.py:55:            "total_tokens": self.total_tokens,
+./brain/multi_model.py:127:            total_tokens=sum(r.tokens for r in responses),
+./brain/multi_model.py:162:            total_tokens=sum(r.tokens for r in valid),
+./brain/multi_model.py:200:            total_tokens=sum(r.tokens for r in responses),
+./brain/multi_model.py:221:            total_tokens=sum(r.tokens for r in valid),
+./brain/multi_model.py:251:            total_tokens=sum(r.tokens for r in responses),
+./brain/multi_model.py:267:                    tokens=result.tokens_used,
+./brain/multi_model.py:277:            tokens=0,
+./brain/policy/policy_engine.py:51:        raise NotImplementedError
+./brain/policy/policy_engine.py:85:        "رقم الهوية", "رقم الجواز", "كلمة المرور", "password", "secret key",
+./brain/policy/policy_engine.py:110:        requested = ctx.get("estimated_tokens", 500)
+./brain/policy/policy_engine.py:159:            if self.action.get("type") == "reduce_max_tokens":
+./brain/policy/policy_engine.py:164:                    modifications={"max_tokens_factor": self.action["factor"]}
+./brain/prompts/unified_prompt_builder.py:115:        max_context_tokens: int = 3500,
+./brain/prompts/unified_prompt_builder.py:118:        super().__init__(max_context_tokens=max_context_tokens)
+./brain/prompts/unified_prompt_builder.py:214:            estimated_tokens=self.estimate_tokens(text),
+./brain/prompts/unified_prompt_builder.py:239:            context=self.trim_to_fit(context, max_tokens=self.max_context_tokens - 500),
+./brain/prompts/unified_prompt_builder.py:253:            estimated_tokens=self.estimate_tokens(text),
+./brain/prompts/unified_prompt_builder.py:294:            estimated_tokens=self.estimate_tokens(text),
+./brain/prompts/unified_prompt_builder.py:330:            estimated_tokens=self.estimate_tokens(text),
+./brain/prompts/unified_prompt_builder.py:348:            estimated_tokens=self.estimate_tokens(text),
+./brain/prompts/unified_prompt_builder.py:358:            estimated_tokens=self.estimate_tokens(prefix),
+./brain/prompts/unified_prompt_builder.py:416:    max_context_tokens: int = 3500,
+./brain/prompts/unified_prompt_builder.py:423:            max_context_tokens=max_context_tokens,
+./brain/reflection/self_evolution.py:104:                pass
+./brain/reflection/self_evolution.py:112:                "cloud_fallback_enabled": True,
+./brain/reflection/self_evolution.py:113:                "max_cloud_tokens_per_day": 100000,
+./brain/reflection/self_reflection.py:54:    actual_tokens_used: int
+./brain/reflection/self_reflection.py:55:    estimated_tokens: int
+./brain/reflection/self_reflection.py:120:        actual_tokens: int,
+./brain/reflection/self_reflection.py:121:        estimated_tokens: int,
+./brain/reflection/self_reflection.py:135:            actual_tokens=actual_tokens,
+./brain/reflection/self_reflection.py:136:            estimated_tokens=estimated_tokens,
+./brain/reflection/self_reflection.py:150:        actual_tokens: int,
+./brain/reflection/self_reflection.py:151:        estimated_tokens: int,
+./brain/reflection/self_reflection.py:168:        token_ratio = actual_tokens / max(estimated_tokens, 1)
+./brain/reflection/self_reflection.py:169:        cost_can_reduce = token_ratio > 1.3  # استُخدم أكثر من المتوقع بـ 30%
+./brain/reflection/self_reflection.py:176:        efficiency_score = min(1.0, max(0, 1 - abs(token_ratio - 1) * 0.5))
+./brain/reflection/self_reflection.py:182:            actual_latency_ms, token_ratio, model_used, response_quality
+./brain/reflection/self_reflection.py:186:            model_used, response_quality, actual_latency_ms, context, estimated_tokens
+./brain/reflection/self_reflection.py:198:            cost_suggestion = f"قلّل max_tokens إلى {int(estimated_tokens * 0.8)}"
+./brain/reflection/self_reflection.py:216:            actual_tokens_used=actual_tokens,
+./brain/reflection/self_reflection.py:217:            estimated_tokens=estimated_tokens,
+./brain/reflection/self_reflection.py:240:        increase_quality: bool, latency_ms: float, token_ratio: float, model_used: str, quality: float
+./brain/reflection/self_reflection.py:248:            lessons.append(f"استخدام token_ratio={token_ratio:.1f}x — قلّل max_tokens")
+./brain/reflection/self_reflection.py:262:                "token_efficiency_ratio": token_ratio,
+./brain/reflection/self_reflection.py:272:        reduce_cost: bool, model: str, quality: float, latency_ms: float, context: Dict[str, Any], estimated_tokens: int
+./brain/reflection/self_reflection.py:303:            recs.append("pending canonical approval: token efficiency policy candidate")
+./brain/reflection/self_reflection.py:356:            # For demonstration, let's assume a direct call via a mock or simple LLM interface
+./brain/reflection/self_reflection.py:358:            # For now, let's mock the LLM call or use a simple placeholder.
+./brain/reflection/self_reflection.py:361:            mock_llm_response = {
+./brain/reflection/self_reflection.py:377:                max_tokens=500
+./brain/reflection/test_self_reflection.py:16:        actual_tokens=100,
+./brain/reflection/test_self_reflection.py:17:        estimated_tokens=120,
+./brain/reflection/test_self_reflection.py:34:        actual_tokens=300,
+./brain/reflection/test_self_reflection.py:35:        estimated_tokens=250,
+./brain/reflection/test_self_reflection.py:52:        actual_tokens=500,
+./brain/reflection/test_self_reflection.py:53:        estimated_tokens=300,
+./brain/sovereignty/sovereignty_layer.py:243:            pass
+./brain/task_decomposer.py:44:    estimated_tokens: int
+./brain/task_decomposer.py:60:            "estimated_tokens": self.estimated_tokens,
+./brain/task_decomposer.py:71:    total_estimated_tokens: int
+./brain/task_decomposer.py:86:                # Circular dependency fallback — أضف الجميع
+./brain/task_decomposer.py:100:            "total_estimated_tokens": self.total_estimated_tokens,
+./brain/task_decomposer.py:119:        total_tokens = sum(t.estimated_tokens for t in tasks)
+./brain/task_decomposer.py:120:        # تقدير زمن التنفيذ: 1 ثانية لكل 100 token + 2ث لكل مهمة
+./brain/task_decomposer.py:121:        duration = (total_tokens / 100) + (len(tasks) * 2)
+./brain/task_decomposer.py:127:            total_estimated_tokens=total_tokens,
+./brain/task_decomposer.py:134:            "task_decomposer: goal=%s → %d tasks, tokens≈%d, duration≈%.1fs",
+./brain/task_decomposer.py:135:            goal.goal_id, len(tasks), total_tokens, duration
+./brain/task_decomposer.py:162:                estimated_tokens=self._estimate_tokens(sub_task_name, goal),
+./brain/task_decomposer.py:223:    def _estimate_tokens(self, task_name: str, goal: Goal) -> int:
+./brain/tests/test_brain_components.py:200:            "estimated_tokens": 500,
+./brain/tests/test_brain_components.py:209:            "estimated_tokens": 200,
+./brain/tests/test_brain_components.py:216:            "estimated_tokens": 100,
+./cloud/dataset_manager.py:75:            "token": self.client.token or None,
+./cloud/hf_client.py:28:        token: Optional[str] = None,
+./cloud/hf_client.py:32:        self.token = token or os.getenv("HF_TOKEN", "")
+./cloud/hf_client.py:47:                self._api = HfApi(token=self.token)
+./cloud/hf_client.py:63:            if not self.token:
+./cloud/hf_client.py:66:            login(token=self.token, add_to_git_credential=False)
+./cloud/hf_client.py:67:            user_info = whoami(token=self.token)
+./cloud/hf_client.py:171:                token=self.token,
+./cloud/model_manager.py:3:رفع وتحميل model weights, checkpoints, tokenizer, config
+./cloud/model_manager.py:26:    مدير النموذج: رفع وتحميل الأوزان، الـ checkpoints، الـ tokenizer.
+./cloud/model_manager.py:30:        "tokenizer.json",
+./cloud/model_manager.py:33:        "tokenizer_config.json",
+./cloud/model_manager.py:34:        "special_tokens_map.json",
+./cloud/model_manager.py:141:                token=self.client.token or None,
+./cloud/model_manager.py:172:    def upload_tokenizer(
+./cloud/model_manager.py:174:        tokenizer_dir: str,
+./cloud/model_manager.py:178:        رفع ملفات الـ tokenizer إلى HuggingFace.
+./cloud/model_manager.py:181:        tokenizer_path = Path(tokenizer_dir)
+./cloud/model_manager.py:185:            fpath = tokenizer_path / fname
+./cloud/model_manager.py:192:                    repo_path=f"tokenizer/{version}/{fname}",
+./cloud/model_manager.py:257:                        pass
+./configs/filters.yaml:44:  fallback_to_metadata: true
+./configs/processing.yaml:9:  fallback_to_bs4: true
+./configs/processing.yaml:38:  fallback_to_metadata: true
+./configs/processing.yaml:99:  strategy: "paragraph"   # paragraph | sentence | fixed | token_estimate
+./configs/processing.yaml:105:tokenizer:
+./configs/redis.py:31:    password: Optional[str] = field(default_factory=lambda: os.getenv("REDIS_PASSWORD"))
+./configs/redis.py:43:        auth = f":{self.password}@" if self.password else ""
+./configs/redis.py:51:            # Parse redis://[:password@]host[:port][/db]
+./configs/redis.py:59:                    password=parsed.password,
+./configs/redis.py:62:                pass
+./configs/redis.py:109:                pass
+./configs/redis.py:118:                pass
+./configs/redis.py:252:            password=self.config.password,
+./configs/redis.py:269:            password=self.config.password,
+./core/alignment/alignment_pipeline.py:67:        tokenizer: Any,
+./core/alignment/alignment_pipeline.py:79:        tokenizer    : HuggingFace tokenizer
+./core/alignment/alignment_pipeline.py:93:            tokenizer=tokenizer,
+./core/alignment/alignment_pipeline.py:113:        tokenizer: Any,
+./core/alignment/alignment_pipeline.py:133:            tokenizer=tokenizer,
+./core/alignment/dpo_trainer.py:35:    def setup(self, model: Any, ref_model: Optional[Any], tokenizer: Any, train_dataset: Any, eval_dataset: Optional[Any] = None) -> None:
+./core/alignment/dpo_trainer.py:62:                tokenizer=tokenizer,
+./core/alignment/ppo_trainer.py:38:    def setup(self, model: Any, ref_model: Optional[Any] = None, tokenizer: Any = None, dataset: Any = None):
+./core/alignment/ppo_trainer.py:68:                tokenizer=tokenizer,
+./core/alignment/ppo_trainer.py:89:            "pad_token_id": self.ppo_trainer.tokenizer.pad_token_id,
+./core/alignment/ppo_trainer.py:90:            "max_new_tokens": 32,
+./core/alignment/ppo_trainer.py:101:                batch["response"] = [self.ppo_trainer.tokenizer.decode(r.squeeze()) for r in response_tensors]
+./core/alignment/reward_model.py:23:        self.tokenizer = None
+./core/alignment/reward_model.py:26:        """Load the reward model and tokenizer."""
+./core/alignment/reward_model.py:33:            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
+./core/alignment/reward_model.py:45:        if self.model is None or self.tokenizer is None:
+./core/alignment/reward_model.py:49:        inputs = self.tokenizer(prompt, response, return_tensors="pt", truncation=True).to(self.device)
+./core/context_intelligence/context_engine.py:49:    def compress_long_conversation(self, conversation_history: List[str], max_tokens: int) -> str:
+./core/context_intelligence/context_engine.py:51:        Compresses a long conversation history to fit within a token limit.
+./core/context_intelligence/context_engine.py:55:        logger.info(f"Compressing conversation history to {max_tokens} tokens (placeholder).")
+./core/context_intelligence/context_engine.py:76:    def get_retrieval_aware_context(self, query: str, conversation_history: List[str], max_tokens: int = 2048) -> Dict[str, Any]:
+./core/context_intelligence/context_engine.py:84:        compressed_history = self.compress_long_conversation(conversation_history, max_tokens)
+./core/embeddings/base.py:33:    token_count: int = 0
+./core/embeddings/base.py:45:            "token_count": self.token_count,
+./core/embeddings/base.py:92:        token_count = len(text.split())
+./core/embeddings/base.py:99:            token_count=token_count,
+./core/embeddings/base.py:128:                token_count=len(text.split()),
+./core/embeddings/embedding_models.py:21:                "sentence-transformers not installed. Using HuggingFace AutoModel fallback."
+./core/embeddings/embedding_models.py:28:            tokenizer = AutoTokenizer.from_pretrained(model_name)
+./core/embeddings/embedding_models.py:30:            return {"tokenizer": tokenizer, "model": model, "type": "hf"}
+./core/embeddings/embedding_models.py:47:            pass
+./core/embeddings/embedding_models.py:57:        tokenizer = model_dict["tokenizer"]
+./core/embeddings/embedding_models.py:59:        encoded = tokenizer(texts, padding=True, truncation=True, return_tensors="pt", max_length=512)
+./core/embeddings/embedding_models.py:80:            pass
+./core/hf_integration/hub_manager.py:13:    def __init__(self, token: Optional[str] = None):
+./core/hf_integration/hub_manager.py:14:        self.token = token or os.getenv("HF_TOKEN")
+./core/hf_integration/hub_manager.py:15:        self.api = HfApi(token=self.token)
+./core/hf_integration/hub_manager.py:27:            token=self.token
+./core/hf_integration/hub_manager.py:37:        dataset = load_dataset(repo_id, split=split, token=self.token)
+./core/hf_integration/hub_manager.py:71:        updated_ds.push_to_hub(repo_id, token=self.token)
+./core/inference_engine/__init__.py:6:from .token_tracker import TokenTracker
+./core/inference_engine/batching.py:26:    tokens_generated: int
+./core/inference_engine/context_manager.py:12:    def __init__(self, max_context_tokens: int = 4096, reserve_tokens: int = 512) -> None:
+./core/inference_engine/context_manager.py:13:        self.max_context_tokens = max_context_tokens
+./core/inference_engine/context_manager.py:14:        self.reserve_tokens = reserve_tokens
+./core/inference_engine/context_manager.py:18:        return self.max_context_tokens - self.reserve_tokens
+./core/inference_engine/context_manager.py:23:        tokenizer: Any,
+./core/inference_engine/context_manager.py:30:            system_tokens = self._count_text(system_message, tokenizer)
+./core/inference_engine/context_manager.py:32:            system_tokens = 0
+./core/inference_engine/context_manager.py:34:        budget = self.available_context - system_tokens
+./core/inference_engine/context_manager.py:39:            tokens = self._count_text(msg.get("content", ""), tokenizer)
+./core/inference_engine/context_manager.py:40:            if used + tokens > budget:
+./core/inference_engine/context_manager.py:43:            used += tokens
+./core/inference_engine/context_manager.py:50:    def fit_text(self, text: str, tokenizer: Any, max_tokens: Optional[int] = None) -> str:
+./core/inference_engine/context_manager.py:51:        limit = max_tokens or self.available_context
+./core/inference_engine/context_manager.py:52:        tokens = self._encode(text, tokenizer)
+./core/inference_engine/context_manager.py:53:        if len(tokens) <= limit:
+./core/inference_engine/context_manager.py:55:        truncated = tokens[:limit]
+./core/inference_engine/context_manager.py:56:        return self._decode(truncated, tokenizer)
+./core/inference_engine/context_manager.py:58:    def estimate_tokens(self, messages: List[Dict]) -> int:
+./core/inference_engine/context_manager.py:65:    def _count_text(self, text: str, tokenizer: Any) -> int:
+./core/inference_engine/context_manager.py:67:            return len(tokenizer.encode(text))
+./core/inference_engine/context_manager.py:71:    def _encode(self, text: str, tokenizer: Any) -> List[int]:
+./core/inference_engine/context_manager.py:73:            return tokenizer.encode(text)
+./core/inference_engine/context_manager.py:78:    def _decode(self, token_ids: List[int], tokenizer: Any) -> str:
+./core/inference_engine/context_manager.py:80:            return tokenizer.decode(token_ids, skip_special_tokens=True)
+./core/inference_engine/context_manager.py:82:            return text[:len(token_ids) * 4]  # type: ignore
+./core/inference_engine/engine.py:16:from .token_tracker import TokenTracker
+./core/inference_engine/engine.py:47:        self.token_tracker = TokenTracker()
+./core/inference_engine/engine.py:86:        max_tokens: Optional[int] = None,
+./core/inference_engine/engine.py:100:            max_tokens=max_tokens,
+./core/inference_engine/engine.py:115:        self.token_tracker.record(
+./core/inference_engine/engine.py:119:            prompt_tokens=response.prompt_tokens,
+./core/inference_engine/engine.py:120:            completion_tokens=response.completion_tokens,
+./core/inference_engine/engine.py:132:        max_tokens: Optional[int] = None,
+./core/inference_engine/engine.py:146:            max_tokens=max_tokens,
+./core/inference_engine/engine.py:198:        token_stats = self.token_tracker.get_stats()
+./core/inference_engine/engine.py:201:            "tokens": {
+./core/inference_engine/engine.py:202:                "total_requests": token_stats.total_requests,
+./core/inference_engine/engine.py:203:                "total_tokens": token_stats.total_tokens,
+./core/inference_engine/engine.py:204:                "avg_per_request": round(token_stats.avg_tokens_per_request, 1),
+./core/inference_engine/engine.py:205:                "avg_latency_ms": round(token_stats.avg_latency_ms, 2),
+./core/inference_engine/engine.py:206:                "by_model": token_stats.by_model,
+./core/inference_engine/engine.py:207:                "by_provider": token_stats.by_provider,
+./core/inference_engine/engine.py:225:                pass
+./core/inference_engine/generation.py:15:    def __init__(self, model: Any, tokenizer: Any, device: str = "cpu") -> None:
+./core/inference_engine/generation.py:17:        self.tokenizer = tokenizer
+./core/inference_engine/generation.py:24:            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+./core/inference_engine/generation.py:32:            return self.tokenizer.decode(new_ids, skip_special_tokens=True)
+./core/inference_engine/generation.py:48:            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+./core/inference_engine/generation.py:50:                self.tokenizer, skip_prompt=True, skip_special_tokens=True
+./core/inference_engine/generation.py:70:            "max_new_tokens": config.max_new_tokens,
+./core/inference_engine/generation.py:73:            "pad_token_id": getattr(self.tokenizer, "eos_token_id", 0),
+./core/inference_engine/inference_config.py:10:    max_new_tokens: int = Field(default=512, ge=1, le=32768)
+./core/inference_engine/request_handler.py:77:        default_max_tokens: int = 1024,
+=== route files ===
+api/__init__.py
+api/dependencies.py
+api/main.py
+api/v1/__init__.py
+api/v1/ai/__init__.py
+api/v1/ai/chat.py
+api/v1/ai/completion.py
+api/v1/ai/embeddings.py
+api/v1/ai/health.py
+api/v1/ai/models.py
+api/v1/ai/rerank.py
+api/v1/ai/router.py
+api/v1/ai/websocket.py
+api/v1/auth/__init__.py
+api/v1/auth/router.py
+api/v1/channels/__init__.py
+api/v1/channels/router.py
+api/v1/embeddings/__init__.py
+api/v1/embeddings/router.py
+api/v1/hajeen_model_router.py
+api/v1/ingestion/__init__.py
+api/v1/router.py
+api/v1/search/__init__.py
+api/v1/search/router.py
+api/v1/tasks/__init__.py
+api/v1/tasks/router.py
+api/v1/webhooks/__init__.py
+=== route decorators ===
+api/main.py:178:@app.get("/health", tags=["Health"])
+api/main.py:246:@app.get("/ping", tags=["Health"])
+api/main.py:253:@app.get("/api/v1/storage/stats", tags=["Storage"])
+api/main.py:267:@app.post("/api/v1/index/articles", tags=["Indexing"], summary="فهرسة مقالات في Vector Store")
+api/main.py:307:@app.websocket("/ws/chat")
+api/v1/ai/chat.py:97:@router.post("/chat", response_model=ChatResponse, summary="AI Chat via Brain V3")
+api/v1/ai/chat.py:189:@router.post("/chat/stream", summary="Streaming Chat via Brain V3")
+api/v1/ai/completion.py:48:@router.post("/completion", response_model=CompletionResponse, summary="Text Completion عبر HajeenBrainV3")
+api/v1/ai/completion.py:95:@router.post("/completion/stream", summary="Streaming Text Completion عبر HajeenBrainV3")
+api/v1/ai/embeddings.py:35:@router.post("/embeddings", response_model=EmbeddingResponse, summary="Generate Embeddings")
+api/v1/ai/health.py:26:@router.get("/health", response_model=AIHealthResponse, summary="AI System Health")
+api/v1/ai/models.py:30:@router.get("/models", response_model=ModelsListResponse, summary="List Available Models")
+api/v1/ai/models.py:48:@router.get("/models/{model_id}", response_model=ModelInfo, summary="Get Model Info")
+api/v1/ai/rerank.py:40:@router.post("/rerank", response_model=RerankResponse, summary="Rerank Documents")
+api/v1/ai/router.py:76:@router.post("/chat", summary="محادثة AI موحدة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:132:@router.post("/chat/stream", summary="محادثة AI متدفقة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:205:@router.post("/rag/query", summary="RAG Query عبر HajeenBrainV3", tags=["AI", "RAG"])
+api/v1/ai/router.py:254:@router.get("/models", summary="النماذج المتاحة", tags=["AI"])
+api/v1/ai/router.py:268:@router.get("/chat/sessions/{session_id}", summary="معلومات جلسة المحادثة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:287:@router.post("/chat/sessions/{session_id}/clear", summary="مسح جلسة محادثة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:308:@router.get("/stats", summary="إحصائيات HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:319:@router.post("/evaluate", summary="تشغيل إطار التقييم", tags=["AI"])
+api/v1/auth/router.py:98:@router.post("/register", summary="تسجيل مستخدم جديد", status_code=201)
+api/v1/auth/router.py:126:@router.post("/login", response_model=TokenResponse, summary="تسجيل الدخول")
+api/v1/auth/router.py:169:@router.post("/refresh", response_model=TokenResponse, summary="تجديد التوكن")
+api/v1/auth/router.py:192:@router.post("/revoke", summary="إلغاء صلاحية التوكن")
+api/v1/auth/router.py:199:@router.get("/apikeys", summary="قائمة مفاتيح API للمستخدم الحالي")
+api/v1/auth/router.py:209:@router.get("/apikeys/{key_id}", summary="الحصول على تفاصيل مفتاح API")
+api/v1/auth/router.py:221:@router.delete("/apikeys/{key_id}", summary="إلغاء مفتاح API")
+api/v1/auth/router.py:237:@router.get("/me", summary="معلومات المستخدم الحالي")
+api/v1/auth/router.py:256:@router.post("/apikeys", summary="إنشاء API Key جديد")
+api/v1/auth/router.py:287:@router.get("/users", summary="قائمة المستخدمين (admin فقط)")
+api/v1/channels/router.py:161:@router.post("", response_model=ChannelResponse, status_code=201)
+api/v1/channels/router.py:216:@router.get("", response_model=List[ChannelResponse])
+api/v1/channels/router.py:244:@router.get("/{channel_id}", response_model=ChannelResponse)
+api/v1/channels/router.py:262:@router.put("/{channel_id}", response_model=ChannelResponse)
+api/v1/channels/router.py:310:@router.delete("/{channel_id}", status_code=204)
+api/v1/channels/router.py:323:@router.patch("/{channel_id}/pause", response_model=ChannelResponse)
+api/v1/channels/router.py:342:@router.patch("/{channel_id}/resume", response_model=ChannelResponse)
+api/v1/channels/router.py:361:@router.post("/{channel_id}/trigger", response_model=TriggerResponse)
+api/v1/channels/router.py:472:@router.get("/{channel_id}/status", response_model=StatusResponse)
+api/v1/channels/router.py:518:@router.get("/{channel_id}/audit")
+api/v1/embeddings/router.py:38:@router.post("/generate", response_model=EmbedResponse, summary="توليد Embeddings")
+api/v1/embeddings/router.py:70:@router.get("/models", summary="قائمة النماذج المتاحة")
+api/v1/embeddings/router.py:77:@router.get("/health", summary="فحص صحة Embedding Engine")
+api/v1/hajeen_model_router.py:94:@router.get("/health")
+api/v1/hajeen_model_router.py:113:@router.get("/info")
+api/v1/hajeen_model_router.py:132:@router.post("/chat")
+api/v1/hajeen_model_router.py:174:@router.post("/complete")
+api/v1/hajeen_model_router.py:214:@router.post("/stream")
+api/v1/hajeen_model_router.py:269:@router.get("/ollama/status")
+api/v1/hajeen_model_router.py:282:@router.post("/ollama/pull")
+api/v1/hajeen_model_router.py:301:@router.get("/training/status")
+api/v1/hajeen_model_router.py:314:@router.post("/training/build-dataset")
+api/v1/hajeen_model_router.py:330:@router.post("/training/simulate")
+api/v1/hajeen_model_router.py:352:@router.post("/evaluate")
+api/v1/hajeen_model_router.py:364:@router.get("/training/checkpoints")
+api/v1/router.py:13:@router.get("/health", tags=["Health"])
+api/v1/router.py:18:@router.get("/ping", tags=["Health"])
+api/v1/search/router.py:73:@router.post("/", response_model=SearchResponseOut, summary="بحث دلالي")
+api/v1/search/router.py:100:@router.post("/semantic", response_model=SearchResponseOut, summary="بحث دلالي متقدم")
+api/v1/search/router.py:127:@router.post("/rag", response_model=RAGResponseOut, summary="RAG Pipeline")
+api/v1/search/router.py:164:@router.get("/stats", summary="إحصائيات البحث")
+api/v1/tasks/router.py:103:@router.post(
+api/v1/tasks/router.py:133:@router.post(
+api/v1/tasks/router.py:180:@router.get(
+api/v1/tasks/router.py:221:@router.post(
+api/v1/tasks/router.py:249:@router.post(
+api/v1/tasks/router.py:270:@router.get(
+api/v1/tasks/router.py:307:@router.post(
+api/v1/tasks/router.py:329:@router.post(
+api/v1/tasks/router.py:355:@router.get(
+api/v1/tasks/router.py:368:@router.get(
+api/v1/tasks/router.py:381:@router.get(
+api/v1/tasks/router.py:400:@router.get(
+=== auth/security references ===
+api/dependencies.py:8:from fastapi import Depends
+api/dependencies.py:26:StorageManagerDep = Annotated[StorageManager, Depends(get_storage_manager)]
+api/main.py:27:from fastapi.middleware.cors import CORSMiddleware
+api/main.py:80:app.add_middleware(
+api/main.py:165:@app.middleware("http")
+api/main.py:501:        from security.middleware.auth_middleware import AuthMiddleware
+api/main.py:502:        app.add_middleware(AuthMiddleware, enable_rate_limiting=True)
+api/main.py:536:    from api.v1.auth.router import router as auth_router
+api/main.py:537:    app.include_router(auth_router, prefix="/api/v1")
+api/v1/ai/chat.py:35:    role: str = Field(..., pattern="^(user|assistant|system)$")
+api/v1/ai/chat.py:80:        if m.role == "user":
+api/v1/ai/chat.py:90:        if m.role == "user" and not last_user_found:
+api/v1/ai/chat.py:93:        history.insert(0, {"role": m.role, "content": m.content})
+api/v1/ai/chat.py:147:                (m.content for m in body.messages if m.role == "system"), None
+api/v1/ai/chat.py:176:                message=ChatMessage(role="assistant", content=response_text),
+api/v1/ai/router.py:37:    role: str = Field(..., pattern="^(system|user|assistant)$")
+api/v1/ai/router.py:263:    return {"models": models, "routing_authority": "ModelRouter"}
+api/v1/auth/__init__.py:1:from api.v1.auth.router import router
+api/v1/auth/router.py:13:from security.auth.api_key_manager import get_api_key_manager
+api/v1/auth/router.py:16:router = APIRouter(prefix="/auth", tags=["Authentication"])
+api/v1/auth/router.py:27:    tenant_id: str = Field(default="default")
+api/v1/auth/router.py:28:    roles: List[str] = Field(default=["user"])
+api/v1/auth/router.py:34:    tenant_id: str = "default"
+api/v1/auth/router.py:47:    roles: List[str] = Field(default=["user"]) # Changed from scopes to roles for consistency with RBAC
+api/v1/auth/router.py:57:    roles: List[str]
+api/v1/auth/router.py:58:    tenant_id: str
+api/v1/auth/router.py:69:        "roles": ["superadmin"],
+api/v1/auth/router.py:70:        "tenant_id": "default",
+api/v1/auth/router.py:88:def _get_jwt_auth():
+api/v1/auth/router.py:91:    from security.auth.jwt_auth import JWTAuthenticator
+api/v1/auth/router.py:92:    from security.auth.revoked_tokens import get_revoked_token_store
+api/v1/auth/router.py:96:# ── POST /auth/register ───────────────────────────────────────────────────────
+api/v1/auth/router.py:109:        "roles": body.roles,
+api/v1/auth/router.py:110:        "tenant_id": body.tenant_id,
+api/v1/auth/router.py:114:    logger.info("New user registered: %s (tenant=%s)", body.username, body.tenant_id)
+api/v1/auth/router.py:119:        "roles": body.roles,
+api/v1/auth/router.py:124:# ── POST /auth/login ──────────────────────────────────────────────────────────
+api/v1/auth/router.py:142:    jwt = _get_jwt_auth()
+api/v1/auth/router.py:143:    access_token = jwt.issue_token(
+api/v1/auth/router.py:145:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:146:        roles=user["roles"],
+api/v1/auth/router.py:149:    refresh_token = jwt.issue_token(
+api/v1/auth/router.py:151:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:152:        roles=user["roles"],
+api/v1/auth/router.py:162:        roles=user["roles"],
+api/v1/auth/router.py:163:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:167:# ── POST /auth/refresh ────────────────────────────────────────────────────────
+api/v1/auth/router.py:172:        jwt = _get_jwt_auth()
+api/v1/auth/router.py:173:        new_access = jwt.refresh_access_token(body.refresh_token)
+api/v1/auth/router.py:174:        claims = jwt.validate_token(new_access)
+api/v1/auth/router.py:175:        new_refresh = jwt.issue_token(
+api/v1/auth/router.py:176:            claims.sub, claims.tenant_id, claims.roles, "refresh"
+api/v1/auth/router.py:183:            roles=claims.roles,
+api/v1/auth/router.py:184:            tenant_id=claims.tenant_id,
+api/v1/auth/router.py:190:# ── POST /auth/revoke ─────────────────────────────────────────────────────────
+api/v1/auth/router.py:194:    jwt_auth = _get_jwt_auth()
+api/v1/auth/router.py:195:    jwt_auth.revoke_token(body.token)
+api/v1/auth/router.py:235:# ── GET /auth/me ──────────────────────────────────────────────────────────────
+api/v1/auth/router.py:240:    roles = getattr(request.state, "roles", [])
+api/v1/auth/router.py:241:    tenant_id = getattr(request.state, "tenant_id", "default")
+api/v1/auth/router.py:246:        "roles": roles,
+api/v1/auth/router.py:247:        "tenant_id": tenant_id,
+api/v1/auth/router.py:248:        "permissions": [p.value for p in __import__(
+api/v1/auth/router.py:249:            "security.rbac.rbac", fromlist=["get_all_permissions"]
+api/v1/auth/router.py:250:        ).get_all_permissions(roles)],
+api/v1/auth/router.py:254:# ── POST /auth/apikeys ────────────────────────────────────────────────────────
+api/v1/auth/router.py:259:    tenant_id = getattr(request.state, "tenant_id", "default")
+api/v1/auth/router.py:264:        tenant_id=tenant_id,
+api/v1/auth/router.py:265:        roles=body.roles,
+api/v1/auth/router.py:276:        "roles": api_key_obj.roles,
+api/v1/auth/router.py:278:        "tenant_id": tenant_id,
+api/v1/auth/router.py:285:# ── GET /auth/users ───────────────────────────────────────────────────────────
+api/v1/auth/router.py:289:    roles = getattr(request.state, "roles", [])
+api/v1/auth/router.py:290:    if "admin" not in roles and "superadmin" not in roles:
+api/v1/hajeen_model_router.py:44:    role: str = Field(..., description="user | assistant | system")
+api/v1/hajeen_model_router.py:183:        (m.content for m in reversed(req.messages) if m.role == "user"),
+api/v1/hajeen_model_router.py:187:        {"role": m.role, "content": m.content}
+api/v1/search/router.py:8:from fastapi import APIRouter, Depends, HTTPException, Query
+security/api_keys/api_key_manager.py:23:    tenant_id: str
+security/api_keys/api_key_manager.py:42:        tenant_id: str,
+security/api_keys/api_key_manager.py:59:            tenant_id=tenant_id,
+security/api_keys/api_key_manager.py:99:    def revoke_key(self, key_id: str, tenant_id: str) -> bool:
+security/api_keys/api_key_manager.py:101:            "UPDATE api_keys SET is_active = FALSE WHERE key_id = %s AND tenant_id = %s",
+security/api_keys/api_key_manager.py:102:            (key_id, tenant_id),
+security/api_keys/api_key_manager.py:113:               (key_id, name, tenant_id, user_id, scopes, hash,
+security/api_keys/api_key_manager.py:117:                api_key.key_id, api_key.name, api_key.tenant_id,
+security/audit/audit_logger.py:23:    PERMISSION_DENIED = "permission:denied"
+security/audit/audit_logger.py:24:    RATE_LIMITED      = "rate:limited"
+security/audit/audit_logger.py:36:    tenant_id: str = ""
+security/audit/audit_logger.py:71:            "event_id", "timestamp", "tenant_id", "user_id", "action",
+security/audit/audit_logger.py:100:        tenant_id: str,
+security/audit/audit_logger.py:110:            tenant_id=tenant_id,
+security/audit/audit_logger.py:128:            "AUDIT action=%s resource=%s/%s user=%s tenant=%s status=%s",
+security/audit/audit_logger.py:129:            action, resource_type, resource_id, user_id, tenant_id, status,
+security/audit/audit_logger.py:136:               (event_id, timestamp, tenant_id, user_id, action,
+security/audit/audit_logger.py:141:                event.event_id, event.timestamp, event.tenant_id, event.user_id,
+security/auth/api_key_manager.py:13:    tenant_id: str
+security/auth/api_key_manager.py:14:    roles: List[str]
+security/auth/api_key_manager.py:25:            "tenant_id": self.tenant_id,
+security/auth/api_key_manager.py:26:            "roles": self.roles,
+security/auth/api_key_manager.py:44:    def generate_key(self, user_id: str, tenant_id: str, roles: List[str], expires_in_seconds: Optional[int] = None, metadata: Optional[Dict[str, str]] = None) -> Tuple[str, APIKey]:
+security/auth/api_key_manager.py:55:            tenant_id=tenant_id,
+security/auth/api_key_manager.py:56:            roles=roles,
+security/auth/jwt_auth.py:11:import jwt
+security/auth/jwt_auth.py:13:from security.auth.revoked_tokens import get_revoked_token_store
+security/auth/jwt_auth.py:26:    tenant_id: str
+security/auth/jwt_auth.py:27:    roles: List[str]
+security/auth/jwt_auth.py:50:        tenant_id: str,
+security/auth/jwt_auth.py:51:        roles: List[str],
+security/auth/jwt_auth.py:58:            "tenant_id": tenant_id,
+security/auth/jwt_auth.py:59:            "roles": roles,
+security/auth/jwt_auth.py:65:        return jwt.encode(payload, self.secret, algorithm=self.algorithm)
+security/auth/jwt_auth.py:69:            payload = jwt.decode(
+security/auth/jwt_auth.py:75:        except jwt.ExpiredSignatureError:
+security/auth/jwt_auth.py:77:        except jwt.InvalidTokenError as exc:
+security/auth/jwt_auth.py:85:            tenant_id=payload["tenant_id"],
+security/auth/jwt_auth.py:86:            roles=payload.get("roles", []),
+security/auth/jwt_auth.py:95:            payload = jwt.decode(
+security/auth/jwt_auth.py:102:        except jwt.InvalidTokenError:
+security/auth/jwt_auth.py:109:        return self.issue_token(claims.sub, claims.tenant_id, claims.roles)
+security/middleware/__init__.py:1:"""Security middleware."""
+security/middleware/__init__.py:2:from security.middleware.auth_middleware import AuthMiddleware
+security/middleware/auth_middleware.py:13:from starlette.middleware.base import BaseHTTPMiddleware
+security/middleware/auth_middleware.py:16:from security.rbac.rbac import ROUTE_PERMISSIONS, has_permission
+security/middleware/auth_middleware.py:29:    "/api/v1/auth/login",
+security/middleware/auth_middleware.py:30:    "/api/v1/auth/register",
+security/middleware/auth_middleware.py:31:    "/api/v1/auth/refresh",
+security/middleware/auth_middleware.py:39:    auth = request.headers.get("Authorization", "")
+security/middleware/auth_middleware.py:40:    if auth.startswith("Bearer "):
+security/middleware/auth_middleware.py:41:        return auth[7:].strip(), "bearer"
+security/middleware/auth_middleware.py:60:    """Middleware شامل: JWT/APIKey auth + RBAC + Rate Limiting + Audit."""
+security/middleware/auth_middleware.py:62:    def __init__(self, app, enable_rate_limiting: bool = True) -> None:
+security/middleware/auth_middleware.py:64:        self._rate_limiting = enable_rate_limiting
+security/middleware/auth_middleware.py:65:        self._jwt_auth = None
+security/middleware/auth_middleware.py:67:        self._rate_limiter = None
+security/middleware/auth_middleware.py:71:        if self._jwt_auth is None:
+security/middleware/auth_middleware.py:73:                from security.auth.jwt_auth import JWTAuthenticator
+security/middleware/auth_middleware.py:74:                self._jwt_auth = JWTAuthenticator()
+security/middleware/auth_middleware.py:76:                logger.warning("JWT auth init failed: %s", e)
+security/middleware/auth_middleware.py:80:                from security.auth.api_key_manager import get_api_key_manager
+security/middleware/auth_middleware.py:83:                logger.warning("JWT auth init failed: %s", e)
+security/middleware/auth_middleware.py:85:        if self._rate_limiter is None and self._rate_limiting:
+security/middleware/auth_middleware.py:96:                from security.rate_limit.rate_limiter import RateLimiter
+security/middleware/auth_middleware.py:97:                self._rate_limiter = RateLimiter(r)
+security/middleware/auth_middleware.py:116:        tenant_id = "default"
+security/middleware/auth_middleware.py:117:        roles: list[str] = []
+security/middleware/auth_middleware.py:120:            if token_type == "bearer" and self._jwt_auth:
+security/middleware/auth_middleware.py:122:                    claims = self._jwt_auth.validate_token(token)
+security/middleware/auth_middleware.py:124:                    tenant_id = claims.tenant_id
+security/middleware/auth_middleware.py:125:                    roles = claims.roles
+security/middleware/auth_middleware.py:127:                    request.state.tenant_id = tenant_id
+security/middleware/auth_middleware.py:128:                    request.state.roles = roles
+security/middleware/auth_middleware.py:132:                        AuditAction.LOGIN_FAILED, "auth", "jwt_validation", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:137:                        content={"error": "unauthorized", "message": str(e)},
+security/middleware/auth_middleware.py:144:                        AuditAction.LOGIN_FAILED, "auth", "api_key_validation", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:149:                        content={"error": "unauthorized", "message": "API key invalid or expired"},
+security/middleware/auth_middleware.py:152:                tenant_id = api_key.tenant_id
+security/middleware/auth_middleware.py:153:                roles = api_key.roles # Use roles from APIKey object
+security/middleware/auth_middleware.py:155:                request.state.tenant_id = tenant_id
+security/middleware/auth_middleware.py:156:                request.state.roles = roles
+security/middleware/auth_middleware.py:162:                    "error": "unauthorized",
+security/middleware/auth_middleware.py:169:        if self._rate_limiter:
+security/middleware/auth_middleware.py:171:            allowed, meta = self._rate_limiter.check(
+security/middleware/auth_middleware.py:172:                identifier=user_id, endpoint=endpoint_key, tenant_id=tenant_id
+security/middleware/auth_middleware.py:176:                    AuditAction.RATE_LIMITED, "system", "rate_limiter", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:182:                        "error": "rate_limit_exceeded",
+security/middleware/auth_middleware.py:200:        required_permission = (
+security/middleware/auth_middleware.py:205:        if required_permission and not has_permission(roles, required_permission):
+security/middleware/auth_middleware.py:207:                AuditAction.PERMISSION_DENIED, "auth", "rbac_check", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:208:                status="denied", details={"permission": required_permission.value, "path": path}
+security/middleware/auth_middleware.py:214:                    "message": f"لا تملك صلاحية: {required_permission.value}",
+security/middleware/auth_middleware.py:215:                    "required_permission": required_permission.value,
+security/middleware/auth_middleware.py:216:                    "your_roles": roles,
+security/middleware/auth_middleware.py:225:        response.headers["X-Tenant-ID"] = tenant_id
+security/middleware/security_middleware.py:27:    roles: List[str],
+security/middleware/security_middleware.py:34:        "roles": roles,
+security/middleware/security_middleware.py:40:        import jwt
+security/middleware/security_middleware.py:41:        return jwt.encode(payload, _SECRET, algorithm=_ALGORITHM)
+security/middleware/security_middleware.py:62:        import jwt
+security/middleware/security_middleware.py:63:        payload = jwt.decode(token, _SECRET, algorithms=[_ALGORITHM])
+security/middleware/security_middleware.py:106:def has_permission(roles: List[str], required: str) -> bool:
+security/middleware/security_middleware.py:107:    for role in roles:
+security/middleware/security_middleware.py:108:        if required in _ROLE_PERMISSIONS.get(role, set()):
+security/middleware/security_middleware.py:113:def require_permission(permission: str) -> Callable:
+security/middleware/security_middleware.py:119:            roles = payload.get("roles", [])
+security/middleware/security_middleware.py:120:            if not has_permission(roles, permission):
+security/middleware/security_middleware.py:122:                    f"المستخدم لا يملك صلاحية '{permission}'"
+security/middleware/security_middleware.py:135:    Token bucket rate limiter — async-safe.
+security/middleware/security_middleware.py:245:_rate_limiter: Optional[RateLimiter] = None
+security/middleware/security_middleware.py:248:def get_rate_limiter(max_requests: int = 100, window: int = 60) -> RateLimiter:
+security/middleware/security_middleware.py:249:    global _rate_limiter
+security/middleware/security_middleware.py:250:    if _rate_limiter is None:
+security/middleware/security_middleware.py:251:        _rate_limiter = RateLimiter(max_requests=max_requests, window_seconds=window)
+security/middleware/security_middleware.py:252:    return _rate_limiter
+security/permissions/rbac.py:1:"""RBAC — Role-Based Access Control with hierarchical permissions."""
+security/permissions/rbac.py:27:    TENANT_ADMIN = "tenant:admin"
+security/permissions/rbac.py:84:    tenant_id: str
+security/permissions/rbac.py:85:    roles: List[str]
+security/permissions/rbac.py:86:    _permissions: Set[Permission] = field(init=False, default_factory=set)
+security/permissions/rbac.py:89:        for role in self.roles:
+security/permissions/rbac.py:90:            self._permissions.update(ROLE_PERMISSIONS.get(role, set()))
+security/permissions/rbac.py:92:    def has_permission(self, permission: Permission) -> bool:
+security/permissions/rbac.py:93:        return permission in self._permissions
+security/permissions/rbac.py:95:    def require_permission(self, permission: Permission) -> None:
+security/permissions/rbac.py:96:        if not self.has_permission(permission):
+security/permissions/rbac.py:98:                "Permission denied: user=%s tenant=%s required=%s roles=%s",
+security/permissions/rbac.py:99:                self.user_id, self.tenant_id, permission, self.roles,
+security/permissions/rbac.py:102:                f"Permission '{permission.value}' required — your roles: {self.roles}"
+security/permissions/rbac.py:105:    def get_permissions(self) -> List[str]:
+security/permissions/rbac.py:106:        return [p.value for p in self._permissions]
+security/rate_limit/rate_limiter.py:1:"""Rate Limiter — sliding window rate limiting using Redis."""
+security/rate_limit/rate_limiter.py:32:    """Sliding window rate limiter backed by Redis."""
+security/rate_limit/rate_limiter.py:61:        tenant_id: Optional[str] = None,
+security/rate_limit/rate_limiter.py:67:        if tenant_id:
+security/rate_limit/rate_limiter.py:68:            key_parts.append(tenant_id)
+security/rbac/rbac.py:6:Permissions are additive — a role inherits all permissions of lower roles.
+security/rbac/rbac.py:157:def get_permissions(role: Role) -> FrozenSet[Permission]:
+security/rbac/rbac.py:158:    return _ROLE_PERMISSIONS.get(role, frozenset())
+security/rbac/rbac.py:161:def has_permission(roles: List[str], permission: Permission) -> bool:
+security/rbac/rbac.py:162:    for r in roles:
+security/rbac/rbac.py:164:            role = Role(r)
+security/rbac/rbac.py:165:            if permission in get_permissions(role):
+security/rbac/rbac.py:172:def get_all_permissions(roles: List[str]) -> Set[Permission]:
+security/rbac/rbac.py:174:    for r in roles:
+security/rbac/rbac.py:176:            perms |= get_permissions(Role(r))
+security/rbac/rbac.py:201:    "GET:/api/v1/auth/users":                  Permission.USERS_READ,
+security/rbac/rbac.py:202:    "POST:/api/v1/auth/users":                 Permission.USERS_WRITE,
+security/rbac/rbac.py:203:    "GET:/api/v1/auth/apikeys":                Permission.APIKEYS_READ,
+security/rbac/rbac.py:204:    "POST:/api/v1/auth/apikeys":               Permission.APIKEYS_CREATE,
+security/rbac/rbac.py:205:    "GET:/api/v1/auth/apikeys/{key_id}":       Permission.APIKEYS_READ,
+security/rbac/rbac.py:206:    "DELETE:/api/v1/auth/apikeys/{key_id}":    Permission.APIKEYS_REVOKE,
+security/rbac/rbac.py:207:    "GET:/api/v1/auth/audit":                  Permission.AUDIT_READ,
+security/rbac/rbac.py:208:    "POST:/api/v1/auth/training/start":        Permission.TRAINING_RUN,
+core/inference_engine/context_manager.py:46:            result.append({"role": "system", "content": system_message})
+core/inference_engine/request_handler.py:100:            LLMMessage(role=m["role"], content=m["content"])
+core/inference_engine/request_handler.py:140:            if msg.role not in ("system", "user", "assistant"):
+core/inference_engine/request_handler.py:141:                errors.append(f"Invalid role: {msg.role}")
+core/inference_engine/request_handler.py:145:        has_user = any(m.role == "user" for m in job.request.messages)
+core/llm/base.py:42:    role: str  # system | user | assistant
+core/llm/base.py:46:        return {"role": self.role, "content": self.content}
+core/llm/llm_manager.py:46:        # Compatibility facade: ModelRouter remains the sole selection authority.
+core/llm/llm_manager.py:158:            messages=[LLMMessage(role="user", content=prompt)],
+core/llm/providers/hajeen_provider.py:42:        prompt = "\n".join(f"{message.role}: {message.content}" for message in request.messages)
+core/llm/providers/huggingface_provider.py:51:            if msg.role == "system":
+core/llm/providers/huggingface_provider.py:53:            elif msg.role == "user":
+core/llm/providers/huggingface_provider.py:55:            elif msg.role == "assistant":
+core/llm/providers/huggingface_provider.py:192:                messages=[LLMMessage(role="user", content="hello")],
+core/llm/providers/llama_cpp_provider.py:69:            parts.append(f"{msg.role}\n{msg.content}<|im_end|>\n")
+core/llm/providers/mistral_finetuned_provider.py:111:            if msg.role == "system":
+core/llm/providers/mistral_finetuned_provider.py:113:            elif msg.role == "user":
+core/llm/providers/mistral_finetuned_provider.py:118:            elif msg.role == "assistant":
+core/llm/providers/mistral_finetuned_provider.py:175:            "messages": [{"role": m.role, "content": m.content} for m in messages],
+core/llm/providers/mistral_finetuned_provider.py:225:            "messages": [{"role": m.role, "content": m.content} for m in messages],
+core/llm/providers/mock_provider.py:46:            if msg.role == "user":
+core/llm/providers/mock_provider.py:90:                messages=[LLMMessage(role="user", content="ping")],
+core/llm/providers/openai_provider.py:107:                messages=[LLMMessage(role="user", content="Say 'ok'")],
+core/memory/conversation_store.py:13:    __slots__ = ("role", "content", "timestamp", "metadata")
+core/memory/conversation_store.py:15:    def __init__(self, role: str, content: str, metadata: Optional[Dict] = None) -> None:
+core/memory/conversation_store.py:16:        self.role = role
+core/memory/conversation_store.py:23:            "role": self.role,
+core/memory/conversation_store.py:31:        obj = cls(d["role"], d["content"], d.get("metadata", {}))
+core/memory/conversation_store.py:48:    def append(self, session_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:
+core/memory/conversation_store.py:49:        turn = ConversationTurn(role, content, metadata)
+core/memory/conversation_store.py:65:        return [{"role": h["role"], "content": h["content"]} for h in history]
+core/memory/memory_manager.py:33:        role: str,
+core/memory/memory_manager.py:42:                loop.create_task(self._unified_memory.add_message(session_id, role, content, metadata))
+core/memory/memory_manager.py:44:                asyncio.run(self._unified_memory.add_message(session_id, role, content, metadata))
+core/memory/short_term_memory.py:11:    role: str
+core/memory/short_term_memory.py:26:    def add(self, session_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:
+core/memory/short_term_memory.py:31:                role=role,
+core/memory/short_term_memory.py:47:        return [{"role": e.role, "content": e.content} for e in self.get(session_id, last_n)]
+core/prompts/base.py:48:            messages.append({"role": "system", "content": self.system_prompt})
+core/prompts/base.py:49:        messages.append({"role": "user", "content": self.text})
+core/prompts/base.py:88:            messages.append({"role": "system", "content": system_prompt})
+core/prompts/base.py:91:        messages.append({"role": "user", "content": user_message})
+core/prompts/base.py:92:        text = "\n\n".join([f"{m['role']}: {m['content']}" for m in messages])
+core/prompts/conversation_formatter.py:17:    role: MessageRole
+core/prompts/conversation_formatter.py:34:            if msg.role == MessageRole.SYSTEM:
+core/prompts/conversation_formatter.py:38:            elif msg.role == MessageRole.USER:
+core/prompts/conversation_formatter.py:42:            elif msg.role == MessageRole.ASSISTANT:
+core/prompts/conversation_formatter.py:53:            if msg.role == MessageRole.SYSTEM:
+core/prompts/conversation_formatter.py:55:            elif msg.role == MessageRole.USER:
+core/prompts/conversation_formatter.py:57:            elif msg.role == MessageRole.ASSISTANT:
+core/prompts/conversation_formatter.py:65:            parts.append(f"<|im_start|>{msg.role.value}\n{msg.content}<|im_end|>")
+core/prompts/conversation_formatter.py:80:        return [{"role": m.role.value, "content": m.content} for m in messages]
+core/prompts/conversation_formatter.py:88:        system = [m for m in messages if m.role == MessageRole.SYSTEM]
+core/prompts/conversation_formatter.py:89:        non_system = [m for m in messages if m.role != MessageRole.SYSTEM]
+core/prompts/prompt_builder.py:40:        messages: List[Message] = [Message(role=MessageRole.SYSTEM, content=system_text)]
+core/prompts/prompt_builder.py:43:        messages.append(Message(role=MessageRole.USER, content=user_message))
+core/prompts/prompt_builder.py:61:        messages: List[Message] = [Message(role=MessageRole.SYSTEM, content=system_text)]
+core/prompts/prompt_builder.py:64:        messages.append(Message(role=MessageRole.USER, content=user_content))
+core/serving/model_server.py:16:from fastapi.middleware.cors import CORSMiddleware
+core/serving/model_server.py:82:app.add_middleware(
+core/tokenizer/models/mistral_tokenizer.py:60:            role = msg.get("role", "user")
+core/tokenizer/models/mistral_tokenizer.py:62:            if role == "user":
+core/tokenizer/models/mistral_tokenizer.py:64:            elif role == "assistant":
+core/tokenizer/models/mistral_tokenizer.py:66:            elif role == "system":
+services/agent_service.py:130:    def add_message(self, role: str, content: str) -> None:
+services/agent_service.py:131:        self._short_term.append({"role": role, "content": content})
+services/agents/agent_orchestrator.py:34:    """Single orchestration authority using central platform services.
+services/agents/agent_orchestrator.py:38:    authorities owned by BrainV3/platform services.
+services/agents/agent_orchestrator.py:125:            # Agent observations belong to the central AgentMemory authority.
+services/agents/contracts.py:3:These contracts contain no model, memory, or security authority. They describe
+services/agents/contracts.py:4:transient execution state and delegate those authorities to the central runtime.
+services/agents/contracts.py:91:    permissions: frozenset[str] = frozenset()
+services/agents/memory_agent.py:58:            history_str = "\n".join(f"{m['role']}: {m['content'][:100]}" for m in recent)
+services/agents/planner_agent.py:17:    """Produces typed executable plans through central prompt/model authorities."""
+services/agents/tool_runtime.py:1:"""Canonical tool registry and execution authority for Phase 5."""
+services/agents/tool_runtime.py:43:                "permissions": sorted(item.permissions),
+services/agents/tool_runtime.py:54:    """Executes registered tools only after policy and permission checks."""
+services/agents/tool_runtime.py:60:        permission_checker: Optional[PermissionChecker] = None,
+services/agents/tool_runtime.py:64:        self.permission_checker = permission_checker
+services/agents/tool_runtime.py:73:        granted_permissions: frozenset[str] = frozenset(),
+services/agents/tool_runtime.py:100:        if spec.permissions and not spec.permissions.issubset(granted_permissions):
+services/agents/tool_runtime.py:105:                error="Tool permission denied",
+services/agents/tool_runtime.py:108:                metadata={"security": "denied", "required_permissions": sorted(spec.permissions)},
+services/agents/tool_runtime.py:116:                "permissions": sorted(spec.permissions),
+services/agents/tool_runtime.py:143:        if self.permission_checker is not None:
+services/agents/tool_runtime.py:144:            allowed = self.permission_checker(spec, {"session_id": session_id, "user_id": user_id, "arguments": dict(call.arguments)})
+services/agents/tool_runtime.py:152:                    error="Tool permission denied",
+services/agents/tool_runtime.py:155:                    metadata={"security": "permission_denied"},
+services/chat/chat_service.py:111:            messages = history + [{"role": "user", "content": request.message}]
+services/chat/chat_service.py:200:            messages = history + [{"role": "user", "content": request.message}]
+services/data_service/conversation_builder.py:22:                        {"role": "user", "content": q},
+services/data_service/conversation_builder.py:23:                        {"role": "assistant", "content": a},
+services/data_service/conversation_builder.py:37:            messages.append({"role": "system", "content": system_prompt})
+services/data_service/conversation_builder.py:39:            role = turn.get("role", "user")
+services/data_service/conversation_builder.py:42:                messages.append({"role": role, "content": content.strip()})
+services/data_service/conversation_builder.py:45:            "turn_count": len([m for m in messages if m["role"] != "system"]),
+services/data_service/conversation_builder.py:69:                role = msg.get("role", "user")
+services/data_service/conversation_builder.py:72:                    {"from": from_map.get(role, "human"), "value": msg.get("content", "")}
+services/data_service/dataset_formatter.py:37:                {"role": "user", "content": instruction},
+services/data_service/dataset_formatter.py:38:                {"role": "assistant", "content": response},
+services/data_service/dataset_formatter.py:42:            role = msg.get("role", "user")
+services/data_service/dataset_formatter.py:44:            parts.append(f"<|im_start|>{role}\n{content}<|im_end|>")
+services/memory/context_window_manager.py:96:        system_msgs = [m for m in messages if m.role == "system"]
+services/memory/context_window_manager.py:97:        other_msgs = [m for m in messages if m.role != "system"]
+services/memory/context_window_manager.py:162:            role="system",
+services/memory/context_window_manager.py:168:            if msg.role == "system" and result.index(msg) == 0:
+services/memory/conversation_memory.py:24:    role: str
+services/memory/conversation_memory.py:63:    def _add_sync(self, role: str, content: str, metadata: Optional[Dict[str, Any]]) -> Message:
+services/memory/conversation_memory.py:64:        message = Message(role=role, content=content, metadata=metadata or {})
+services/memory/conversation_memory.py:65:        _run_sync(self._unified_memory.add_message(self.session_id, role, content, metadata))
+services/memory/conversation_memory.py:67:            system = [m for m in self._conversation._messages if m.get("role") == "system"][:1]
+services/memory/conversation_memory.py:68:            body = [m for m in self._conversation._messages if m.get("role") != "system"]
+services/memory/conversation_memory.py:74:        self._conversation._messages[:] = [m for m in self._conversation._messages if m.get("role") != "system"]
+services/memory/conversation_memory.py:75:        self._conversation._messages.insert(0, {"role": "system", "content": prompt, "metadata": {}, "at": time()})
+services/memory/conversation_memory.py:77:            body = [m for m in self._conversation._messages if m.get("role") != "system"]
+services/memory/conversation_memory.py:99:            history = [item for item in history if item.get("role") != "system"]
+services/memory/conversation_memory.py:100:        messages = [LLMMessage(role=item["role"], content=item["content"]) for item in history]
+services/memory/session_manager.py:35:    def add_message(self, role: str, content: str, metadata: Optional[Dict] = None) -> None:
+services/memory/session_manager.py:42:                loop.create_task(self._unified_memory.add_message(self.session_id, role, content, metadata))
+services/memory/session_manager.py:44:                asyncio.run(self._unified_memory.add_message(self.session_id, role, content, metadata))
+services/memory/summarization_memory.py:88:            role_ar = "المستخدم" if msg.role == "user" else "المساعد"
+services/memory/summarization_memory.py:89:            summary_lines.append(f"{role_ar}: {msg.content[:100]}...")
+services/memory/summarization_memory.py:118:            f"{m.role}: {m.content}" for m in to_summarize
+services/memory/summarization_memory.py:127:            request_messages = [{"role": "user", "content": prompt}]
+services/memory/summarization_memory.py:130:                    messages=[LLMMessage(role="user", content=prompt)],
+services/memory/summarization_memory.py:156:                role="system",
+services/memory/vector_memory.py:18:    role: str = "user"
+services/memory/vector_memory.py:29:            "role": self.role,
+services/memory/vector_memory.py:91:        role: str = "user",
+services/memory/vector_memory.py:101:            role=role,
+services/prompts/prompt_builder.py:130:            LLMMessage(role="system", content=system_content)
+services/prompts/prompt_builder.py:137:        messages.append(LLMMessage(role="user", content=user_content))
+services/prompts/prompt_builder.py:146:            msg_dicts = [{"role": m.role, "content": m.content} for m in messages]
+services/prompts/prompt_builder.py:180:            LLMMessage(role="system", content=system_content)
+services/prompts/prompt_builder.py:191:        messages.append(LLMMessage(role="user", content=user_content))
+services/prompts/prompt_builder.py:219:        messages = [LLMMessage(role="user", content=user_content)]
+services/prompts/prompt_validator.py:136:        valid_roles = {"system", "user", "assistant"}
+services/prompts/prompt_validator.py:141:            role = msg.get("role", "")
+services/prompts/prompt_validator.py:144:            if role not in valid_roles:
+services/prompts/prompt_validator.py:145:                result.add_error(f"Message {i}: invalid role '{role}'")
+services/prompts/prompt_validator.py:148:                result.add_warning(f"Message {i} ({role}) has empty content")
+services/prompts/prompt_validator.py:150:            if role == "user":
+services/rag/prompt_builder.py:138:            messages=[{"role": "user", "content": rag_prompt.prompt}],
+services/rag/rag_pipeline.py:90:        # UnifiedPromptBuilder is the sole production prompt authority.
+services/rag/rag_pipeline.py:108:        # The configured retriever is authoritative; request metadata cannot
+services/redis/redis_service.py:8:  rate_limit:      ديناميكي حسب الـ window
+services/security/policy_engine.py:55:def tool_permission_policy(context: Dict[str, Any]) -> PolicyDecision:
+services/security/policy_engine.py:70:                f"Agent '{agent_id}' is not authorized to use tool '{tool_name}'.",
+services/security/policy_engine.py:75:    # explicit authority boundary; no arbitrary tool is exposed to users.
+services/security/policy_engine.py:78:            f"Agent '{agent_id}' is not authorized to use tool '{tool_name}'.",
+services/security/policy_engine.py:101:def rate_limit_policy(context: Dict[str, Any]) -> PolicyDecision:
+services/security/policy_engine.py:108:            f"Agent '{agent_id}' exceeded rate limit ({request_count}/{max_requests}).",
+services/security/policy_engine.py:139:        "tool_permission": tool_permission_policy,
+services/security/policy_engine.py:141:        "rate_limit": rate_limit_policy,
+multi_tenant/billing_tracker.py:1:"""Billing Tracker — tracks per-tenant token usage, GPU time, and compute costs."""
+multi_tenant/billing_tracker.py:22:    tenant_id: str
+multi_tenant/billing_tracker.py:42:        tenant_id: str,
+multi_tenant/billing_tracker.py:56:            tenant_id=tenant_id,
+multi_tenant/billing_tracker.py:70:    def get_monthly_usage(self, tenant_id: str, year: int, month: int) -> Dict[str, Any]:
+multi_tenant/billing_tracker.py:79:               WHERE tenant_id = %s
+multi_tenant/billing_tracker.py:82:            (tenant_id, year, month),
+multi_tenant/billing_tracker.py:86:            "tenant_id": tenant_id,
+multi_tenant/billing_tracker.py:99:               (tenant_id, timestamp, operation, input_tokens, output_tokens,
+multi_tenant/billing_tracker.py:102:            (record.tenant_id, record.timestamp, record.operation,
+multi_tenant/billing_tracker.py:111:        pipe.incrbyfloat(f"billing:{record.tenant_id}:{month}:cost", record.cost_usd)
+multi_tenant/billing_tracker.py:112:        pipe.incrby(f"billing:{record.tenant_id}:{month}:requests", 1)
+multi_tenant/isolation.py:2:Tenant Isolation — ensures data and resource isolation between tenants.
+multi_tenant/isolation.py:14:_current_tenant: ContextVar[Optional[str]] = ContextVar("current_tenant", default=None)
+multi_tenant/isolation.py:19:def tenant_context(tenant_id: str, user_id: str) -> Generator[None, None, None]:
+multi_tenant/isolation.py:20:    t = _current_tenant.set(tenant_id)
+multi_tenant/isolation.py:25:        _current_tenant.reset(t)
+multi_tenant/isolation.py:29:def get_current_tenant() -> Optional[str]:
+multi_tenant/isolation.py:30:    return _current_tenant.get()
+multi_tenant/isolation.py:37:def require_tenant() -> str:
+multi_tenant/isolation.py:38:    tenant_id = get_current_tenant()
+multi_tenant/isolation.py:39:    if not tenant_id:
+multi_tenant/isolation.py:40:        raise RuntimeError("No tenant context set — call tenant_context first")
+multi_tenant/isolation.py:41:    return tenant_id
+multi_tenant/isolation.py:45:    """Adds automatic tenant_id filtering to database queries."""
+multi_tenant/isolation.py:51:        tenant_id = require_tenant() if enforce else get_current_tenant()
+multi_tenant/isolation.py:52:        if tenant_id and "tenant_id" in sql:
+multi_tenant/isolation.py:53:            return self.db.fetchone(sql, params + (tenant_id,))
+multi_tenant/isolation.py:57:        tenant_id = require_tenant() if enforce else get_current_tenant()
+multi_tenant/isolation.py:58:        if tenant_id:
+multi_tenant/isolation.py:59:            augmented = f"{sql} AND tenant_id = %s" if "WHERE" in sql.upper() else f"{sql} WHERE tenant_id = %s"
+multi_tenant/isolation.py:60:            return self.db.fetchall(augmented, params + (tenant_id,))
+multi_tenant/isolation.py:64:        tenant_id = require_tenant() if enforce else get_current_tenant()
+multi_tenant/isolation.py:65:        if tenant_id and "tenant_id" not in sql:
+multi_tenant/isolation.py:67:                "Write query without tenant_id filter may affect multiple tenants: %s", sql[:100]
+multi_tenant/quota_manager.py:1:"""Quota Manager — tracks and enforces per-tenant resource limits."""
+multi_tenant/quota_manager.py:26:    """Enforces per-tenant quotas using Redis atomic counters."""
+multi_tenant/quota_manager.py:34:        tenant_id: str,
+multi_tenant/quota_manager.py:39:        settings = self._get_tenant_settings(tenant_id)
+multi_tenant/quota_manager.py:41:            return False, "tenant_not_found"
+multi_tenant/quota_manager.py:43:        day_key = f"quota:{tenant_id}:{operation}:{self._day_key()}"
+multi_tenant/quota_manager.py:44:        month_key = f"quota:{tenant_id}:gpu:{self._month_key()}"
+multi_tenant/quota_manager.py:55:            token_key = f"quota:{tenant_id}:tokens:{self._day_key()}"
+multi_tenant/quota_manager.py:67:                    return False, f"gpu_quota_exceeded ({current_gpu:.1f}/{max_gpu})"
+multi_tenant/quota_manager.py:71:    def get_usage(self, tenant_id: str) -> QuotaUsage:
+multi_tenant/quota_manager.py:72:        settings = self._get_tenant_settings(tenant_id) or {}
+multi_tenant/quota_manager.py:73:        day_key = f"quota:{tenant_id}:inference:{self._day_key()}"
+multi_tenant/quota_manager.py:74:        month_key = f"quota:{tenant_id}:gpu:{self._month_key()}"
+multi_tenant/quota_manager.py:78:            tokens_today=int(self.redis.get(f"quota:{tenant_id}:tokens:{self._day_key()}") or 0),
+multi_tenant/quota_manager.py:86:    def _get_tenant_settings(self, tenant_id: str) -> Optional[Dict[str, Any]]:
+multi_tenant/quota_manager.py:87:        cached = self.redis.get(f"tenant:{tenant_id}")
+multi_tenant/quota_manager.py:92:        row = self.db.fetchone("SELECT settings FROM tenants WHERE tenant_id = %s", (tenant_id,))
+multi_tenant/tenant_config.py:1:"""Tenant Config — manages per-tenant feature flags and configuration overrides."""
+multi_tenant/tenant_config.py:14:    """Per-tenant configuration with Redis caching and DB persistence."""
+multi_tenant/tenant_config.py:22:    def get(self, tenant_id: str, key: str, default: Any = None) -> Any:
+multi_tenant/tenant_config.py:23:        config = self._load(tenant_id)
+multi_tenant/tenant_config.py:26:    def set(self, tenant_id: str, key: str, value: Any) -> None:
+multi_tenant/tenant_config.py:27:        config = self._load(tenant_id)
+multi_tenant/tenant_config.py:29:        self._save(tenant_id, config)
+multi_tenant/tenant_config.py:30:        self.redis.delete(f"tenant:config:{tenant_id}")
+multi_tenant/tenant_config.py:31:        logger.info("Tenant %s config updated: %s", tenant_id, key)
+multi_tenant/tenant_config.py:33:    def get_all(self, tenant_id: str) -> Dict[str, Any]:
+multi_tenant/tenant_config.py:34:        return self._load(tenant_id)
+multi_tenant/tenant_config.py:36:    def is_feature_enabled(self, tenant_id: str, feature: str) -> bool:
+multi_tenant/tenant_config.py:37:        config = self._load(tenant_id)
+multi_tenant/tenant_config.py:41:    def _load(self, tenant_id: str) -> Dict[str, Any]:
+multi_tenant/tenant_config.py:42:        cache_key = f"tenant:config:{tenant_id}"
+multi_tenant/tenant_config.py:48:            "SELECT settings FROM tenants WHERE tenant_id = %s", (tenant_id,)
+multi_tenant/tenant_config.py:54:    def _save(self, tenant_id: str, config: Dict[str, Any]) -> None:
+multi_tenant/tenant_config.py:56:            "UPDATE tenants SET settings = %s WHERE tenant_id = %s",
+multi_tenant/tenant_config.py:57:            (json.dumps(config), tenant_id),
+multi_tenant/tenant_manager.py:1:"""Tenant Manager — manages tenant lifecycle, configuration, and isolation."""
+multi_tenant/tenant_manager.py:15:    tenant_id: str
+multi_tenant/tenant_manager.py:65:    """Manages tenant lifecycle and configuration."""
+multi_tenant/tenant_manager.py:71:    def create_tenant(
+multi_tenant/tenant_manager.py:81:        tenant_id = f"t_{uuid.uuid4().hex[:12]}"
+multi_tenant/tenant_manager.py:82:        tenant_settings = {**PLAN_DEFAULTS[plan], **(settings or {})}
+multi_tenant/tenant_manager.py:84:        tenant = Tenant(
+multi_tenant/tenant_manager.py:85:            tenant_id=tenant_id,
+multi_tenant/tenant_manager.py:88:            settings=tenant_settings,
+multi_tenant/tenant_manager.py:90:        self._persist(tenant)
+multi_tenant/tenant_manager.py:91:        self._init_tenant_resources(tenant)
+multi_tenant/tenant_manager.py:92:        logger.info("Created tenant %s (%s) on plan %s", name, tenant_id, plan)
+multi_tenant/tenant_manager.py:93:        return tenant
+multi_tenant/tenant_manager.py:95:    def get_tenant(self, tenant_id: str) -> Optional[Tenant]:
+multi_tenant/tenant_manager.py:96:        cache_key = f"tenant:{tenant_id}"
+multi_tenant/tenant_manager.py:103:        row = self.db.fetchone("SELECT * FROM tenants WHERE tenant_id = %s", (tenant_id,))
+multi_tenant/tenant_manager.py:107:        tenant = Tenant(**row)
+multi_tenant/tenant_manager.py:110:        return tenant
+multi_tenant/tenant_manager.py:112:    def upgrade_plan(self, tenant_id: str, new_plan: str) -> Tenant:
+multi_tenant/tenant_manager.py:113:        tenant = self.get_tenant(tenant_id)
+multi_tenant/tenant_manager.py:114:        if not tenant:
+multi_tenant/tenant_manager.py:115:            raise ValueError(f"Tenant {tenant_id} not found")
+multi_tenant/tenant_manager.py:117:        tenant.plan = new_plan
+multi_tenant/tenant_manager.py:118:        tenant.settings.update(PLAN_DEFAULTS[new_plan])
+multi_tenant/tenant_manager.py:119:        self._update(tenant)
+multi_tenant/tenant_manager.py:120:        self.redis.delete(f"tenant:{tenant_id}")
+multi_tenant/tenant_manager.py:121:        logger.info("Upgraded tenant %s to plan %s", tenant_id, new_plan)
+multi_tenant/tenant_manager.py:122:        return tenant
+multi_tenant/tenant_manager.py:124:    def suspend_tenant(self, tenant_id: str, reason: str) -> None:
+multi_tenant/tenant_manager.py:126:            "UPDATE tenants SET status = 'suspended', metadata = jsonb_set(metadata, '{suspension_reason}', %s) WHERE tenant_id = %s",
+multi_tenant/tenant_manager.py:127:            (f'"{reason}"', tenant_id),
+multi_tenant/tenant_manager.py:129:        self.redis.delete(f"tenant:{tenant_id}")
+multi_tenant/tenant_manager.py:130:        logger.warning("Suspended tenant %s: %s", tenant_id, reason)
+multi_tenant/tenant_manager.py:132:    def _persist(self, tenant: Tenant) -> None:
+multi_tenant/tenant_manager.py:135:            "INSERT INTO tenants (tenant_id, name, plan, status, created_at, settings, metadata) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+multi_tenant/tenant_manager.py:136:            (tenant.tenant_id, tenant.name, tenant.plan, tenant.status,
+multi_tenant/tenant_manager.py:137:             tenant.created_at, json.dumps(tenant.settings), json.dumps(tenant.metadata)),
+multi_tenant/tenant_manager.py:140:    def _update(self, tenant: Tenant) -> None:
+multi_tenant/tenant_manager.py:143:            "UPDATE tenants SET plan = %s, settings = %s WHERE tenant_id = %s",
+multi_tenant/tenant_manager.py:144:            (tenant.plan, json.dumps(tenant.settings), tenant.tenant_id),
+multi_tenant/tenant_manager.py:147:    def _init_tenant_resources(self, tenant: Tenant) -> None:
+multi_tenant/tenant_manager.py:148:        self.redis.hset(f"tenant:quota:{tenant.tenant_id}", mapping={

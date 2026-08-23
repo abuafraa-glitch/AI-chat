@@ -1,0 +1,855 @@
+=== chat_service ===
+"""
+ChatService (Adapter) — خدمة الدردشة الرئيسية
+=============================================
+تم تحديث الخدمة لتستخدم UnifiedMemoryInterface حصرياً.
+تم إزالة أي تعامل مباشر مع SessionManager أو أي كتابة مستقلة للذاكرة.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import uuid
+from dataclasses import dataclass, field
+from typing import Any, AsyncGenerator, Dict, List, Optional
+
+from brain.brain_v3 import BrainRequest, BrainResponse, HajeenBrainV3, get_brain_v3
+from brain.memory.unified_interface import get_unified_memory
+from core.llm.base import LLMStreamChunk
+
+from .citation_injector import CitationInjector
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ChatRequest:
+    """طلب محادثة."""
+    message: str
+    session_id: Optional[str] = None
+    language: str = "ar"
+    use_rag: bool = True
+    stream: bool = False
+    top_k: int = 5
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+    model: Optional[str] = None
+    system_prompt: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ChatResponse:
+    """استجابة المحادثة."""
+    content: str
+    session_id: str
+    turn_id: str
+    model: str
+    provider: str
+    sources: List[Dict[str, Any]]
+    latency_ms: float
+    tokens_used: int
+    language: str = "ar"
+    cached: bool = False
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return {
+            "response": self.content,
+            "session_id": self.session_id,
+            "turn_id": self.turn_id,
+            "model": self.model,
+            "provider": self.provider,
+            "sources": self.sources,
+            "latency_ms": round(self.latency_ms, 2),
+            "tokens_used": self.tokens_used,
+            "language": self.language,
+        }
+
+
+class ChatService:
+    """
+    خدمة الدردشة الرئيسية (Adapter).
+    تستخدم UnifiedMemoryInterface كمصدر وحيد للذاكرة.
+    """
+
+    def __init__(
+        self,
+        brain: Optional[HajeenBrainV3] = None,
+        rag_pipeline: Optional[Any] = None,
+        citation_injector: Optional[CitationInjector] = None,
+        inference_engine: Optional[Any] = None,
+    ):
+        self._brain = brain
+        self._inference_engine = inference_engine
+        self._rag = rag_pipeline
+        self.citation_injector = citation_injector or CitationInjector()
+        self._initialized = False
+        self._unified_memory = get_unified_memory()
+
+    async def initialize(self) -> None:
+        if self._initialized:
+            return
+        if self._inference_engine is not None:
+            await self._inference_engine.initialize()
+        else:
+            self._brain = self._brain or await get_brain_v3()
+        await self._unified_memory.initialize()
+        self._initialized = True
+        logger.info("ChatService initialized with UnifiedMemoryInterface (SSOT Mode)")
+
+    async def chat(self, request: ChatRequest) -> ChatResponse:
+        """تنفيذ محادثة كاملة عبر HajeenBrainV3."""
+        if not self._initialized:
+            await self.initialize()
+
+        turn_id = str(uuid.uuid4())
+        session_id = request.session_id or str(uuid.uuid4())
+
+        if self._inference_engine is not None:
+            history = await self._unified_memory.get_context(session_id, max_messages=20)
+            messages = history + [{"role": "user", "content": request.message}]
+            processed = await self._inference_engine.infer(
+                messages=messages,
+                model=request.model,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+                session_id=session_id,
+            )
+            await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
+            await self._unified_memory.add_message(session_id, "assistant", processed.cleaned_content, {"turn_id": turn_id})
+            return ChatResponse(
+                content=processed.cleaned_content,
+                session_id=session_id,
+                turn_id=turn_id,
+                model=processed.model,
+                provider=processed.provider,
+                sources=self.citation_injector.format_citations_for_api(processed.citations),
+                latency_ms=processed.latency_ms,
+                tokens_used=processed.total_tokens,
+                language=request.language,
+            )
+
+        # 1. Prepare BrainRequest
+        brain_request = BrainRequest(
+            request_id=turn_id,
+            user_message=request.message,
+            session_id=session_id,
+            context={
+                "language": request.language,
+                "use_rag": request.use_rag,
+                "temperature": request.temperature,
+                "max_tokens": request.max_tokens,
+                "model": request.model,
+                "top_k": request.top_k,
+                "system_prompt": request.system_prompt,
+            },
+            stream=False,
+            max_tokens=request.max_tokens or 2048,
+            temperature=request.temperature or 0.7,
+            force_model=request.model,
+        )
+
+        # 2. Process through Brain (الذي يكتب بدوره في MemoryFabric)
+        brain_response: BrainResponse = await self._brain.process(brain_request)
+
+        # 3. Extract results
+        final_content = brain_response.content
+        model_used = brain_response.model_used
+        provider_used = brain_response.policy_decision
+        sources = brain_response.trace.execution.get("rag_sources", [])
+        tokens_used = brain_response.trace.tokens_used
+        latency_ms = brain_response.trace.total_latency_ms
+
+        # ملاحظة: لم نعد نكتب في SessionManager هنا. 
+        # الكتابة تمت بالفعل داخل Brain -> MemoryFabric.
+        # وإذا احتجنا كتابة إضافية، نستخدم UnifiedMemoryInterface.
+        
+        logger.info(
+            "Chat turn (SSOT): session=%s tokens=%d latency=%.1fms",
+            session_id, tokens_used, latency_ms,
+        )
+
+        return ChatResponse(
+            content=final_content,
+            session_id=session_id,
+            turn_id=turn_id,
+            model=model_used,
+            provider=provider_used,
+            sources=self.citation_injector.format_citations_for_api(sources),
+            latency_ms=latency_ms,
+            tokens_used=tokens_used,
+            language=request.language,
+        )
+
+    async def stream_chat(
+        self,
+        request: ChatRequest,
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """محادثة مع native streaming عبر HajeenBrainV3."""
+        if not self._initialized:
+            await self.initialize()
+
+        session_id = request.session_id or str(uuid.uuid4())
+        stream_id = str(uuid.uuid4())
+        collected: List[str] = []
+        completed = False
+
+        if self._inference_engine is not None:
+            history = await self._unified_memory.get_context(session_id, max_messages=20)
+            messages = history + [{"role": "user", "content": request.message}]
+            async for chunk in self._inference_engine.stream_infer(
+                messages=messages,
+                model=request.model,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+                session_id=session_id,
+                stream_id=stream_id,
+            ):
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("InferenceEngine returned a non-native stream chunk")
+                if chunk.event_type == "delta" and chunk.delta:
+                    collected.append(chunk.delta)
+                elif chunk.event_type == "finish":
+                    completed = True
+                yield chunk
+            if completed:
+                await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
+                await self._unified_memory.add_message(session_id, "assistant", "".join(collected), {"stream_id": stream_id})
+            return
+
+        brain_request = BrainRequest(
+            request_id=stream_id,
+            user_message=request.message,
+            session_id=session_id,
+            context={
+                "language": request.language,
+                "use_rag": request.use_rag,
+                "temperature": request.temperature,
+                "max_tokens": request.max_tokens,
+                "model": request.model,
+                "top_k": request.top_k,
+                "system_prompt": request.system_prompt,
+                "stream": True,
+            },
+            stream=True,
+            max_tokens=request.max_tokens or 2048,
+            temperature=request.temperature or 0.7,
+            force_model=request.model,
+        )
+
+        try:
+            async for chunk in self._brain.stream(brain_request):
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Brain returned a non-native stream chunk")
+                if chunk.event_type == "delta" and chunk.delta:
+                    collected.append(chunk.delta)
+                elif chunk.event_type == "finish":
+                    completed = True
+                elif chunk.event_type == "error":
+                    completed = False
+                yield chunk
+            if completed:
+                await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
+                await self._unified_memory.add_message(session_id, "assistant", "".join(collected), {"stream_id": stream_id})
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            yield LLMStreamChunk(
+                delta="",
+                event_type="error",
+                provider="chat_service",
+                request_id=stream_id,
+                metadata={"error": str(e)},
+            )
+
+    def get_session_info(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """معلومات جلسة محادثة (عبر الواجهة الموحدة)."""
+        # للحفاظ على التوافقية، نستخدم الواجهة الموحدة لجلب البيانات
+        stats = self._unified_memory.get_stats()
+        return {"session_id": session_id, "source": "MemoryFabric", "stats": stats}
+
+
+# Singleton
+_chat_service: Optional[ChatService] = None
+
+def get_chat_service() -> ChatService:
+    global _chat_service
+    if _chat_service is None:
+        _chat_service = ChatService()
+    return _chat_service
+=== ai router ===
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import uuid
+from typing import Any, AsyncGenerator, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
+
+from api.v1.ai.embeddings import router as embeddings_router
+from api.v1.ai.health import router as health_router
+from api.v1.ai.rerank import router as rerank_router
+from brain.brain_v3 import (
+    BrainRequest,
+    BrainResponse,
+    RequestType,
+)
+from core.llm.base import LLMStreamChunk
+from hajeen_model.evaluation.evaluation_framework import EvaluationFramework
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+# ── Mount sub-routers (only those not directly handled by Brain) ────────────────
+router.include_router(embeddings_router, tags=["Embeddings"])
+router.include_router(rerank_router, tags=["Rerank"])
+router.include_router(health_router, tags=["Health"])
+
+
+# ── Request/Response Schemas ──────────────────────────────────────────────────
+
+class MessageSchema(BaseModel):
+    role: str = Field(..., pattern="^(system|user|assistant)$")
+    content: str = Field(..., min_length=1)
+
+
+class ChatRequestSchema(BaseModel):
+    message: str = Field(..., min_length=1, max_length=10000)
+    session_id: Optional[str] = None
+    language: str = "ar"
+    use_rag: bool = True
+    use_agent: bool = False
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(None, ge=1, le=4096)
+    model: Optional[str] = None
+    top_k: int = Field(5, ge=1, le=20)
+    retrieval_mode: str = Field("semantic", pattern="^(semantic|hybrid)$")
+    system_prompt: Optional[str] = None # Added system_prompt to schema
+
+
+class CompletionRequestSchema(BaseModel):
+    messages: List[MessageSchema] = Field(..., min_items=1)
+    model: Optional[str] = None
+    temperature: float = Field(0.7, ge=0.0, le=2.0)
+    max_tokens: int = Field(1024, ge=1, le=4096)
+    stream: bool = False
+    session_id: Optional[str] = None
+
+
+class RAGQuerySchema(BaseModel):
+    query: str = Field(..., min_length=1, max_length=5000)
+    top_k: int = Field(5, ge=1, le=20)
+    language: str = "ar"
+    use_llm: bool = True
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(None, ge=1, le=2048)
+    retrieval_mode: str = Field("semantic", pattern="^(semantic|hybrid)$")
+
+
+# ── POST /chat ─────────────────────────────────────────────────────────────────
+
+@router.post("/chat", summary="محادثة AI موحدة عبر HajeenBrainV3", tags=["AI"])
+async def chat(
+    body: ChatRequestSchema,
+    request: Request,
+) -> Dict[str, Any]:
+    """
+    محادثة كاملة موحدة عبر HajeenBrainV3.
+    """
+    brain = request.app.state.brain
+    if brain is None:
+        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+
+    brain_request = BrainRequest(
+        request_id=f"chat_{uuid.uuid4().hex[:12]}",
+        user_message=body.message,
+        session_id=body.session_id or str(uuid.uuid4()),
+        context={
+            "language": body.language,
+            "use_rag": body.use_rag,
+            "use_agent": body.use_agent,
+            "temperature": body.temperature,
+            "max_tokens": body.max_tokens,
+            "model": body.model,
+            "top_k": body.top_k,
+            "retrieval_mode": body.retrieval_mode,
+            "system_prompt": body.system_prompt,
+        },
+        stream=False,
+        max_tokens=body.max_tokens or 2048,
+        temperature=body.temperature or 0.7,
+        force_model=body.model,
+    )
+
+    try:
+        brain_response: BrainResponse = await brain.process(brain_request)
+        return {
+            "success": True,
+            "response": brain_response.content,
+            "session_id": brain_response.session_id,
+            "turn_id": brain_response.request_id,
+            "model": brain_response.model_used,
+            "provider": brain_response.trace.provider,
+
+            "sources": brain_response.trace.execution.get("rag_sources", []), # Assuming RAG sources are in trace
+            "latency_ms": brain_response.trace.total_latency_ms,
+            "tokens_used": brain_response.trace.tokens_used,
+            "retrieval_mode": brain_response.trace.execution.get("rag_retrieval_mode"),
+            "language": body.language,
+        }
+    except Exception as e:
+        logger.error("Brain chat error: %s", e)
+        raise HTTPException(status_code=500, detail=f"Brain chat error: {str(e)}")
+
+
+# ── POST /chat/stream ──────────────────────────────────────────────────────────
+
+@router.post("/chat/stream", summary="محادثة AI متدفقة عبر HajeenBrainV3", tags=["AI"])
+async def chat_stream(
+    body: ChatRequestSchema,
+    request: Request,
+) -> StreamingResponse:
+    """
+    محادثة متدفقة موحدة عبر HajeenBrainV3.
+    """
+    brain = request.app.state.brain
+    if brain is None:
+        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+
+    stream_id = str(uuid.uuid4())
+    brain_request = BrainRequest(
+        request_id=stream_id,
+        user_message=body.message,
+        session_id=body.session_id or str(uuid.uuid4()),
+        context={
+            "language": body.language,
+            "use_rag": body.use_rag,
+            "use_agent": body.use_agent,
+            "temperature": body.temperature,
+            "max_tokens": body.max_tokens,
+            "model": body.model,
+            "top_k": body.top_k,
+            "retrieval_mode": body.retrieval_mode,
+            "system_prompt": body.system_prompt,
+            "stream": True,
+        },
+        stream=True,
+        max_tokens=body.max_tokens or 2048,
+        temperature=body.temperature or 0.7,
+        force_model=body.model,
+    )
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        completed = False
+        try:
+            async for chunk in brain.stream(brain_request):
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Brain returned an invalid native stream chunk")
+                if chunk.event_type == "start":
+                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+                elif chunk.event_type == "delta":
+                    payload = {"event": "delta", "choices": [{"delta": {"content": chunk.delta}, "index": chunk.sequence}]}
+                elif chunk.event_type == "finish" or chunk.finish_reason:
+                    payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+                    completed = True
+                else:
+                    raise RuntimeError(f"Unsupported native stream event: {chunk.event_type}")
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            if not completed:
+                raise RuntimeError("Native stream ended without finish event")
+            yield "data: [DONE]\n\n"
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.error("Brain stream error: %s", e)
+            yield f"data: {json.dumps({'event': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+# ── POST /rag/query ────────────────────────────────────────────────────────────
+
+@router.post("/rag/query", summary="RAG Query عبر HajeenBrainV3", tags=["AI", "RAG"])
+async def rag_query(
+    body: RAGQuerySchema,
+    request: Request,
+) -> Dict[str, Any]:
+    """
+    استعلام RAG كامل عبر HajeenBrainV3.
+    """
+    brain = request.app.state.brain
+    if brain is None:
+        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+
+    brain_request = BrainRequest(
+        request_id=f"rag_{uuid.uuid4().hex[:12]}",
+        user_message=body.query,
+        session_id=str(uuid.uuid4()), # RAG queries might not have a session_id
+        context={
+            "language": body.language,
+            "use_rag": True,
+            "temperature": body.temperature,
+            "max_tokens": body.max_tokens,
+            "top_k": body.top_k,
+            "retrieval_mode": body.retrieval_mode,
+        },
+        request_type=RequestType.ANALYSIS, # Or a more appropriate type for RAG
+        max_tokens=body.max_tokens or 2048,
+        temperature=body.temperature or 0.7,
+    )
+
+    try:
+        brain_response = await brain.process(brain_request)
+        return {
+            "success": True,
+            "response": brain_response.content,
+            "model": brain_response.model_used,
+            "provider": brain_response.trace.provider,
+
+            "sources": brain_response.trace.execution.get("rag_sources", []), # Assuming RAG sources are in trace
+            "retrieval_mode": brain_response.trace.execution.get("rag_retrieval_mode"),
+            "tokens_used": brain_response.trace.tokens_used,
+            "latency_ms": brain_response.trace.total_latency_ms,
+        }
+    except Exception as e:
+        logger.error("Brain RAG query error: %s", e)
+        raise HTTPException(status_code=500, detail=f"Brain RAG query error: {str(e)}")
+
+
+# ── GET /models ────────────────────────────────────────────────────────────────
+
+@router.get("/models", summary="النماذج المتاحة", tags=["AI"])
+async def list_models(request: Request) -> Dict[str, Any]:
+    """
+    قائمة النماذج والمزودين المتاحين.
+    """
+    brain = request.app.state.brain
+    if brain is None:
+        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+    models = await brain.model_router.list_available_models()
+    return {"models": models, "routing_authority": "ModelRouter"}
+
+
+# ── GET /chat/sessions/{session_id} ───────────────────────────────────────────
+
+@router.get("/chat/sessions/{session_id}", summary="معلومات جلسة المحادثة عبر HajeenBrainV3", tags=["AI"])
+async def get_session(session_id: str, request: Request) -> Dict[str, Any]:
+    """
+    الحصول على معلومات جلسة محادثة عبر HajeenBrainV3.
+    """
+    brain = request.app.state.brain
+    if brain is None:
+        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+    
+    # Assuming HajeenBrainV3 has a method to get session info from MemoryFabric
+    # This method needs to be implemented in MemoryFabric or exposed via Brain
+    session_info = brain.memory.get_session_overview(session_id) # This method needs to be implemented in MemoryFabric
+    if not session_info:
+=== hajeen router ===
+"""
+Hajeen Model v1 API Router — واجهة API للنموذج المحلي.
+
+القاعدة الصارمة:
+- جميع طلبات AI تمر عبر HajeenBrainV3
+- هذا الـ Router مجرد HTTP Adapter — لا منطق AI مستقل هنا
+- لا يوجد LLM call مباشر خارج Brain
+
+Routes:
+  GET  /api/v1/model/health          — حالة النموذج
+  GET  /api/v1/model/info            — معلومات النموذج
+  POST /api/v1/model/chat            — محادثة (موجهة عبر HajeenBrainV3)
+  POST /api/v1/model/complete        — استدلال كامل (عبر HajeenBrainV3)
+  POST /api/v1/model/stream          — streaming (SSE) (عبر HajeenBrainV3)
+  GET  /api/v1/model/ollama/status   — حالة Ollama
+  POST /api/v1/model/ollama/pull     — تحميل نموذج
+  GET  /api/v1/model/training/status — حالة التدريب
+  POST /api/v1/model/training/build-dataset — بناء dataset
+  POST /api/v1/model/training/simulate — محاكاة التدريب
+  POST /api/v1/model/evaluate        — تقييم النموذج
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import time
+import uuid
+from typing import Dict, List, Optional
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/model", tags=["Hajeen Model v1"])
+
+
+# ─── Request / Response Models ────────────────────────────────────────────────
+
+
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="user | assistant | system")
+    content: str = Field(..., description="محتوى الرسالة")
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., description="رسالة المستخدم")
+    history: Optional[List[Dict]] = Field(default=None, description="سجل المحادثة")
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=1024, ge=1, le=4096)
+    stream: bool = Field(default=False)
+    session_id: Optional[str] = Field(default=None)
+    model: Optional[str] = Field(default=None)
+
+
+class CompleteRequest(BaseModel):
+    messages: List[ChatMessage]
+    temperature: float = Field(default=0.7)
+    max_tokens: int = Field(default=1024)
+
+
+class DatasetBuildRequest(BaseModel):
+    storage_dir: str = Field(default="storage_data/gold")
+    processed_dir: str = Field(default="data/processed/pipeline")
+    add_synthetic: int = Field(default=50, ge=0, le=5000)
+    output_format: str = Field(default="alpaca")
+
+
+class TrainingRequest(BaseModel):
+    base_model: str = Field(default="Qwen/Qwen2.5-1.5B")
+    num_epochs: int = Field(default=3, ge=1, le=20)
+    batch_size: int = Field(default=4)
+    learning_rate: float = Field(default=2e-4)
+    simulation: bool = Field(default=True, description="True=محاكاة, False=تدريب فعلي")
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+
+async def _get_brain_from_request(request: Request):
+    """الحصول على HajeenBrainV3 من app state."""
+    brain = getattr(request.app.state, "brain", None)
+    if brain is None:
+        from brain.brain_v3 import get_brain_v3
+        brain = await get_brain_v3()
+    return brain
+
+
+# ─── Endpoints ────────────────────────────────────────────────────────────────
+
+
+@router.get("/health")
+async def model_health():
+    """فحص شامل لحالة النموذج."""
+    try:
+        from brain.brain_v3 import get_brain_v3
+        brain = await get_brain_v3()
+        stats = brain.get_stats()
+        return {
+            "ok": True,
+            "model": "Hajeen Model v1 (via HajeenBrainV3)",
+            "brain_version": brain.VERSION,
+            "memory_overview": stats.get("memory_overview", {}),
+            "routing_stats": stats.get("routing_stats", {}),
+        }
+    except Exception as e:
+        logger.error("Model health check failed: %s", e)
+        return {"ok": False, "error": str(e), "model": "Hajeen Model v1"}
+
+
+@router.get("/info")
+async def model_info():
+    """معلومات النموذج."""
+    from pathlib import Path
+
+    import yaml
+    config_path = Path("hajeen_model/config/model_config.yaml")
+    config = {}
+    if config_path.exists():
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    return {
+        "model": config.get("model", {"name": "Hajeen Model v1", "version": "1.0"}),
+        "inference": config.get("inference", {"runtime": "HajeenBrainV3"}),
+        "capabilities": config.get("capabilities", ["arabic", "general", "rag"]),
+        "system_prompt": config.get("system_prompt", ""),
+        "runtime": "HajeenBrainV3 (Unified Runtime)",
+    }
+
+
+@router.post("/chat")
+async def chat(req: ChatRequest, request: Request):
+    """
+    محادثة مع Hajeen Model v1.
+
+    الضمان: الطلب يمر عبر HajeenBrainV3.process() كاملاً.
+    لا يوجد LLM call مباشر هنا.
+    """
+    from brain.brain_v3 import BrainRequest
+
+    brain = await _get_brain_from_request(request)
+
+    brain_request = BrainRequest(
+        request_id=f"hajeen_model_chat_{uuid.uuid4().hex[:12]}",
+        user_message=req.message,
+        session_id=req.session_id or str(uuid.uuid4()),
+        context={
+            "history": req.history or [],
+            "temperature": req.temperature,
+            "max_tokens": req.max_tokens,
+        },
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+        force_model=req.model,
+    )
+
+    t0 = time.perf_counter()
+    try:
+        response = await brain.process(brain_request)
+        return {
+            "ok": True,
+            "response": response.content,
+            "session_id": brain_request.session_id,
+            "model_used": response.model_used,
+            "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
+            "runtime": "HajeenBrainV3",
+        }
+    except Exception as e:
+        logger.error("Model chat error: %s", e)
+        raise HTTPException(status_code=500, detail=f"HajeenBrainV3 error: {e}")
+
+
+@router.post("/complete")
+async def complete(req: CompleteRequest, request: Request):
+    """
+    استدلال كامل عبر HajeenBrainV3.
+    """
+    from brain.brain_v3 import BrainRequest
+
+    brain = await _get_brain_from_request(request)
+    last_user = next(
+        (m.content for m in reversed(req.messages) if m.role == "user"),
+        ""
+    )
+    history = [
+        {"role": m.role, "content": m.content}
+        for m in req.messages[:-1]
+    ]
+
+    brain_request = BrainRequest(
+        request_id=f"complete_{uuid.uuid4().hex[:12]}",
+        user_message=last_user,
+        session_id=str(uuid.uuid4()),
+        context={"history": history},
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+    )
+
+    t0 = time.perf_counter()
+    try:
+        response = await brain.process(brain_request)
+        return {
+            "ok": True,
+            "content": response.content,
+            "model_used": response.model_used,
+            "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
+            "runtime": "HajeenBrainV3",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/stream")
+async def stream_chat(req: ChatRequest, request: Request):
+    """
+    Streaming محادثة عبر HajeenBrainV3.stream().
+    الضمان: كل chunk يمر عبر Brain — لا LLM مباشر.
+    """
+    from brain.brain_v3 import BrainRequest
+
+    brain = await _get_brain_from_request(request)
+
+    brain_request = BrainRequest(
+        request_id=f"stream_{uuid.uuid4().hex[:12]}",
+        user_message=req.message,
+        session_id=req.session_id or str(uuid.uuid4()),
+        context={
+            "history": req.history or [],
+            "stream": True,
+            "temperature": req.temperature,
+            "max_tokens": req.max_tokens,
+        },
+        stream=True,
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+        force_model=req.model,
+    )
+
+    async def event_generator():
+        from core.llm.base import LLMStreamChunk
+
+        completed = False
+        try:
+            async for chunk in brain.stream(brain_request):
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Brain returned a non-native stream chunk")
+                if chunk.event_type == "start":
+                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+                elif chunk.event_type == "finish" or chunk.finish_reason:
+                    payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+                    completed = True
+                elif chunk.event_type == "delta":
+                    payload = {"event": "delta", "content": chunk.delta, "index": chunk.sequence}
+                else:
+                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            if not completed:
+                raise RuntimeError("Native stream ended without finish event")
+            yield "data: [DONE]\n\n"
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            yield f"data: {json.dumps({'event': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/ollama/status")
+async def ollama_status():
+    """حالة Ollama."""
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get("http://localhost:11434/api/tags")
+            data = resp.json()
+            return {"ok": True, "models": data.get("models", []), "status": "running"}
+    except Exception as e:
+        return {"ok": False, "status": "unavailable", "error": str(e)}
+
+=== auth files ===
+api/v1/auth/__init__.py
+api/v1/auth/router.py
+security/auth/__init__.py
+security/auth/api_key_manager.py
+security/auth/jwt_auth.py
+security/auth/revoked_tokens.py
+security/middleware/auth_middleware.py
+security/permissions/__init__.py
+security/permissions/rbac.py
+services/data_service/conversation_builder.py
+services/memory/conversation_memory.py

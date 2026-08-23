@@ -1,0 +1,162 @@
+brain/__init__.py:8:    "HajeenBrainV3",
+brain/__init__.py:20:            return module.HajeenBrainV3
+brain/api/brain_router.py:2:Hajeen Brain API Router — واجهة REST لـ HajeenBrainV3
+brain/api/brain_router.py:4:تم ترقية هذا الـ Router من Brain v2 إلى Adapter كامل لـ HajeenBrainV3.
+brain/api/brain_router.py:7:- جميع الطلبات تمر عبر HajeenBrainV3.process() أو HajeenBrainV3.stream()
+brain/api/brain_router.py:48:class BrainChatRequest(BaseModel):
+brain/api/brain_router.py:75:    """الحصول على HajeenBrainV3 Singleton."""
+brain/api/brain_router.py:86:    المسار الكامل لـ HajeenBrainV3:
+brain/api/brain_router.py:88:    → ModelRouter → LLM → MemoryFabric → Reflection → Response
+brain/api/brain_router.py:119:    """محادثة متدفقة (Server-Sent Events) عبر HajeenBrainV3."""
+brain/api/brain_router.py:177:            "intent": "تحليل الطلب يتم عبر HajeenBrainV3 Pipeline",
+brain/api/brain_router.py:180:                "Planning", "Decision", "ModelRouter", "MemoryFabric"
+brain/api/brain_router.py:188:    """حالة شاملة لـ HajeenBrainV3."""
+brain/api/brain_router.py:195:            "runtime": "HajeenBrainV3",
+brain/api/brain_router.py:204:            "runtime": "HajeenBrainV3",
+brain/api/brain_router.py:228:        "runtime": "HajeenBrainV3",
+brain/api/brain_router.py:234:    """أداء النماذج عبر ModelRouter."""
+brain/api/brain_router.py:239:        "runtime": "HajeenBrainV3",
+brain/brain_v3.py:17:- HajeenBrainV3 هو Runtime الوحيد — لا يوجد مسار يتجاوزه
+brain/brain_v3.py:19:- ModelRouter هو الموجه الوحيد للنماذج
+brain/brain_v3.py:61:from .model_router import ModelRouter, get_model_router
+brain/brain_v3.py:67:# BrainV3 itself continues to use the canonical factories above.
+brain/brain_v3.py:83:class BrainRequest:
+brain/brain_v3.py:144:class BrainResponse:
+brain/brain_v3.py:145:    """استجابة HajeenBrainV3."""
+brain/brain_v3.py:175:class HajeenBrainV3:
+brain/brain_v3.py:181:      → ModelRouter → LLM → MemoryFabric → Reflection → Response
+brain/brain_v3.py:195:        self.model_router: ModelRouter = get_model_router()
+brain/brain_v3.py:243:            raise ValueError("EvolutionLifecycle must use BrainV3's MemoryFabric")
+brain/brain_v3.py:291:        configured threshold. This keeps BrainV3 observational and non-mutating.
+brain/brain_v3.py:504:            "path": "AgentOrchestrator" if use_agent else "ModelRouter",
+brain/brain_v3.py:536:        # ── 9. Prompt + RAG ثم ModelRouter: المسار الرسمي للنموذج ────────
+brain/brain_v3.py:623:                    raise RuntimeError(route_result.error or "ModelRouter returned an unsuccessful result")
+brain/brain_v3.py:639:            logger.error("ModelRouter unavailable; failing closed: %s", exc)
+brain/brain_v3.py:727:_brain_v3: Optional[HajeenBrainV3] = None
+brain/brain_v3.py:730:async def get_brain_v3() -> HajeenBrainV3:
+brain/brain_v3.py:731:    """الحصول على نسخة Singleton من HajeenBrainV3."""
+brain/brain_v3.py:734:        _brain_v3 = HajeenBrainV3()
+brain/brain_v3.py:739:async def get_brain() -> HajeenBrainV3:
+brain/brain_v3.py:742:    كلاهما يعيد نفس Singleton من HajeenBrainV3.
+brain/cognitive_layer/curiosity_engine.py:269:    def generate_curiosity_query(self, gap_id: str, question: str,
+brain/cognitive_layer/decision_engine.py:4:جزء من HajeenBrainV3 Pipeline الموحّد.
+brain/cognitive_layer/decision_engine.py:86:    يستخدم ضمن HajeenBrainV3 Pipeline:
+brain/cognitive_layer/expert_models_layer.py:4:جزء من HajeenBrainV3 Pipeline الموحّد.
+brain/cognitive_layer/expert_models_layer.py:74:    يستخدم ضمن HajeenBrainV3 Pipeline:
+brain/cognitive_layer/hypothesis_engine.py:93:    def generate_hypothesis(self, problem_statement: str, hypothesis_text: str,
+brain/cognitive_layer/hypothesis_engine.py:122:    def generate_multiple_hypotheses(self, problem_statement: str, num_hypotheses: int = 3) -> List[Hypothesis]:
+brain/cognitive_layer/meta_brain.py:81:class MetaBrain:
+brain/cognitive_layer/meta_brain.py:287:    def generate_performance_report(self) -> Dict[str, Any]:
+brain/cognitive_layer/planning_engine.py:4:جزء من HajeenBrainV3 Pipeline الموحّد.
+brain/cognitive_layer/planning_engine.py:83:    يستخدم ضمن HajeenBrainV3 Pipeline:
+brain/cognitive_layer/reasoning_engine.py:4:جزء من HajeenBrainV3 Pipeline الموحّد.
+brain/cognitive_layer/reasoning_engine.py:62:    يستخدم ضمن HajeenBrainV3 Pipeline:
+brain/decision_engine.py:155:        # opts in; ordinary requests remain on the direct BrainV3->ModelRouter path.
+brain/decision_engine.py:365:    BrainV3 is constructed synchronously, while worker/reflection callers may
+brain/model_router.py:86:class ModelRouter:
+brain/model_router.py:351:_router: Optional[ModelRouter] = None
+brain/model_router.py:354:def get_model_router() -> ModelRouter:
+brain/model_router.py:357:        _router = ModelRouter()
+brain/model_router.py:361:def set_model_router(router: ModelRouter) -> None:
+brain/model_router.py:366:__all__ = ["ModelConfig", "RouteResult", "ModelRouter", "get_model_router", "set_model_router"]
+brain/prompts/unified_prompt_builder.py:24:  ModelRouter → LLM
+brain/reflection/self_reflection.py:30:from ..model_router import ModelRouter, get_model_router
+brain/reflection/self_reflection.py:100:        self._model_router: Optional[ModelRouter] = None
+core/distributed/kubernetes_runtime.py:70:    def generate_deployment_yaml(self, config: K8sPodConfig) -> str:
+core/distributed/kubernetes_runtime.py:108:    def generate_service_yaml(self, config: K8sServiceConfig) -> str:
+core/distributed/kubernetes_runtime.py:126:    def generate_hpa_yaml(
+core/inference_engine/generation.py:20:    def generate(self, prompt: str, config: InferenceConfig) -> str:
+core/llm/base.py:134:class LLMProviderError(LLMError):
+core/llm/base.py:141:class BaseLLMProvider(ABC):
+core/llm/llm_manager.py:46:        # Compatibility facade: ModelRouter remains the sole selection authority.
+core/llm/llm_manager.py:47:        from brain.model_router import ModelRouter
+core/llm/llm_manager.py:48:        self._router = ModelRouter(prefer_local=self.settings.provider in {"local", "hajeen"})
+core/llm/llm_manager.py:134:            raise LLMError(result.error or "ModelRouter returned an unsuccessful result")
+core/llm/llm_manager.py:146:    async def generate(
+core/llm/provider_registry.py:17:class ProviderRegistry:
+core/llm/providers/hajeen_provider.py:1:"""Hajeen Model adapter used by the Platform ModelRouter."""
+core/llm/providers/hajeen_provider.py:21:class HajeenLLMProvider(BaseLLMProvider):
+core/llm/providers/huggingface_provider.py:23:class HuggingFaceProvider(BaseLLMProvider):
+core/llm/providers/llama_cpp_provider.py:21:class LlamaCppProvider(BaseLLMProvider):
+core/llm/providers/mistral_finetuned_provider.py:38:class MistralFinetunedProvider(BaseLLMProvider):
+core/llm/providers/mistral_finetuned_provider.py:122:    async def generate(
+core/llm/providers/mock_provider.py:17:class MockProvider(BaseLLMProvider):
+core/llm/providers/ollama_provider.py:22:class OllamaProvider(BaseLLMProvider):
+core/llm/providers/openai_provider.py:19:class OpenAIProvider(BaseLLMProvider):
+core/optimization/speculative_decoding.py:42:    def generate(
+core/serving/llama_cpp_server.py:54:    def generate(
+core/serving/model_server.py:131:async def generate(request: GenerationRequest) -> Any:
+core/serving/streaming_server.py:55:            async def generate_tokens() -> None:
+core/serving/vllm_server.py:54:    async def generate(
+services/agents/agent_orchestrator.py:38:    authorities owned by BrainV3/platform services.
+services/agents/planner_agent.py:36:            raise RuntimeError("Canonical planner requires ModelRouter and UnifiedPromptBuilder")
+services/chat/chat_service.py:16:from brain.brain_v3 import BrainRequest, BrainResponse, HajeenBrainV3, get_brain_v3
+services/chat/chat_service.py:78:        brain: Optional[HajeenBrainV3] = None,
+services/chat/chat_service.py:101:    async def chat(self, request: ChatRequest) -> ChatResponse:
+services/chat/chat_service.py:102:        """تنفيذ محادثة كاملة عبر HajeenBrainV3."""
+services/chat/chat_service.py:189:        """محادثة مع native streaming عبر HajeenBrainV3."""
+services/data_intelligence/data_factory.py:98:    async def generate_data(
+services/data_intelligence/data_factory.py:107:    async def generate_synthetic(
+services/distributed_inference/ray_serve_deployment.py:108:    def generate(self, prompt: str, max_new_tokens: Optional[int] = None) -> str:
+services/inference_service.py:21:    async def generate(
+api/main.py:411:    # Chat Service is now an adapter, initialized implicitly when first used via HajeenBrainV3
+api/main.py:449:            "startup: HajeenBrainV3 v%s جاهز ✓ (rag=%s)",
+api/main.py:454:        logger.error("startup: فشل تهيئة HajeenBrainV3 — %s", exc)
+api/v1/ai/chat.py:2:AI Chat Endpoints — موحّدة عبر HajeenBrainV3
+api/v1/ai/chat.py:4:جميع طلبات المحادثة تمر عبر HajeenBrainV3 Pipeline الموحّد.
+api/v1/ai/chat.py:7:  POST /ai/chat        → HajeenBrainV3.process() → JSON
+api/v1/ai/chat.py:8:  POST /ai/chat/stream → HajeenBrainV3.stream()  → SSE
+api/v1/ai/chat.py:72:            detail="HajeenBrainV3 not initialized — لا يمكن تنفيذ أي طلب خارج Brain"
+api/v1/ai/chat.py:98:async def chat_completion(request: Request, body: ChatRequest) -> ChatResponse:
+api/v1/ai/chat.py:100:    محادثة AI موحّدة عبر HajeenBrainV3 Pipeline الكامل.
+api/v1/ai/chat.py:107:      HajeenBrainV3.process()
+api/v1/ai/chat.py:111:      ModelRouter → LLM Provider
+api/v1/ai/chat.py:162:            detail=f"HajeenBrainV3 processing failed: {exc}"
+api/v1/ai/chat.py:190:async def chat_stream(request: Request, body: ChatRequest) -> StreamingResponse:
+api/v1/ai/chat.py:192:    محادثة متدفقة موحّدة عبر HajeenBrainV3.
+api/v1/ai/chat.py:247:            error_payload = json.dumps({"event": "error", "error": str(exc), "source": "HajeenBrainV3"}, ensure_ascii=False)
+api/v1/ai/completion.py:48:@router.post("/completion", response_model=CompletionResponse, summary="Text Completion عبر HajeenBrainV3")
+api/v1/ai/completion.py:52:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/ai/completion.py:95:@router.post("/completion/stream", summary="Streaming Text Completion عبر HajeenBrainV3")
+api/v1/ai/completion.py:99:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/ai/completion.py:146:            payload = {"event": "error", "error": str(e), "source": "HajeenBrainV3"}
+api/v1/ai/router.py:76:@router.post("/chat", summary="محادثة AI موحدة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:77:async def chat(
+api/v1/ai/router.py:82:    محادثة كاملة موحدة عبر HajeenBrainV3.
+api/v1/ai/router.py:86:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/ai/router.py:132:@router.post("/chat/stream", summary="محادثة AI متدفقة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:133:async def chat_stream(
+api/v1/ai/router.py:138:    محادثة متدفقة موحدة عبر HajeenBrainV3.
+api/v1/ai/router.py:142:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/ai/router.py:205:@router.post("/rag/query", summary="RAG Query عبر HajeenBrainV3", tags=["AI", "RAG"])
+api/v1/ai/router.py:211:    استعلام RAG كامل عبر HajeenBrainV3.
+api/v1/ai/router.py:215:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/ai/router.py:261:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/ai/router.py:263:    return {"models": models, "routing_authority": "ModelRouter"}
+api/v1/ai/router.py:268:@router.get("/chat/sessions/{session_id}", summary="معلومات جلسة المحادثة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:271:    الحصول على معلومات جلسة محادثة عبر HajeenBrainV3.
+api/v1/ai/router.py:275:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/ai/router.py:277:    # Assuming HajeenBrainV3 has a method to get session info from MemoryFabric
+api/v1/ai/router.py:287:@router.post("/chat/sessions/{session_id}/clear", summary="مسح جلسة محادثة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:290:    مسح سجل جلسة محادثة عبر HajeenBrainV3.
+api/v1/ai/router.py:294:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/ai/router.py:296:    # Assuming HajeenBrainV3 has a method to clear session in MemoryFabric
+api/v1/ai/router.py:308:@router.get("/stats", summary="إحصائيات HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:311:    إحصائيات شاملة لـ HajeenBrainV3.
+api/v1/ai/router.py:315:        raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
+api/v1/embeddings/router.py:39:async def generate_embeddings(req: EmbedRequest):
+api/v1/hajeen_model_router.py:5:- جميع طلبات AI تمر عبر HajeenBrainV3
+api/v1/hajeen_model_router.py:12:  POST /api/v1/model/chat            — محادثة (موجهة عبر HajeenBrainV3)
+api/v1/hajeen_model_router.py:13:  POST /api/v1/model/complete        — استدلال كامل (عبر HajeenBrainV3)
+api/v1/hajeen_model_router.py:14:  POST /api/v1/model/stream          — streaming (SSE) (عبر HajeenBrainV3)
+api/v1/hajeen_model_router.py:83:    """الحصول على HajeenBrainV3 من app state."""
+api/v1/hajeen_model_router.py:103:            "model": "Hajeen Model v1 (via HajeenBrainV3)",
+api/v1/hajeen_model_router.py:125:        "inference": config.get("inference", {"runtime": "HajeenBrainV3"}),
+api/v1/hajeen_model_router.py:128:        "runtime": "HajeenBrainV3 (Unified Runtime)",
+api/v1/hajeen_model_router.py:133:async def chat(req: ChatRequest, request: Request):
+api/v1/hajeen_model_router.py:137:    الضمان: الطلب يمر عبر HajeenBrainV3.process() كاملاً.
+api/v1/hajeen_model_router.py:167:            "runtime": "HajeenBrainV3",
+api/v1/hajeen_model_router.py:171:        raise HTTPException(status_code=500, detail=f"HajeenBrainV3 error: {e}")
+api/v1/hajeen_model_router.py:177:    استدلال كامل عبر HajeenBrainV3.
+api/v1/hajeen_model_router.py:208:            "runtime": "HajeenBrainV3",
+api/v1/hajeen_model_router.py:217:    Streaming محادثة عبر HajeenBrainV3.stream().

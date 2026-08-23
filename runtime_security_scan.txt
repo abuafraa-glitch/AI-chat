@@ -1,0 +1,3274 @@
+=== main security/config ===
+"""Hajeen AI Platform — FastAPI Application v1.1.0 (Phase 10 — Production Stable).
+
+Routes:
+  GET  /health                       — root health check (شامل)
+  GET  /ping                         — pong
+  GET  /api/v1/storage/stats         — إحصائيات التخزين
+  /api/v1/channels                   — إدارة القنوات
+  /api/v1/search                     — Semantic Search
+  /api/v1/embeddings                 — Embeddings
+  /api/v1/ai                         — AI Runtime
+  /ws/chat                           — WebSocket Chat
+"""
+from __future__ import annotations
+
+import logging
+import logging.config
+import os
+import time
+import traceback
+import uuid
+from pathlib import Path
+from typing import Any, Dict
+
+import yaml
+from fastapi import FastAPI, HTTPException, Request, WebSocket
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+# ── الديركتوريات الأساسية ──────────────────────────────────────────────────
+
+for _d in [
+    "./logs",
+    "./storage_data",
+    "./storage_data/metadata",
+    "./storage_data/vector_index",
+    "./storage_data/raw",
+    "./storage_data/bronze",
+    "./storage_data/silver",
+    "./storage_data/gold",
+]:
+    os.makedirs(_d, exist_ok=True)
+
+# ── Logging ───────────────────────────────────────────────────────────────
+
+_LOGGING_CFG = Path("configs/logging.yaml")
+try:
+    if _LOGGING_CFG.exists():
+        with open(_LOGGING_CFG, encoding="utf-8") as _f:
+            logging.config.dictConfig(yaml.safe_load(_f))
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        )
+except Exception as _e:
+    logging.basicConfig(level=logging.INFO)
+    logging.warning("Failed to load logging config: %s", _e)
+
+logger = logging.getLogger(__name__)
+
+# ── Shared Search State ────────────────────────────────────────────────────
+_search_state: Dict[str, Any] = {}
+
+# ── FastAPI ────────────────────────────────────────────────────────────────
+
+app = FastAPI(
+    title="Hajeen AI Platform API",
+    description=(
+        "منصة بيانات ذكية — RSS Ingestion + Vector Search + RAG + LLM Inference\n\n"
+        "**Phase 10 — Production Stable**: Pipeline Orchestration · Distributed Storage · "
+        "Multi-Tenant · Security · AI Inference · CI/CD"
+    ),
+    version="1.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "https://hajeen.ai",
+        "https://app.hajeen.ai",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Session-ID"],
+)
+
+
+# ── Global Exception Handlers ─────────────────────────────────────────────
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """معالج أخطاء التحقق من الطلبات."""
+    errors = []
+    for err in exc.errors():
+        errors.append({
+            "field": " → ".join(str(loc) for loc in err.get("loc", [])),
+            "message": err.get("msg", ""),
+            "type": err.get("type", ""),
+        })
+    logger.warning(
+        "validation_error: %s %s — %d errors",
+        request.method, request.url.path, len(errors),
+    )
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "validation_error",
+            "message": "بيانات الطلب غير صالحة",
+            "details": errors,
+            "path": str(request.url.path),
+        },
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """معالج أخطاء HTTP العامة."""
+    logger.warning(
+        "http_error: %s %s → %d %s",
+        request.method, request.url.path, exc.status_code, exc.detail,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": "http_error",
+            "status_code": exc.status_code,
+            "message": exc.detail,
+            "path": str(request.url.path),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """معالج الاستثناءات غير المتوقعة — يمنع crash الـ API."""
+    error_id = str(uuid.uuid4())[:8]
+    logger.error(
+        "unhandled_exception [%s]: %s %s — %s\n%s",
+        error_id,
+        request.method,
+        request.url.path,
+        exc,
+        traceback.format_exc(),
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "internal_server_error",
+            "message": "خطأ داخلي في الخادم",
+            "error_id": error_id,
+            "path": str(request.url.path),
+        },
+    )
+
+
+# ── Middleware: Request timing ─────────────────────────────────────────────
+
+@app.middleware("http")
+async def add_request_timing(request: Request, call_next):
+    """إضافة وقت معالجة الطلب إلى الـ response headers."""
+    start = time.monotonic()
+    response = await call_next(request)
+    elapsed_ms = round((time.monotonic() - start) * 1000, 2)
+    response.headers["X-Process-Time-Ms"] = str(elapsed_ms)
+    response.headers["X-Platform"] = "Hajeen-AI/1.1.0"
+    return response
+
+
+# ── Health Endpoint ────────────────────────────────────────────────────────
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """فحص صحة شامل للنظام."""
+    checks: Dict[str, Any] = {
+        "status": "ok",
+        "version": "1.1.0",
+        "service": "Hajeen AI Platform",
+        "phase": "10 — Production Stable",
+        "timestamp": time.time(),
+    }
+
+    # Search Engine
+    search_ready = _search_state.get("engine") is not None
+    index_size = 0
+    if search_ready:
+        try:
+            index_size = _search_state["engine"].vector_store.stats().total_vectors
+        except Exception:
+            pass
+    checks["search_engine"] = "ready" if search_ready else "empty_index"
+    checks["index_size"] = index_size
+    checks["rag_pipeline"] = "ready" if _search_state.get("rag_pipeline") else "unavailable"
+
+    # Channel Registry
+    try:
+        from data_engine.channels.registry import ChannelRegistry
+        checks["channels"] = ChannelRegistry.count()
+    except Exception:
+        checks["channels"] = "unavailable"
+
+    # Storage
+    try:
+        from data_engine.storage.storage_manager import get_storage_manager
+        sm = get_storage_manager()
+        checks["storage"] = "connected" if sm._connected else "ready"
+    except Exception:
+        checks["storage"] = "unavailable"
+
+    # LLM
+    llm_status = "unknown"
+    try:
+        from core.llm.llm_manager import get_llm_manager
+        manager = get_llm_manager()
+        llm_status = f"ready ({manager.settings.provider})" if manager._initialized else "not_initialized"
+    except Exception:
+        llm_status = "unavailable"
+    checks["llm_engine"] = llm_status
+
+    # Inference Engine
+    inference_status = "unknown"
+    try:
+        from core.inference_engine.engine import get_inference_engine
+        engine = get_inference_engine()
+            getattr(brain, 'VERSION', 'unknown'),
+            brain.rag_pipeline is not None,
+        )
+    except Exception as exc:
+        logger.error("startup: فشل تهيئة HajeenBrainV3 — %s", exc)
+        # Brain failure is critical but don't crash — lazy init will retry on first request
+
+    logger.info("Hajeen AI Platform v1.1.0 — جاهز بالكامل ✅")
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    """حفظ FAISS + إغلاق جميع الخدمات بأمان."""
+    # حفظ FAISS index
+    try:
+        vs = _search_state.get("vector_store")
+        if vs and vs.stats().total_vectors > 0:
+            vs.save("storage_data/vector_index/main")
+            logger.info("shutdown: FAISS index حُفظ")
+    except Exception as exc:
+        logger.warning("shutdown: تعذّر حفظ FAISS — %s", exc)
+
+    # قطع اتصال StorageManager
+    try:
+        from data_engine.storage.storage_manager import get_storage_manager
+        sm = get_storage_manager()
+        await sm.disconnect()
+        logger.info("shutdown: StorageManager أُغلق")
+    except Exception:
+        pass
+
+    # إغلاق Inference Engine
+    try:
+        from core.inference_engine.engine import get_inference_engine
+        engine = get_inference_engine()
+        if engine._initialized:
+            await engine.shutdown()
+            logger.info("shutdown: Inference Engine أُغلق")
+    except Exception:
+        pass
+
+    logger.info("Hajeen AI Platform — أُغلق بأمان")
+
+
+# ── Routers ──────────────────────────────────────────────────────────────
+
+# ── Auth Middleware (يحمي جميع الـ routes) ────────────────────────────────
+import os as _os
+
+if _os.getenv("ENABLE_AUTH", "true").lower() == "true":
+    try:
+        from security.middleware.auth_middleware import AuthMiddleware
+        app.add_middleware(AuthMiddleware, enable_rate_limiting=True)
+        logger.info("startup: Auth Middleware مفعّل ✓")
+    except Exception as _e:
+        logger.warning("Auth Middleware غير متاح: %s", _e)
+
+from api.v1.router import router as v1_router  # noqa: E402
+
+app.include_router(v1_router, prefix="/api/v1")
+
+try:
+    from api.v1.tasks.router import router as tasks_router
+    app.include_router(tasks_router, prefix="/api/v1")
+except Exception as _e:
+    logger.warning("tasks router غير متاح: %s", _e)
+
+from api.v1.embeddings.router import router as embeddings_router  # noqa: E402
+from api.v1.search.router import router as search_router  # noqa: E402
+
+app.include_router(search_router, prefix="/api/v1")
+app.include_router(embeddings_router, prefix="/api/v1")
+
+from api.v1.ai.router import router as ai_router  # noqa: E402
+
+app.include_router(ai_router, prefix="/api/v1/ai")
+
+try:
+    from api.v1.hajeen_model_router import router as hajeen_model_router
+    app.include_router(hajeen_model_router, prefix="/api/v1")
+    logger.info("startup: Hajeen Model v1 router مسجّل ✓")
+except Exception as _e:
+    logger.warning("Hajeen Model router غير متاح: %s", _e)
+
+# ── Auth Router ────────────────────────────────────────────────────────────
+try:
+    from api.v1.auth.router import router as auth_router
+    app.include_router(auth_router, prefix="/api/v1")
+    logger.info("startup: Auth router مسجّل ✓")
+except Exception as _e:
+    logger.warning("Auth router غير متاح: %s", _e)
+
+logger.info("Hajeen AI Platform API v1.1.0 — تمّ تسجيل جميع الـ routers")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
+
+    # Hajeen Brain v2 Router is deprecated and removed.
+=== auth dependencies/middleware ===
+"""Auth API Routes — تسجيل الدخول والتسجيل وإدارة التوكنات."""
+from __future__ import annotations
+
+import logging
+import os
+import time
+import uuid
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel, Field
+
+from security.auth.api_key_manager import get_api_key_manager
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+JWT_SECRET = os.getenv("JWT_SECRET", "hajeen-change-me-in-production-secret-key")
+
+
+# ── Schemas ───────────────────────────────────────────────────────────────────
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: str = Field(..., min_length=5)
+    password: str = Field(..., min_length=8)
+    tenant_id: str = Field(default="default")
+    roles: List[str] = Field(default=["user"])
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    tenant_id: str = "default"
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class RevokeRequest(BaseModel):
+    token: str
+
+
+class CreateAPIKeyRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    roles: List[str] = Field(default=["user"]) # Changed from scopes to roles for consistency with RBAC
+    expires_in_days: Optional[int] = Field(None, ge=1, le=365)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user_id: str
+    roles: List[str]
+    tenant_id: str
+
+
+# ── In-memory user store (يُستبدل بـ PostgreSQL في الإنتاج) ──────────────────
+
+_USERS: Dict[str, Dict[str, Any]] = {
+    "admin": {
+        "user_id": "usr_admin",
+        "username": "admin",
+        "email": "admin@hajeen.ai",
+        "password_hash": "__admin_placeholder__",
+        "roles": ["superadmin"],
+        "tenant_id": "default",
+        "active": True,
+    }
+}
+
+
+def _hash_password(password: str) -> str:
+    import hashlib
+    salt = os.getenv("PASSWORD_SALT", "hajeen-salt-change-me")
+    return hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
+
+
+def _verify_password(password: str, stored_hash: str) -> bool:
+    if stored_hash == "__admin_placeholder__":
+        return password == os.getenv("ADMIN_PASSWORD", "HajeenAdmin2024!")
+    return _hash_password(password) == stored_hash
+
+
+def _get_jwt_auth():
+    import os
+
+    from security.auth.jwt_auth import JWTAuthenticator
+    from security.auth.revoked_tokens import get_revoked_token_store
+    return JWTAuthenticator(secret=os.getenv("JWT_SECRET", JWT_SECRET), revoked_store=get_revoked_token_store())
+
+
+# ── POST /auth/register ───────────────────────────────────────────────────────
+
+@router.post("/register", summary="تسجيل مستخدم جديد", status_code=201)
+async def register(body: RegisterRequest) -> Dict[str, Any]:
+    if body.username in _USERS:
+        raise HTTPException(status_code=400, detail="اسم المستخدم موجود بالفعل")
+
+    user_id = f"usr_{uuid.uuid4().hex[:12]}"
+    _USERS[body.username] = {
+        "user_id": user_id,
+        "username": body.username,
+        "email": body.email,
+        "password_hash": _hash_password(body.password),
+        "roles": body.roles,
+        "tenant_id": body.tenant_id,
+        "active": True,
+        "created_at": time.time(),
+    }
+    logger.info("New user registered: %s (tenant=%s)", body.username, body.tenant_id)
+    return {
+        "success": True,
+        "user_id": user_id,
+        "username": body.username,
+        "roles": body.roles,
+        "message": "تم تسجيل المستخدم بنجاح",
+    }
+
+
+# ── POST /auth/login ──────────────────────────────────────────────────────────
+
+@router.post("/login", response_model=TokenResponse, summary="تسجيل الدخول")
+async def login(body: LoginRequest, request: Request) -> TokenResponse:
+    user = _USERS.get(body.username)
+    if not user or not user.get("active"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="اسم المستخدم أو كلمة المرور غير صحيحة",
+        )
+
+    if not _verify_password(body.password, user["password_hash"]):
+        logger.warning("Failed login attempt for user: %s", body.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="اسم المستخدم أو كلمة المرور غير صحيحة",
+        )
+
+    jwt = _get_jwt_auth()
+    access_token = jwt.issue_token(
+        user_id=user["user_id"],
+        tenant_id=user["tenant_id"],
+        roles=user["roles"],
+        token_type="access",
+    )
+    refresh_token = jwt.issue_token(
+        user_id=user["user_id"],
+        tenant_id=user["tenant_id"],
+        roles=user["roles"],
+        token_type="refresh",
+    )
+
+    logger.info("User logged in: %s", body.username)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=3600,
+        user_id=user["user_id"],
+        roles=user["roles"],
+        tenant_id=user["tenant_id"],
+    )
+
+
+# ── POST /auth/refresh ────────────────────────────────────────────────────────
+
+@router.post("/refresh", response_model=TokenResponse, summary="تجديد التوكن")
+async def refresh_token(body: RefreshRequest) -> TokenResponse:
+    try:
+        jwt = _get_jwt_auth()
+        new_access = jwt.refresh_access_token(body.refresh_token)
+        claims = jwt.validate_token(new_access)
+        new_refresh = jwt.issue_token(
+            claims.sub, claims.tenant_id, claims.roles, "refresh"
+        )
+        return TokenResponse(
+            access_token=new_access,
+            refresh_token=new_refresh,
+            expires_in=3600,
+            user_id=claims.sub,
+            roles=claims.roles,
+            tenant_id=claims.tenant_id,
+        )
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
+
+# ── POST /auth/revoke ─────────────────────────────────────────────────────────
+
+@router.post("/revoke", summary="إلغاء صلاحية التوكن")
+async def revoke_token(body: RevokeRequest) -> Dict[str, Any]:
+    jwt_auth = _get_jwt_auth()
+    jwt_auth.revoke_token(body.token)
+    return {"success": True, "message": "تم إلغاء صلاحية التوكن"}
+
+
+@router.get("/apikeys", summary="قائمة مفاتيح API للمستخدم الحالي")
+async def list_api_keys(request: Request) -> Dict[str, Any]:
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="غير مصادق")
+    api_key_manager = get_api_key_manager()
+    keys = api_key_manager.get_all_keys_for_user(user_id)
+    return {"api_keys": [key.to_dict() for key in keys], "total": len(keys)}
+
+
+@router.get("/apikeys/{key_id}", summary="الحصول على تفاصيل مفتاح API")
+async def get_api_key_details(key_id: str, request: Request) -> Dict[str, Any]:
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="غير مصادق")
+    api_key_manager = get_api_key_manager()
+    api_key = api_key_manager.get_key_by_id(key_id)
+    if not api_key or api_key.user_id != user_id:
+        raise HTTPException(status_code=404, detail="مفتاح API غير موجود أو لا تملك صلاحية الوصول إليه")
+    return api_key.to_dict()
+
+
+@router.delete("/apikeys/{key_id}", summary="إلغاء مفتاح API")
+async def revoke_api_key(key_id: str, request: Request) -> Dict[str, Any]:
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="غير مصادق")
+    api_key_manager = get_api_key_manager()
+    api_key = api_key_manager.get_key_by_id(key_id)
+    if not api_key or api_key.user_id != user_id:
+        raise HTTPException(status_code=404, detail="مفتاح API غير موجود أو لا تملك صلاحية الوصول إليه")
+    if not api_key_manager.revoke_key(key_id):
+        raise HTTPException(status_code=500, detail="فشل إلغاء مفتاح API")
+    return {"success": True, "message": "تم إلغاء مفتاح API بنجاح"}
+
+
+# ── GET /auth/me ──────────────────────────────────────────────────────────────
+
+@router.get("/me", summary="معلومات المستخدم الحالي")
+async def get_current_user(request: Request) -> Dict[str, Any]:
+    user_id = getattr(request.state, "user_id", None)
+    roles = getattr(request.state, "roles", [])
+    tenant_id = getattr(request.state, "tenant_id", "default")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="غير مصادق")
+    return {
+        "user_id": user_id,
+        "roles": roles,
+        "tenant_id": tenant_id,
+        "permissions": [p.value for p in __import__(
+            "security.rbac.rbac", fromlist=["get_all_permissions"]
+        ).get_all_permissions(roles)],
+    }
+
+
+# ── POST /auth/apikeys ────────────────────────────────────────────────────────
+
+@router.post("/apikeys", summary="إنشاء API Key جديد")
+async def create_api_key(body: CreateAPIKeyRequest, request: Request) -> Dict[str, Any]:
+    user_id = getattr(request.state, "user_id", "anonymous")
+    tenant_id = getattr(request.state, "tenant_id", "default")
+
+    api_key_manager = get_api_key_manager()
+    raw_key, api_key_obj = api_key_manager.generate_key(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        roles=body.roles,
+        expires_in_seconds=body.expires_in_days * 86400 if body.expires_in_days else None,
+        metadata={"name": body.name}
+    )
+    key_id = api_key_obj.key_id
+
+    logger.info("API key created: %s for user %s", key_id, user_id)
+    return {
+        "key_id": key_id,
+        "key": raw_key,
+        "name": body.name,
+        "roles": api_key_obj.roles,
+        "user_id": user_id,
+        "tenant_id": tenant_id,
+        "expires_at": api_key_obj.expires_at,
+        "warning": "احفظ هذا المفتاح بأمان — لن يُعرض مرة أخرى",
+        "message": "تم إنشاء مفتاح API بنجاح. يرجى حفظه الآن."
+    }
+
+
+# ── GET /auth/users ───────────────────────────────────────────────────────────
+
+@router.get("/users", summary="قائمة المستخدمين (admin فقط)")
+async def list_users(request: Request) -> Dict[str, Any]:
+    roles = getattr(request.state, "roles", [])
+    if "admin" not in roles and "superadmin" not in roles:
+        raise HTTPException(status_code=403, detail="يجب أن تكون admin")
+    safe_users = [
+        {k: v for k, v in u.items() if k not in ("password_hash",)}
+        for u in _USERS.values()
+    ]
+    return {"users": safe_users, "total": len(safe_users)}
+---security/__init__.py
+---security/api_keys/__init__.py
+---security/api_keys/api_key_manager.py
+"""API Key Manager — hashed key storage, validation, rotation, and revocation."""
+from __future__ import annotations
+
+import hashlib
+import logging
+import os
+import secrets
+import time
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+API_KEY_PREFIX = "hj_"
+API_KEY_LENGTH = 48
+KEY_HASH_ALGO = "sha3_256"
+
+
+@dataclass
+class APIKey:
+    key_id: str
+    name: str
+    tenant_id: str
+    user_id: str
+    scopes: List[str]
+    created_at: float = field(default_factory=time.time)
+    expires_at: Optional[float] = None
+    last_used_at: Optional[float] = None
+    is_active: bool = True
+    hash: str = ""
+
+
+class APIKeyManager:
+    """Manages API key lifecycle with hashed storage."""
+
+    def __init__(self, db: Any, redis_client: Any) -> None:
+        self.db = db
+        self.redis = redis_client
+
+    def generate_key(
+        self,
+        tenant_id: str,
+        user_id: str,
+        name: str,
+        scopes: List[str],
+        expires_in_days: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        raw_key = API_KEY_PREFIX + secrets.token_urlsafe(API_KEY_LENGTH)
+        key_hash = self._hash_key(raw_key)
+        key_id = secrets.token_hex(16)
+
+        expires_at = None
+        if expires_in_days:
+            expires_at = time.time() + expires_in_days * 86400
+
+        api_key = APIKey(
+            key_id=key_id,
+            name=name,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            scopes=scopes,
+            expires_at=expires_at,
+            hash=key_hash,
+        )
+        self._persist(api_key)
+
+        return {
+            "key_id": key_id,
+            "key": raw_key,
+            "name": name,
+            "scopes": scopes,
+            "expires_at": expires_at,
+            "warning": "Store this key securely — it will not be shown again",
+        }
+
+    def validate_key(self, raw_key: str) -> Optional[APIKey]:
+        if not raw_key.startswith(API_KEY_PREFIX):
+            return None
+
+        cache_key = f"apikey:validated:{self._hash_key(raw_key)}"
+        cached = self.redis.get(cache_key)
+        if cached:
+            import json
+            return APIKey(**json.loads(cached))
+
+        key_hash = self._hash_key(raw_key)
+        api_key = self._load_by_hash(key_hash)
+
+        if not api_key or not api_key.is_active:
+            return None
+
+        if api_key.expires_at and time.time() > api_key.expires_at:
+            return None
+
+        self.redis.setex(cache_key, 300, self._serialize(api_key))
+        self._update_last_used(api_key.key_id)
+        return api_key
+
+    def revoke_key(self, key_id: str, tenant_id: str) -> bool:
+        result = self.db.execute(
+            "UPDATE api_keys SET is_active = FALSE WHERE key_id = %s AND tenant_id = %s",
+            (key_id, tenant_id),
+        )
+        self.redis.delete(f"apikey:id:{key_id}")
+        return result.rowcount > 0
+
+    def _hash_key(self, raw_key: str) -> str:
+        return hashlib.new(KEY_HASH_ALGO, raw_key.encode()).hexdigest()
+
+    def _persist(self, api_key: APIKey) -> None:
+        self.db.execute(
+            """INSERT INTO api_keys
+               (key_id, name, tenant_id, user_id, scopes, hash,
+                created_at, expires_at, is_active)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (
+                api_key.key_id, api_key.name, api_key.tenant_id,
+                api_key.user_id, api_key.scopes, api_key.hash,
+                api_key.created_at, api_key.expires_at, api_key.is_active,
+            ),
+        )
+
+    def _load_by_hash(self, key_hash: str) -> Optional[APIKey]:
+        row = self.db.fetchone(
+            "SELECT * FROM api_keys WHERE hash = %s", (key_hash,)
+        )
+        if row:
+            return APIKey(**row)
+        return None
+
+    def _serialize(self, api_key: APIKey) -> str:
+        import json
+        return json.dumps(
+            {k: v for k, v in api_key.__dict__.items() if k != "hash"}
+        )
+
+    def _update_last_used(self, key_id: str) -> None:
+        self.redis.setex(f"apikey:last_used:{key_id}", 3600, str(time.time()))
+---security/audit/__init__.py
+---security/audit/audit_logger.py
+"""Audit Logger — tamper-evident structured audit trail for all API operations."""
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import time
+import uuid
+from enum import Enum
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class AuditAction(str, Enum):
+    LOGIN_SUCCESS     = "login:success"
+    LOGIN_FAILED      = "login:failed"
+    LOGOUT            = "logout"
+    APIKEY_CREATED    = "apikey:created"
+    APIKEY_VALIDATED  = "apikey:validated"
+    APIKEY_REVOKED    = "apikey:revoked"
+    PERMISSION_DENIED = "permission:denied"
+    RATE_LIMITED      = "rate:limited"
+    MODEL_INFERENCE   = "model:inference"
+    MODEL_TRAINING    = "model:training"
+    POLICY_UPDATE     = "policy:update"
+    SYSTEM_HEALTH     = "system:health"
+    CONFIG_CHANGE     = "config:change"
+
+
+@dataclass
+class AuditEvent:
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: float = field(default_factory=time.time)
+    tenant_id: str = ""
+    user_id: str = ""
+    action: str = ""
+    resource_type: str = ""
+    resource_id: str = ""
+    ip_address: str = ""
+    user_agent: str = ""
+    request_id: str = ""
+    status: str = "success"
+    error: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    previous_hash: str = ""
+    hash: str = ""
+
+    def compute_hash(self) -> str:
+        payload = json.dumps(
+            {k: v for k, v in asdict(self).items() if k != "hash"},
+            sort_keys=True,
+            default=str,
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+
+class _InMemoryAuditStore:
+    """Fallback store used only when no database adapter is configured.
+
+    It preserves the audit API during local startup/tests; production should
+    provide a durable adapter through the application composition root.
+    """
+
+    def __init__(self) -> None:
+        self.rows: List[Dict[str, Any]] = []
+
+    def execute(self, _query: str, params: tuple) -> None:
+        columns = [
+            "event_id", "timestamp", "tenant_id", "user_id", "action",
+            "resource_type", "resource_id", "ip_address", "user_agent",
+            "request_id", "status", "error", "metadata", "hash", "previous_hash",
+        ]
+        self.rows.append(dict(zip(columns, params)))
+
+    def fetchone(self, _query: str) -> Optional[Dict[str, Any]]:
+        return self.rows[-1] if self.rows else None
+
+    def fetchall(self, _query: str, _params: tuple = ()) -> List[Dict[str, Any]]:
+        return list(self.rows)
+
+
+_AUDIT_LOGGER: Optional["AuditLogger"] = None
+
+
+class AuditLogger:
+    """Writes tamper-evident audit logs to persistent storage."""
+
+    def __init__(self, db: Any, redis_client: Any) -> None:
+        self.db = db
+        self.redis = redis_client
+        self._last_hash = self._get_last_hash()
+
+    def log(
+        self,
+        action: AuditAction,
+        resource_type: str,
+        resource_id: str,
+        tenant_id: str,
+        user_id: str,
+        ip_address: str = "",
+        user_agent: str = "",
+        request_id: str = "",
+        status: str = "success",
+        error: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> AuditEvent:
+        event = AuditEvent(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            request_id=request_id,
+            status=status,
+            error=error,
+            metadata=metadata or {},
+            previous_hash=self._last_hash,
+        )
+        event.hash = event.compute_hash()
+        self._last_hash = event.hash
+
+        self._persist(event)
+        logger.info(
+            "AUDIT action=%s resource=%s/%s user=%s tenant=%s status=%s",
+            action, resource_type, resource_id, user_id, tenant_id, status,
+        )
+        return event
+
+    def _persist(self, event: AuditEvent) -> None:
+        self.db.execute(
+            """INSERT INTO audit_log
+               (event_id, timestamp, tenant_id, user_id, action,
+                resource_type, resource_id, ip_address, user_agent,
+                request_id, status, error, metadata, hash, previous_hash)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (
+                event.event_id, event.timestamp, event.tenant_id, event.user_id,
+                event.action, event.resource_type, event.resource_id,
+                event.ip_address, event.user_agent, event.request_id,
+                event.status, event.error,
+                json.dumps(event.metadata), event.hash, event.previous_hash,
+            ),
+        )
+
+    def _get_last_hash(self) -> str:
+        row = self.db.fetchone(
+            "SELECT hash FROM audit_log ORDER BY timestamp DESC LIMIT 1"
+        )
+        return row["hash"] if row else "genesis"
+
+    def verify_chain(self, limit: int = 1000) -> Dict[str, Any]:
+        rows = self.db.fetchall(
+            "SELECT * FROM audit_log ORDER BY timestamp ASC LIMIT %s", (limit,)
+        )
+        broken_at: List[str] = []
+        for row in rows:
+            event = AuditEvent(**{**row, "hash": "", "metadata": json.loads(row.get("metadata", "{}"))})
+            computed = event.compute_hash()
+            if computed != row["hash"]:
+                broken_at.append(row["event_id"])
+
+        return {
+            "verified": len(broken_at) == 0,
+            "total_events": len(rows),
+            "broken_events": broken_at,
+        }
+
+
+def get_audit_logger(
+    db: Any = None,
+    redis_client: Any = None,
+) -> AuditLogger:
+    """Return the process audit logger, creating an explicit local fallback.
+
+    A production composition root should pass durable ``db`` and ``redis``
+    adapters.  The fallback is intentionally observable and process-local; it
+    is not presented as durable audit storage.
+    """
+    global _AUDIT_LOGGER
+    if _AUDIT_LOGGER is None:
+        if db is None:
+            logger.warning("No durable audit DB configured; using process-local audit store")
+            db = _InMemoryAuditStore()
+        _AUDIT_LOGGER = AuditLogger(db=db, redis_client=redis_client)
+    return _AUDIT_LOGGER
+---security/auth/__init__.py
+---security/auth/api_key_manager.py
+import hashlib
+import secrets
+import time
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
+
+@dataclass
+class APIKey:
+    key_id: str
+    hashed_key: str
+    user_id: str
+    tenant_id: str
+    roles: List[str]
+    created_at: float
+    expires_at: Optional[float] = None
+    last_used_at: Optional[float] = None
+    is_active: bool = True
+    metadata: Dict[str, str] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, any]:
+        return {
+            "key_id": self.key_id,
+            "user_id": self.user_id,
+            "tenant_id": self.tenant_id,
+            "roles": self.roles,
+            "created_at": self.created_at,
+            "expires_at": self.expires_at,
+            "last_used_at": self.last_used_at,
+            "is_active": self.is_active,
+            "metadata": self.metadata,
+        }
+
+class APIKeyManager:
+    """Manages API key generation, storage, validation, and revocation."""
+
+    def __init__(self):
+        # In a real application, this would be a persistent store (database)
+        self._api_keys: Dict[str, APIKey] = {}
+
+    def _hash_key(self, key: str) -> str:
+        return hashlib.sha256(key.encode()).hexdigest()
+
+    def generate_key(self, user_id: str, tenant_id: str, roles: List[str], expires_in_seconds: Optional[int] = None, metadata: Optional[Dict[str, str]] = None) -> Tuple[str, APIKey]:
+        raw_key = secrets.token_urlsafe(32)  # Generate a random URL-safe string
+        hashed_key = self._hash_key(raw_key)
+        key_id = secrets.token_hex(16) # Unique ID for the key
+        created_at = time.time()
+        expires_at = created_at + expires_in_seconds if expires_in_seconds else None
+
+        api_key = APIKey(
+            key_id=key_id,
+            hashed_key=hashed_key,
+            user_id=user_id,
+            tenant_id=tenant_id,
+            roles=roles,
+            created_at=created_at,
+            expires_at=expires_at,
+            metadata=metadata or {},
+        )
+        self._api_keys[key_id] = api_key
+        return raw_key, api_key
+
+    def validate_key(self, raw_key: str) -> Optional[APIKey]:
+        hashed_key = self._hash_key(raw_key)
+        for key_id, api_key in self._api_keys.items():
+            if api_key.hashed_key == hashed_key and api_key.is_active:
+                if api_key.expires_at and api_key.expires_at < time.time():
+                    api_key.is_active = False # Mark as expired
+                    return None
+                api_key.last_used_at = time.time()
+                return api_key
+        return None
+
+    def revoke_key(self, key_id: str) -> bool:
+        if key_id in self._api_keys:
+            self._api_keys[key_id].is_active = False
+            return True
+        return False
+
+    def get_key_by_id(self, key_id: str) -> Optional[APIKey]:
+        return self._api_keys.get(key_id)
+
+    def get_all_keys_for_user(self, user_id: str) -> List[APIKey]:
+        return [key for key in self._api_keys.values() if key.user_id == user_id]
+
+# Singleton instance
+_api_key_manager: Optional[APIKeyManager] = None
+
+def get_api_key_manager() -> APIKeyManager:
+    global _api_key_manager
+    if _api_key_manager is None:
+        _api_key_manager = APIKeyManager()
+    return _api_key_manager
+---security/auth/jwt_auth.py
+"""JWT Authentication — token issuance, validation, and refresh."""
+from __future__ import annotations
+
+import logging
+import os
+import time
+import uuid
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
+import jwt
+
+from security.auth.revoked_tokens import get_revoked_token_store
+
+logger = logging.getLogger(__name__)
+
+JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_TTL = 3600
+REFRESH_TOKEN_TTL = 86400 * 30
+
+
+@dataclass
+class TokenClaims:
+    sub: str
+    tenant_id: str
+    roles: List[str]
+    jti: str
+    iat: float
+    exp: float
+    type: str = "access"
+
+
+class JWTAuthenticator:
+    """Issues and validates JWT tokens."""
+
+    def __init__(
+        self,
+        secret: str = JWT_SECRET,
+        algorithm: str = JWT_ALGORITHM,
+        revoked_store: Optional[Any] = None,
+    ) -> None:
+        self.secret = secret
+        self.algorithm = algorithm
+        self.revoked_store = revoked_store or get_revoked_token_store()
+
+    def issue_token(
+        self,
+        user_id: str,
+        tenant_id: str,
+        roles: List[str],
+        token_type: str = "access",
+    ) -> str:
+        now = time.time()
+        ttl = ACCESS_TOKEN_TTL if token_type == "access" else REFRESH_TOKEN_TTL
+        payload: Dict[str, Any] = {
+            "sub": user_id,
+            "tenant_id": tenant_id,
+            "roles": roles,
+            "jti": str(uuid.uuid4()),
+            "iat": now,
+            "exp": now + ttl,
+            "type": token_type,
+        }
+        return jwt.encode(payload, self.secret, algorithm=self.algorithm)
+
+    def validate_token(self, token: str) -> TokenClaims:
+        try:
+            payload = jwt.decode(
+                token,
+                self.secret,
+                algorithms=[self.algorithm],
+                options={"verify_exp": True},
+            )
+        except jwt.ExpiredSignatureError:
+            raise PermissionError("Token expired")
+        except jwt.InvalidTokenError as exc:
+            raise PermissionError(f"Invalid token: {exc}")
+
+        if self.revoked_store and self.revoked_store.is_revoked(payload["jti"]):
+            raise PermissionError("Token revoked")
+
+        return TokenClaims(
+            sub=payload["sub"],
+            tenant_id=payload["tenant_id"],
+            roles=payload.get("roles", []),
+            jti=payload["jti"],
+            iat=payload["iat"],
+            exp=payload["exp"],
+            type=payload.get("type", "access"),
+        )
+
+    def revoke_token(self, token: str) -> None:
+        try:
+            payload = jwt.decode(
+                token, self.secret, algorithms=[self.algorithm],
+                options={"verify_exp": False},
+            )
+            if self.revoked_store:
+                ttl = max(0, int(payload["exp"] - time.time()))
+                self.revoked_store.revoke(payload["jti"], ttl)
+        except jwt.InvalidTokenError:
+            pass
+
+    def refresh_access_token(self, refresh_token: str) -> str:
+        claims = self.validate_token(refresh_token)
+        if claims.type != "refresh":
+            raise PermissionError("Not a refresh token")
+        return self.issue_token(claims.sub, claims.tenant_id, claims.roles)
+---security/auth/revoked_tokens.py
+import time
+from typing import Dict
+
+class RevokedTokenStore:
+    """A simple in-memory store for revoked JWT tokens."""
+    def __init__(self):
+        self._revoked_tokens: Dict[str, float] = {}
+
+    def revoke(self, jti: str, expires_at: float):
+        """Revokes a token by its JTI (JWT ID) until its expiration time."""
+        self._revoked_tokens[jti] = expires_at
+
+    def is_revoked(self, jti: str) -> bool:
+        """Checks if a token is revoked and not yet expired."""
+        expires_at = self._revoked_tokens.get(jti)
+        if expires_at and expires_at > time.time():
+            return True
+        # Clean up expired revoked tokens
+        if expires_at and expires_at <= time.time():
+            del self._revoked_tokens[jti]
+        return False
+
+    def cleanup_expired_tokens(self):
+        """Removes all expired revoked tokens from the store."""
+        current_time = time.time()
+        self._revoked_tokens = {jti: exp for jti, exp in self._revoked_tokens.items() if exp > current_time}
+
+# Singleton instance
+_revoked_store: RevokedTokenStore | None = None
+
+def get_revoked_token_store() -> RevokedTokenStore:
+    global _revoked_store
+    if _revoked_store is None:
+        _revoked_store = RevokedTokenStore()
+    return _revoked_store
+---security/config/__init__.py
+"""Security config & secrets."""
+---security/config/secret_manager.py
+"""Secret Manager — Phase 7 — إدارة آمنة للأسرار والمتغيرات."""
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class SecretManager:
+    """
+    إدارة الأسرار والإعدادات مع:
+    - تحميل من environment variables
+    - validation للإعدادات المطلوبة
+    - masking عند الـ logging
+    - secure defaults
+    - secret rotation hooks
+    - audit trail
+    """
+
+    # الأسرار المطلوبة في production
+    REQUIRED_SECRETS = [
+        "JWT_SECRET",
+        "DATABASE_URL",
+        "SESSION_SECRET",
+    ]
+
+    # الأسرار التي يجب إخفاؤها في الـ logs
+    SENSITIVE_KEYS = {
+        "JWT_SECRET", "DATABASE_URL", "API_KEY", "SESSION_SECRET",
+        "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "REDIS_PASSWORD",
+        "SMTP_PASSWORD", "S3_SECRET_KEY",
+    }
+
+    def __init__(self, env_file: Optional[str] = None) -> None:
+        self._secrets: Dict[str, str] = {}
+        self._rotation_callbacks: Dict[str, Any] = {}
+        self._access_log: List[Dict] = []
+
+        if env_file:
+            self._load_env_file(env_file)
+
+        self._load_from_environment()
+
+    def _load_from_environment(self) -> None:
+        for key, value in os.environ.items():
+            self._secrets[key] = value
+
+    def _load_env_file(self, path: str) -> None:
+        p = Path(path)
+        if not p.exists():
+            logger.warning("ملف الإعدادات غير موجود: %s", path)
+            return
+        with p.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    self._secrets[key] = value
+                    os.environ.setdefault(key, value)
+        logger.info("تُحمّلت الإعدادات من: %s", path)
+
+    def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        value = self._secrets.get(key) or os.environ.get(key, default)
+        self._audit_access(key, found=value is not None)
+        return value
+
+    def require(self, key: str) -> str:
+        value = self.get(key)
+        if not value:
+            raise ValueError(
+                f"المتغير المطلوب '{key}' غير موجود في البيئة"
+            )
+        return value
+
+    def _audit_access(self, key: str, found: bool) -> None:
+        """تسجيل الوصول للأسرار (بدون القيمة)."""
+        import time
+        self._access_log.append({
+            "key": key,
+            "found": found,
+            "sensitive": key in self.SENSITIVE_KEYS,
+            "timestamp": time.time(),
+        })
+        if len(self._access_log) > 1000:
+            self._access_log = self._access_log[-500:]
+
+    def validate_required(self, env: str = "production") -> List[str]:
+        """يتحقق من وجود الأسرار المطلوبة — يُعيد قائمة المفقودة."""
+        if env != "production":
+            return []
+        missing = [k for k in self.REQUIRED_SECRETS if not self.get(k)]
+        if missing:
+            logger.error("أسرار مفقودة في production: %s", missing)
+        return missing
+
+    def mask(self, key: str, value: str) -> str:
+        """يُخفي قيمة السر لأغراض الـ logging."""
+        if key in self.SENSITIVE_KEYS and value:
+            return value[:4] + "****" + value[-2:] if len(value) > 6 else "****"
+        return value
+
+    def register_rotation_callback(self, key: str, callback: Any) -> None:
+        """تسجيل callback للتشغيل عند تدوير السر."""
+        self._rotation_callbacks[key] = callback
+
+    def rotate(self, key: str, new_value: str) -> None:
+        """تدوير سر — يُشغّل الـ callback إذا كان مسجّلاً."""
+        old_value = self._secrets.get(key)
+        self._secrets[key] = new_value
+        os.environ[key] = new_value
+        cb = self._rotation_callbacks.get(key)
+        if cb:
+            try:
+                cb(old_value, new_value)
+            except Exception as exc:
+                logger.error("فشل rotation callback لـ '%s': %s", key, exc)
+        logger.info("تم تدوير السر: %s", key)
+
+    def summary(self) -> Dict:
+        """ملخص غير حساس لحالة الأسرار."""
+        present = {k: bool(v) for k, v in self._secrets.items() if k.isupper()}
+        return {
+            "total_secrets": len(present),
+            "required_present": [k for k in self.REQUIRED_SECRETS if self.get(k)],
+            "required_missing": [k for k in self.REQUIRED_SECRETS if not self.get(k)],
+        }
+
+
+# Singleton
+_manager: Optional[SecretManager] = None
+
+
+def get_secret_manager(env_file: Optional[str] = None) -> SecretManager:
+    global _manager
+    if _manager is None:
+        _manager = SecretManager(env_file=env_file)
+    return _manager
+
+
+def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
+    return get_secret_manager().get(key, default)
+---security/encryption/__init__.py
+---security/encryption/encryptor.py
+"""Encryptor — AES-256-GCM encryption for sensitive data at rest."""
+from __future__ import annotations
+
+import base64
+import os
+from typing import Tuple
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
+
+ENCRYPTION_KEY_ENV = "ENCRYPTION_KEY"
+KEY_SIZE = 32
+NONCE_SIZE = 12
+SALT_SIZE = 16
+
+
+class DataEncryptor:
+    """AES-256-GCM encryption for sensitive fields."""
+
+    def __init__(self, key: Optional[bytes] = None) -> None:
+        if key:
+            self._key = key
+        else:
+            raw = os.environ.get(ENCRYPTION_KEY_ENV, "")
+            if not raw:
+                raise RuntimeError(f"{ENCRYPTION_KEY_ENV} not set")
+            self._key = self._derive_key(raw.encode())
+
+    def encrypt(self, plaintext: str) -> str:
+        nonce = os.urandom(NONCE_SIZE)
+        aesgcm = AESGCM(self._key)
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None)
+        combined = nonce + ciphertext
+        return base64.urlsafe_b64encode(combined).decode()
+
+    def decrypt(self, encrypted: str) -> str:
+        combined = base64.urlsafe_b64decode(encrypted.encode())
+        nonce = combined[:NONCE_SIZE]
+        ciphertext = combined[NONCE_SIZE:]
+        aesgcm = AESGCM(self._key)
+        plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+        return plaintext.decode()
+
+    def _derive_key(self, raw: bytes) -> bytes:
+        salt = hashlib.sha256(raw).digest()[:SALT_SIZE]
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=KEY_SIZE,
+            salt=salt,
+            iterations=480000,
+            backend=default_backend(),
+        )
+        return kdf.derive(raw)
+
+
+import hashlib
+from typing import Optional
+---security/firewall/__init__.py
+---security/firewall/ip_filter.py
+"""IP Filter — IP allowlist/blocklist with CIDR support and dynamic updates."""
+from __future__ import annotations
+
+import ipaddress
+import logging
+import time
+from typing import Any, List, Optional, Set, Tuple, Union
+
+import redis
+
+logger = logging.getLogger(__name__)
+
+IPNetwork = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
+IPAddress = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
+
+PRIVATE_RANGES: List[IPNetwork] = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("::1/128"),
+]
+
+
+class IPFilter:
+    """Enforces IP-based access control with Redis-backed dynamic lists."""
+
+    BLOCKLIST_KEY = "security:ip:blocklist"
+    ALLOWLIST_KEY = "security:ip:allowlist"
+
+    def __init__(
+        self,
+        redis_client: redis.Redis,
+        mode: str = "blocklist",
+        allow_private: bool = True,
+    ) -> None:
+        self.redis = redis_client
+        self.mode = mode
+        self.allow_private = allow_private
+        self._static_blocklist: List[IPNetwork] = []
+        self._static_allowlist: List[IPNetwork] = []
+
+    def is_allowed(self, ip_str: str) -> Tuple[bool, str]:
+        try:
+            ip = ipaddress.ip_address(ip_str)
+        except ValueError:
+            return False, "invalid_ip"
+
+        if self.allow_private and any(ip in net for net in PRIVATE_RANGES):
+            return True, "private_network"
+
+        if self._is_blocked(ip):
+            return False, "blocklisted"
+
+        if self.mode == "allowlist" and not self._is_allowed(ip):
+            return False, "not_allowlisted"
+
+        return True, "allowed"
+
+    def block_ip(self, ip: str, reason: str = "", ttl: Optional[int] = None) -> None:
+        key = f"{self.BLOCKLIST_KEY}:{ip}"
+        value = f"{reason}:{time.time()}"
+        if ttl:
+            self.redis.setex(key, ttl, value)
+        else:
+            self.redis.set(key, value)
+        logger.warning("Blocked IP %s: %s", ip, reason)
+
+    def unblock_ip(self, ip: str) -> None:
+        self.redis.delete(f"{self.BLOCKLIST_KEY}:{ip}")
+        logger.info("Unblocked IP %s", ip)
+
+    def add_to_allowlist(self, cidr: str) -> None:
+        self.redis.sadd(self.ALLOWLIST_KEY, cidr)
+        try:
+            self._static_allowlist.append(ipaddress.ip_network(cidr, strict=False))
+        except ValueError as exc:
+            logger.warning("Invalid CIDR %s: %s", cidr, exc)
+
+    def _is_blocked(self, ip: IPAddress) -> bool:
+        if self.redis.exists(f"{self.BLOCKLIST_KEY}:{ip}"):
+            return True
+        return any(ip in net for net in self._static_blocklist)
+
+    def _is_allowed(self, ip: IPAddress) -> bool:
+        for cidr in self.redis.smembers(self.ALLOWLIST_KEY):
+            try:
+                net = ipaddress.ip_network(cidr.decode(), strict=False)
+                if ip in net:
+                    return True
+            except ValueError:
+                pass
+        return any(ip in net for net in self._static_allowlist)
+---security/middleware/__init__.py
+"""Security middleware."""
+from security.middleware.auth_middleware import AuthMiddleware
+
+__all__ = ["AuthMiddleware"]
+---security/middleware/auth_middleware.py
+"""Production Auth Middleware — JWT + API Key + RBAC + Rate Limiting.
+
+يحمي جميع routes تلقائياً ما عدا القائمة البيضاء.
+"""
+from __future__ import annotations
+
+import logging
+import time
+from typing import Callable, Optional, Tuple
+
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from security.audit.audit_logger import AuditAction, get_audit_logger
+from security.rbac.rbac import ROUTE_PERMISSIONS, has_permission
+
+logger = logging.getLogger(__name__)
+
+# ── المسارات المسموحة بدون مصادقة ──────────────────────────────────────────
+PUBLIC_PATHS: frozenset[str] = frozenset({
+    "/health",
+    "/ping",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    "/api/v1/health",
+    "/api/v1/ping",
+    "/api/v1/auth/login",
+    "/api/v1/auth/register",
+    "/api/v1/auth/refresh",
+    "/ws/chat",
+})
+
+# ── استخراج التوكن من الطلب ────────────────────────────────────────────────
+
+def _extract_token(request: Request) -> Tuple[Optional[str], str]:
+    """Returns (token, token_type): token_type is 'bearer' or 'apikey'."""
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:].strip(), "bearer"
+    api_key = (
+        request.headers.get("X-API-Key")
+        or request.headers.get("x-api-key")
+        or request.query_params.get("api_key")
+    )
+    if api_key:
+        return api_key, "apikey"
+    return None, "none"
+
+
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """Middleware شامل: JWT/APIKey auth + RBAC + Rate Limiting + Audit."""
+
+    def __init__(self, app, enable_rate_limiting: bool = True) -> None:
+        super().__init__(app)
+        self._rate_limiting = enable_rate_limiting
+        self._jwt_auth = None
+        self._api_key_manager = None
+        self._rate_limiter = None
+        self._audit = get_audit_logger()
+
+    def _lazy_init(self) -> None:
+        if self._jwt_auth is None:
+            try:
+                from security.auth.jwt_auth import JWTAuthenticator
+                self._jwt_auth = JWTAuthenticator()
+            except Exception as e:
+                logger.warning("JWT auth init failed: %s", e)
+
+        if self._api_key_manager is None:
+            try:
+                from security.auth.api_key_manager import get_api_key_manager
+                self._api_key_manager = get_api_key_manager()
+            except Exception as e:
+                logger.warning("JWT auth init failed: %s", e)
+
+        if self._rate_limiter is None and self._rate_limiting:
+            try:
+                import os
+
+                import redis as redis_lib
+                r = redis_lib.from_url(
+                    os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+                    decode_responses=True,
+                    socket_connect_timeout=2,
+                )
+                r.ping()
+                from security.rate_limit.rate_limiter import RateLimiter
+                self._rate_limiter = RateLimiter(r)
+            except Exception as e:
+                logger.warning("Rate limiter Redis unavailable: %s — skipping", e)
+
+    async def dispatch(self, request: Request, call_next: Callable):
+        self._lazy_init()
+        start = time.monotonic()
+        path = request.url.path
+        method = request.method
+        ip = _get_client_ip(request)
+
+        # ── 1. المسارات العامة ────────────────────────────────────────────
+        if path in PUBLIC_PATHS or method == "OPTIONS":
+            response = await call_next(request)
+            return response
+
+        # ── 2. استخراج التوكن ─────────────────────────────────────────────
+        token, token_type = _extract_token(request)
+        user_id = "anonymous"
+        tenant_id = "default"
+        roles: list[str] = []
+
+        if token:
+            if token_type == "bearer" and self._jwt_auth:
+                try:
+                    claims = self._jwt_auth.validate_token(token)
+                    user_id = claims.sub
+                    tenant_id = claims.tenant_id
+                    roles = claims.roles
+                    request.state.user_id = user_id
+                    request.state.tenant_id = tenant_id
+                    request.state.roles = roles
+                    request.state.claims = claims
+                except PermissionError as e:
+                    self._audit.log(
+                        AuditAction.LOGIN_FAILED, "auth", "jwt_validation", tenant_id, user_id, ip_address=ip,
+                        status="denied", error=str(e),
+                    )
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"error": "unauthorized", "message": str(e)},
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+            elif token_type == "apikey" and self._api_key_manager:
+                api_key = self._api_key_manager.validate_key(token)
+                if not api_key:
+                    self._audit.log(
+                        AuditAction.LOGIN_FAILED, "auth", "api_key_validation", tenant_id, user_id, ip_address=ip,
+                        status="denied", error="API key invalid or expired",
+                    )
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"error": "unauthorized", "message": "API key invalid or expired"},
+                    )
+                user_id = api_key.user_id
+                tenant_id = api_key.tenant_id
+                roles = api_key.roles # Use roles from APIKey object
+                request.state.user_id = user_id
+                request.state.tenant_id = tenant_id
+                request.state.roles = roles
+                request.state.api_key = api_key
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={
+                    "error": "unauthorized",
+                    "message": "يجب تقديم Authorization header أو X-API-Key",
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # ── 3. Rate Limiting ──────────────────────────────────────────────
+        if self._rate_limiter:
+            endpoint_key = "inference" if "/ai/" in path else "default"
+            allowed, meta = self._rate_limiter.check(
+                identifier=user_id, endpoint=endpoint_key, tenant_id=tenant_id
+            )
+            if not allowed:
+                self._audit.log(
+                    AuditAction.RATE_LIMITED, "system", "rate_limiter", tenant_id, user_id, ip_address=ip,
+                    status="denied", metadata=meta
+                )
+                return JSONResponse(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    content={
+                        "error": "rate_limit_exceeded",
+                        "message": "تجاوزت الحد المسموح به من الطلبات",
+                        "retry_after": meta["reset"],
+                        "limit": meta["limit"],
+                    },
+                    headers={
+                        "X-RateLimit-Limit": str(meta["limit"]),
+                        "X-RateLimit-Remaining": str(meta["remaining"]),
+                        "X-RateLimit-Reset": str(meta["reset"]),
+                        "Retry-After": str(meta["reset"] - int(time.time())),
+                    },
+                )
+
+        # ── 4. RBAC Permission Check ───────────────────────────────────────
+        route_key = f"{method}:{path}"
+        base_path = "/" + "/".join(path.split("/")[:5])
+        base_key = f"{method}:{base_path}"
+
+        required_permission = (
+            ROUTE_PERMISSIONS.get(route_key)
+            or ROUTE_PERMISSIONS.get(base_key)
+        )
+
+        if required_permission and not has_permission(roles, required_permission):
+            self._audit.log(
+                AuditAction.PERMISSION_DENIED, "auth", "rbac_check", tenant_id, user_id, ip_address=ip,
+                status="denied", details={"permission": required_permission.value, "path": path}
+            )
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={
+                    "error": "forbidden",
+                    "message": f"لا تملك صلاحية: {required_permission.value}",
+                    "required_permission": required_permission.value,
+                    "your_roles": roles,
+                },
+            )
+
+        # ── 5. تنفيذ الطلب ────────────────────────────────────────────────
+        response = await call_next(request)
+        duration_ms = round((time.monotonic() - start) * 1000, 2)
+
+        response.headers["X-User-ID"] = user_id
+        response.headers["X-Tenant-ID"] = tenant_id
+        response.headers["X-Process-Time-Ms"] = str(duration_ms)
+
+        return response
+---security/middleware/security_middleware.py
+"""Security Middleware — Phase 7 — JWT, RBAC, Rate Limiting, Headers."""
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import logging
+import os
+import time
+from collections import defaultdict
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, Set
+
+logger = logging.getLogger(__name__)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JWT Authentication
+# ──────────────────────────────────────────────────────────────────────────────
+
+_SECRET = os.getenv("JWT_SECRET", "hajeen-change-me-in-production")
+_ALGORITHM = "HS256"
+_TOKEN_TTL = int(os.getenv("JWT_TTL_SECONDS", "3600"))
+
+
+def create_token(
+    user_id: str,
+    roles: List[str],
+    extra: Optional[Dict] = None,
+    ttl: int = _TOKEN_TTL,
+) -> str:
+    """يُنشئ JWT token حقيقي (PyJWT إذا متاح، وإلا HMAC بسيط)."""
+    payload = {
+        "sub": user_id,
+        "roles": roles,
+        "iat": int(time.time()),
+        "exp": int(time.time()) + ttl,
+        **(extra or {}),
+    }
+    try:
+        import jwt
+        return jwt.encode(payload, _SECRET, algorithm=_ALGORITHM)
+    except ImportError:
+        # HMAC fallback
+        import base64
+        header = base64.urlsafe_b64encode(
+            json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
+        ).rstrip(b"=")
+        body = base64.urlsafe_b64encode(
+            json.dumps(payload).encode()
+        ).rstrip(b"=")
+        sig = hmac.new(
+            _SECRET.encode(), f"{header.decode()}.{body.decode()}".encode(),
+            hashlib.sha256,
+        ).digest()
+        sig_b64 = base64.urlsafe_b64encode(sig).rstrip(b"=")
+        return f"{header.decode()}.{body.decode()}.{sig_b64.decode()}"
+
+
+def verify_token(token: str) -> Dict:
+    """يتحقق من صحة الـ token ويُعيد الـ payload."""
+    try:
+        import jwt
+        payload = jwt.decode(token, _SECRET, algorithms=[_ALGORITHM])
+        return payload
+    except ImportError:
+        return _verify_hmac(token)
+    except Exception as exc:
+        raise ValueError(f"Token غير صالح: {exc}") from exc
+
+
+def _verify_hmac(token: str) -> Dict:
+    import base64
+    parts = token.split(".")
+    if len(parts) != 3:
+        raise ValueError("تنسيق Token خاطئ")
+    header, body, sig = parts
+    expected_sig = hmac.new(
+        _SECRET.encode(),
+        f"{header}.{body}".encode(),
+        hashlib.sha256,
+    ).digest()
+    expected_b64 = base64.urlsafe_b64encode(expected_sig).rstrip(b"=").decode()
+    if not hmac.compare_digest(sig, expected_b64):
+        raise ValueError("توقيع Token خاطئ")
+    payload = json.loads(base64.urlsafe_b64decode(body + "=="))
+    if payload.get("exp", 0) < time.time():
+        raise ValueError("Token منتهي الصلاحية")
+    return payload
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# RBAC Authorization
+# ──────────────────────────────────────────────────────────────────────────────
+
+_ROLE_PERMISSIONS: Dict[str, Set[str]] = {
+    "admin": {
+        "read", "write", "delete", "manage_users",
+        "manage_channels", "manage_models", "view_metrics",
+    },
+    "editor": {"read", "write", "manage_channels"},
+    "viewer": {"read", "view_metrics"},
+    "api_client": {"read", "write"},
+}
+
+
+def has_permission(roles: List[str], required: str) -> bool:
+    for role in roles:
+        if required in _ROLE_PERMISSIONS.get(role, set()):
+            return True
+    return False
+
+
+def require_permission(permission: str) -> Callable:
+    """Decorator للتحقق من الصلاحية."""
+    def decorator(fn: Callable) -> Callable:
+        @wraps(fn)
+        def wrapper(*args: Any, token: str, **kwargs: Any) -> Any:
+            payload = verify_token(token)
+            roles = payload.get("roles", [])
+            if not has_permission(roles, permission):
+                raise PermissionError(
+                    f"المستخدم لا يملك صلاحية '{permission}'"
+                )
+            return fn(*args, **kwargs, token=token)
+        return wrapper
+    return decorator
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rate Limiter
+# ──────────────────────────────────────────────────────────────────────────────
+
+class RateLimiter:
+    """
+    Token bucket rate limiter — async-safe.
+
+    max_requests: الحد الأقصى للطلبات
+    window_seconds: نافذة الوقت
+    """
+
+    def __init__(
+        self,
+        max_requests: int = 100,
+        window_seconds: int = 60,
+    ) -> None:
+        self._max = max_requests
+        self._window = window_seconds
+        self._buckets: Dict[str, list] = defaultdict(list)
+
+    def is_allowed(self, key: str) -> bool:
+        """يُعيد True إذا كان الطلب مسموحاً، False إذا تجاوز الحد."""
+        now = time.time()
+        cutoff = now - self._window
+        bucket = self._buckets[key]
+        # إزالة الطلبات القديمة
+        self._buckets[key] = [t for t in bucket if t > cutoff]
+        if len(self._buckets[key]) >= self._max:
+            logger.warning("Rate limit exceeded for key: %s", key[:50])
+            return False
+        self._buckets[key].append(now)
+        return True
+
+    def get_remaining(self, key: str) -> int:
+        now = time.time()
+        cutoff = now - self._window
+        used = len([t for t in self._buckets.get(key, []) if t > cutoff])
+        return max(0, self._max - used)
+
+    def reset(self, key: str) -> None:
+        self._buckets.pop(key, None)
+
+    def cleanup_expired(self) -> int:
+        """إزالة البيانات المنتهية من الذاكرة."""
+        now = time.time()
+        cutoff = now - self._window
+        removed = 0
+        keys_to_delete = []
+        for key, times in self._buckets.items():
+            fresh = [t for t in times if t > cutoff]
+            if not fresh:
+                keys_to_delete.append(key)
+            else:
+                self._buckets[key] = fresh
+            removed += len(times) - len(fresh)
+        for k in keys_to_delete:
+            del self._buckets[k]
+        return removed
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Input Sanitization
+# ──────────────────────────────────────────────────────────────────────────────
+
+_DANGEROUS_PATTERNS = [
+    "<script", "javascript:", "data:", "onerror=",
+    "onload=", "onclick=", "eval(", "document.cookie",
+    "../", "..\\", "/etc/passwd", "cmd.exe",
+]
+
+
+def sanitize_input(value: str, max_length: int = 10_000) -> str:
+    """تنظيف المدخلات من الأنماط الخطرة."""
+    if not isinstance(value, str):
+        return str(value)[:max_length]
+    value = value[:max_length]
+    lower = value.lower()
+    for pattern in _DANGEROUS_PATTERNS:
+        if pattern in lower:
+            logger.warning("خطر محتمل في المدخلات: %s", pattern)
+            value = value.replace(pattern, "")
+    return value.strip()
+
+
+def validate_api_key(api_key: str, valid_keys: Set[str]) -> bool:
+    """التحقق من API key باستخدام constant-time comparison."""
+    for valid in valid_keys:
+        if hmac.compare_digest(
+            hashlib.sha256(api_key.encode()).hexdigest(),
+            hashlib.sha256(valid.encode()).hexdigest(),
+        ):
+            return True
+    return False
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Secure Headers
+# ──────────────────────────────────────────────────────────────────────────────
+
+SECURE_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Content-Security-Policy": "default-src 'self'",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    "Cache-Control": "no-store",
+}
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Singletons
+# ──────────────────────────────────────────────────────────────────────────────
+
+_rate_limiter: Optional[RateLimiter] = None
+
+
+def get_rate_limiter(max_requests: int = 100, window: int = 60) -> RateLimiter:
+    global _rate_limiter
+    if _rate_limiter is None:
+        _rate_limiter = RateLimiter(max_requests=max_requests, window_seconds=window)
+    return _rate_limiter
+---security/permissions/__init__.py
+---security/permissions/rbac.py
+"""RBAC — Role-Based Access Control with hierarchical permissions."""
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
+logger = logging.getLogger(__name__)
+
+
+class Permission(str, Enum):
+    INFERENCE_READ = "inference:read"
+    INFERENCE_WRITE = "inference:write"
+    TRAINING_READ = "training:read"
+    TRAINING_WRITE = "training:write"
+    TRAINING_ADMIN = "training:admin"
+    MODEL_READ = "model:read"
+    MODEL_WRITE = "model:write"
+    MODEL_ADMIN = "model:admin"
+    DATA_READ = "data:read"
+    DATA_WRITE = "data:write"
+    DATA_ADMIN = "data:admin"
+    USER_READ = "user:read"
+    USER_WRITE = "user:write"
+    USER_ADMIN = "user:admin"
+    TENANT_ADMIN = "tenant:admin"
+    SYSTEM_ADMIN = "system:admin"
+    API_KEY_READ = "apikey:read"
+    API_KEY_WRITE = "apikey:write"
+    AUDIT_READ = "audit:read"
+
+
+ROLE_PERMISSIONS: Dict[str, Set[Permission]] = {
+    "viewer": {
+        Permission.INFERENCE_READ,
+        Permission.MODEL_READ,
+        Permission.DATA_READ,
+    },
+    "user": {
+        Permission.INFERENCE_READ,
+        Permission.INFERENCE_WRITE,
+        Permission.MODEL_READ,
+        Permission.DATA_READ,
+        Permission.API_KEY_READ,
+        Permission.API_KEY_WRITE,
+    },
+    "developer": {
+        Permission.INFERENCE_READ,
+        Permission.INFERENCE_WRITE,
+        Permission.MODEL_READ,
+        Permission.MODEL_WRITE,
+        Permission.DATA_READ,
+        Permission.DATA_WRITE,
+        Permission.TRAINING_READ,
+        Permission.API_KEY_READ,
+        Permission.API_KEY_WRITE,
+    },
+    "admin": {
+        Permission.INFERENCE_READ,
+        Permission.INFERENCE_WRITE,
+        Permission.MODEL_READ,
+        Permission.MODEL_WRITE,
+        Permission.MODEL_ADMIN,
+        Permission.DATA_READ,
+        Permission.DATA_WRITE,
+        Permission.DATA_ADMIN,
+        Permission.TRAINING_READ,
+        Permission.TRAINING_WRITE,
+        Permission.USER_READ,
+        Permission.USER_WRITE,
+        Permission.API_KEY_READ,
+        Permission.API_KEY_WRITE,
+        Permission.AUDIT_READ,
+        Permission.TENANT_ADMIN,
+    },
+    "superadmin": {p for p in Permission},
+}
+
+
+@dataclass
+class RBACContext:
+    user_id: str
+    tenant_id: str
+    roles: List[str]
+    _permissions: Set[Permission] = field(init=False, default_factory=set)
+
+    def __post_init__(self) -> None:
+        for role in self.roles:
+            self._permissions.update(ROLE_PERMISSIONS.get(role, set()))
+
+    def has_permission(self, permission: Permission) -> bool:
+        return permission in self._permissions
+
+    def require_permission(self, permission: Permission) -> None:
+        if not self.has_permission(permission):
+            logger.warning(
+                "Permission denied: user=%s tenant=%s required=%s roles=%s",
+                self.user_id, self.tenant_id, permission, self.roles,
+            )
+            raise PermissionError(
+                f"Permission '{permission.value}' required — your roles: {self.roles}"
+            )
+
+    def get_permissions(self) -> List[str]:
+        return [p.value for p in self._permissions]
+---security/rate_limit/__init__.py
+---security/rate_limit/rate_limiter.py
+"""Rate Limiter — sliding window rate limiting using Redis."""
+from __future__ import annotations
+
+import hashlib
+import logging
+import time
+from dataclasses import dataclass
+from typing import Dict, Optional, Tuple
+
+import redis
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RateLimitConfig:
+    requests: int
+    window_seconds: int
+    burst: int = 0
+
+
+RATE_LIMITS: Dict[str, RateLimitConfig] = {
+    "default": RateLimitConfig(requests=100, window_seconds=60),
+    "inference": RateLimitConfig(requests=20, window_seconds=60, burst=5),
+    "training": RateLimitConfig(requests=5, window_seconds=3600),
+    "embedding": RateLimitConfig(requests=200, window_seconds=60, burst=50),
+    "admin": RateLimitConfig(requests=1000, window_seconds=60),
+}
+
+
+class RateLimiter:
+    """Sliding window rate limiter backed by Redis."""
+
+    SCRIPT = """
+    local key = KEYS[1]
+    local window = tonumber(ARGV[1])
+    local limit = tonumber(ARGV[2])
+    local now = tonumber(ARGV[3])
+    local cutoff = now - window * 1000
+
+    redis.call('ZREMRANGEBYSCORE', key, '-inf', cutoff)
+    local count = redis.call('ZCARD', key)
+
+    if count < limit then
+        redis.call('ZADD', key, now, now .. ':' .. math.random(1, 1000000))
+        redis.call('PEXPIRE', key, window * 1000)
+        return {1, count + 1, limit}
+    else
+        return {0, count, limit}
+    end
+    """
+
+    def __init__(self, redis_client: redis.Redis) -> None:
+        self.redis = redis_client
+        self._script = redis_client.register_script(self.SCRIPT)
+
+    def check(
+        self,
+        identifier: str,
+        endpoint: str = "default",
+        tenant_id: Optional[str] = None,
+    ) -> Tuple[bool, Dict[str, int]]:
+        config = RATE_LIMITS.get(endpoint, RATE_LIMITS["default"])
+        limit = config.requests + config.burst
+
+        key_parts = [identifier, endpoint]
+        if tenant_id:
+            key_parts.append(tenant_id)
+        key = "rl:" + hashlib.sha256(":".join(key_parts).encode()).hexdigest()[:16]
+
+        now_ms = int(time.time() * 1000)
+        allowed, current, max_req = self._script(
+            keys=[key],
+            args=[config.window_seconds, limit, now_ms],
+        )
+
+        reset_at = int(time.time()) + config.window_seconds
+        return bool(allowed), {
+            "limit": max_req,
+            "remaining": max(0, max_req - current),
+            "reset": reset_at,
+            "current": current,
+        }
+---security/rbac/rbac.py
+"""RBAC — Role-Based Access Control (Production-grade).
+
+Roles hierarchy:
+    superadmin > admin > developer > user > readonly > guest
+
+Permissions are additive — a role inherits all permissions of lower roles.
+"""
+from __future__ import annotations
+
+from enum import Enum
+from functools import lru_cache
+from typing import Dict, FrozenSet, List, Optional, Set
+
+
+class Role(str, Enum):
+    SUPERADMIN = "superadmin"
+    ADMIN      = "admin"
+    DEVELOPER  = "developer"
+    USER       = "user"
+    READONLY   = "readonly"
+    GUEST      = "guest"
+
+
+class Permission(str, Enum):
+    # AI Inference
+    CHAT              = "chat"
+    CHAT_STREAM       = "chat:stream"
+    COMPLETION        = "completion"
+    EMBEDDINGS        = "embeddings"
+    RAG_QUERY         = "rag:query"
+    MODELS_READ       = "models:read"
+    EVALUATE          = "evaluate"
+
+    # Data & Channels
+    CHANNELS_READ     = "channels:read"
+    CHANNELS_WRITE    = "channels:write"
+    CHANNELS_DELETE   = "channels:delete"
+    SEARCH            = "search"
+    INDEX_WRITE       = "index:write"
+
+    # Tasks & Jobs
+    TASKS_READ        = "tasks:read"
+    TASKS_WRITE       = "tasks:write"
+    TASKS_DELETE      = "tasks:delete"
+    JOBS_READ         = "jobs:read"
+    JOBS_MANAGE       = "jobs:manage"
+
+    # System
+    STORAGE_READ      = "storage:read"
+    STORAGE_WRITE     = "storage:write"
+    HEALTH_READ       = "health:read"
+    METRICS_READ      = "metrics:read"
+
+    # Admin
+    USERS_READ        = "users:read"
+    USERS_WRITE       = "users:write"
+    USERS_DELETE      = "users:delete"
+    APIKEYS_MANAGE    = "apikeys:manage"
+    APIKEYS_READ      = "apikeys:read"
+    APIKEYS_CREATE    = "apikeys:create"
+    APIKEYS_REVOKE    = "apikeys:revoke"
+    AUDIT_READ        = "audit:read"
+    CONFIG_WRITE      = "config:write"
+    TRAINING_RUN      = "training:run"
+
+
+_ROLE_PERMISSIONS: Dict[Role, FrozenSet[Permission]] = {
+    Role.GUEST: frozenset({
+        Permission.HEALTH_READ,
+    }),
+    Role.READONLY: frozenset({
+        Permission.HEALTH_READ,
+        Permission.MODELS_READ,
+        Permission.CHANNELS_READ,
+        Permission.SEARCH,
+        Permission.TASKS_READ,
+        Permission.JOBS_READ,
+        Permission.STORAGE_READ,
+        Permission.METRICS_READ,
+    }),
+    Role.USER: frozenset({
+        Permission.HEALTH_READ,
+        Permission.MODELS_READ,
+        Permission.CHANNELS_READ,
+        Permission.SEARCH,
+        Permission.TASKS_READ,
+        Permission.JOBS_READ,
+        Permission.STORAGE_READ,
+        Permission.CHAT,
+        Permission.CHAT_STREAM,
+        Permission.COMPLETION,
+        Permission.EMBEDDINGS,
+        Permission.RAG_QUERY,
+        Permission.INDEX_WRITE,
+    }),
+    Role.DEVELOPER: frozenset({
+        Permission.HEALTH_READ,
+        Permission.MODELS_READ,
+        Permission.CHANNELS_READ,
+        Permission.CHANNELS_WRITE,
+        Permission.SEARCH,
+        Permission.TASKS_READ,
+        Permission.TASKS_WRITE,
+        Permission.JOBS_READ,
+        Permission.JOBS_MANAGE,
+        Permission.STORAGE_READ,
+        Permission.STORAGE_WRITE,
+        Permission.METRICS_READ,
+        Permission.CHAT,
+        Permission.CHAT_STREAM,
+        Permission.COMPLETION,
+        Permission.EMBEDDINGS,
+        Permission.RAG_QUERY,
+        Permission.INDEX_WRITE,
+        Permission.EVALUATE,
+        Permission.APIKEYS_MANAGE,
+        Permission.APIKEYS_READ,
+        Permission.APIKEYS_CREATE,
+        Permission.APIKEYS_REVOKE,
+    }),
+    Role.ADMIN: frozenset({
+        Permission.HEALTH_READ,
+        Permission.MODELS_READ,
+        Permission.CHANNELS_READ,
+        Permission.CHANNELS_WRITE,
+        Permission.CHANNELS_DELETE,
+        Permission.SEARCH,
+        Permission.TASKS_READ,
+        Permission.TASKS_WRITE,
+        Permission.TASKS_DELETE,
+        Permission.JOBS_READ,
+        Permission.JOBS_MANAGE,
+        Permission.STORAGE_READ,
+        Permission.STORAGE_WRITE,
+        Permission.METRICS_READ,
+        Permission.CHAT,
+        Permission.CHAT_STREAM,
+        Permission.COMPLETION,
+        Permission.EMBEDDINGS,
+        Permission.RAG_QUERY,
+        Permission.INDEX_WRITE,
+        Permission.EVALUATE,
+        Permission.USERS_READ,
+        Permission.USERS_WRITE,
+        Permission.APIKEYS_MANAGE,
+        Permission.APIKEYS_READ,
+        Permission.APIKEYS_CREATE,
+        Permission.APIKEYS_REVOKE,
+        Permission.AUDIT_READ,
+        Permission.TRAINING_RUN,
+    }),
+    Role.SUPERADMIN: frozenset(Permission),
+}
+
+
+@lru_cache(maxsize=None)
+def get_permissions(role: Role) -> FrozenSet[Permission]:
+    return _ROLE_PERMISSIONS.get(role, frozenset())
+
+
+def has_permission(roles: List[str], permission: Permission) -> bool:
+    for r in roles:
+        try:
+            role = Role(r)
+            if permission in get_permissions(role):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+def get_all_permissions(roles: List[str]) -> Set[Permission]:
+    perms: Set[Permission] = set()
+    for r in roles:
+        try:
+            perms |= get_permissions(Role(r))
+        except ValueError:
+            continue
+    return perms
+
+
+ROUTE_PERMISSIONS: Dict[str, Permission] = {
+    "POST:/api/v1/ai/chat":                   Permission.CHAT,
+    "POST:/api/v1/ai/chat/stream":             Permission.CHAT_STREAM,
+    "POST:/api/v1/ai/completion":              Permission.COMPLETION,
+    "POST:/api/v1/ai/completions":             Permission.COMPLETION,
+    "POST:/api/v1/ai/embeddings":              Permission.EMBEDDINGS,
+    "POST:/api/v1/ai/rag/query":               Permission.RAG_QUERY,
+    "GET:/api/v1/ai/models":                   Permission.MODELS_READ,
+    "GET:/api/v1/ai/stats":                    Permission.METRICS_READ,
+    "POST:/api/v1/ai/evaluate":                Permission.EVALUATE,
+    "POST:/api/v1/index/articles":             Permission.INDEX_WRITE,
+    "GET:/api/v1/channels":                    Permission.CHANNELS_READ,
+    "POST:/api/v1/channels":                   Permission.CHANNELS_WRITE,
+    "PUT:/api/v1/channels":                    Permission.CHANNELS_WRITE,
+    "DELETE:/api/v1/channels":                 Permission.CHANNELS_DELETE,
+    "POST:/api/v1/search":                     Permission.SEARCH,
+    "GET:/api/v1/tasks":                       Permission.TASKS_READ,
+    "POST:/api/v1/tasks":                      Permission.TASKS_WRITE,
+    "GET:/api/v1/storage/stats":               Permission.STORAGE_READ,
+    "GET:/api/v1/auth/users":                  Permission.USERS_READ,
+    "POST:/api/v1/auth/users":                 Permission.USERS_WRITE,
+    "GET:/api/v1/auth/apikeys":                Permission.APIKEYS_READ,
+    "POST:/api/v1/auth/apikeys":               Permission.APIKEYS_CREATE,
+    "GET:/api/v1/auth/apikeys/{key_id}":       Permission.APIKEYS_READ,
+    "DELETE:/api/v1/auth/apikeys/{key_id}":    Permission.APIKEYS_REVOKE,
+    "GET:/api/v1/auth/audit":                  Permission.AUDIT_READ,
+    "POST:/api/v1/auth/training/start":        Permission.TRAINING_RUN,
+}
+---security/resource/__init__.py
+"""Resource guards."""
+---security/resource/resource_guard.py
+"""Resource Guard — Phase 7 — حماية الموارد من الاستنزاف."""
+from __future__ import annotations
+
+import asyncio
+import functools
+import logging
+import os
+import signal
+import threading
+import time
+from contextlib import asynccontextmanager, contextmanager
+from typing import Any, AsyncGenerator, Callable, Generator, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class MemoryGuard:
+    """مراقبة الذاكرة ومنع الاستنزاف."""
+
+    def __init__(self, max_memory_mb: float = 4096.0) -> None:
+        self._max_mb = max_memory_mb
+        self._start_mb = self._current_mb()
+
+    def _current_mb(self) -> float:
+        try:
+            import psutil
+            return psutil.Process().memory_info().rss / 1024 / 1024
+        except ImportError:
+            return 0.0
+
+    def check(self) -> bool:
+        current = self._current_mb()
+        if current > self._max_mb:
+            logger.warning(
+                "تجاوز حد الذاكرة: %.1f MB > %.1f MB", current, self._max_mb
+            )
+            return False
+        return True
+
+    def memory_delta_mb(self) -> float:
+        return self._current_mb() - self._start_mb
+
+    @contextmanager
+    def guard(self) -> Generator:
+        if not self.check():
+            raise MemoryError(f"الذاكرة تتجاوز الحد: {self._max_mb} MB")
+        try:
+            yield
+        finally:
+            delta = self.memory_delta_mb()
+            if delta > 100:
+                logger.warning("تسرّب ذاكرة محتمل: +%.1f MB", delta)
+
+
+class TimeoutGuard:
+    """تطبيق timeout على العمليات الطويلة."""
+
+    @staticmethod
+    @asynccontextmanager
+    async def async_timeout(seconds: float, name: str = "operation") -> AsyncGenerator:
+        try:
+            async with asyncio.timeout(seconds):
+                yield
+        except asyncio.TimeoutError:
+            logger.error("Timeout: '%s' تجاوز %.1fs", name, seconds)
+            raise TimeoutError(f"العملية '{name}' تجاوزت {seconds}s") from None
+
+    @staticmethod
+    @contextmanager
+    def sync_timeout(seconds: float, name: str = "operation") -> Generator:
+        """Timeout للعمليات المتزامنة (Unix only)."""
+        def _handler(signum: int, frame: Any) -> None:
+            raise TimeoutError(f"العملية '{name}' تجاوزت {seconds}s")
+
+        old = signal.signal(signal.SIGALRM, _handler) if hasattr(signal, "SIGALRM") else None
+        try:
+            if hasattr(signal, "alarm"):
+                signal.alarm(int(seconds))
+            yield
+        finally:
+            if hasattr(signal, "alarm"):
+                signal.alarm(0)
+            if old is not None:
+                signal.signal(signal.SIGALRM, old)
+
+
+class RequestThrottler:
+    """تقييد معدل الطلبات المتزامنة."""
+
+    def __init__(self, max_concurrent: int = 10) -> None:
+        self._sem = asyncio.Semaphore(max_concurrent)
+        self._max = max_concurrent
+        self._current = 0
+        self._lock = threading.Lock()
+
+    @property
+    def current_count(self) -> int:
+        return self._current
+
+    @asynccontextmanager
+    async def throttle(self) -> AsyncGenerator:
+        with self._lock:
+            self._current += 1
+        try:
+            async with self._sem:
+                yield
+        finally:
+            with self._lock:
+                self._current -= 1
+
+    def is_overloaded(self) -> bool:
+        return self._current >= self._max
+
+
+class WorkerIsolation:
+    """
+    Worker isolation — يُشغّل المهام في executor منفصل
+    مع حماية من الانهيار.
+    """
+
+    def __init__(self, max_workers: int = 4) -> None:
+        self._max = max_workers
+        self._executor: Optional[Any] = None
+
+    def _get_executor(self) -> Any:
+        if self._executor is None:
+            from concurrent.futures import ThreadPoolExecutor
+            self._executor = ThreadPoolExecutor(max_workers=self._max)
+        return self._executor
+
+    async def run(self, fn: Callable, *args: Any, **kwargs: Any) -> Any:
+        loop = asyncio.get_event_loop()
+        partial_fn = functools.partial(fn, *args, **kwargs)
+        return await loop.run_in_executor(self._get_executor(), partial_fn)
+
+    def shutdown(self, wait: bool = True) -> None:
+        if self._executor:
+            self._executor.shutdown(wait=wait)
+            self._executor = None
+
+
+class GracefulDegradation:
+    """
+    تدهور رشيق — يُعيد fallback عند فشل العملية الأساسية.
+    """
+
+    def __init__(self, fallback: Any = None, max_failures: int = 5) -> None:
+        self._fallback = fallback
+        self._max_failures = max_failures
+        self._failure_count = 0
+        self._last_failure: Optional[float] = None
+        self._recovery_window = 60.0  # ثانية
+
+    def is_open(self) -> bool:
+        """Circuit breaker — مفتوح = الدائرة مكسورة."""
+        if self._failure_count < self._max_failures:
+            return False
+        if self._last_failure and time.time() - self._last_failure > self._recovery_window:
+            self._failure_count = 0
+            return False
+        return True
+
+    def record_success(self) -> None:
+        self._failure_count = 0
+
+    def record_failure(self) -> None:
+        self._failure_count += 1
+        self._last_failure = time.time()
+        if self.is_open():
+            logger.error(
+                "Circuit breaker مفتوح: %d failures", self._failure_count
+            )
+
+    @asynccontextmanager
+    async def guard(self) -> AsyncGenerator:
+        if self.is_open():
+            logger.warning("Circuit breaker مفتوح — إعادة الـ fallback")
+            yield self._fallback
+            return
+        try:
+            yield None
+            self.record_success()
+        except Exception as exc:
+            self.record_failure()
+            logger.error("فشل محمي بـ circuit breaker: %s", exc)
+            if self._fallback is not None:
+                yield self._fallback
+            else:
+                raise
+
+
+class ResourceGuard:
+    """
+    Orchestrator لجميع آليات الحماية.
+    """
+
+    def __init__(
+        self,
+        max_memory_mb: float = 4096.0,
+        max_concurrent: int = 10,
+        max_workers: int = 4,
+        request_timeout: float = 30.0,
+    ) -> None:
+        self.memory = MemoryGuard(max_memory_mb)
+        self.throttler = RequestThrottler(max_concurrent)
+        self.isolation = WorkerIsolation(max_workers)
+        self.timeout_seconds = request_timeout
+        logger.info(
+            "ResourceGuard: memory=%.0fMB concurrent=%d workers=%d timeout=%.0fs",
+            max_memory_mb, max_concurrent, max_workers, request_timeout,
+        )
+
+    @asynccontextmanager
+    async def protected_request(self, name: str = "request") -> AsyncGenerator:
+        """Context manager يطبق جميع الحمايات."""
+        if not self.memory.check():
+            raise MemoryError("ذاكرة النظام منخفضة")
+
+        async with self.throttler.throttle():
+            async with TimeoutGuard.async_timeout(self.timeout_seconds, name):
+                yield
+
+    def health(self) -> dict:
+        return {
+            "memory_current_mb": round(self.memory._current_mb(), 1),
+            "memory_limit_mb": self.memory._max_mb,
+            "concurrent_requests": self.throttler.current_count,
+            "overloaded": self.throttler.is_overloaded(),
+            "timeout_s": self.timeout_seconds,
+        }
+=== hajeen api router ===
+"""
+Hajeen Model v1 API Router — واجهة API للنموذج المحلي.
+
+القاعدة الصارمة:
+- جميع طلبات AI تمر عبر HajeenBrainV3
+- هذا الـ Router مجرد HTTP Adapter — لا منطق AI مستقل هنا
+- لا يوجد LLM call مباشر خارج Brain
+
+Routes:
+  GET  /api/v1/model/health          — حالة النموذج
+  GET  /api/v1/model/info            — معلومات النموذج
+  POST /api/v1/model/chat            — محادثة (موجهة عبر HajeenBrainV3)
+  POST /api/v1/model/complete        — استدلال كامل (عبر HajeenBrainV3)
+  POST /api/v1/model/stream          — streaming (SSE) (عبر HajeenBrainV3)
+  GET  /api/v1/model/ollama/status   — حالة Ollama
+  POST /api/v1/model/ollama/pull     — تحميل نموذج
+  GET  /api/v1/model/training/status — حالة التدريب
+  POST /api/v1/model/training/build-dataset — بناء dataset
+  POST /api/v1/model/training/simulate — محاكاة التدريب
+  POST /api/v1/model/evaluate        — تقييم النموذج
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import time
+import uuid
+from typing import Dict, List, Optional
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/model", tags=["Hajeen Model v1"])
+
+
+# ─── Request / Response Models ────────────────────────────────────────────────
+
+
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="user | assistant | system")
+    content: str = Field(..., description="محتوى الرسالة")
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., description="رسالة المستخدم")
+    history: Optional[List[Dict]] = Field(default=None, description="سجل المحادثة")
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=1024, ge=1, le=4096)
+    stream: bool = Field(default=False)
+    session_id: Optional[str] = Field(default=None)
+    model: Optional[str] = Field(default=None)
+
+
+class CompleteRequest(BaseModel):
+    messages: List[ChatMessage]
+    temperature: float = Field(default=0.7)
+    max_tokens: int = Field(default=1024)
+
+
+class DatasetBuildRequest(BaseModel):
+    storage_dir: str = Field(default="storage_data/gold")
+    processed_dir: str = Field(default="data/processed/pipeline")
+    add_synthetic: int = Field(default=50, ge=0, le=5000)
+    output_format: str = Field(default="alpaca")
+
+
+class TrainingRequest(BaseModel):
+    base_model: str = Field(default="Qwen/Qwen2.5-1.5B")
+    num_epochs: int = Field(default=3, ge=1, le=20)
+    batch_size: int = Field(default=4)
+    learning_rate: float = Field(default=2e-4)
+    simulation: bool = Field(default=True, description="True=محاكاة, False=تدريب فعلي")
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+
+async def _get_brain_from_request(request: Request):
+    """الحصول على HajeenBrainV3 من app state."""
+    brain = getattr(request.app.state, "brain", None)
+    if brain is None:
+        from brain.brain_v3 import get_brain_v3
+        brain = await get_brain_v3()
+    return brain
+
+
+# ─── Endpoints ────────────────────────────────────────────────────────────────
+
+
+@router.get("/health")
+async def model_health():
+    """فحص شامل لحالة النموذج."""
+    try:
+        from brain.brain_v3 import get_brain_v3
+        brain = await get_brain_v3()
+        stats = brain.get_stats()
+        return {
+            "ok": True,
+            "model": "Hajeen Model v1 (via HajeenBrainV3)",
+            "brain_version": brain.VERSION,
+            "memory_overview": stats.get("memory_overview", {}),
+            "routing_stats": stats.get("routing_stats", {}),
+        }
+    except Exception as e:
+        logger.error("Model health check failed: %s", e)
+        return {"ok": False, "error": str(e), "model": "Hajeen Model v1"}
+
+
+@router.get("/info")
+async def model_info():
+    """معلومات النموذج."""
+    from pathlib import Path
+
+    import yaml
+    config_path = Path("hajeen_model/config/model_config.yaml")
+    config = {}
+    if config_path.exists():
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    return {
+        "model": config.get("model", {"name": "Hajeen Model v1", "version": "1.0"}),
+        "inference": config.get("inference", {"runtime": "HajeenBrainV3"}),
+        "capabilities": config.get("capabilities", ["arabic", "general", "rag"]),
+        "system_prompt": config.get("system_prompt", ""),
+        "runtime": "HajeenBrainV3 (Unified Runtime)",
+    }
+
+
+@router.post("/chat")
+async def chat(req: ChatRequest, request: Request):
+    """
+    محادثة مع Hajeen Model v1.
+
+    الضمان: الطلب يمر عبر HajeenBrainV3.process() كاملاً.
+    لا يوجد LLM call مباشر هنا.
+    """
+    from brain.brain_v3 import BrainRequest
+
+    brain = await _get_brain_from_request(request)
+
+    brain_request = BrainRequest(
+        request_id=f"hajeen_model_chat_{uuid.uuid4().hex[:12]}",
+        user_message=req.message,
+        session_id=req.session_id or str(uuid.uuid4()),
+        context={
+            "history": req.history or [],
+            "temperature": req.temperature,
+            "max_tokens": req.max_tokens,
+        },
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+        force_model=req.model,
+    )
+
+    t0 = time.perf_counter()
+    try:
+        response = await brain.process(brain_request)
+        return {
+            "ok": True,
+            "response": response.content,
+            "session_id": brain_request.session_id,
+            "model_used": response.model_used,
+            "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
+            "runtime": "HajeenBrainV3",
+        }
+    except Exception as e:
+        logger.error("Model chat error: %s", e)
+        raise HTTPException(status_code=500, detail=f"HajeenBrainV3 error: {e}")
+
+
+@router.post("/complete")
+async def complete(req: CompleteRequest, request: Request):
+    """
+    استدلال كامل عبر HajeenBrainV3.
+    """
+    from brain.brain_v3 import BrainRequest
+
+    brain = await _get_brain_from_request(request)
+    last_user = next(
+        (m.content for m in reversed(req.messages) if m.role == "user"),
+        ""
+    )
+    history = [
+        {"role": m.role, "content": m.content}
+        for m in req.messages[:-1]
+    ]
+
+    brain_request = BrainRequest(
+        request_id=f"complete_{uuid.uuid4().hex[:12]}",
+        user_message=last_user,
+        session_id=str(uuid.uuid4()),
+        context={"history": history},
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+    )
+
+    t0 = time.perf_counter()
+    try:
+        response = await brain.process(brain_request)
+        return {
+            "ok": True,
+            "content": response.content,
+            "model_used": response.model_used,
+            "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
+            "runtime": "HajeenBrainV3",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/stream")
+async def stream_chat(req: ChatRequest, request: Request):
+    """
+    Streaming محادثة عبر HajeenBrainV3.stream().
+    الضمان: كل chunk يمر عبر Brain — لا LLM مباشر.
+    """
+    from brain.brain_v3 import BrainRequest
+
+    brain = await _get_brain_from_request(request)
+
+    brain_request = BrainRequest(
+        request_id=f"stream_{uuid.uuid4().hex[:12]}",
+        user_message=req.message,
+        session_id=req.session_id or str(uuid.uuid4()),
+        context={
+            "history": req.history or [],
+            "stream": True,
+            "temperature": req.temperature,
+            "max_tokens": req.max_tokens,
+        },
+        stream=True,
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+        force_model=req.model,
+    )
+
+    async def event_generator():
+        from core.llm.base import LLMStreamChunk
+
+        completed = False
+        try:
+            async for chunk in brain.stream(brain_request):
+                if not isinstance(chunk, LLMStreamChunk):
+                    raise RuntimeError("Brain returned a non-native stream chunk")
+                if chunk.event_type == "start":
+                    payload = {"event": "start", "id": brain_request.request_id, "model": chunk.model}
+                elif chunk.event_type == "finish" or chunk.finish_reason:
+                    payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
+                    completed = True
+                elif chunk.event_type == "delta":
+                    payload = {"event": "delta", "content": chunk.delta, "index": chunk.sequence}
+                else:
+                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            if not completed:
+                raise RuntimeError("Native stream ended without finish event")
+            yield "data: [DONE]\n\n"
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            yield f"data: {json.dumps({'event': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/ollama/status")
+async def ollama_status():
+    """حالة Ollama."""
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get("http://localhost:11434/api/tags")
+            data = resp.json()
+            return {"ok": True, "models": data.get("models", []), "status": "running"}
+    except Exception as e:
+        return {"ok": False, "status": "unavailable", "error": str(e)}
+
+
+@router.post("/ollama/pull")
+async def ollama_pull(background_tasks: BackgroundTasks, model: str = "qwen2.5:7b"):
+    """تحميل نموذج Ollama في الخلفية."""
+    async def pull():
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=600.0) as client:
+                await client.post(
+                    "http://localhost:11434/api/pull",
+                    json={"name": model}
+                )
+            logger.info("Ollama: تم تحميل النموذج %s", model)
+        except Exception as e:
+            logger.error("Ollama pull failed: %s", e)
+
+    background_tasks.add_task(pull)
+    return {"ok": True, "message": f"جاري تحميل {model} في الخلفية"}
+
+
+@router.get("/training/status")
+async def training_status():
+    """حالة التدريب."""
+    from pathlib import Path
+    checkpoints = list(Path("hajeen_model/checkpoints").glob("*.bin")) if Path("hajeen_model/checkpoints").exists() else []
+    return {
+        "ok": True,
+        "checkpoints": len(checkpoints),
+        "training_active": False,
+        "note": "يمكن بدء التدريب عبر /model/training/simulate",
+    }
+
+
+@router.post("/training/build-dataset")
+async def build_dataset(req: DatasetBuildRequest):
+    """بناء dataset للتدريب."""
+    try:
+        from hajeen_model.training_pipeline import DatasetBuilder
+        builder = DatasetBuilder()
+        result = await builder.build(
+            storage_dir=req.storage_dir,
+            add_synthetic=req.add_synthetic,
+            output_format=req.output_format,
+        )
+        return {"ok": True, **result}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "note": "Dataset builder غير متاح في البيئة الحالية"}
+
+
+@router.post("/training/simulate")
+async def simulate_training(req: TrainingRequest, background_tasks: BackgroundTasks):
+    """محاكاة التدريب."""
+    try:
+        from hajeen_model.training_pipeline import TrainingConfig, TrainingPipeline
+        config = TrainingConfig(
+            base_model=req.base_model,
+            num_epochs=req.num_epochs,
+            batch_size=req.batch_size,
+            learning_rate=req.learning_rate,
+        )
+        pipeline = TrainingPipeline(config)
+        background_tasks.add_task(pipeline.run_training)
+        return {
+            "ok": True,
+            "experiment_id": config.experiment_id,
+            "message": "التدريب بدأ في الخلفية",
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@router.post("/evaluate")
+async def evaluate_model():
+    """تقييم النموذج بأسئلة متنوعة."""
+    try:
+        from hajeen_model.training_pipeline import ModelEvaluator
+        evaluator = ModelEvaluator()
+        report = await evaluator.evaluate_with_ollama()
+        return {"ok": True, **report}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/training/checkpoints")
+async def list_checkpoints():
+    """قائمة نقاط الحفظ."""
+    try:
+        from hajeen_model.training_pipeline import CheckpointManager
+        manager = CheckpointManager()
+        return {
+            "checkpoints": manager.list_checkpoints(),
+            "best": manager.get_best_checkpoint(),
+        }
+    except Exception as e:
+        return {"checkpoints": [], "best": None, "error": str(e)}
+=== model runtime files ===
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, Optional, Tuple
+
+from .model_config import ModelBackend, ModelConfig
+from .quantization import QuantizationConfig, build_quantization_kwargs
+
+logger = logging.getLogger(__name__)
+
+
+class ModelLoader:
+    """Load model + tokenizer pairs from various backends."""
+
+    def __init__(self) -> None:
+        self._loaded: Dict[str, Tuple[Any, Any]] = {}
+
+    def load(self, config: ModelConfig) -> Tuple[Any, Any]:
+        """Return (model, tokenizer). Cached after first load."""
+        if config.model_id in self._loaded:
+            return self._loaded[config.model_id]
+
+        logger.info("Loading model '%s' via backend '%s'", config.model_id, config.backend)
+
+        if config.backend == ModelBackend.HUGGINGFACE:
+            pair = self._load_hf(config)
+        elif config.backend == ModelBackend.OLLAMA:
+            pair = self._load_ollama(config)
+        elif config.backend == ModelBackend.LLAMA_CPP:
+            pair = self._load_llama_cpp(config)
+        else:
+            raise ValueError(f"Unsupported backend: {config.backend}")
+
+        self._loaded[config.model_id] = pair
+        logger.info("Model loaded: %s", config.model_id)
+        return pair
+
+    def _load_hf(self, config: ModelConfig) -> Tuple[Any, Any]:
+        try:
+            import torch  # type: ignore
+            from transformers import AutoModelForCausalLM, AutoTokenizer  # type: ignore
+
+            quant_kwargs = build_quantization_kwargs(config)
+            device_map = config.device if config.device != "auto" else "auto"
+
+            tokenizer = AutoTokenizer.from_pretrained(
+                config.model_id,
+                trust_remote_code=config.trust_remote_code,
+                use_fast=True,
+            )
+            model = AutoModelForCausalLM.from_pretrained(
+                config.model_id,
+                device_map=device_map,
+                trust_remote_code=config.trust_remote_code,
+                torch_dtype=getattr(torch, config.dtype, torch.float16),
+                **quant_kwargs,
+            )
+            model.eval()
+            return model, tokenizer
+        except ImportError as exc:
+            raise RuntimeError(
+                "HuggingFace transformers / torch not installed"
+            ) from exc
+
+    def _load_ollama(self, config: ModelConfig) -> Tuple[Any, None]:
+        try:
+            import ollama  # type: ignore
+
+            client = ollama.Client()
+            model_name = config.model_id.replace("ollama:", "")
+            return client, None
+        except ImportError as exc:
+            raise RuntimeError("ollama-python not installed") from exc
+
+    def _load_llama_cpp(self, config: ModelConfig) -> Tuple[Any, None]:
+        try:
+            from llama_cpp import Llama  # type: ignore
+
+            model = Llama(
+                model_path=config.model_id,
+                n_ctx=config.context_length,
+                n_gpu_layers=-1 if "cuda" in config.device else 0,
+                verbose=False,
+            )
+            return model, None
+        except ImportError as exc:
+            raise RuntimeError("llama-cpp-python not installed") from exc
+
+    def unload(self, model_id: str) -> bool:
+        if model_id in self._loaded:
+            model, _ = self._loaded.pop(model_id)
+            try:
+                import torch  # type: ignore
+                del model
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
+            logger.info("Model unloaded: %s", model_id)
+            return True
+        return False
+
+    def list_loaded(self) -> list[str]:
+        return list(self._loaded.keys())
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+from typing import Any
+
+WEIGHT_NAMES = ("model.safetensors", "pytorch_model.bin", "pytorch_model.bin.index.json")
+TOKENIZER_NAMES = ("tokenizer.json", "tokenizer.model", "tokenizer_config.json")
+MANIFEST_NAMES = ("hajeen_verified_base_manifest.json", "base_model_contract.json")
+
+
+def _shard_files(root: Path) -> list[Path]:
+    return sorted(root.glob("model-*.safetensors"))
+
+
+def validate_artifact_directory(location: str) -> tuple[bool, tuple[str, ...], str, dict[str, Any]]:
+    root = Path(location)
+    reasons: list[str] = []
+    if not root.is_dir():
+        return False, ("artifact_directory_missing",), "", {}
+
+    config_path = root / "config.json"
+    config: dict[str, Any] = {}
+    if not config_path.is_file():
+        reasons.append("config_missing")
+    else:
+        try:
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            if not isinstance(config, dict):
+                reasons.append("config_invalid")
+                config = {}
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            reasons.append("config_invalid")
+
+    shards = _shard_files(root)
+    index_path = root / "model.safetensors.index.json"
+    has_weights = any((root / name).is_file() for name in WEIGHT_NAMES) or bool(shards and index_path.is_file())
+    if not has_weights:
+        reasons.append("weights_missing")
+    if not any((root / name).is_file() for name in TOKENIZER_NAMES):
+        reasons.append("tokenizer_missing")
+    architectures = config.get("architectures", [])
+    if architectures and not any("CausalLM" in str(item) for item in architectures):
+        reasons.append("incompatible_model_architecture")
+    if not config.get("model_type"):
+        reasons.append("model_type_missing")
+
+    manifest_path = next((root / name for name in MANIFEST_NAMES if (root / name).is_file()), root / MANIFEST_NAMES[0])
+    manifest: dict[str, Any] = {}
+    if manifest_path.is_file():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if manifest.get("status") == "VERIFIED_BASE":
+                required = ("source_model_id", "source_revision", "target_repo_id", "target_commit")
+                for field in required:
+                    if not manifest.get(field):
+                        reasons.append(f"manifest_{field}_missing")
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            reasons.append("manifest_invalid")
+
+    checksum = ""
+    if not reasons:
+        digest = hashlib.sha256()
+        for path in sorted(p for p in root.rglob("*") if p.is_file() and p != manifest_path):
+            digest.update(str(path.relative_to(root)).encode())
+            digest.update(path.read_bytes())
+        checksum = digest.hexdigest()
+
+    return not reasons, tuple(reasons), checksum, {
+        "model_type": config.get("model_type", ""),
+        "architectures": architectures,
+        "shard_count": len(shards),
+        "has_safetensors_index": index_path.is_file(),
+        "verification_manifest": manifest,
+    }
+
+
+def load_verified_base_manifest(location: str) -> tuple[bool, tuple[str, ...], dict[str, Any]]:
+    root = Path(location)
+    path = next((root / name for name in MANIFEST_NAMES if (root / name).is_file()), root / MANIFEST_NAMES[0])
+    if not path.is_file():
+        return False, ("verification_manifest_missing",), {}
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return False, ("verification_manifest_invalid",), {}
+    required = ("source_model_id", "source_revision", "target_repo_id", "target_commit")
+    reasons = [f"manifest_{field}_missing" for field in required if not manifest.get(field)]
+    if manifest.get("status") != "VERIFIED_BASE":
+        reasons.append("manifest_status_not_verified_base")
+    artifact = manifest.get("artifact_verification", {})
+    tokenizer = manifest.get("tokenizer_verification", {})
+    if artifact.get("all_shard_sha256_match") is not True:
+        reasons.append("manifest_shard_verification_failed")
+    if tokenizer.get("encode_decode_round_trip_passed") is not True:
+        reasons.append("manifest_tokenizer_verification_failed")
+    return not reasons, tuple(reasons), manifest
+"""Hajeen Model adapter used by the Platform ModelRouter."""
+from __future__ import annotations
+
+import logging
+from typing import AsyncGenerator
+
+from hajeen_model.inference.hajeen_provider import HajeenProvider as LocalHajeenModel
+
+from ..base import (
+    BaseLLMProvider,
+    LLMConfig,
+    LLMProviderError,
+    LLMRequest,
+    LLMResponse,
+    LLMStreamChunk,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class HajeenLLMProvider(BaseLLMProvider):
+    """Adapter for a real local Hajeen checkpoint; never fabricates output."""
+
+    def __init__(self, config: LLMConfig):
+        super().__init__(config)
+        self.local_model = LocalHajeenModel(model_path=config.extra.get("model_path"))
+
+    async def initialize(self) -> None:
+        """Load and validate the approved local checkpoint before readiness."""
+        try:
+            if not self.local_model.load_model():
+                raise LLMProviderError(
+                    "Hajeen checkpoint is unavailable or failed validation"
+                )
+        except LLMProviderError:
+            raise
+        except Exception as exc:
+            raise LLMProviderError(f"Hajeen initialization failed: {exc}") from exc
+        self._initialized = True
+
+    async def _complete_implementation(self, request: LLMRequest) -> LLMResponse:
+        prompt = "\n".join(f"{message.role}: {message.content}" for message in request.messages)
+        if not prompt.strip():
+            raise LLMProviderError("Hajeen request has no prompt")
+        content = self.local_model.generate(prompt, max_new_tokens=request.max_tokens or self.config.max_tokens)
+        if not content:
+            raise LLMProviderError("Hajeen model returned an empty response")
+        prompt_tokens = len(prompt.split())
+        completion_tokens = len(content.split())
+        return LLMResponse(content=content, model=self.model_name, provider=self.provider_name, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens, total_tokens=prompt_tokens + completion_tokens, request_id=request.request_id)
+
+    async def _stream_implementation(self, request: LLMRequest) -> AsyncGenerator[LLMStreamChunk, None]:
+        raise LLMProviderError("Hajeen checkpoint adapter does not expose native streaming")
+        yield  # pragma: no cover
+
+    async def health_check(self) -> bool:
+        try:
+            return bool(self.local_model.load_model())
+        except Exception as exc:
+            logger.warning("Hajeen checkpoint unavailable: %s", exc)
+            return False
+
+
+__all__ = ["HajeenLLMProvider"]

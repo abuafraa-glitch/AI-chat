@@ -1,0 +1,367 @@
+=== endpoint files ===
+api/v1/__init__.py
+api/v1/ai/__init__.py
+api/v1/ai/chat.py
+api/v1/ai/completion.py
+api/v1/ai/embeddings.py
+api/v1/ai/health.py
+api/v1/ai/models.py
+api/v1/ai/rerank.py
+api/v1/ai/router.py
+api/v1/ai/websocket.py
+api/v1/auth/__init__.py
+api/v1/auth/router.py
+api/v1/channels/__init__.py
+api/v1/channels/router.py
+api/v1/embeddings/__init__.py
+api/v1/embeddings/router.py
+api/v1/hajeen_model_router.py
+api/v1/ingestion/__init__.py
+api/v1/router.py
+api/v1/search/__init__.py
+api/v1/search/router.py
+api/v1/tasks/__init__.py
+api/v1/tasks/router.py
+api/v1/webhooks/__init__.py
+=== tenant identity references ===
+api/main.py:91:    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Session-ID"],
+api/v1/auth/router.py:27:    tenant_id: str = Field(default="default")
+api/v1/auth/router.py:34:    tenant_id: str = "default"
+api/v1/auth/router.py:56:    user_id: str
+api/v1/auth/router.py:58:    tenant_id: str
+api/v1/auth/router.py:65:        "user_id": "usr_admin",
+api/v1/auth/router.py:70:        "tenant_id": "default",
+api/v1/auth/router.py:103:    user_id = f"usr_{uuid.uuid4().hex[:12]}"
+api/v1/auth/router.py:105:        "user_id": user_id,
+api/v1/auth/router.py:110:        "tenant_id": body.tenant_id,
+api/v1/auth/router.py:114:    logger.info("New user registered: %s (tenant=%s)", body.username, body.tenant_id)
+api/v1/auth/router.py:117:        "user_id": user_id,
+api/v1/auth/router.py:144:        user_id=user["user_id"],
+api/v1/auth/router.py:145:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:150:        user_id=user["user_id"],
+api/v1/auth/router.py:151:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:161:        user_id=user["user_id"],
+api/v1/auth/router.py:163:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:176:            claims.sub, claims.tenant_id, claims.roles, "refresh"
+api/v1/auth/router.py:182:            user_id=claims.sub,
+api/v1/auth/router.py:184:            tenant_id=claims.tenant_id,
+api/v1/auth/router.py:201:    user_id = getattr(request.state, "user_id", None)
+api/v1/auth/router.py:202:    if not user_id:
+api/v1/auth/router.py:205:    keys = api_key_manager.get_all_keys_for_user(user_id)
+api/v1/auth/router.py:211:    user_id = getattr(request.state, "user_id", None)
+api/v1/auth/router.py:212:    if not user_id:
+api/v1/auth/router.py:216:    if not api_key or api_key.user_id != user_id:
+api/v1/auth/router.py:223:    user_id = getattr(request.state, "user_id", None)
+api/v1/auth/router.py:224:    if not user_id:
+api/v1/auth/router.py:228:    if not api_key or api_key.user_id != user_id:
+api/v1/auth/router.py:238:async def get_current_user(request: Request) -> Dict[str, Any]:
+api/v1/auth/router.py:239:    user_id = getattr(request.state, "user_id", None)
+api/v1/auth/router.py:241:    tenant_id = getattr(request.state, "tenant_id", "default")
+api/v1/auth/router.py:242:    if not user_id:
+api/v1/auth/router.py:245:        "user_id": user_id,
+api/v1/auth/router.py:247:        "tenant_id": tenant_id,
+api/v1/auth/router.py:258:    user_id = getattr(request.state, "user_id", "anonymous")
+api/v1/auth/router.py:259:    tenant_id = getattr(request.state, "tenant_id", "default")
+api/v1/auth/router.py:263:        user_id=user_id,
+api/v1/auth/router.py:264:        tenant_id=tenant_id,
+api/v1/auth/router.py:271:    logger.info("API key created: %s for user %s", key_id, user_id)
+api/v1/auth/router.py:277:        "user_id": user_id,
+api/v1/auth/router.py:278:        "tenant_id": tenant_id,
+security/api_keys/api_key_manager.py:23:    tenant_id: str
+security/api_keys/api_key_manager.py:24:    user_id: str
+security/api_keys/api_key_manager.py:42:        tenant_id: str,
+security/api_keys/api_key_manager.py:43:        user_id: str,
+security/api_keys/api_key_manager.py:59:            tenant_id=tenant_id,
+security/api_keys/api_key_manager.py:60:            user_id=user_id,
+security/api_keys/api_key_manager.py:99:    def revoke_key(self, key_id: str, tenant_id: str) -> bool:
+security/api_keys/api_key_manager.py:101:            "UPDATE api_keys SET is_active = FALSE WHERE key_id = %s AND tenant_id = %s",
+security/api_keys/api_key_manager.py:102:            (key_id, tenant_id),
+security/api_keys/api_key_manager.py:113:               (key_id, name, tenant_id, user_id, scopes, hash,
+security/api_keys/api_key_manager.py:117:                api_key.key_id, api_key.name, api_key.tenant_id,
+security/api_keys/api_key_manager.py:118:                api_key.user_id, api_key.scopes, api_key.hash,
+security/audit/audit_logger.py:36:    tenant_id: str = ""
+security/audit/audit_logger.py:37:    user_id: str = ""
+security/audit/audit_logger.py:71:            "event_id", "timestamp", "tenant_id", "user_id", "action",
+security/audit/audit_logger.py:100:        tenant_id: str,
+security/audit/audit_logger.py:101:        user_id: str,
+security/audit/audit_logger.py:110:            tenant_id=tenant_id,
+security/audit/audit_logger.py:111:            user_id=user_id,
+security/audit/audit_logger.py:128:            "AUDIT action=%s resource=%s/%s user=%s tenant=%s status=%s",
+security/audit/audit_logger.py:129:            action, resource_type, resource_id, user_id, tenant_id, status,
+security/audit/audit_logger.py:136:               (event_id, timestamp, tenant_id, user_id, action,
+security/audit/audit_logger.py:141:                event.event_id, event.timestamp, event.tenant_id, event.user_id,
+security/auth/api_key_manager.py:12:    user_id: str
+security/auth/api_key_manager.py:13:    tenant_id: str
+security/auth/api_key_manager.py:24:            "user_id": self.user_id,
+security/auth/api_key_manager.py:25:            "tenant_id": self.tenant_id,
+security/auth/api_key_manager.py:44:    def generate_key(self, user_id: str, tenant_id: str, roles: List[str], expires_in_seconds: Optional[int] = None, metadata: Optional[Dict[str, str]] = None) -> Tuple[str, APIKey]:
+security/auth/api_key_manager.py:54:            user_id=user_id,
+security/auth/api_key_manager.py:55:            tenant_id=tenant_id,
+security/auth/api_key_manager.py:84:    def get_all_keys_for_user(self, user_id: str) -> List[APIKey]:
+security/auth/api_key_manager.py:85:        return [key for key in self._api_keys.values() if key.user_id == user_id]
+security/auth/jwt_auth.py:26:    tenant_id: str
+security/auth/jwt_auth.py:49:        user_id: str,
+security/auth/jwt_auth.py:50:        tenant_id: str,
+security/auth/jwt_auth.py:57:            "sub": user_id,
+security/auth/jwt_auth.py:58:            "tenant_id": tenant_id,
+security/auth/jwt_auth.py:85:            tenant_id=payload["tenant_id"],
+security/auth/jwt_auth.py:109:        return self.issue_token(claims.sub, claims.tenant_id, claims.roles)
+security/middleware/auth_middleware.py:39:    auth = request.headers.get("Authorization", "")
+security/middleware/auth_middleware.py:115:        user_id = "anonymous"
+security/middleware/auth_middleware.py:116:        tenant_id = "default"
+security/middleware/auth_middleware.py:123:                    user_id = claims.sub
+security/middleware/auth_middleware.py:124:                    tenant_id = claims.tenant_id
+security/middleware/auth_middleware.py:126:                    request.state.user_id = user_id
+security/middleware/auth_middleware.py:127:                    request.state.tenant_id = tenant_id
+security/middleware/auth_middleware.py:132:                        AuditAction.LOGIN_FAILED, "auth", "jwt_validation", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:144:                        AuditAction.LOGIN_FAILED, "auth", "api_key_validation", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:151:                user_id = api_key.user_id
+security/middleware/auth_middleware.py:152:                tenant_id = api_key.tenant_id
+security/middleware/auth_middleware.py:154:                request.state.user_id = user_id
+security/middleware/auth_middleware.py:155:                request.state.tenant_id = tenant_id
+security/middleware/auth_middleware.py:163:                    "message": "يجب تقديم Authorization header أو X-API-Key",
+security/middleware/auth_middleware.py:172:                identifier=user_id, endpoint=endpoint_key, tenant_id=tenant_id
+security/middleware/auth_middleware.py:176:                    AuditAction.RATE_LIMITED, "system", "rate_limiter", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:207:                AuditAction.PERMISSION_DENIED, "auth", "rbac_check", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:224:        response.headers["X-User-ID"] = user_id
+security/middleware/auth_middleware.py:225:        response.headers["X-Tenant-ID"] = tenant_id
+security/middleware/security_middleware.py:26:    user_id: str,
+security/middleware/security_middleware.py:33:        "sub": user_id,
+security/middleware/security_middleware.py:92:# RBAC Authorization
+security/permissions/rbac.py:27:    TENANT_ADMIN = "tenant:admin"
+security/permissions/rbac.py:83:    user_id: str
+security/permissions/rbac.py:84:    tenant_id: str
+security/permissions/rbac.py:98:                "Permission denied: user=%s tenant=%s required=%s roles=%s",
+security/permissions/rbac.py:99:                self.user_id, self.tenant_id, permission, self.roles,
+security/rate_limit/rate_limiter.py:61:        tenant_id: Optional[str] = None,
+security/rate_limit/rate_limiter.py:67:        if tenant_id:
+security/rate_limit/rate_limiter.py:68:            key_parts.append(tenant_id)
+services/agents/agent_orchestrator.py:77:        user_id: Optional[str] = None,
+services/agents/agent_orchestrator.py:103:                    user_id=user_id,
+services/agents/agent_orchestrator.py:151:        user_id: Optional[str],
+services/agents/agent_orchestrator.py:206:                    user_id=user_id,
+services/agents/agent_orchestrator.py:243:        user_id: Optional[str],
+services/agents/agent_orchestrator.py:252:        return await self.tool_executor.execute(call, session_id=session_id, user_id=user_id)
+services/agents/tool_runtime.py:72:        user_id: Optional[str] = None,
+services/agents/tool_runtime.py:118:                "user_id": user_id,
+services/agents/tool_runtime.py:144:            allowed = self.permission_checker(spec, {"session_id": session_id, "user_id": user_id, "arguments": dict(call.arguments)})
+brain/api/brain_router.py:51:    user_id: Optional[str] = Field(default=None)
+brain/api/brain_router.py:97:        user_id=req.user_id,
+brain/api/brain_router.py:127:        user_id=req.user_id,
+brain/brain_v3.py:88:    user_id: Optional[str] = None
+brain/brain_v3.py:362:                "user_id": request.user_id,
+brain/brain_v3.py:444:                user_id=request.user_id,
+brain/brain_v3.py:511:                    user_id=request.user_id,
+brain/cognitive_layer/context_analyzer.py:116:        user_id: Optional[str] = None,
+brain/cognitive_layer/context_analyzer.py:144:                user_message, session_id, user_id
+brain/cognitive_layer/context_analyzer.py:202:                    "user_id": user_id,
+brain/cognitive_layer/context_analyzer.py:281:        user_id: Optional[str] = None,
+workers/distributed/scheduler_manager.py:74:        name="tenant-quota-reset",
+workers/distributed/scheduler_manager.py:75:        task_path="workers.tasks.tenants.reset_daily_quotas",
+workers/distributed/scheduler_manager.py:77:        description="Reset daily tenant quotas at midnight UTC",
+=== direct model calls ===
+workers/distributed/gpu_worker.py:174:        outputs = model.generate(
+hajeen_model/core/hajeen_model_v1.py:156:        lambda: engine.generate(
+hajeen_model/core/local_inference_engine.py:288:        return await loop.run_in_executor(None, lambda: self.generate(prompt, **kwargs))
+hajeen_model/hybrid_models/evaluation/evaluation_pipeline.py:257:            hypotheses = [engine.generate(p, gen_config) for p in prompts]
+hajeen_model/hybrid_models/inference/inference_engine.py:101:        text = engine.generate("مرحباً، كيف يمكنني مساعدتك؟")
+hajeen_model/hybrid_models/inference/inference_engine.py:104:        for token in engine.stream("Tell me about AI:"):
+hajeen_model/hybrid_models/inference/inference_engine.py:227:            for chunk in engine.stream("مرحباً"):
+hajeen_model/hybrid_models/inference/inference_engine.py:292:        return [self.generate(p, config) for p in prompts]
+hajeen_model/hybrid_models/serving/model_server.py:139:            text = self.engine.generate(prompt, gen_config)
+hajeen_model/hybrid_models/serving/model_server.py:192:                for chunk in self.engine.stream(prompt, gen_config):
+hajeen_model/hybrid_models/tests/test_inference.py:57:        text = tiny_engine.generate("Hello", cfg)
+hajeen_model/hybrid_models/tests/test_inference.py:64:        text = tiny_engine.generate("Hello", cfg)
+hajeen_model/hybrid_models/tests/test_inference.py:71:        text = tiny_engine.generate("Test", cfg)
+hajeen_model/hybrid_models/tests/test_inference.py:76:        chunks = list(tiny_engine.stream("Hello", cfg))
+hajeen_model/hybrid_models/tests/test_inference.py:82:        text = tiny_engine.generate("مرحبا", cfg)
+hajeen_model/hybrid_models/tests/test_inference.py:88:        chunks = list(tiny_engine.stream("Hello", cfg))
+hajeen_model/inference/hajeen_provider.py:91:        output_ids = self.model.generate(**inputs, **kwargs)
+hajeen_model/inference/inference_engine.py:34:            return self.provider.generate(prompt, **kwargs)
+hajeen_model/inference/ollama_manager.py:62:                async with c.stream("POST", f"{self.base_url}/api/pull",
+hajeen_model/tests/test_phase_4_5.py:32:        response = provider.generate("ما هو مستقبل الذكاء الاصطناعي؟")
+services/inference_service.py:9:from core.llm.llm_manager import LLMManager
+services/inference_service.py:17:    def __init__(self, llm_manager: Optional[LLMManager] = None) -> None:
+services/inference_service.py:18:        self._llm = llm_manager or LLMManager()
+services/inference_service.py:59:        tasks = [self.generate(p, model_id, config) for p in prompts]
+core/llm/__init__.py:4:from .llm_manager import LLMManager, get_llm_manager
+core/llm/__init__.py:14:    "LLMManager",
+core/llm/llm_manager.py:22:_manager_instance: Optional["LLMManager"] = None
+core/llm/llm_manager.py:25:class LLMManager:
+core/llm/llm_manager.py:177:        async for chunk in self._router.stream(
+core/llm/llm_manager.py:223:def get_llm_manager() -> LLMManager:
+core/llm/llm_manager.py:227:        _manager_instance = LLMManager()
+core/llm/llm_manager.py:231:def set_llm_manager(manager: LLMManager) -> None:
+core/llm/providers/hajeen_provider.py:45:        content = self.local_model.generate(prompt, max_new_tokens=request.max_tokens or self.config.max_tokens)
+core/llm/providers/huggingface_provider.py:136:                async with client.stream("POST", url, json=payload, headers=self._headers) as resp:
+core/llm/providers/mistral_finetuned_provider.py:231:            async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json=payload) as resp:
+core/llm/providers/ollama_provider.py:112:                async with client.stream("POST", url, json=payload) as resp:
+core/llm/providers/openai_provider.py:52:            response = await self._client.chat.completions.create(
+core/llm/providers/openai_provider.py:82:            stream = await self._client.chat.completions.create(
+brain/api/brain_router.py:7:- جميع الطلبات تمر عبر HajeenBrainV3.process() أو HajeenBrainV3.stream()
+brain/api/brain_router.py:140:            async for chunk in brain.stream(brain_req):
+brain/brain_v3.py:588:                async for chunk in self.model_router.stream(
+brain/cognitive_layer/context_analyzer.py:27:from core.llm import LLMManager
+brain/cognitive_layer/context_analyzer.py:102:        llm_manager: LLMManager,
+brain/cognitive_layer/context_analyzer.py:265:            summary = await self.llm_manager.generate(
+brain/cognitive_layer/context_analyzer.py:381:            response = await self.llm_manager.generate(
+brain/cognitive_layer/context_analyzer.py:428:            response = await self.llm_manager.generate(
+brain/cognitive_layer/context_analyzer.py:479:            response = await self.llm_manager.generate(
+brain/cognitive_layer/context_analyzer.py:519:            response = await self.llm_manager.generate(
+brain/cognitive_layer/context_analyzer.py:569:    llm_manager: Optional[LLMManager] = None,
+brain/cognitive_layer/intent_analyzer.py:25:from core.llm import LLMManager
+brain/cognitive_layer/intent_analyzer.py:79:    def __init__(self, llm_manager: LLMManager) -> None:
+brain/cognitive_layer/intent_analyzer.py:102:            llm_response = await self.llm_manager.generate(
+brain/cognitive_layer/intent_analyzer.py:226:def get_intent_analyzer(llm_manager: Optional[LLMManager] = None) -> IntentAnalyzer:
+brain/decision_engine.py:16:from core.llm.llm_manager import LLMManager, get_llm_manager
+brain/decision_engine.py:121:    def __init__(self, performance_db=None, policy_engine=None, llm_manager: Optional[LLMManager] = None) -> None:
+brain/learning/continuous_learning.py:670:                        gen = model.generate(**enc, max_new_tokens=64, do_sample=False)
+brain/llm_analyzer.py:33:    response = client.chat.completions.create(
+brain/model_router.py:252:        stream = provider.stream(request)
+api/v1/ai/chat.py:8:  POST /ai/chat/stream → HajeenBrainV3.stream()  → SSE
+api/v1/ai/chat.py:98:async def chat_completion(request: Request, body: ChatRequest) -> ChatResponse:
+api/v1/ai/chat.py:194:    الضمان: كل chunk يمر عبر Brain.stream() — لا يوجد مسار مباشر للـ LLM.
+api/v1/ai/chat.py:220:            async for chunk in brain.stream(brain_req):
+api/v1/ai/completion.py:49:async def text_completion(request: Request, body: CompletionRequest) -> CompletionResponse:
+api/v1/ai/completion.py:96:async def stream_completion(request: Request, body: CompletionRequest) -> StreamingResponse:
+api/v1/ai/completion.py:126:            async for chunk in brain.stream(brain_request):
+api/v1/ai/router.py:170:            async for chunk in brain.stream(brain_request):
+api/v1/hajeen_model_router.py:217:    Streaming محادثة عبر HajeenBrainV3.stream().
+api/v1/hajeen_model_router.py:245:            async for chunk in brain.stream(brain_request):
+=== websocket/streaming ===
+api/main.py:11:  /ws/chat                           — WebSocket Chat
+api/main.py:25:from fastapi import FastAPI, HTTPException, Request, WebSocket
+api/main.py:305:# ── WebSocket ─────────────────────────────────────────────────────────────
+api/main.py:307:@app.websocket("/ws/chat")
+api/main.py:308:async def websocket_chat(websocket: WebSocket):
+api/main.py:309:    from api.v1.ai.websocket import handle_ws_chat
+api/main.py:310:    await handle_ws_chat(websocket)
+api/v1/ai/chat.py:8:  POST /ai/chat/stream → HajeenBrainV3.stream()  → SSE
+api/v1/ai/chat.py:25:from fastapi.responses import StreamingResponse
+api/v1/ai/chat.py:45:    stream: bool = False
+api/v1/ai/chat.py:189:@router.post("/chat/stream", summary="Streaming Chat via Brain V3")
+api/v1/ai/chat.py:190:async def chat_stream(request: Request, body: ChatRequest) -> StreamingResponse:
+api/v1/ai/chat.py:194:    الضمان: كل chunk يمر عبر Brain.stream() — لا يوجد مسار مباشر للـ LLM.
+api/v1/ai/chat.py:203:        request_id=f"chat_stream_{uuid.uuid4().hex[:12]}",
+api/v1/ai/chat.py:208:            "stream": True,
+api/v1/ai/chat.py:220:            async for chunk in brain.stream(brain_req):
+api/v1/ai/chat.py:222:                    raise RuntimeError("Brain returned a non-native stream chunk")
+api/v1/ai/chat.py:239:                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+api/v1/ai/chat.py:242:                raise RuntimeError("Native stream ended without finish event")
+api/v1/ai/chat.py:250:    return StreamingResponse(event_generator(), media_type="text/event-stream")
+api/v1/ai/completion.py:10:from fastapi.responses import StreamingResponse
+api/v1/ai/completion.py:25:    stream: bool = False
+api/v1/ai/completion.py:65:        stream=False,
+api/v1/ai/completion.py:95:@router.post("/completion/stream", summary="Streaming Text Completion عبر HajeenBrainV3")
+api/v1/ai/completion.py:96:async def stream_completion(request: Request, body: CompletionRequest) -> StreamingResponse:
+api/v1/ai/completion.py:101:    stream_id = f"cmpl-stream-{uuid.uuid4().hex[:12]}"
+api/v1/ai/completion.py:103:        request_id=stream_id,
+api/v1/ai/completion.py:112:            "stream": True,
+api/v1/ai/completion.py:114:        stream=True,
+api/v1/ai/completion.py:126:            async for chunk in brain.stream(brain_request):
+api/v1/ai/completion.py:128:                    raise RuntimeError("Brain returned a non-native stream chunk")
+api/v1/ai/completion.py:137:                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+api/v1/ai/completion.py:140:                raise RuntimeError("Native stream ended without finish event")
+api/v1/ai/completion.py:145:            logger.error("Brain stream completion error: %s", e)
+api/v1/ai/completion.py:149:    return StreamingResponse(
+api/v1/ai/completion.py:151:        media_type="text/event-stream",
+api/v1/ai/router.py:10:from fastapi.responses import StreamingResponse
+api/v1/ai/router.py:60:    stream: bool = False
+api/v1/ai/router.py:103:        stream=False,
+api/v1/ai/router.py:130:# ── POST /chat/stream ──────────────────────────────────────────────────────────
+api/v1/ai/router.py:132:@router.post("/chat/stream", summary="محادثة AI متدفقة عبر HajeenBrainV3", tags=["AI"])
+api/v1/ai/router.py:133:async def chat_stream(
+api/v1/ai/router.py:136:) -> StreamingResponse:
+api/v1/ai/router.py:144:    stream_id = str(uuid.uuid4())
+api/v1/ai/router.py:146:        request_id=stream_id,
+api/v1/ai/router.py:159:            "stream": True,
+api/v1/ai/router.py:161:        stream=True,
+api/v1/ai/router.py:170:            async for chunk in brain.stream(brain_request):
+api/v1/ai/router.py:172:                    raise RuntimeError("Brain returned an invalid native stream chunk")
+api/v1/ai/router.py:181:                    raise RuntimeError(f"Unsupported native stream event: {chunk.event_type}")
+api/v1/ai/router.py:184:                raise RuntimeError("Native stream ended without finish event")
+api/v1/ai/router.py:189:            logger.error("Brain stream error: %s", e)
+api/v1/ai/router.py:192:    return StreamingResponse(
+api/v1/ai/router.py:194:        media_type="text/event-stream",
+api/v1/ai/websocket.py:1:"""Phase 8.5 — WebSocket Streaming: دعم WebSocket للـ streaming."""
+api/v1/ai/websocket.py:9:from fastapi import WebSocket, WebSocketDisconnect
+api/v1/ai/websocket.py:14:class WebSocketManager:
+api/v1/ai/websocket.py:16:    إدارة اتصالات WebSocket للـ streaming.
+api/v1/ai/websocket.py:20:        self._connections: Dict[str, WebSocket] = {}
+api/v1/ai/websocket.py:22:    async def connect(self, websocket: WebSocket, client_id: str) -> None:
+api/v1/ai/websocket.py:23:        await websocket.accept()
+api/v1/ai/websocket.py:24:        self._connections[client_id] = websocket
+api/v1/ai/websocket.py:25:        logger.info("WebSocket connected: %s", client_id)
+api/v1/ai/websocket.py:29:        logger.info("WebSocket disconnected: %s", client_id)
+api/v1/ai/websocket.py:66:ws_manager = WebSocketManager()
+api/v1/ai/websocket.py:69:async def handle_ws_chat(websocket: WebSocket) -> None:
+api/v1/ai/websocket.py:71:    معالج WebSocket للـ chat streaming.
+api/v1/ai/websocket.py:80:    await ws_manager.connect(websocket, client_id)
+api/v1/ai/websocket.py:86:                raw = await websocket.receive_text()
+api/v1/ai/websocket.py:88:            except WebSocketDisconnect:
+api/v1/ai/websocket.py:102:            # تشغيل streaming inference
+api/v1/ai/websocket.py:111:                    stream=True,
+api/v1/ai/websocket.py:117:                async for event in chat_service.stream_chat(request):
+api/v1/ai/websocket.py:141:                        await ws_manager.send_error(client_id, event.metadata.get("error", "stream failed"))
+api/v1/ai/websocket.py:144:                        raise RuntimeError(f"Unsupported native stream event: {event.event_type}")
+api/v1/ai/websocket.py:154:                logger.error("WebSocket streaming error: %s", e)
+api/v1/ai/websocket.py:157:    except WebSocketDisconnect:
+api/v1/ai/websocket.py:158:        logger.info("WebSocket client disconnected: %s", client_id)
+api/v1/hajeen_model_router.py:14:  POST /api/v1/model/stream          — streaming (SSE) (عبر HajeenBrainV3)
+api/v1/hajeen_model_router.py:32:from fastapi.responses import StreamingResponse
+api/v1/hajeen_model_router.py:53:    stream: bool = Field(default=False)
+api/v1/hajeen_model_router.py:214:@router.post("/stream")
+api/v1/hajeen_model_router.py:215:async def stream_chat(req: ChatRequest, request: Request):
+api/v1/hajeen_model_router.py:217:    Streaming محادثة عبر HajeenBrainV3.stream().
+api/v1/hajeen_model_router.py:225:        request_id=f"stream_{uuid.uuid4().hex[:12]}",
+api/v1/hajeen_model_router.py:230:            "stream": True,
+api/v1/hajeen_model_router.py:234:        stream=True,
+api/v1/hajeen_model_router.py:245:            async for chunk in brain.stream(brain_request):
+api/v1/hajeen_model_router.py:247:                    raise RuntimeError("Brain returned a non-native stream chunk")
+api/v1/hajeen_model_router.py:256:                    raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
+api/v1/hajeen_model_router.py:259:                raise RuntimeError("Native stream ended without finish event")
+api/v1/hajeen_model_router.py:266:    return StreamingResponse(event_generator(), media_type="text/event-stream")
+services/agent_frameworks/langgraph_example.py:48:# for output in app.stream(inputs):
+services/chat/chat_service.py:32:    stream: bool = False
+services/chat/chat_service.py:147:            stream=False,
+services/chat/chat_service.py:185:    async def stream_chat(
+services/chat/chat_service.py:189:        """محادثة مع native streaming عبر HajeenBrainV3."""
+services/chat/chat_service.py:194:        stream_id = str(uuid.uuid4())
+services/chat/chat_service.py:201:            async for chunk in self._inference_engine.stream_infer(
+services/chat/chat_service.py:207:                stream_id=stream_id,
+services/chat/chat_service.py:210:                    raise RuntimeError("InferenceEngine returned a non-native stream chunk")
+services/chat/chat_service.py:218:                await self._unified_memory.add_message(session_id, "assistant", "".join(collected), {"stream_id": stream_id})
+services/chat/chat_service.py:222:            request_id=stream_id,
+services/chat/chat_service.py:233:                "stream": True,
+services/chat/chat_service.py:235:            stream=True,
+services/chat/chat_service.py:242:            async for chunk in self._brain.stream(brain_request):
+services/chat/chat_service.py:244:                    raise RuntimeError("Brain returned a non-native stream chunk")
+services/chat/chat_service.py:254:                await self._unified_memory.add_message(session_id, "assistant", "".join(collected), {"stream_id": stream_id})
+services/chat/chat_service.py:262:                request_id=stream_id,
+services/completion_service.py:27:        stream: bool = False,
+services/completion_service.py:34:            stream=stream,
+services/completion_service.py:61:    async def stream_complete(
+services/completion_service.py:71:            stream=True,
+services/completion_service.py:73:        async for chunk in self._llm.astream(prompt, config=config, model_id=model_id):
+services/distributed_messaging/redis_streams_integration.py:13:    async def add_message(self, stream_name: str, message_data: Dict[str, Any]) -> str:
+services/distributed_messaging/redis_streams_integration.py:16:            message_id = self.redis_client.xadd(stream_name, message_data)
+services/distributed_messaging/redis_streams_integration.py:17:            logger.info(f"Added message to stream \'{stream_name}\' with ID: {message_id}")
+services/distributed_messaging/redis_streams_integration.py:20:            logger.error(f"Error adding message to Redis Stream \'{stream_name}\': {e}")
+services/distributed_messaging/redis_streams_integration.py:23:    async def read_messages(self, stream_name: str, consumer_group: str, consumer_name: str, count: int = 10, block: int = 5000) -> List[Dict[str, Any]]:
+services/distributed_messaging/redis_streams_integration.py:28:                self.redis_client.xgroup_create(stream_name, consumer_group, id=">", mkstream=True)
+services/distributed_messaging/redis_streams_integration.py:34:                consumer_group, consumer_name, {stream_name: ">"}, count=count, block=block
+services/distributed_messaging/redis_streams_integration.py:38:            for stream, msgs in messages:
+services/distributed_messaging/redis_streams_integration.py:42:                    self.redis_client.xack(stream_name, consumer_group, msg_id)
+services/distributed_messaging/redis_streams_integration.py:44:            logger.info(f"Read {len(processed_messages)} messages from stream \'{stream_name}\' for consumer \'{consumer_name}\'")
+services/distributed_messaging/redis_streams_integration.py:47:            logger.error(f"Error reading messages from Redis Stream \'{stream_name}\': {e}")
+services/inference_service.py:43:    async def stream(
+services/inference_service.py:49:        cfg = config or InferenceConfig(stream=True)
+services/inference_service.py:50:        async for chunk in self._llm.astream(prompt, config=cfg, model_id=model_id):
+services/prompts/prompt_builder.py:35:        stream: bool = False,
+services/prompts/prompt_builder.py:44:            stream=stream,
+services/redis/redis_service.py:33:    "stream":     300,          # 5 دقائق
+services/redis/redis_service.py:124:    async def publish_stream_chunk(self, stream_id: str, chunk: str) -> None:
+services/redis/redis_service.py:126:            await self._main.publish(f"stream:{stream_id}", chunk)
+services/redis/redis_service.py:128:    async def subscribe_stream(self, stream_id: str) -> AsyncGenerator[str, None]:
+services/redis/redis_service.py:132:        await pubsub.subscribe(f"stream:{stream_id}")
+services/redis/redis_service.py:140:            await pubsub.unsubscribe(f"stream:{stream_id}")

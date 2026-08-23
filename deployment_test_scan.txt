@@ -1,0 +1,383 @@
+=== makefile ===
+.PHONY: dev worker test up down clean
+
+PYTHONPATH=.
+
+dev:
+	uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+
+worker:
+	celery -A workers.celery_app worker -l info
+
+test:
+	PYTHONPATH=. pytest
+
+up:
+	@echo "Note: Docker is deferred. Use 'make dev' and 'make worker' for local development."
+
+down:
+	@echo "Note: Docker is deferred."
+
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	rm -f hajeen.sqlite3
+=== docker files ===
+---infra/docker/Dockerfile.api
+FROM python:3.11-slim AS builder
+
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev curl && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY requirements/base.txt requirements/api.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r base.txt -r api.txt
+
+FROM python:3.11-slim AS production
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8000 \
+    WORKERS=4
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 curl && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -r apiuser && useradd -r -g apiuser apiuser
+
+COPY --from=builder /install /usr/local
+WORKDIR /app
+COPY --chown=apiuser:apiuser . .
+
+USER apiuser
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+
+CMD ["sh", "-c", "gunicorn api.main:app --workers $WORKERS --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --access-logfile - --error-logfile -"]
+---infra/docker/Dockerfile.inference
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04 AS cuda-builder
+
+ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-dev python3-pip build-essential git curl && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN ln -s /usr/bin/python3.11 /usr/bin/python
+
+WORKDIR /build
+COPY requirements/base.txt requirements/inference.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r base.txt -r inference.txt
+
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04 AS production
+
+ENV PYTHONUNBUFFERED=1 \
+    CUDA_HOME=/usr/local/cuda \
+    PATH=/usr/local/cuda/bin:$PATH \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH \
+    MODEL_SERVER_PORT=8001 \
+    MAX_BATCH_SIZE=32 \
+    TENSOR_PARALLEL_SIZE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3-pip curl && rm -rf /var/lib/apt/lists/* && \
+    ln -s /usr/bin/python3.11 /usr/bin/python
+
+RUN groupadd -r inference && useradd -r -g inference inference
+COPY --from=cuda-builder /install /usr/local
+WORKDIR /app
+COPY --chown=inference:inference . .
+USER inference
+
+EXPOSE 8001 8002
+
+HEALTHCHECK --interval=20s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+CMD ["python", "-m", "core.serving.model_server"]
+---infra/docker/Dockerfile.nginx
+FROM nginx:1.25-alpine AS production
+
+RUN apk add --no-cache curl openssl
+
+RUN addgroup -S nginx_app && adduser -S -G nginx_app nginx_app
+
+COPY infra/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY infra/nginx/conf.d/ /etc/nginx/conf.d/
+COPY infra/nginx/ssl/ /etc/nginx/ssl/
+
+RUN chown -R nginx_app:nginx_app /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && chown nginx_app:nginx_app /var/run/nginx.pid
+
+USER nginx_app
+EXPOSE 80 443
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
+---infra/docker/Dockerfile.scheduler
+FROM python:3.11-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY requirements/base.txt requirements/scheduler.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r base.txt -r scheduler.txt
+
+FROM python:3.11-slim AS production
+
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+
+RUN groupadd -r scheduler && useradd -r -g scheduler scheduler
+COPY --from=builder /install /usr/local
+WORKDIR /app
+COPY --chown=scheduler:scheduler . .
+USER scheduler
+
+HEALTHCHECK --interval=60s --timeout=10s --start-period=20s --retries=3 \
+    CMD python -c "from workers.distributed.scheduler_manager import health_check; health_check()" || exit 1
+
+CMD ["celery", "-A", "workers.celery_app", "beat", "--loglevel=info", "--scheduler=django_celery_beat.schedulers:DatabaseScheduler"]
+---infra/docker/Dockerfile.training
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04 AS cuda-builder
+
+ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-dev python3-pip build-essential git curl && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN ln -s /usr/bin/python3.11 /usr/bin/python
+
+WORKDIR /build
+COPY requirements/base.txt requirements/training.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r base.txt -r training.txt
+
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04 AS production
+
+ENV PYTHONUNBUFFERED=1 \
+    CUDA_HOME=/usr/local/cuda \
+    PATH=/usr/local/cuda/bin:$PATH \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3-pip && rm -rf /var/lib/apt/lists/* && \
+    ln -s /usr/bin/python3.11 /usr/bin/python
+
+RUN groupadd -r trainer && useradd -r -g trainer trainer
+COPY --from=cuda-builder /install /usr/local
+WORKDIR /app
+COPY --chown=trainer:trainer . .
+USER trainer
+
+HEALTHCHECK --interval=60s --timeout=30s --start-period=120s --retries=2 \
+    CMD python -c "import torch; assert torch.cuda.is_available(), 'No GPU'" || exit 1
+
+CMD ["python", "-m", "core.training_engine.trainer"]
+---infra/docker/Dockerfile.worker
+FROM python:3.11-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY requirements/base.txt requirements/worker.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r base.txt -r worker.txt
+
+FROM python:3.11-slim AS production
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    CONCURRENCY=4 \
+    QUEUES=default,gpu,training
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -r worker && useradd -r -g worker worker
+
+COPY --from=builder /install /usr/local
+WORKDIR /app
+COPY --chown=worker:worker . .
+
+USER worker
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD python -c "from workers.health import check_worker; check_worker()" || exit 1
+
+CMD ["sh", "-c", "celery -A workers.celery_app worker --loglevel=info --concurrency=$CONCURRENCY -Q $QUEUES"]
+=== compose/k8s references ===
+deployments/kubernetes_hajeen_ai.yaml:8:  replicas: 3
+deployments/kubernetes_hajeen_ai.yaml:19:        image: hajeen-ai-image:latest # Replace with your actual Docker image
+deployments/kubernetes_hajeen_ai.yaml:22:        env:
+deployments/kubernetes_hajeen_ai.yaml:25:        resources:
+deployments/kubernetes_triton.yaml:8:  replicas: 1
+deployments/kubernetes_triton.yaml:19:        image: nvcr.io/nvidia/tritonserver:23.09-py3 # Use a suitable Triton image
+deployments/kubernetes_triton.yaml:20:        command: ["tritonserver"]
+deployments/kubernetes_triton.yaml:29:        resources:
+deployments/kubernetes_triton.yaml:37:        persistentVolumeClaim:
+deployments/kubernetes_vllm.yaml:8:  replicas: 1 # Typically 1 replica per GPU for vLLM
+deployments/kubernetes_vllm.yaml:19:        image: vllm/vllm-openai:latest # Use vLLM's OpenAI compatible server image
+deployments/kubernetes_vllm.yaml:22:        env:
+deployments/kubernetes_vllm.yaml:25:        resources:
+infra/k8s/api/deployment.yaml:10:  replicas: 3
+infra/k8s/api/deployment.yaml:36:        image: hajeen-platform/api:latest
+infra/k8s/api/deployment.yaml:46:        - secretRef:
+infra/k8s/api/deployment.yaml:47:            name: hajeen-secrets
+infra/k8s/api/deployment.yaml:48:        resources:
+infra/k8s/api/deployment.yaml:55:        livenessProbe:
+infra/k8s/api/deployment.yaml:62:        readinessProbe:
+infra/k8s/inference/gpu-deployment.yaml:10:  replicas: 2
+infra/k8s/inference/gpu-deployment.yaml:34:        image: hajeen-platform/inference:latest
+infra/k8s/inference/gpu-deployment.yaml:41:        env:
+infra/k8s/inference/gpu-deployment.yaml:51:        - secretRef:
+infra/k8s/inference/gpu-deployment.yaml:52:            name: hajeen-secrets
+infra/k8s/inference/gpu-deployment.yaml:53:        resources:
+infra/k8s/inference/gpu-deployment.yaml:62:        livenessProbe:
+infra/k8s/inference/gpu-deployment.yaml:69:        readinessProbe:
+infra/k8s/inference/gpu-deployment.yaml:82:        persistentVolumeClaim:
+infra/k8s/ingress/ingress.yaml:21:    secretName: hajeen-tls-secret
+infra/k8s/storage/persistent-volumes.yaml:10:  resources:
+infra/k8s/storage/persistent-volumes.yaml:23:  resources:
+infra/k8s/storage/persistent-volumes.yaml:36:  resources:
+infra/k8s/storage/persistent-volumes.yaml:49:  resources:
+infra/k8s/workers/deployment.yaml:9:  replicas: 4
+infra/k8s/workers/deployment.yaml:31:        image: hajeen-platform/worker:latest
+infra/k8s/workers/deployment.yaml:33:        env:
+infra/k8s/workers/deployment.yaml:41:        - secretRef:
+infra/k8s/workers/deployment.yaml:42:            name: hajeen-secrets
+infra/k8s/workers/deployment.yaml:43:        resources:
+infra/k8s/workers/deployment.yaml:50:        livenessProbe:
+infra/k8s/workers/deployment.yaml:52:            command:
+infra/k8s/workers/deployment.yaml:64:        persistentVolumeClaim:
+=== tests inventory ===
+123
+brain/tests/test_brain_components.py
+tests/ai/test_agents.py
+tests/ai/test_alignment.py
+tests/ai/test_chat.py
+tests/ai/test_data_intelligence.py
+tests/ai/test_embeddings.py
+tests/ai/test_evaluation.py
+tests/ai/test_inference.py
+tests/ai/test_multi_agent.py
+tests/ai/test_production.py
+tests/ai/test_rag.py
+tests/ai/test_security.py
+tests/ai/test_training.py
+tests/benchmark/test_components_benchmark.py
+tests/distributed_messaging/test_celery.py
+tests/distributed_messaging/test_kafka.py
+tests/distributed_messaging/test_redis_streams.py
+tests/integration/test_api_workflow.py
+tests/integration/test_brain_v3_cognitive.py
+tests/integration/test_full_pipeline.py
+tests/integration/test_full_processing_pipeline.py
+tests/integration/test_learning_pipeline_integration.py
+tests/integration/test_monitoring.py
+tests/integration/test_phase2_runtime_contract.py
+tests/integration/test_phase3_rag_runtime.py
+tests/integration/test_phase4_native_streaming.py
+tests/integration/test_phase5_agents_tools.py
+tests/integration/test_phase6_learning_coordinator.py
+tests/integration/test_phase6_learning_data.py
+tests/integration/test_phase6_training_registry.py
+tests/integration/test_phase7_self_evolution.py
+tests/integration/test_pipeline.py
+tests/integration/test_rag_pipeline.py
+tests/integration/test_security.py
+tests/integration/test_storage_persistence.py
+tests/integration/test_verified_base_registry.py
+tests/load/test_brain_load.py
+tests/production/failover/test_failover.py
+tests/production/gpu/test_gpu.py
+tests/production/load/test_api_load.py
+tests/production/security/test_security.py
+tests/production/stress/test_stress.py
+tests/self_evolution/test_continuous_learning_loop.py
+tests/self_evolution/test_curiosity_engine.py
+tests/self_evolution/test_episodic_memory.py
+tests/self_evolution/test_self_reflection_engine.py
+tests/stress/test_brain_stress.py
+tests/test_api.py
+tests/test_basic.py
+tests/test_dataset_manager.py
+tests/test_final_integration.py
+tests/test_health.py
+tests/test_phase65.py
+tests/test_phase6_celery.py
+tests/test_phase6_monitor.py
+tests/test_phase6_priority_queue.py
+tests/test_phase6_redis.py
+tests/test_phase6_retry.py
+tests/test_phase6_scheduler.py
+tests/test_phase7.py
+tests/test_phase8.py
+tests/test_preparation_pipeline.py
+tests/test_single_runtime_path.py
+tests/test_worker.py
+tests/unit/test_article_schema_phase2.py
+tests/unit/test_base_connector.py
+tests/unit/test_base_processor.py
+tests/unit/test_builder.py
+tests/unit/test_channels.py
+tests/unit/test_chunker.py
+tests/unit/test_cleaning_pipeline.py
+tests/unit/test_cli.py
+tests/unit/test_cognitive_layer_complete.py
+tests/unit/test_content_enricher.py
+tests/unit/test_content_filter.py
+tests/unit/test_continuous_learning_pipeline.py
+tests/unit/test_custom_connector.py
+tests/unit/test_data_transformer.py
+tests/unit/test_deduplicator.py
+tests/unit/test_demo_channel.py
+tests/unit/test_demo_storage_integration.py
+tests/unit/test_entity_extractor.py
+tests/unit/test_github_connector.py
+tests/unit/test_html_cleaner.py
+tests/unit/test_ingestion_http.py
+tests/unit/test_keyword_extractor.py
+tests/unit/test_language_filter.py
+tests/unit/test_memory_unification_runtime.py
+tests/unit/test_news_channel.py
+tests/unit/test_newsapi_connector.py
+tests/unit/test_phase1_runtime_contract.py
+tests/unit/test_phase3_channels.py
+tests/unit/test_phase3_connectors.py
+tests/unit/test_phase3_crawlers.py
+tests/unit/test_phase3_scheduler.py
+tests/unit/test_phase3_streams.py
+tests/unit/test_phase4_embeddings.py
+tests/unit/test_phase4_retrieval.py
+tests/unit/test_phase4_vector_store.py
+tests/unit/test_phase5_ai_core.py
+tests/unit/test_pii_filter.py
+tests/unit/test_pipeline_orchestrator.py
+tests/unit/test_pipeline_stages.py
+tests/unit/test_policy_filter.py
+tests/unit/test_quality_scorer.py
+tests/unit/test_reasoning_engine.py
+tests/unit/test_reddit_connector.py
+tests/unit/test_registry.py
+tests/unit/test_requests_fetcher.py
+tests/unit/test_robots_checker.py
+tests/unit/test_rss_parser.py
+tests/unit/test_schemas.py
+tests/unit/test_sitemap_parser.py
+tests/unit/test_spam_detector.py
+tests/unit/test_storage_phase3.py
+tests/unit/test_storage_phase3_part2.py
+tests/unit/test_summarizer.py
+tests/unit/test_text_cleaner.py
+tests/unit/test_text_normalizer.py
+tests/unit/test_tokenizer_wrapper.py
+tests/unit/test_topic_sentiment.py
+tests/unit/test_transformation_pipeline.py
+tests/unit/test_utils.py

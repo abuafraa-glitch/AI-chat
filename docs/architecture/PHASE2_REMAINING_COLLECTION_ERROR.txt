@@ -1,0 +1,247 @@
+=== errors ===
+104:      <Module test_embeddings.py>
+122:          <Function test_embed_texts_calls_engine>
+124:          <Function test_embed_documents>
+648:      <Function test_embedding_cache>
+649:      <Function test_embedding_storage>
+650:      <Function test_embedding_pipeline_chunks>
+651:      <Function test_embedding_pipeline_article>
+652:      <Function test_embedding_cache_hit>
+1611:          <Coroutine test_embed_single_job>
+1612:          <Coroutine test_embed_job_uses_cache>
+1613:          <Coroutine test_embed_batch_empty_returns_empty>
+1614:          <Coroutine test_embed_batch_multiple_jobs>
+1615:          <Coroutine test_embed_pipeline_handles_error_gracefully>
+1616:          <Coroutine test_embed_pipeline_truncates_long_text>
+1619:          <Coroutine test_embed_returns_result>
+1620:          <Coroutine test_embed_batch_returns_list>
+2269:==================================== ERRORS ====================================
+2270:____________________ ERROR collecting tests/test_phase7.py _____________________
+2272:    _ENGINE = run(_build_search_engine(_CHUNKS))
+2297:    self._model = SentenceTransformer(
+2326:    raise OSError(
+2327:E   OSError: sentence-transformers/all-MiniLM-L6-v2 does not appear to have a file named pytorch_model.bin or model.safetensors.
+2344:2026-08-22 00:05:55 [INFO] core.embeddings.embedding_manager: نموذج جديد أُنشئ: all-MiniLM-L6-v2
+2345:2026-08-22 00:06:03 [INFO] core.embeddings.sentence_transformer: تحميل نموذج: sentence-transformers/all-MiniLM-L6-v2
+2346:2026-08-22 00:06:03 [INFO] sentence_transformers.base.model: Loading SentenceTransformer model from sentence-transformers/all-MiniLM-L6-v2.
+2347:2026-08-22 00:06:03 [ERROR] core.embeddings.sentence_transformer: فشل تحميل النموذج: sentence-transformers/all-MiniLM-L6-v2 does not appear to have a file named pytorch_model.bin or model.safetensors.
+2391:ERROR tests/test_phase7.py - OSError: sentence-transformers/all-MiniLM-L6-v2 ...
+=== phase7 top 1-180 ===
+"""
+Section 7.10 — Phase 7 Integration Tests
+=========================================
+30 اختبار شامل لجميع مكوّنات Phase 7:
+  7.1 — Embedding Models Layer
+  7.2 — Chunk Embedding Pipeline
+  7.3 — Vector Storage (FAISS + SQLite)
+  7.4 — Semantic Search Engine
+  7.5 — Retriever Layer
+  7.6 — RAG Engine Foundation
+  7.9 — Search Metrics
+  7.10 — Full Integration
+"""
+from __future__ import annotations
+
+import asyncio
+import math
+import sys
+import time
+import traceback
+from pathlib import Path
+from typing import List
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# ─── helpers ───────────────────────────────────────────────────────────────
+
+PASS = "✓"
+FAIL = "✗"
+_results = []
+
+
+def test(name: str):
+    def decorator(fn):
+        def wrapper():
+            try:
+                fn()
+                _results.append((name, True, None))
+                print(f"  {PASS} {name}")
+            except Exception as exc:
+                _results.append((name, False, exc))
+                print(f"  {FAIL} FAIL: {exc}")
+                traceback.print_exc()
+        return wrapper
+    return decorator
+
+
+def run(coro):
+    return asyncio.run(coro)
+
+
+def approx(expected, abs_tol=0.01):
+    """تقريب بسيط بدل pytest.approx."""
+    class Approx:
+        def __eq__(self, actual):
+            return math.fabs(actual - expected) <= abs_tol
+        def __repr__(self):
+            return f"approx({expected}±{abs_tol})"
+    return Approx()
+
+
+# ─── Fixtures ──────────────────────────────────────────────────────────────
+
+def _make_chunks(n: int = 10):
+    from data_engine.processing.transformation.chunking_engine import (
+        ChunkingEngine, ChunkingConfig, ChunkingStrategy, DocumentChunk
+    )
+    import hashlib
+    engine = ChunkingEngine(ChunkingConfig(
+        strategy=ChunkingStrategy.FIXED,
+        chunk_size=150,
+        overlap=20,
+        min_chunk_chars=30,
+    ))
+    texts = [
+        "الذكاء الاصطناعي يُحدث ثورة في صناعة التكنولوجيا ويغيّر طريقة عملنا.",
+        "تعلم الآلة هو فرع من الذكاء الاصطناعي يُمكّن الأنظمة من التعلم من البيانات.",
+        "نماذج GPT وClaude غيّرت مفهوم التفاعل بين الإنسان والحاسوب الحديث.",
+        "البحث الدلالي يتجاوز مطابقة الكلمات ليفهم المعنى والسياق الكامل.",
+        "تخزين المتجهات يُتيح البحث السريع في ملايين الـ embeddings بكفاءة.",
+        "RAG تجمع بين الاسترجاع والتوليد لإنتاج إجابات دقيقة ومدعومة بالمصادر.",
+        "FAISS مكتبة Meta للبحث الفعّال في المتجهات والـ embeddings الكبيرة.",
+        "النماذج اللغوية تستخدم embeddings لتمثيل النصوص في فضاء متجه.",
+        "الاسترجاع المُعزَّز يُحسّن دقة النماذج اللغوية ويقلل الهلوسة.",
+        "أنظمة الأسئلة والأجوبة تعتمد على البحث الدلالي لإيجاد الإجابات.",
+    ]
+    all_chunks = []
+    for i, text in enumerate(texts[:n]):
+        chunks = engine.chunk_text(text * 3, article_id=f"art_{i:04d}")
+        if chunks:
+            c = chunks[0]
+            c.text = text
+            all_chunks.append(c)
+        else:
+            c = DocumentChunk(
+                chunk_id=f"chk_{i:04d}",
+                article_id=f"art_{i:04d}",
+                text=text,
+                token_count=len(text.split()),
+                char_count=len(text),
+                order=0,
+                content_hash=hashlib.md5(text.encode()).hexdigest()[:16],
+            )
+            all_chunks.append(c)
+    return all_chunks
+
+
+async def _build_search_engine(chunks):
+    from core.embeddings.embedding_manager import get_embedding_manager
+    from data_engine.storage.vector_store.faiss_client import FAISSVectorStore
+    from data_engine.storage.vector_store.base_vector_store import VectorEntry
+    from services.search.semantic_search import SemanticSearchEngine
+
+    manager = get_embedding_manager()
+    texts = [c.text for c in chunks]
+    emb_results = await manager.embed_batch(texts)
+
+    dim = emb_results[0].dimensions if emb_results else 384
+    store = FAISSVectorStore(dimensions=dim)
+    entries = [
+        VectorEntry(
+            id=f"vec_{i}",
+            vector=r.vector,
+            chunk_id=chunks[i].chunk_id,
+            article_id=chunks[i].article_id,
+            text=chunks[i].text,
+            model_name=r.model_name,
+            metadata={
+                "url": f"https://example.com/{chunks[i].article_id}",
+                "title": f"مقال {chunks[i].article_id}",
+            },
+        )
+        for i, r in enumerate(emb_results)
+    ]
+    store.add(entries)
+    engine = SemanticSearchEngine(vector_store=store, rerank=True)
+    return engine
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Section 7.1 — Embedding Models Layer
+# ═══════════════════════════════════════════════════════════════════════════
+
+print("\n" + "═" * 60)
+print("  Phase 7 — Vector Search + RAG Foundation Tests")
+print("═" * 60)
+
+print("\n[7.1 Embedding Models Layer]")
+
+
+@test("7.1.1 EmbeddingConfig defaults")
+def test_embedding_config():
+    from core.embeddings.base import EmbeddingConfig
+    cfg = EmbeddingConfig()
+    assert cfg.dimensions == 384
+    assert cfg.batch_size == 32
+    assert cfg.normalize_embeddings is True
+if __name__ == "__main__":
+    test_embedding_config()
+@test("7.1.2 SentenceTransformer load & embed")
+def test_st_embed():
+    from core.embeddings.sentence_transformer import SentenceTransformerModel
+    model = SentenceTransformerModel()
+    result = run(model.embed("اختبار النموذج الحقيقي"))
+    assert len(result.vector) > 0
+    assert result.dimensions > 0
+    print(f"     → dims={result.dimensions} latency={result.latency_ms:.1f}ms", end="")
+if __name__ == "__main__":
+    test_st_embed()
+@test("7.1.3 Batch Embedding (10 texts)")
+def test_st_batch():
+    from core.embeddings.sentence_transformer import SentenceTransformerModel
+    model = SentenceTransformerModel()
+    texts = [f"نص رقم {i} للاختبار" for i in range(10)]
+    results = run(model.embed_batch(texts))
+    assert len(results) == 10
+    assert all(len(r.vector) == results[0].dimensions for r in results)
+    print(f"     → {len(results)} embeddings, dims={results[0].dimensions}", end="")
+if __name__ == "__main__":
+    test_st_batch()
+=== direct calls remaining ===
+159:    test_embedding_config()
+169:    test_st_embed()
+180:    test_st_batch()
+188:    test_registry()
+200:    test_manager_health()
+212:    test_embed_100()
+230:    test_embed_stage_single()
+242:    test_embed_stage_batch()
+256:    test_embed_record_fields()
+285:    test_faiss_add()
+306:    test_faiss_search()
+328:    test_faiss_save_load()
+348:    test_sqlite_vector()
+366:    test_faiss_filter()
+387:    test_query_processor()
+396:    test_semantic_search_basic()
+408:    test_search_response_fields()
+424:    test_reranker()
+431:    test_hybrid_search()
+448:    test_vector_retriever()
+457:    test_hybrid_retriever()
+467:    test_multi_query_retriever()
+480:    test_context_assembler()
+490:    test_retrieval_to_text()
+517:    test_rag_basic()
+527:    test_rag_timings()
+540:    test_context_builder()
+557:    test_prompt_builder()
+572:    test_citation_manager()
+579:    test_rag_quick_context()
+598:    test_latency_tracker()
+610:    test_retrieval_evaluator()
+618:    test_dup_rate()
+631:    test_metrics_collector()
+645:    test_batch_eval()
+712:    test_full_pipeline()
+737:    test_full_rag()

@@ -1,0 +1,348 @@
+=== decorators and direct calls ===
+151:@test("7.1.1 EmbeddingConfig defaults")
+152:def test_embedding_config():
+158:test_embedding_config()
+161:@test("7.1.2 SentenceTransformer load & embed")
+162:def test_st_embed():
+169:test_st_embed()
+172:@test("7.1.3 Batch Embedding (10 texts)")
+173:def test_st_batch():
+181:test_st_batch()
+184:@test("7.1.4 EmbeddingRegistry.list_models()")
+185:def test_registry():
+190:test_registry()
+193:@test("7.1.5 EmbeddingManager singleton + health_check")
+194:def test_manager_health():
+203:test_manager_health()
+206:@test("7.1.6 Embed 100 texts — performance")
+207:def test_embed_100():
+216:test_embed_100()
+225:@test("7.2.1 ChunkEmbeddingStage — single chunk")
+226:def test_embed_stage_single():
+234:test_embed_stage_single()
+237:@test("7.2.2 ChunkEmbeddingStage — batch 10 chunks")
+238:def test_embed_stage_batch():
+247:test_embed_stage_batch()
+250:@test("7.2.3 ChunkEmbeddingRecord fields")
+251:def test_embed_record_fields():
+262:test_embed_record_fields()
+271:@test("7.3.1 FAISSVectorStore — add 100 vectors")
+272:def test_faiss_add():
+291:test_faiss_add()
+294:@test("7.3.2 FAISSVectorStore — similarity search top-5")
+295:def test_faiss_search():
+313:test_faiss_search()
+316:@test("7.3.3 FAISSVectorStore — save & load")
+317:def test_faiss_save_load():
+336:test_faiss_save_load()
+339:@test("7.3.4 SQLiteVectorIndex — add & cosine search")
+340:def test_sqlite_vector():
+357:test_sqlite_vector()
+360:@test("7.3.5 FAISSVectorStore — metadata filtering")
+361:def test_faiss_filter():
+376:test_faiss_filter()
+389:@test("7.4.1 QueryProcessor — Arabic question detection")
+390:def test_query_processor():
+397:test_query_processor()
+400:@test("7.4.2 SemanticSearchEngine — basic search")
+401:def test_semantic_search_basic():
+407:test_semantic_search_basic()
+410:@test("7.4.3 SearchResponse fields validation")
+411:def test_search_response_fields():
+420:test_search_response_fields()
+423:@test("7.4.4 Reranker — diversity penalty")
+424:def test_reranker():
+437:test_reranker()
+440:@test("7.4.5 Hybrid Search")
+441:def test_hybrid_search():
+445:test_hybrid_search()
+454:@test("7.5.1 VectorRetriever — retrieve top-5")
+455:def test_vector_retriever():
+462:test_vector_retriever()
+465:@test("7.5.2 HybridRetriever")
+466:def test_hybrid_retriever():
+472:test_hybrid_retriever()
+475:@test("7.5.3 MultiQueryRetriever — variant generation")
+476:def test_multi_query_retriever():
+483:test_multi_query_retriever()
+486:@test("7.5.4 ContextAssembler — build context")
+487:def test_context_assembler():
+497:test_context_assembler()
+500:@test("7.5.5 RetrievalResult.to_context_text()")
+501:def test_retrieval_to_text():
+508:test_retrieval_to_text()
+526:@test("7.6.1 RAGPipeline — basic run")
+527:def test_rag_basic():
+535:test_rag_basic()
+538:@test("7.6.2 RAGPipeline — stage timings present")
+539:def test_rag_timings():
+546:test_rag_timings()
+549:@test("7.6.3 ContextBuilder — token limit respected")
+550:def test_context_builder():
+560:test_context_builder()
+563:@test("7.6.4 PromptBuilder — Arabic QA template")
+564:def test_prompt_builder():
+578:test_prompt_builder()
+581:@test("7.6.5 CitationManager — format references")
+582:def test_citation_manager():
+594:test_citation_manager()
+597:@test("7.6.6 RAGPipeline.quick_context()")
+598:def test_rag_quick_context():
+602:test_rag_quick_context()
+611:@test("7.9.1 LatencyTracker — record & stats")
+612:def test_latency_tracker():
+621:test_latency_tracker()
+624:@test("7.9.2 RetrievalEvaluator — precision & recall")
+625:def test_retrieval_evaluator():
+634:test_retrieval_evaluator()
+637:@test("7.9.3 RetrievalEvaluator — duplicate detection")
+638:def test_dup_rate():
+643:test_dup_rate()
+646:@test("7.9.4 SearchMetricsCollector — summary")
+647:def test_metrics_collector():
+657:test_metrics_collector()
+660:@test("7.9.5 RetrievalEvaluator — batch evaluation")
+661:def test_batch_eval():
+672:test_batch_eval()
+681:@test("7.10.1 Full pipeline: chunks → embed → FAISS → search")
+682:def test_full_pipeline():
+739:test_full_pipeline()
+742:@test("7.10.2 Full RAG pipeline end-to-end")
+743:def test_full_rag():
+765:test_full_rag()
+=== embed stage source ===
+"""Section 7.2 — Chunk Embedding Pipeline Stage."""
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+from dataclasses import dataclass, field
+from typing import List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ChunkEmbeddingRecord:
+    """سجل embedding كامل لـ chunk واحد."""
+    chunk_id: str
+    article_id: str
+    text: str
+    vector: List[float]
+    model_name: str
+    embedding_dim: int
+    created_at: float = field(default_factory=time.time)
+    latency_ms: float = 0.0
+    token_count: int = 0
+    retry_count: int = 0
+
+    def to_dict(self) -> dict:
+        return {
+            "chunk_id": self.chunk_id,
+            "article_id": self.article_id,
+            "model_name": self.model_name,
+            "embedding_dim": self.embedding_dim,
+            "latency_ms": round(self.latency_ms, 3),
+            "token_count": self.token_count,
+            "vector_preview": self.vector[:4],
+        }
+
+
+@dataclass
+class EmbedStageResult:
+    """نتيجة مرحلة الـ embedding الكاملة."""
+    article_id: str
+    total_chunks: int
+    embedded: int
+    failed: int
+    records: List[ChunkEmbeddingRecord] = field(default_factory=list)
+    total_ms: float = 0.0
+    errors: List[str] = field(default_factory=list)
+
+    @property
+    def success_rate(self) -> float:
+        if self.total_chunks == 0:
+            return 0.0
+        return self.embedded / self.total_chunks
+
+    def to_dict(self) -> dict:
+        return {
+            "article_id": self.article_id,
+            "total_chunks": self.total_chunks,
+            "embedded": self.embedded,
+            "failed": self.failed,
+            "success_rate": round(self.success_rate, 3),
+            "total_ms": round(self.total_ms, 2),
+            "errors": self.errors,
+        }
+
+
+class ChunkEmbeddingStage:
+    """
+    مرحلة توليد الـ embeddings للـ chunks.
+
+    التدفق:
+        Article
+          ↓ chunking (يُفترض أنه تمّ مسبقاً)
+          ↓ ChunkEmbeddingStage.process(chunks)
+          ↓ EmbedStageResult (records مع vectors)
+    """
+
+    def __init__(
+        self,
+        batch_size: int = 32,
+        max_retries: int = 3,
+        retry_delay_s: float = 0.5,
+        model_name: Optional[str] = None,
+    ):
+        self.batch_size = batch_size
+        self.max_retries = max_retries
+        self.retry_delay_s = retry_delay_s
+        self.model_name = model_name
+        self._manager = None
+
+    def _get_manager(self):
+        if self._manager is None:
+            from core.embeddings.embedding_manager import get_embedding_manager
+            self._manager = get_embedding_manager()
+        return self._manager
+
+    async def _embed_with_retry(
+        self,
+        texts: List[str],
+        chunk_ids: List[str],
+        article_id: str,
+    ):
+        """تضمين دُفعة مع إعادة المحاولة عند الفشل."""
+        manager = self._get_manager()
+        last_error = None
+        for attempt in range(self.max_retries):
+            try:
+                return await manager.embed_batch(
+                    texts,
+                    chunk_ids=chunk_ids,
+                    article_id=article_id,
+                    model_name=self.model_name,
+                )
+            except Exception as exc:
+                last_error = exc
+                logger.warning(
+                    f"محاولة {attempt+1}/{self.max_retries} فشلت: {exc}"
+                )
+                await asyncio.sleep(self.retry_delay_s * (attempt + 1))
+        raise RuntimeError(f"فشل embedding بعد {self.max_retries} محاولات: {last_error}")
+
+    async def process(self, chunks, article_id: str) -> EmbedStageResult:
+        """
+        يستقبل قائمة DocumentChunk أو أي كائن يحمل (chunk_id, text).
+        يُعيد EmbedStageResult مع جميع الـ records.
+        """
+        t0 = time.perf_counter()
+        total = len(chunks)
+        result = EmbedStageResult(article_id=article_id, total_chunks=total, embedded=0, failed=0)
+
+        if not chunks:
+            return result
+
+        # تقسيم إلى batches
+        for batch_start in range(0, total, self.batch_size):
+            batch = chunks[batch_start : batch_start + self.batch_size]
+            texts = [c.text for c in batch]
+            ids = [c.chunk_id for c in batch]
+
+            try:
+                embeddings = await self._embed_with_retry(texts, ids, article_id)
+                for chunk, emb in zip(batch, embeddings):
+                    record = ChunkEmbeddingRecord(
+                        chunk_id=chunk.chunk_id,
+                        article_id=article_id,
+                        text=chunk.text,
+                        vector=emb.vector,
+                        model_name=emb.model_name,
+                        embedding_dim=emb.dimensions,
+                        latency_ms=emb.latency_ms,
+                        token_count=emb.token_count,
+                    )
+                    result.records.append(record)
+                    result.embedded += 1
+            except Exception as exc:
+                logger.error(f"batch embedding فشل: {exc}")
+                result.failed += len(batch)
+                result.errors.append(str(exc))
+
+        result.total_ms = (time.perf_counter() - t0) * 1000
+        logger.info(
+            f"embed_stage: {result.embedded}/{total} chunks — {result.total_ms:.1f}ms"
+        )
+        return result
+
+    async def process_single(self, chunk, article_id: str) -> Optional[ChunkEmbeddingRecord]:
+        """تضمين chunk واحد."""
+        try:
+            manager = self._get_manager()
+            emb = await manager.embed(
+                chunk.text,
+                chunk_id=chunk.chunk_id,
+                article_id=article_id,
+                model_name=self.model_name,
+            )
+            return ChunkEmbeddingRecord(
+                chunk_id=chunk.chunk_id,
+                article_id=article_id,
+                text=chunk.text,
+                vector=emb.vector,
+                model_name=emb.model_name,
+                embedding_dim=emb.dimensions,
+                latency_ms=emb.latency_ms,
+                token_count=emb.token_count,
+            )
+        except Exception as exc:
+            logger.error(f"embed_single فشل لـ {chunk.chunk_id}: {exc}")
+            return None
+=== model defaults ===
+core/embeddings/base.py:11:class EmbeddingConfig:
+core/embeddings/base.py:13:    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+core/embeddings/base.py:19:    cache_dir: Optional[str] = None
+core/embeddings/base.py:22:    local_files_only: bool = True
+core/embeddings/base.py:30:    model_name: str
+core/embeddings/base.py:42:            "model_name": self.model_name,
+core/embeddings/base.py:59:    def model_name(self) -> str:
+core/embeddings/base.py:60:        return self.config.model_name
+core/embeddings/base.py:96:            model_name=self.model_name,
+core/embeddings/base.py:125:                model_name=self.model_name,
+core/embeddings/embedding_engine.py:20:        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+core/embeddings/embedding_engine.py:24:        self.model_name = model_name
+core/embeddings/embedding_engine.py:38:            logger.info("Loading embedding model: %s", self.model_name)
+core/embeddings/embedding_engine.py:39:            self._model = self._loader.load(self.model_name)
+core/embeddings/embedding_manager.py:21:        self._default_model_name = default_model
+core/embeddings/embedding_manager.py:24:            model_name="sentence-transformers/all-MiniLM-L6-v2",
+core/embeddings/embedding_manager.py:30:        model_name: Optional[str] = None,
+core/embeddings/embedding_manager.py:33:        name = model_name or self._default_model_name
+core/embeddings/embedding_manager.py:36:                model_name="sentence-transformers/all-MiniLM-L6-v2"
+core/embeddings/embedding_manager.py:55:        model_name: Optional[str] = None,
+core/embeddings/embedding_manager.py:58:        model = self._get_or_create(model_name)
+core/embeddings/embedding_manager.py:66:        model_name: Optional[str] = None,
+core/embeddings/embedding_manager.py:71:        model = self._get_or_create(model_name)
+core/embeddings/embedding_manager.py:77:        model_name: Optional[str] = None,
+core/embeddings/embedding_manager.py:80:        results = await self.embed_batch(texts, model_name=model_name)
+core/embeddings/embedding_manager.py:89:            "model": self._default_model_name,
+core/embeddings/embedding_models.py:13:    def load(self, model_name: str) -> Any:
+core/embeddings/embedding_models.py:16:            model = SentenceTransformer(model_name)
+core/embeddings/embedding_models.py:17:            logger.info("SentenceTransformer loaded: %s", model_name)
+core/embeddings/embedding_models.py:23:            return self._load_hf(model_name)
+core/embeddings/embedding_models.py:25:    def _load_hf(self, model_name: str) -> Any:
+core/embeddings/embedding_models.py:28:            tokenizer = AutoTokenizer.from_pretrained(model_name)
+core/embeddings/embedding_models.py:29:            model = AutoModel.from_pretrained(model_name)
+core/embeddings/embedding_models.py:32:            logger.error("Cannot load embedding model '%s': %s", model_name, exc)
+core/embeddings/sentence_transformer.py:28:            model_source = configured_path if configured_path and Path(configured_path).is_dir() else self.config.model_name
+core/embeddings/sentence_transformer.py:30:            model_kwargs = {"local_files_only": self.config.local_files_only}
+core/embeddings/sentence_transformer.py:34:                cache_folder=self.config.cache_dir,
+data_engine/pipelines/stages/embed_stage.py:20:    model_name: str
+data_engine/pipelines/stages/embed_stage.py:31:            "model_name": self.model_name,
+data_engine/pipelines/stages/embed_stage.py:84:        model_name: Optional[str] = None,
+data_engine/pipelines/stages/embed_stage.py:89:        self.model_name = model_name
+data_engine/pipelines/stages/embed_stage.py:113:                    model_name=self.model_name,
+data_engine/pipelines/stages/embed_stage.py:149:                        model_name=emb.model_name,
+data_engine/pipelines/stages/embed_stage.py:175:                model_name=self.model_name,
+data_engine/pipelines/stages/embed_stage.py:182:                model_name=emb.model_name,

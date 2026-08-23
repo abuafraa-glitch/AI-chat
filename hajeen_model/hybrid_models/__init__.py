@@ -21,7 +21,7 @@ __author__ = "Hajeen Team"
 __license__ = "MIT"
 
 from hajeen_model.config.hajeen_config import HajeenConfig
-from hajeen_model.transformer.hajeen_model import HajeenModel, HajeenForCausalLM
+from .transformer.hajeen_model import HajeenModel, HajeenForCausalLM
 
 __all__ = [
     "HajeenConfig",

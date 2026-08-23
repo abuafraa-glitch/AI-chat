@@ -1,0 +1,516 @@
+=== base config ===
+"""Base abstractions for embedding models."""
+from __future__ import annotations
+
+import time
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import List, Optional
+
+
+@dataclass
+class EmbeddingConfig:
+    """إعدادات نموذج الـ embedding."""
+    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    dimensions: int = 384
+    batch_size: int = 32
+    max_seq_length: int = 256
+    normalize_embeddings: bool = True
+    device: str = "cpu"
+    cache_dir: Optional[str] = None
+    show_progress: bool = False
+    # يمنع التنزيلات البعيدة غير المتوقعة؛ يمكن فتحها صراحةً في بيئة تجهيز النموذج.
+    local_files_only: bool = True
+
+
+@dataclass
+class EmbeddingResult:
+    """نتيجة عملية embedding واحدة."""
+    text: str
+    vector: List[float]
+    model_name: str
+    dimensions: int
+    latency_ms: float
+    token_count: int = 0
+    cached: bool = False
+    chunk_id: Optional[str] = None
+    article_id: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        return {
+            "chunk_id": self.chunk_id,
+            "article_id": self.article_id,
+            "model_name": self.model_name,
+            "dimensions": self.dimensions,
+            "latency_ms": round(self.latency_ms, 3),
+            "token_count": self.token_count,
+            "cached": self.cached,
+            "vector_preview": self.vector[:5],
+        }
+
+
+class BaseEmbeddingModel(ABC):
+    """الواجهة المجردة لجميع نماذج الـ embedding."""
+
+    def __init__(self, config: EmbeddingConfig):
+        self.config = config
+        self._loaded = False
+
+    @property
+    def model_name(self) -> str:
+        return self.config.model_name
+
+    @property
+    def dimensions(self) -> int:
+        return self.config.dimensions
+
+    @property
+    def is_loaded(self) -> bool:
+        return self._loaded
+
+    @abstractmethod
+    def load(self) -> None:
+        """تحميل النموذج (lazy loading)."""
+        ...
+
+    def ensure_loaded(self) -> None:
+        if not self._loaded:
+            self.load()
+
+    @abstractmethod
+    def _encode_batch(self, texts: List[str]) -> List[List[float]]:
+        """الترميز الداخلي (synchronous)."""
+        ...
+
+    async def embed(self, text: str, chunk_id: Optional[str] = None,
+                    article_id: Optional[str] = None) -> EmbeddingResult:
+        """تضمين نص واحد."""
+        import asyncio
+        self.ensure_loaded()
+        t0 = time.perf_counter()
+        vectors = await asyncio.to_thread(self._encode_batch, [text])
+        ms = (time.perf_counter() - t0) * 1000
+        token_count = len(text.split())
+        return EmbeddingResult(
+            text=text,
+            vector=vectors[0],
+            model_name=self.model_name,
+            dimensions=self.dimensions,
+            latency_ms=ms,
+            token_count=token_count,
+            chunk_id=chunk_id,
+            article_id=article_id,
+        )
+
+    async def embed_batch(
+        self,
+        texts: List[str],
+        chunk_ids: Optional[List[str]] = None,
+        article_id: Optional[str] = None,
+    ) -> List[EmbeddingResult]:
+        """تضمين دُفعة من النصوص."""
+        import asyncio
+        if not texts:
+            return []
+        self.ensure_loaded()
+        t0 = time.perf_counter()
+        vectors = await asyncio.to_thread(self._encode_batch, texts)
+        total_ms = (time.perf_counter() - t0) * 1000
+        per_ms = total_ms / len(texts)
+        results = []
+        for i, (text, vec) in enumerate(zip(texts, vectors)):
+            cid = chunk_ids[i] if chunk_ids else None
+            results.append(EmbeddingResult(
+                text=text,
+                vector=vec,
+                model_name=self.model_name,
+                dimensions=self.dimensions,
+                latency_ms=per_ms,
+                token_count=len(text.split()),
+                chunk_id=cid,
+                article_id=article_id,
+            ))
+        return results
+
+    async def health_check(self) -> bool:
+        try:
+            result = await self.embed("health check test")
+            return len(result.vector) == self.dimensions
+        except Exception:
+            return False
+=== test phase7 top ===
+"""
+Section 7.10 — Phase 7 Integration Tests
+=========================================
+30 اختبار شامل لجميع مكوّنات Phase 7:
+  7.1 — Embedding Models Layer
+  7.2 — Chunk Embedding Pipeline
+  7.3 — Vector Storage (FAISS + SQLite)
+  7.4 — Semantic Search Engine
+  7.5 — Retriever Layer
+  7.6 — RAG Engine Foundation
+  7.9 — Search Metrics
+  7.10 — Full Integration
+"""
+from __future__ import annotations
+
+import asyncio
+import math
+import sys
+import time
+import traceback
+from pathlib import Path
+from typing import List
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# ─── helpers ───────────────────────────────────────────────────────────────
+
+PASS = "✓"
+FAIL = "✗"
+_results = []
+
+
+def test(name: str):
+    def decorator(fn):
+        def wrapper():
+            try:
+                fn()
+                _results.append((name, True, None))
+                print(f"  {PASS} {name}")
+            except Exception as exc:
+                _results.append((name, False, exc))
+                print(f"  {FAIL} FAIL: {exc}")
+                traceback.print_exc()
+        return wrapper
+    return decorator
+
+
+def run(coro):
+    return asyncio.run(coro)
+
+
+def approx(expected, abs_tol=0.01):
+    """تقريب بسيط بدل pytest.approx."""
+    class Approx:
+        def __eq__(self, actual):
+            return math.fabs(actual - expected) <= abs_tol
+        def __repr__(self):
+            return f"approx({expected}±{abs_tol})"
+    return Approx()
+
+
+# ─── Fixtures ──────────────────────────────────────────────────────────────
+
+def _make_chunks(n: int = 10):
+    from data_engine.processing.transformation.chunking_engine import (
+        ChunkingEngine, ChunkingConfig, ChunkingStrategy, DocumentChunk
+    )
+    import hashlib
+    engine = ChunkingEngine(ChunkingConfig(
+        strategy=ChunkingStrategy.FIXED,
+        chunk_size=150,
+        overlap=20,
+        min_chunk_chars=30,
+    ))
+    texts = [
+        "الذكاء الاصطناعي يُحدث ثورة في صناعة التكنولوجيا ويغيّر طريقة عملنا.",
+        "تعلم الآلة هو فرع من الذكاء الاصطناعي يُمكّن الأنظمة من التعلم من البيانات.",
+        "نماذج GPT وClaude غيّرت مفهوم التفاعل بين الإنسان والحاسوب الحديث.",
+        "البحث الدلالي يتجاوز مطابقة الكلمات ليفهم المعنى والسياق الكامل.",
+        "تخزين المتجهات يُتيح البحث السريع في ملايين الـ embeddings بكفاءة.",
+        "RAG تجمع بين الاسترجاع والتوليد لإنتاج إجابات دقيقة ومدعومة بالمصادر.",
+        "FAISS مكتبة Meta للبحث الفعّال في المتجهات والـ embeddings الكبيرة.",
+        "النماذج اللغوية تستخدم embeddings لتمثيل النصوص في فضاء متجه.",
+        "الاسترجاع المُعزَّز يُحسّن دقة النماذج اللغوية ويقلل الهلوسة.",
+        "أنظمة الأسئلة والأجوبة تعتمد على البحث الدلالي لإيجاد الإجابات.",
+    ]
+    all_chunks = []
+    for i, text in enumerate(texts[:n]):
+        chunks = engine.chunk_text(text * 3, article_id=f"art_{i:04d}")
+        if chunks:
+            c = chunks[0]
+            c.text = text
+            all_chunks.append(c)
+        else:
+            c = DocumentChunk(
+                chunk_id=f"chk_{i:04d}",
+                article_id=f"art_{i:04d}",
+                text=text,
+                token_count=len(text.split()),
+                char_count=len(text),
+                order=0,
+                content_hash=hashlib.md5(text.encode()).hexdigest()[:16],
+            )
+            all_chunks.append(c)
+    return all_chunks
+
+
+async def _build_search_engine(chunks):
+    from core.embeddings.embedding_manager import get_embedding_manager
+    from data_engine.storage.vector_store.faiss_client import FAISSVectorStore
+    from data_engine.storage.vector_store.base_vector_store import VectorEntry
+    from services.search.semantic_search import SemanticSearchEngine
+
+    manager = get_embedding_manager()
+    texts = [c.text for c in chunks]
+    emb_results = await manager.embed_batch(texts)
+
+    dim = emb_results[0].dimensions if emb_results else 384
+    store = FAISSVectorStore(dimensions=dim)
+    entries = [
+        VectorEntry(
+            id=f"vec_{i}",
+            vector=r.vector,
+            chunk_id=chunks[i].chunk_id,
+            article_id=chunks[i].article_id,
+            text=chunks[i].text,
+            model_name=r.model_name,
+            metadata={
+                "url": f"https://example.com/{chunks[i].article_id}",
+                "title": f"مقال {chunks[i].article_id}",
+            },
+        )
+        for i, r in enumerate(emb_results)
+    ]
+    store.add(entries)
+    engine = SemanticSearchEngine(vector_store=store, rerank=True)
+    return engine
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Section 7.1 — Embedding Models Layer
+# ═══════════════════════════════════════════════════════════════════════════
+
+print("\n" + "═" * 60)
+print("  Phase 7 — Vector Search + RAG Foundation Tests")
+print("═" * 60)
+
+print("\n[7.1 Embedding Models Layer]")
+
+
+@test("7.1.1 EmbeddingConfig defaults")
+def test_embedding_config():
+    from core.embeddings.base import EmbeddingConfig
+    cfg = EmbeddingConfig()
+    assert cfg.dimensions == 384
+    assert cfg.batch_size == 32
+    assert cfg.normalize_embeddings is True
+test_embedding_config()
+
+
+@test("7.1.2 SentenceTransformer load & embed")
+def test_st_embed():
+    from core.embeddings.sentence_transformer import SentenceTransformerModel
+    model = SentenceTransformerModel()
+    result = run(model.embed("اختبار النموذج الحقيقي"))
+    assert len(result.vector) > 0
+    assert result.dimensions > 0
+    print(f"     → dims={result.dimensions} latency={result.latency_ms:.1f}ms", end="")
+test_st_embed()
+
+
+@test("7.1.3 Batch Embedding (10 texts)")
+def test_st_batch():
+    from core.embeddings.sentence_transformer import SentenceTransformerModel
+    model = SentenceTransformerModel()
+    texts = [f"نص رقم {i} للاختبار" for i in range(10)]
+    results = run(model.embed_batch(texts))
+    assert len(results) == 10
+    assert all(len(r.vector) == results[0].dimensions for r in results)
+    print(f"     → {len(results)} embeddings, dims={results[0].dimensions}", end="")
+test_st_batch()
+
+
+@test("7.1.4 EmbeddingRegistry.list_models()")
+def test_registry():
+    from core.embeddings.embedding_registry import EmbeddingRegistry
+    models = EmbeddingRegistry.list_models()
+    assert len(models) >= 1
+    assert "all-MiniLM-L6-v2" in models
+test_registry()
+
+
+@test("7.1.5 EmbeddingManager singleton + health_check")
+def test_manager_health():
+    from core.embeddings.embedding_manager import get_embedding_manager
+    m1 = get_embedding_manager()
+    m2 = get_embedding_manager()
+    assert m1 is m2
+    health = run(m1.health_check())
+    assert health["status"] == "ok"
+    assert health["dimensions"] > 0
+    print(f"     → {health['dimensions']} dims", end="")
+test_manager_health()
+
+
+@test("7.1.6 Embed 100 texts — performance")
+def test_embed_100():
+    from core.embeddings.embedding_manager import get_embedding_manager
+    manager = get_embedding_manager()
+    texts = [f"نص رقم {i} لقياس الأداء في توليد الـ embeddings" for i in range(100)]
+    t0 = time.perf_counter()
+    results = run(manager.embed_batch(texts))
+    ms = (time.perf_counter() - t0) * 1000
+    assert len(results) == 100
+    print(f"     → 100 embeddings في {ms:.0f}ms ({ms/100:.1f}ms/text)", end="")
+test_embed_100()
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Section 7.2 — Chunk Embedding Pipeline
+# ═══════════════════════════════════════════════════════════════════════════
+
+print("\n\n[7.2 Chunk Embedding Pipeline]")
+
+
+@test("7.2.1 ChunkEmbeddingStage — single chunk")
+def test_embed_stage_single():
+    from data_engine.pipelines.stages.embed_stage import ChunkEmbeddingStage
+    chunks = _make_chunks(1)
+    stage = ChunkEmbeddingStage()
+    record = run(stage.process_single(chunks[0], chunks[0].article_id))
+    assert record is not None
+    assert len(record.vector) > 0
+    assert record.embedding_dim > 0
+test_embed_stage_single()
+
+
+@test("7.2.2 ChunkEmbeddingStage — batch 10 chunks")
+def test_embed_stage_batch():
+    from data_engine.pipelines.stages.embed_stage import ChunkEmbeddingStage
+    chunks = _make_chunks(10)
+    stage = ChunkEmbeddingStage(batch_size=5)
+    result = run(stage.process(chunks, "article_batch"))
+    assert result.embedded == 10
+    assert result.failed == 0
+    assert len(result.records) == 10
+    print(f"     → {result.embedded} embedded في {result.total_ms:.1f}ms", end="")
+test_embed_stage_batch()
+
+
+@test("7.2.3 ChunkEmbeddingRecord fields")
+def test_embed_record_fields():
+    from data_engine.pipelines.stages.embed_stage import ChunkEmbeddingStage
+    chunks = _make_chunks(1)
+    stage = ChunkEmbeddingStage()
+    result = run(stage.process(chunks, "art_001"))
+    record = result.records[0]
+    assert record.chunk_id
+    assert record.article_id == "art_001"
+    assert record.model_name != ""
+    assert record.embedding_dim > 0
+    assert record.latency_ms >= 0
+test_embed_record_fields()
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Section 7.3 — Vector Storage (FAISS + SQLite)
+# ═══════════════════════════════════════════════════════════════════════════
+
+print("\n\n[7.3 Vector Storage Layer — FAISS]")
+
+
+@test("7.3.1 FAISSVectorStore — add 100 vectors")
+def test_faiss_add():
+    import numpy as np
+    from data_engine.storage.vector_store.faiss_client import FAISSVectorStore
+    from data_engine.storage.vector_store.base_vector_store import VectorEntry
+    rng = np.random.default_rng(0)
+    store = FAISSVectorStore(dimensions=64)
+    entries = [
+        VectorEntry(
+            id=f"v{i}",
+            vector=(rng.standard_normal(64) / (np.linalg.norm(rng.standard_normal(64)) + 1e-9)).tolist(),
+            chunk_id=f"chk_{i}", article_id=f"art_{i % 10}",
+            text=f"نص {i}", model_name="test",
+        )
+        for i in range(100)
+    ]
+    added = store.add(entries)
+    assert added == 100
+    assert store.stats().total_vectors == 100
+    print(f"     → {store.stats().total_vectors} vectors في FAISS", end="")
+=== pytest config files ===
+./pyproject.toml
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "I"]
+fix = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+pythonpath = ["."]
+addopts = "-v"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+./tests/conftest.py
+"""pytest configuration and shared fixtures for all test suites."""
+
+from __future__ import annotations
+
+import asyncio
+import os
+from pathlib import Path
+
+import pytest
+
+# API integration fixtures are functional tests, not authentication tests.
+# Production keeps ENABLE_AUTH=true by default; tests opt out explicitly.
+os.environ.setdefault("ENABLE_AUTH", "false")
+
+
+@pytest.fixture
+def brain_mock():
+    """Legacy fixture name backed by the real Brain runtime only.
+
+    Load tests must never substitute a production mock.  When no verified
+    local checkpoint is configured, the test is skipped explicitly and the
+    closure report records REAL_HAJEEN_MODEL as unavailable.
+    """
+    checkpoint = os.getenv("HAJEEN_LOCAL_MODEL_PATH") or os.getenv("REAL_HAJEEN_MODEL_PATH")
+    if not checkpoint or not Path(checkpoint).exists():
+        pytest.skip("REAL_HAJEEN_MODEL unavailable: no verified local checkpoint")
+    from brain.brain_v3 import HajeenBrainV3
+    return HajeenBrainV3()
+
+
+def pytest_configure(config):
+    """إعداد pytest markers."""
+    config.addinivalue_line("markers", "asyncio: mark test as async")
+
+
+@pytest.fixture(autouse=True)
+def ensure_default_event_loop():
+    """Keep legacy synchronous tests compatible with Python 3.12 loop lifecycle."""
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+    yield
+
+
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    """Use the default asyncio event loop policy."""
+    return asyncio.DefaultEventLoopPolicy()
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create a single shared event loop for the test session."""
+    policy = asyncio.DefaultEventLoopPolicy()
+    loop = policy.new_event_loop()
+    asyncio.set_event_loop(loop)
+    yield loop
+    loop.close()

@@ -1,0 +1,1195 @@
+[00mmaster_filelist.txt[0m
+├── [00m.gitignore[0m
+├── [01;34m.phase5_audit[0m
+│   ├── [00maudit.md[0m
+│   ├── [00mcall_graph.md[0m
+│   ├── [00minventory.txt[0m
+│   └── [00mreferences.txt[0m
+├── [01;34m.phase6_audit[0m
+│   ├── [00mauthority_matrix.md[0m
+│   ├── [00mlifecycle_map.md[0m
+│   ├── [00mraw_audit.txt[0m
+│   └── [00mselected_sources.txt[0m
+├── [01;34m.phase7_audit[0m
+│   ├── [00maudit.md[0m
+│   ├── [00mauthority_matrix.md[0m
+│   ├── [00mcall_graph.md[0m
+│   ├── [00minventory.txt[0m
+│   ├── [00mlifecycle_map.md[0m
+│   └── [00mselected_sources.md[0m
+├── [01;34m.phase8_audit[0m
+│   ├── [00martifact_map.md[0m
+│   ├── [00maudit.md[0m
+│   ├── [00mauthority_matrix.md[0m
+│   ├── [00mcall_graph.md[0m
+│   ├── [00mdeployment_map.md[0m
+│   ├── [00minventory.txt[0m
+│   ├── [00mmodel_runtime_map.md[0m
+│   └── [00mselected_sources.md[0m
+├── [01;34m.phase8_hybrid_audit[0m
+│   └── [00mbackbone_sources.md[0m
+├── [00mHAJEEN_HYBRID_MODEL_BLUEPRINT.md[0m
+├── [00mMakefile[0m
+├── [00mPHASE7_FINAL_REPORT.md[0m
+├── [00mPHASE8_FINAL_REPORT.md[0m
+├── [00m__init__.py[0m
+├── [01;34mapi[0m
+│   ├── [00m__init__.py[0m
+│   ├── [00mdependencies.py[0m
+│   ├── [00mmain.py[0m
+│   └── [01;34mv1[0m
+│       ├── [00m__init__.py[0m
+│       ├── [01;34mai[0m
+│       │   ├── [00m__init__.py[0m
+│       │   ├── [00mchat.py[0m
+│       │   ├── [00mcompletion.py[0m
+│       │   ├── [00membeddings.py[0m
+│       │   ├── [00mhealth.py[0m
+│       │   ├── [00mmodels.py[0m
+│       │   ├── [00mrerank.py[0m
+│       │   ├── [00mrouter.py[0m
+│       │   └── [00mwebsocket.py[0m
+│       ├── [01;34mauth[0m
+│       │   ├── [00m__init__.py[0m
+│       │   └── [00mrouter.py[0m
+│       ├── [01;34mchannels[0m
+│       │   ├── [00m__init__.py[0m
+│       │   └── [00mrouter.py[0m
+│       ├── [01;34membeddings[0m
+│       │   ├── [00m__init__.py[0m
+│       │   └── [00mrouter.py[0m
+│       ├── [00mhajeen_model_router.py[0m
+│       ├── [01;34mingestion[0m
+│       │   └── [00m__init__.py[0m
+│       ├── [00mrouter.py[0m
+│       ├── [01;34msearch[0m
+│       │   ├── [00m__init__.py[0m
+│       │   └── [00mrouter.py[0m
+│       ├── [01;34mtasks[0m
+│       │   ├── [00m__init__.py[0m
+│       │   └── [00mrouter.py[0m
+│       └── [01;34mwebhooks[0m
+│           └── [00m__init__.py[0m
+├── [01;34martifacts[0m
+│   └── [01;34mbase[0m
+│       └── [01;34mqwen3-30b-a3b[0m
+│           └── [00mbase_model_contract.json[0m
+├── [01;34mbrain[0m
+│   ├── [00mREADME.md[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34mapi[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mbrain_router.py[0m
+│   ├── [00mbrain_v3.py[0m
+│   ├── [01;34mcognitive_layer[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mcognitive_compiler.py[0m
+│   │   ├── [00mcognitive_constitution.py[0m
+│   │   ├── [00mcognitive_dna.py[0m
+│   │   ├── [00mcognitive_event_system.py[0m
+│   │   ├── [00mcognitive_evolution_protocol.py[0m
+│   │   ├── [00mcognitive_version_control.py[0m
+│   │   ├── [00mconcept_engine.py[0m
+│   │   ├── [00mcontext_analyzer.py[0m
+│   │   ├── [00mcuriosity_engine.py[0m
+│   │   ├── [00mdecision_engine.py[0m
+│   │   ├── [00mdream_engine.py[0m
+│   │   ├── [00mevidence_court.py[0m
+│   │   ├── [00mexperience_memory.py[0m
+│   │   ├── [00mexperiment_engine.py[0m
+│   │   ├── [00mexpert_models_layer.py[0m
+│   │   ├── [00mhypothesis_engine.py[0m
+│   │   ├── [00mintent_analyzer.py[0m
+│   │   ├── [00mknowledge_physics_engine.py[0m
+│   │   ├── [00mmeta_brain.py[0m
+│   │   ├── [00mmodel_society.py[0m
+│   │   ├── [00mplanning_engine.py[0m
+│   │   ├── [00mreasoning_engine.py[0m
+│   │   ├── [00mtest_cognitive_components.py[0m
+│   │   └── [00mworld_model.py[0m
+│   ├── [00mconfig.py[0m
+│   ├── [00mdecision_engine.py[0m
+│   ├── [01;34mevolution[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mphase7_lifecycle.py[0m
+│   │   ├── [00mself_evolution.py[0m
+│   │   └── [00mtest_self_evolution.py[0m
+│   ├── [00mexecution_trace.py[0m
+│   ├── [00mgoal_manager.py[0m
+│   ├── [00mgraph_planner.py[0m
+│   ├── [01;34mimprovement[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mautonomous_improvement.py[0m
+│   ├── [01;34mknowledge[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mknowledge_distillation.py[0m
+│   │   └── [00mknowledge_graph.py[0m
+│   ├── [01;34mlearning[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mcontinuous_learning.py[0m
+│   │   ├── [00mlearning_lifecycle.py[0m
+│   │   └── [00mphase6_lifecycle.py[0m
+│   ├── [00mllm_analyzer.py[0m
+│   ├── [01;34mmemory[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mmemory_fabric.py[0m
+│   │   └── [00munified_interface.py[0m
+│   ├── [01;34mmetrics[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mmodel_performance_db.py[0m
+│   ├── [00mmetrics_engine.py[0m
+│   ├── [00mmodel_router.py[0m
+│   ├── [00mmulti_model.py[0m
+│   ├── [01;34mpolicy[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mpolicy_engine.py[0m
+│   ├── [01;34mprompts[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00munified_prompt_builder.py[0m
+│   ├── [01;34mreflection[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mself_evolution.py[0m
+│   │   ├── [00mself_reflection.py[0m
+│   │   └── [00mtest_self_reflection.py[0m
+│   ├── [00mrequirements.txt[0m
+│   ├── [01;34msovereignty[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00msovereignty_layer.py[0m
+│   ├── [00mstate_machine.py[0m
+│   ├── [00mtask_decomposer.py[0m
+│   └── [01;34mtests[0m
+│       ├── [00m__init__.py[0m
+│       └── [00mtest_brain_components.py[0m
+├── [01;34mcloud[0m
+│   ├── [00m__init__.py[0m
+│   ├── [00mcloud_sync.py[0m
+│   ├── [00mdataset_manager.py[0m
+│   ├── [00mhf_client.py[0m
+│   └── [00mmodel_manager.py[0m
+├── [01;34mconfigs[0m
+│   ├── [00m__init__.py[0m
+│   ├── [00mfilters.yaml[0m
+│   ├── [00mlogging.yaml[0m
+│   ├── [00mpipelines.yaml[0m
+│   ├── [00mprocessing.yaml[0m
+│   └── [00mredis.py[0m
+├── [01;34mcore[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34malignment[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00malignment_pipeline.py[0m
+│   │   ├── [00mdpo_trainer.py[0m
+│   │   ├── [00mevaluation_system.py[0m
+│   │   ├── [00mppo_trainer.py[0m
+│   │   ├── [00mpreference_dataset.py[0m
+│   │   └── [00mreward_model.py[0m
+│   ├── [01;34mcontext_intelligence[0m
+│   │   ├── [00mcontext_engine.py[0m
+│   │   ├── [00mcontext_scoring.py[0m
+│   │   └── [00msemantic_memory.py[0m
+│   ├── [01;34mdistributed[0m
+│   │   ├── [00mgpu_scheduler.py[0m
+│   │   ├── [00mkubernetes_runtime.py[0m
+│   │   └── [00mray_runtime.py[0m
+│   ├── [01;34membeddings[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbase.py[0m
+│   │   ├── [00mbatch_embedder.py[0m
+│   │   ├── [00membedding_cache.py[0m
+│   │   ├── [00membedding_engine.py[0m
+│   │   ├── [00membedding_manager.py[0m
+│   │   ├── [00membedding_models.py[0m
+│   │   ├── [00membedding_registry.py[0m
+│   │   ├── [01;34mmodels[0m
+│   │   │   └── [00m__init__.py[0m
+│   │   ├── [00msentence_transformer.py[0m
+│   │   └── [00msimilarity.py[0m
+│   ├── [01;34mhf_integration[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mdata_cleaner.py[0m
+│   │   └── [00mhub_manager.py[0m
+│   ├── [01;34minference_engine[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbatching.py[0m
+│   │   ├── [00mcontext_manager.py[0m
+│   │   ├── [00mengine.py[0m
+│   │   ├── [00mgeneration.py[0m
+│   │   ├── [00minference_config.py[0m
+│   │   ├── [00mqueue_manager.py[0m
+│   │   ├── [00mrequest_handler.py[0m
+│   │   ├── [00mresponse_handler.py[0m
+│   │   ├── [00mresponse_parser.py[0m
+│   │   ├── [00msampler.py[0m
+│   │   ├── [00mstopping.py[0m
+│   │   ├── [00mstream_handler.py[0m
+│   │   └── [00mtoken_tracker.py[0m
+│   ├── [01;34mllm[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbase.py[0m
+│   │   ├── [00mconfig.py[0m
+│   │   ├── [00mllm_manager.py[0m
+│   │   ├── [00mprovider_registry.py[0m
+│   │   └── [01;34mproviders[0m
+│   │       ├── [00m__init__.py[0m
+│   │       ├── [00mhajeen_provider.py[0m
+│   │       ├── [00mhuggingface_provider.py[0m
+│   │       ├── [00mllama_cpp_provider.py[0m
+│   │       ├── [00mmistral_finetuned_provider.py[0m
+│   │       ├── [00mmock_provider.py[0m
+│   │       ├── [00mollama_provider.py[0m
+│   │       └── [00mopenai_provider.py[0m
+│   ├── [01;34mmemory[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mconversation_store.py[0m
+│   │   ├── [00mlong_term_memory.py[0m
+│   │   ├── [00mmemory_manager.py[0m
+│   │   └── [00mshort_term_memory.py[0m
+│   ├── [01;34mmodel[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00martifact_validation.py[0m
+│   │   ├── [00mmodel_config.py[0m
+│   │   ├── [00mmodel_loader.py[0m
+│   │   ├── [00mmodel_manager.py[0m
+│   │   ├── [00mmodel_registry.py[0m
+│   │   └── [00mquantization.py[0m
+│   ├── [01;34moptimization[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00minference_optimizer.py[0m
+│   │   ├── [00mkv_cache_manager.py[0m
+│   │   ├── [00mprompt_cache.py[0m
+│   │   ├── [00mquantization_manager.py[0m
+│   │   ├── [00mspeculative_decoding.py[0m
+│   │   └── [00mtensor_parallel.py[0m
+│   ├── [01;34mprompts[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbase.py[0m
+│   │   ├── [00mconversation_formatter.py[0m
+│   │   ├── [00mprompt_builder.py[0m
+│   │   ├── [00msystem_prompts.py[0m
+│   │   └── [00mtemplates.py[0m
+│   ├── [01;34mretrieval[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mretrieval_engine.py[0m
+│   ├── [01;34mserving[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbatching_engine.py[0m
+│   │   ├── [00mllama_cpp_server.py[0m
+│   │   ├── [00mload_balancer.py[0m
+│   │   ├── [00mmodel_pool.py[0m
+│   │   ├── [00mmodel_server.py[0m
+│   │   ├── [00mrequest_scheduler.py[0m
+│   │   ├── [00mstreaming_server.py[0m
+│   │   └── [00mvllm_server.py[0m
+│   ├── [01;34mtokenizer[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [01;34mmodels[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mgeneric_tokenizer.py[0m
+│   │   │   ├── [00mllama_tokenizer.py[0m
+│   │   │   └── [00mmistral_tokenizer.py[0m
+│   │   ├── [00mtoken_counter.py[0m
+│   │   ├── [00mtokenizer_factory.py[0m
+│   │   └── [00mtokenizer_manager.py[0m
+│   ├── [01;34mtraining_engine[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mcheckpoint_manager.py[0m
+│   │   ├── [00mcollator.py[0m
+│   │   ├── [00mdataset_loader.py[0m
+│   │   ├── [00mevaluator.py[0m
+│   │   ├── [00mfinetuning.py[0m
+│   │   ├── [00mlora_trainer.py[0m
+│   │   ├── [00mmetrics.py[0m
+│   │   └── [00mtrainer.py[0m
+│   └── [01;34mutils[0m
+│       ├── [00m__init__.py[0m
+│       ├── [00mdevice_manager.py[0m
+│       ├── [00mgpu_utils.py[0m
+│       └── [00mmodel_cache.py[0m
+├── [01;34mdata_engine[0m
+│   ├── [00m__init__.py[0m
+│   ├── [00m__main__.py[0m
+│   ├── [01;34mai[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [01;34membeddings[0m
+│   │       ├── [00m__init__.py[0m
+│   │       ├── [00mbase_embedder.py[0m
+│   │       ├── [00membedding_cache.py[0m
+│   │       ├── [00membedding_metadata.py[0m
+│   │       ├── [00membedding_pipeline.py[0m
+│   │       └── [00membedding_storage.py[0m
+│   ├── [01;34mchannels[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbase.py[0m
+│   │   ├── [00mbuilder.py[0m
+│   │   ├── [01;34mcustom[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [01;34muser_defined[0m
+│   │   │       └── [00m__init__.py[0m
+│   │   ├── [01;34mpredefined[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00marabic_sources.py[0m
+│   │   │   ├── [00mdemo_channel.py[0m
+│   │   │   ├── [00mfinance_channel.py[0m
+│   │   │   ├── [00mnews_channel.py[0m
+│   │   │   ├── [00mscience_channel.py[0m
+│   │   │   └── [00mtech_channel.py[0m
+│   │   └── [00mregistry.py[0m
+│   ├── [00mcli.py[0m
+│   ├── [01;34mconfig[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mchannels.yaml[0m
+│   │   ├── [00mfilters.yaml[0m
+│   │   └── [00msources.yaml[0m
+│   ├── [01;34membeddings[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00membedding_pipeline.py[0m
+│   ├── [01;34mingestion[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [01;34mconnectors[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00marxiv_connector.py[0m
+│   │   │   ├── [00mbase_connector.py[0m
+│   │   │   ├── [00mcustom_connector.py[0m
+│   │   │   ├── [00mgithub_connector.py[0m
+│   │   │   ├── [00mnewsapi_connector.py[0m
+│   │   │   ├── [00mreddit_connector.py[0m
+│   │   │   └── [00myoutube_connector.py[0m
+│   │   ├── [01;34mcrawlers[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mplaywright_crawler.py[0m
+│   │   │   ├── [00mrequests_fetcher.py[0m
+│   │   │   ├── [00mrobots_checker.py[0m
+│   │   │   ├── [00mrss_parser.py[0m
+│   │   │   └── [00msitemap_parser.py[0m
+│   │   ├── [00mhttp_client.py[0m
+│   │   ├── [00mresponse_models.py[0m
+│   │   ├── [01;34mschedulers[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mcron_scheduler.py[0m
+│   │   │   ├── [00mjob_tracker.py[0m
+│   │   │   └── [00mpriority_queue.py[0m
+│   │   └── [01;34mstreams[0m
+│   │       ├── [00m__init__.py[0m
+│   │       ├── [00mkafka_consumer.py[0m
+│   │       ├── [00mwebhook_receiver.py[0m
+│   │       └── [00mwebsocket_listener.py[0m
+│   ├── [00mlifecycle.py[0m
+│   ├── [01;34mmetadata[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mtracker.py[0m
+│   ├── [01;34mmonitoring[0m
+│   │   └── [00m__init__.py[0m
+│   ├── [01;34mpipelines[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbase_pipeline.py[0m
+│   │   ├── [01;34mdefinitions[0m
+│   │   │   └── [00m__init__.py[0m
+│   │   ├── [00mpipeline_orchestrator.py[0m
+│   │   ├── [00mpipeline_result.py[0m
+│   │   └── [01;34mstages[0m
+│   │       ├── [00m__init__.py[0m
+│   │       ├── [00mclean_stage.py[0m
+│   │       ├── [00membed_stage.py[0m
+│   │       ├── [00menrich_stage.py[0m
+│   │       ├── [00mfetch_stage.py[0m
+│   │       ├── [00mfilter_stage.py[0m
+│   │       ├── [00mstore_stage.py[0m
+│   │       └── [00mtransform_stage.py[0m
+│   ├── [01;34mpreparation[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mdata_preparation_pipeline.py[0m
+│   │   ├── [00mdata_validator.py[0m
+│   │   ├── [00mdataset_statistics.py[0m
+│   │   ├── [00mdeduplicator.py[0m
+│   │   ├── [00mlanguage_detector.py[0m
+│   │   └── [00mquality_scorer.py[0m
+│   ├── [01;34mprocessing[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbase_processor.py[0m
+│   │   ├── [01;34mcleaning[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mcleaning_pipeline.py[0m
+│   │   │   ├── [00mhtml_cleaner.py[0m
+│   │   │   ├── [00mtext_cleaner.py[0m
+│   │   │   └── [00mtext_normalizer.py[0m
+│   │   ├── [01;34menrichment[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mcontent_enricher.py[0m
+│   │   │   ├── [00menrichment_pipeline.py[0m
+│   │   │   ├── [00mentity_extractor.py[0m
+│   │   │   ├── [00mkeyword_extractor.py[0m
+│   │   │   ├── [00msentiment_analyzer.py[0m
+│   │   │   ├── [00msummarizer.py[0m
+│   │   │   └── [00mtopic_classifier.py[0m
+│   │   ├── [01;34mfiltering[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mcontent_filter.py[0m
+│   │   │   ├── [00mdeduplication_engine.py[0m
+│   │   │   ├── [00mdeduplicator.py[0m
+│   │   │   ├── [00mfiltering_pipeline.py[0m
+│   │   │   ├── [00mlanguage_filter.py[0m
+│   │   │   ├── [00mpii_filter.py[0m
+│   │   │   ├── [00mpolicy_filter.py[0m
+│   │   │   ├── [00mquality_scorer.py[0m
+│   │   │   └── [00mspam_detector.py[0m
+│   │   ├── [00mprocessing_context.py[0m
+│   │   ├── [00mprocessing_result.py[0m
+│   │   └── [01;34mtransformation[0m
+│   │       ├── [00m__init__.py[0m
+│   │       ├── [00mchunker.py[0m
+│   │       ├── [00mchunking_engine.py[0m
+│   │       ├── [00mdata_transformer.py[0m
+│   │       ├── [00mmarkdown_converter.py[0m
+│   │       ├── [00mtokenizer_wrapper.py[0m
+│   │       └── [00mtransformation_pipeline.py[0m
+│   └── [01;34mstorage[0m
+│       ├── [00m__init__.py[0m
+│       ├── [00mbase.py[0m
+│       ├── [00minterfaces.py[0m
+│       ├── [01;34mmetadata_store[0m
+│       │   ├── [00m__init__.py[0m
+│       │   ├── [00mjob_store.py[0m
+│       │   ├── [00mlineage_tracker.py[0m
+│       │   └── [00msqlite_catalog.py[0m
+│       ├── [01;34mprocessed_store[0m
+│       │   ├── [00m__init__.py[0m
+│       │   ├── [00mbronze_layer.py[0m
+│       │   ├── [00mgold_layer.py[0m
+│       │   └── [00msilver_layer.py[0m
+│       ├── [01;34mraw_store[0m
+│       │   ├── [00m__init__.py[0m
+│       │   └── [00mlocal_storage.py[0m
+│       ├── [01;34mrepositories[0m
+│       │   ├── [00m__init__.py[0m
+│       │   ├── [00marticle_repository.py[0m
+│       │   ├── [00mchannel_repository.py[0m
+│       │   └── [00mpipeline_repository.py[0m
+│       ├── [00mstorage_manager.py[0m
+│       └── [01;34mvector_store[0m
+│           ├── [00m__init__.py[0m
+│           ├── [00mbase_vector_store.py[0m
+│           ├── [00mchroma_client.py[0m
+│           ├── [00mfaiss_client.py[0m
+│           ├── [00mqdrant_client.py[0m
+│           ├── [00msqlite_vector_index.py[0m
+│           └── [00mvector_store_manager.py[0m
+├── [01;34mdatabase[0m
+│   ├── [00m__init__.py[0m
+│   └── [00mmodels.py[0m
+├── [00mdemo_pipeline.py[0m
+├── [00mdemo_rag.py[0m
+├── [01;34mdeployments[0m
+│   ├── [00mkubernetes_hajeen_ai.yaml[0m
+│   ├── [00mkubernetes_triton.yaml[0m
+│   └── [00mkubernetes_vllm.yaml[0m
+├── [00mdiagnose_learning_hang.py[0m
+├── [00mdiagnose_pipeline.py[0m
+├── [01;34mdocs[0m
+│   └── [01;34mrecovery[0m
+│       ├── [01;34mphase0[0m
+│       │   └── [00mFINAL_REPORT.md[0m
+│       ├── [01;34mphase10[0m
+│       │   ├── [00mBASELINE.md[0m
+│       │   ├── [00mBRAIN_MATRIX.md[0m
+│       │   ├── [00mFAILURE_MATRIX.md[0m
+│       │   └── [00mFINAL_REPORT.md[0m
+│       └── [01;34mphase11[0m
+│           ├── [00mALTERNATE_COPIES.md[0m
+│           ├── [00mBASELINE.md[0m
+│           ├── [00mCURRENT_HASHES.txt[0m
+│           ├── [00mCURRENT_TREE.txt[0m
+│           ├── [00mENVIRONMENT.md[0m
+│           ├── [00mFINAL_CHECKPOINT.log[0m
+│           ├── [00mFINAL_REPORT.md[0m
+│           ├── [00mGIT_AND_COPIES_SCAN.txt[0m
+│           ├── [00mGIT_FORENSICS.md[0m
+│           ├── [00mRESTORED_COMPONENTS.md[0m
+│           ├── [00mRESTORE_COPY_LOG.txt[0m
+│           ├── [00mcontracts_probe.log[0m
+│           ├── [00mcontracts_probe_after_deps.log[0m
+│           ├── [00mcontracts_probe_after_deps_summary.txt[0m
+│           ├── [00mcontracts_probe_after_tenacity.log[0m
+│           ├── [00mcontracts_probe_after_tenacity_summary.txt[0m
+│           ├── [00mcontracts_probe_parent_path.log[0m
+│           ├── [00mcontracts_probe_parent_path_summary.txt[0m
+│           ├── [00mcontracts_probe_summary.txt[0m
+│           ├── [00mcore_regression_matrix.log[0m
+│           ├── [00mcurrent_tree_relative.txt[0m
+│           ├── [00mlevel0_compile.log[0m
+│           ├── [00mlevel0_compile_after_repairs.log[0m
+│           ├── [00mlevel0_compile_after_repairs_summary.txt[0m
+│           ├── [00mlevel0_import.log[0m
+│           ├── [00mlevel0_summary.txt[0m
+│           ├── [00mphase10_current_regression.log[0m
+│           ├── [00mphase10_final_checkpoint.log[0m
+│           ├── [00mphase10_regression_after_repairs.log[0m
+│           ├── [00mphase10_repair_verification.log[0m
+│           ├── [00mphase5_api_workflow.log[0m
+│           ├── [00mphase5_api_workflow_after_pytest_fix.log[0m
+│           ├── [00mphase5_api_workflow_after_pytest_summary.txt[0m
+│           ├── [00mphase5_api_workflow_summary.txt[0m
+│           ├── [00mphase5_batch1.log[0m
+│           ├── [00mphase5_batch1_summary.txt[0m
+│           ├── [00mphase5_batch2.log[0m
+│           ├── [00mphase5_batch2_after_fix.log[0m
+│           ├── [00mphase5_batch2_after_fix_summary.txt[0m
+│           ├── [00mphase5_batch2_summary.txt[0m
+│           ├── [00mphase5_batch3.log[0m
+│           ├── [00mphase5_batch3_after_fix_summary.txt[0m
+│           ├── [00mphase5_batch3_summary.txt[0m
+│           ├── [00mphase5_final_integration_after_breaker.log[0m
+│           ├── [00mphase5_final_integration_after_breaker_summary.txt[0m
+│           ├── [00mphase5_rag_security_after_fix.log[0m
+│           ├── [00mphase5_rag_security_final.log[0m
+│           ├── [00mphase5_rag_security_final_summary.txt[0m
+│           ├── [00mphase5_rag_security_summary.txt[0m
+│           └── [00msource_tree_relative.txt[0m
+├── [00mfile_tree.txt[0m
+├── [01;34mhajeen_model[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34madapters[0m
+│   │   └── [00m__init__.py[0m
+│   ├── [01;34mconfigs[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mlora_config.yaml[0m
+│   │   ├── [00mmodel_config.yaml[0m
+│   │   └── [00mtraining_config.yaml[0m
+│   ├── [01;34mcore[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mhajeen_model_v1.py[0m
+│   │   └── [00mlocal_inference_engine.py[0m
+│   ├── [01;34mdatasets[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mdataset_manager.py[0m
+│   │   └── [01;34mtest_manager[0m
+│   │       ├── [01;34mdataset_v1[0m
+│   │       │   └── [00mdata.jsonl[0m
+│   │       └── [00mtest.jsonl[0m
+│   ├── [01;34mevaluation[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mevaluation_framework.py[0m
+│   ├── [01;34mhybrid_models[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [01;34mattention[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mkv_cache.py[0m
+│   │   │   ├── [00mmulti_head_attention.py[0m
+│   │   │   └── [00mscaled_dot_product.py[0m
+│   │   ├── [01;34mconfig[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mhajeen_config.py[0m
+│   │   ├── [01;34membeddings[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mposition_embeddings.py[0m
+│   │   │   ├── [00mrope.py[0m
+│   │   │   └── [00mtoken_embeddings.py[0m
+│   │   ├── [01;34mevaluation[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mevaluation_pipeline.py[0m
+│   │   ├── [01;34mexport[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mexporter.py[0m
+│   │   ├── [01;34minference[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00minference_engine.py[0m
+│   │   ├── [01;34mlayers[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mfeed_forward.py[0m
+│   │   │   ├── [00mnormalization.py[0m
+│   │   │   └── [00mresidual.py[0m
+│   │   ├── [01;34mquantization[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mquantizer.py[0m
+│   │   ├── [01;34mserving[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mmodel_server.py[0m
+│   │   ├── [01;34mtests[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mtest_attention.py[0m
+│   │   │   ├── [00mtest_checkpoint.py[0m
+│   │   │   ├── [00mtest_config.py[0m
+│   │   │   ├── [00mtest_datasets.py[0m
+│   │   │   ├── [00mtest_fine_tuning.py[0m
+│   │   │   ├── [00mtest_inference.py[0m
+│   │   │   ├── [00mtest_layers.py[0m
+│   │   │   ├── [00mtest_model.py[0m
+│   │   │   ├── [00mtest_quantization.py[0m
+│   │   │   └── [00mtest_tokenizer.py[0m
+│   │   ├── [01;34mtokenizer[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mbpe_tokenizer.py[0m
+│   │   │   ├── [00mcloud_tokenizer_trainer.py[0m
+│   │   │   ├── [00mtokenizer_loader.py[0m
+│   │   │   ├── [00mtokenizer_validator.py[0m
+│   │   │   └── [00mtrain_tokenizer.py[0m
+│   │   ├── [01;34mtraining[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mcloud_trainer.py[0m
+│   │   │   ├── [00mfine_tuning.py[0m
+│   │   │   └── [00mtraining_pipeline.py[0m
+│   │   └── [01;34mtransformer[0m
+│   │       ├── [00m__init__.py[0m
+│   │       ├── [00mhajeen_model.py[0m
+│   │       └── [00mtransformer_block.py[0m
+│   ├── [01;34minference[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbase_provider.py[0m
+│   │   ├── [00mhajeen_provider.py[0m
+│   │   ├── [00minference_engine.py[0m
+│   │   ├── [00mollama_manager.py[0m
+│   │   └── [00mollama_provider.py[0m
+│   ├── [01;34mtests[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mtest_phase_4_5.py[0m
+│   ├── [01;34mtokenizer[0m
+│   │   └── [00m__init__.py[0m
+│   └── [01;34mtraining[0m
+│       ├── [00m__init__.py[0m
+│       ├── [00mcheckpoint_manager.py[0m
+│       └── [00mtraining_pipeline.py[0m
+├── [01;34mhelm[0m
+│   └── [01;34mhajeen-platform[0m
+│       ├── [00mChart.yaml[0m
+│       ├── [01;34mtemplates[0m
+│       │   ├── [00m_helpers.tpl[0m
+│       │   └── [00mdeployment-api.yaml[0m
+│       └── [00mvalues.yaml[0m
+├── [01;34minfra[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34mdocker[0m
+│   │   ├── [00mDockerfile.api[0m
+│   │   ├── [00mDockerfile.inference[0m
+│   │   ├── [00mDockerfile.nginx[0m
+│   │   ├── [00mDockerfile.scheduler[0m
+│   │   ├── [00mDockerfile.training[0m
+│   │   ├── [00mDockerfile.worker[0m
+│   │   └── [01;34mbase[0m
+│   │       ├── [00mDockerfile.cuda-base[0m
+│   │       └── [00mDockerfile.python-base[0m
+│   └── [01;34mk8s[0m
+│       ├── [01;34mapi[0m
+│       │   ├── [00mdeployment.yaml[0m
+│       │   └── [00mservice.yaml[0m
+│       ├── [01;34mautoscaling[0m
+│       │   └── [00mhpa.yaml[0m
+│       ├── [01;34mconfigmaps[0m
+│       │   └── [00mapp-config.yaml[0m
+│       ├── [01;34minference[0m
+│       │   └── [00mgpu-deployment.yaml[0m
+│       ├── [01;34mingress[0m
+│       │   └── [00mingress.yaml[0m
+│       ├── [00mnamespace.yaml[0m
+│       ├── [01;34mstorage[0m
+│       │   └── [00mpersistent-volumes.yaml[0m
+│       └── [01;34mworkers[0m
+│           └── [00mdeployment.yaml[0m
+├── [00mmeasure_learning_similarity.py[0m
+├── [01;34mmonitoring[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34mai[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mevaluation_dashboard.py[0m
+│   │   ├── [00mgpu_monitor.py[0m
+│   │   ├── [00mhallucination_tracker.py[0m
+│   │   ├── [00minference_metrics.py[0m
+│   │   ├── [00mlatency_tracker.py[0m
+│   │   └── [00mtoken_metrics.py[0m
+│   ├── [01;34mai_metrics[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mai_metrics_collector.py[0m
+│   │   ├── [00mlatency_tracker.py[0m
+│   │   ├── [00mprovider_monitor.py[0m
+│   │   └── [00mtoken_usage_tracker.py[0m
+│   ├── [01;34malerts[0m
+│   │   └── [00malertmanager.yml[0m
+│   ├── [01;34mdashboard[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mstreamlit_dashboard.py[0m
+│   ├── [01;34mdashboards[0m
+│   │   └── [00mapi-dashboard.json[0m
+│   ├── [01;34mgrafana[0m
+│   │   └── [00mdatasources.yaml[0m
+│   ├── [01;34mhealth[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mhealth_checker.py[0m
+│   ├── [01;34mloki[0m
+│   │   └── [00mloki-config.yaml[0m
+│   ├── [01;34mmetrics[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mprometheus_metrics.py[0m
+│   ├── [01;34mprometheus[0m
+│   │   ├── [00mprometheus.yml[0m
+│   │   └── [01;34mrules[0m
+│   │       ├── [00mapi.yml[0m
+│   │       └── [00minfrastructure.yml[0m
+│   ├── [01;34msearch_metrics[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mlatency_tracker.py[0m
+│   │   ├── [00mmetrics_collector.py[0m
+│   │   └── [00mretrieval_evaluator.py[0m
+│   ├── [00mtask_monitor.py[0m
+│   └── [01;34mtempo[0m
+│       └── [00mtempo-config.yaml[0m
+├── [01;34mmulti_tenant[0m
+│   ├── [00m__init__.py[0m
+│   ├── [00mbilling_tracker.py[0m
+│   ├── [00misolation.py[0m
+│   ├── [00mquota_manager.py[0m
+│   ├── [00mtenant_config.py[0m
+│   ├── [00mtenant_manager.py[0m
+│   └── [00mtenant_router.py[0m
+├── [01;34morchestration[0m
+│   └── [01;34mruntime[0m
+│       ├── [00m__init__.py[0m
+│       ├── [00mdynamic_executor.py[0m
+│       ├── [00mintelligent_router.py[0m
+│       └── [00mruntime_decision_system.py[0m
+├── [00mpyproject.toml[0m
+├── [01;34mreports[0m
+│   ├── [00mDEPENDENCY_INVENTORY.md[0m
+│   ├── [00mFORENSIC_INVENTORY.md[0m
+│   ├── [00mMODEL_FORENSIC_AUDIT.md[0m
+│   ├── [00mTEST_CONTRACT_ISSUES.md[0m
+│   ├── [00mTEST_FILE_INVENTORY.txt[0m
+│   ├── [00mTEST_INVENTORY.md[0m
+│   ├── [01;34mcheckpoints[0m
+│   │   └── [00mRECOVERY_CHECKPOINT.md[0m
+│   ├── [01;34mphase0_levels[0m
+│   │   ├── [00mFINAL_CHECKPOINT.log[0m
+│   │   ├── [00mLEVEL_0_COMPILE.log[0m
+│   │   ├── [00mLEVEL_10.log[0m
+│   │   ├── [00mLEVEL_11.log[0m
+│   │   ├── [00mLEVEL_12_FULL_REGRESSION.log[0m
+│   │   ├── [00mLEVEL_12_FULL_REGRESSION_CORRECTED.log[0m
+│   │   ├── [00mLEVEL_1_IMPORTS.log[0m
+│   │   ├── [00mLEVEL_2_UNIT.log[0m
+│   │   ├── [00mLEVEL_3_BRAIN.log[0m
+│   │   ├── [00mLEVEL_4.log[0m
+│   │   ├── [00mLEVEL_5.log[0m
+│   │   ├── [00mLEVEL_6.log[0m
+│   │   ├── [00mLEVEL_7.log[0m
+│   │   ├── [00mLEVEL_8.log[0m
+│   │   └── [00mLEVEL_9.log[0m
+│   └── [01;34mrecovery[0m
+│       ├── [00mBRAIN_AUTHORITY_AUDIT.md[0m
+│       ├── [00mBRAIN_MATRIX.md[0m
+│       ├── [00mDEPENDENCY_MATRIX.md[0m
+│       ├── [00mFINAL_CHECKPOINT.log[0m
+│       ├── [00mFINAL_RECOVERY_REPORT.md[0m
+│       ├── [00mFIXTURE_INVENTORY.md[0m
+│       ├── [00mFORENSIC_INVENTORY.md[0m
+│       ├── [00mHAJEEN_PROVIDER_FAIL_CLOSED.log[0m
+│       ├── [00mNAMESPACE_AUDIT.md[0m
+│       └── [00mSYSTEM_RECOVERY_MATRIX.md[0m
+├── [01;34mrequirements[0m
+│   ├── [00m__init__.py[0m
+│   ├── [00mapi.txt[0m
+│   ├── [00mbase.txt[0m
+│   ├── [00mdev.txt[0m
+│   ├── [00mgpu.txt[0m
+│   ├── [00minference.txt[0m
+│   ├── [00mscheduler.txt[0m
+│   ├── [00mtest.txt[0m
+│   ├── [00mtraining.txt[0m
+│   └── [00mworker.txt[0m
+├── [00mrequirements-prod.txt[0m
+├── [00mrequirements.txt[0m
+├── [00mrun.sh[0m
+├── [01;34mscripts[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34mdata_collectors[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00marabic_corpus_collector.py[0m
+│   │   ├── [00mbooks_collector.py[0m
+│   │   ├── [00mgithub_code_collector.py[0m
+│   │   ├── [00mqa_collector.py[0m
+│   │   ├── [00mweb_crawler.py[0m
+│   │   └── [00mwikipedia_collector.py[0m
+│   ├── [01;34mdeployment[0m
+│   │   ├── [00mretrain_v2.sh[0m
+│   │   └── [00msetup_ollama.sh[0m
+│   ├── [01;34mevaluation[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mrun_evaluation.py[0m
+│   ├── [00mexpand_arabic_dataset.py[0m
+│   ├── [00mfinetune_mistral.py[0m
+│   ├── [01;34msetup[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mcreate_storage_dirs.py[0m
+│   │   └── [00minit_database.py[0m
+│   ├── [00mstart_platform.sh[0m
+│   ├── [00msync_hf_data.py[0m
+│   ├── [00msync_hf_model.py[0m
+│   └── [01;34mtraining[0m
+│       ├── [00m__init__.py[0m
+│       └── [00mrun_training.py[0m
+├── [01;34msecurity[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34mapi_keys[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mapi_key_manager.py[0m
+│   ├── [01;34maudit[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00maudit_logger.py[0m
+│   ├── [01;34mauth[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mapi_key_manager.py[0m
+│   │   ├── [00mjwt_auth.py[0m
+│   │   └── [00mrevoked_tokens.py[0m
+│   ├── [01;34mconfig[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00msecret_manager.py[0m
+│   ├── [01;34mencryption[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mencryptor.py[0m
+│   ├── [01;34mfirewall[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mip_filter.py[0m
+│   ├── [01;34mmiddleware[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mauth_middleware.py[0m
+│   │   └── [00msecurity_middleware.py[0m
+│   ├── [01;34mpermissions[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mrbac.py[0m
+│   ├── [01;34mrate_limit[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mrate_limiter.py[0m
+│   ├── [01;34mrbac[0m
+│   │   └── [00mrbac.py[0m
+│   └── [01;34mresource[0m
+│       ├── [00m__init__.py[0m
+│       └── [00mresource_guard.py[0m
+├── [01;34mservices[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34magent_frameworks[0m
+│   │   ├── [00mautogen_example.py[0m
+│   │   ├── [00mcustom_orchestration_runtime.py[0m
+│   │   └── [00mlanggraph_example.py[0m
+│   ├── [00magent_service.py[0m
+│   ├── [01;34magents[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00magent_orchestrator.py[0m
+│   │   ├── [01;34mautonomous[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   ├── [00mautonomous_agent.py[0m
+│   │   │   ├── [00mrecursive_planner.py[0m
+│   │   │   ├── [00mreflection_loop.py[0m
+│   │   │   └── [00mtask_executor.py[0m
+│   │   ├── [00mbase_agent.py[0m
+│   │   ├── [00mcontracts.py[0m
+│   │   ├── [00mexecution_agent.py[0m
+│   │   ├── [00mmemory_agent.py[0m
+│   │   ├── [01;34mmulti_agent[0m
+│   │   │   ├── [00mcollaborative_layer.py[0m
+│   │   │   ├── [00mmessenger.py[0m
+│   │   │   └── [00mshared_memory.py[0m
+│   │   ├── [00mplanner_agent.py[0m
+│   │   ├── [00mretrieval_agent.py[0m
+│   │   ├── [00mtool_agent.py[0m
+│   │   └── [00mtool_runtime.py[0m
+│   ├── [01;34malignment[0m
+│   │   ├── [00mdpo_pipeline.py[0m
+│   │   └── [00mrlhf_infrastructure.py[0m
+│   ├── [01;34mchat[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mchat_service.py[0m
+│   │   ├── [00mchat_session.py[0m
+│   │   ├── [00mcitation_injector.py[0m
+│   │   ├── [00mmoderation_layer.py[0m
+│   │   └── [00mresponse_postprocessor.py[0m
+│   ├── [00mcompletion_service.py[0m
+│   ├── [01;34mdata_intelligence[0m
+│   │   ├── [00mcomponents.py[0m
+│   │   └── [00mdata_factory.py[0m
+│   ├── [01;34mdata_service[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mconversation_builder.py[0m
+│   │   ├── [00mdataset_builder.py[0m
+│   │   ├── [00mdataset_cleaner.py[0m
+│   │   ├── [00mdataset_exporter.py[0m
+│   │   ├── [00mdataset_formatter.py[0m
+│   │   ├── [00mdataset_versioner.py[0m
+│   │   └── [00minstruction_builder.py[0m
+│   ├── [01;34mdistributed_inference[0m
+│   │   └── [00mray_serve_deployment.py[0m
+│   ├── [01;34mdistributed_messaging[0m
+│   │   ├── [00mcelery_config.py[0m
+│   │   ├── [00mkafka_integration.py[0m
+│   │   └── [00mredis_streams_integration.py[0m
+│   ├── [00membedding_service.py[0m
+│   ├── [01;34mevaluation[0m
+│   │   ├── [00mevaluation_engine.py[0m
+│   │   └── [00mmetrics.py[0m
+│   ├── [00minference_service.py[0m
+│   ├── [01;34mmemory[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mcontext_window_manager.py[0m
+│   │   ├── [00mconversation_memory.py[0m
+│   │   ├── [00msession_manager.py[0m
+│   │   ├── [00msummarization_memory.py[0m
+│   │   └── [00mvector_memory.py[0m
+│   ├── [00mmemory_service.py[0m
+│   ├── [00mmoderation_service.py[0m
+│   ├── [01;34mproduction[0m
+│   │   └── [00mproduction_manager.py[0m
+│   ├── [01;34mprompts[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mcontext_injector.py[0m
+│   │   ├── [00mprompt_builder.py[0m
+│   │   ├── [00mprompt_validator.py[0m
+│   │   ├── [00msystem_prompt_manager.py[0m
+│   │   └── [00mtemplate_engine.py[0m
+│   ├── [01;34mrag[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mcitation_builder.py[0m
+│   │   ├── [00mcitation_manager.py[0m
+│   │   ├── [00mcontext_assembler.py[0m
+│   │   ├── [00mcontext_builder.py[0m
+│   │   ├── [00mhybrid_search.py[0m
+│   │   ├── [00mmmr_retriever.py[0m
+│   │   ├── [00mprompt_builder.py[0m
+│   │   ├── [00mrag_pipeline.py[0m
+│   │   ├── [00mreranker.py[0m
+│   │   ├── [00mresponse_formatter.py[0m
+│   │   └── [00mretriever.py[0m
+│   ├── [00mrag_service.py[0m
+│   ├── [01;34mredis[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mredis_service.py[0m
+│   ├── [01;34mretrieval[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mbase_retriever.py[0m
+│   │   ├── [00mcontext_assembler.py[0m
+│   │   ├── [00mhybrid_retriever.py[0m
+│   │   ├── [00mmulti_query_retriever.py[0m
+│   │   └── [00mvector_retriever.py[0m
+│   ├── [01;34msearch[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mquery_processor.py[0m
+│   │   ├── [00mreranker.py[0m
+│   │   ├── [00msearch_response.py[0m
+│   │   └── [00msemantic_search.py[0m
+│   ├── [01;34msecurity[0m
+│   │   └── [00mpolicy_engine.py[0m
+│   └── [01;34mself_evolution[0m
+│       ├── [00m__init__.py[0m
+│       ├── [00mcontinuous_learning_loop.py[0m
+│       ├── [00mcuriosity_engine.py[0m
+│       ├── [00mepisodic_memory.py[0m
+│       └── [00mself_reflection_engine.py[0m
+├── [01;34mshared[0m
+│   ├── [00m__init__.py[0m
+│   ├── [00mdatabase.py[0m
+│   ├── [00mexceptions.py[0m
+│   ├── [01;34mlogging[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mstructured_logger.py[0m
+│   ├── [01;34mschemas[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00marticle.py[0m
+│   │   ├── [00mchannel.py[0m
+│   │   ├── [00mpipeline.py[0m
+│   │   └── [00munified_article.py[0m
+│   └── [01;34mutils[0m
+│       ├── [00m__init__.py[0m
+│       ├── [00mdatetime_utils.py[0m
+│       ├── [00mid_generator.py[0m
+│       ├── [00mtext_utils.py[0m
+│       └── [00mvalidators.py[0m
+├── [01;34mstorage[0m
+│   ├── [00m__init__.py[0m
+│   └── [01;34mdistributed[0m
+│       ├── [00m__init__.py[0m
+│       ├── [00mbackup_manager.py[0m
+│       ├── [00mconsistency_manager.py[0m
+│       ├── [00mdisaster_recovery.py[0m
+│       ├── [00mdistributed_cache.py[0m
+│       ├── [00mreplication.py[0m
+│       └── [00mshard_manager.py[0m
+├── [01;34mtests[0m
+│   ├── [00m__init__.py[0m
+│   ├── [01;34mai[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mtest_agents.py[0m
+│   │   ├── [00mtest_alignment.py[0m
+│   │   ├── [00mtest_chat.py[0m
+│   │   ├── [00mtest_data_intelligence.py[0m
+│   │   ├── [00mtest_embeddings.py[0m
+│   │   ├── [00mtest_evaluation.py[0m
+│   │   ├── [00mtest_inference.py[0m
+│   │   ├── [00mtest_multi_agent.py[0m
+│   │   ├── [00mtest_production.py[0m
+│   │   ├── [00mtest_rag.py[0m
+│   │   ├── [00mtest_security.py[0m
+│   │   └── [00mtest_training.py[0m
+│   ├── [01;34mbenchmark[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mtest_components_benchmark.py[0m
+│   ├── [00mconftest.py[0m
+│   ├── [01;34mdistributed_messaging[0m
+│   │   ├── [00mtest_celery.py[0m
+│   │   ├── [00mtest_kafka.py[0m
+│   │   └── [00mtest_redis_streams.py[0m
+│   ├── [01;34mfixtures[0m
+│   │   ├── [00msample_robots.txt[0m
+│   │   ├── [00msample_rss.xml[0m
+│   │   ├── [00msample_rss_en.xml[0m
+│   │   ├── [00msample_sitemap.xml[0m
+│   │   └── [00msample_sitemap_index.xml[0m
+│   ├── [01;34mintegration[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [00mtest_api_workflow.py[0m
+│   │   ├── [00mtest_brain_v3_cognitive.py[0m
+│   │   ├── [00mtest_full_pipeline.py[0m
+│   │   ├── [00mtest_full_processing_pipeline.py[0m
+│   │   ├── [00mtest_learning_pipeline_integration.py[0m
+│   │   ├── [00mtest_monitoring.py[0m
+│   │   ├── [00mtest_phase2_runtime_contract.py[0m
+│   │   ├── [00mtest_phase3_rag_runtime.py[0m
+│   │   ├── [00mtest_phase4_native_streaming.py[0m
+│   │   ├── [00mtest_phase5_agents_tools.py[0m
+│   │   ├── [00mtest_phase6_learning_coordinator.py[0m
+│   │   ├── [00mtest_phase6_learning_data.py[0m
+│   │   ├── [00mtest_phase6_training_registry.py[0m
+│   │   ├── [00mtest_phase7_self_evolution.py[0m
+│   │   ├── [00mtest_pipeline.py[0m
+│   │   ├── [00mtest_rag_pipeline.py[0m
+│   │   ├── [00mtest_security.py[0m
+│   │   ├── [00mtest_storage_persistence.py[0m
+│   │   └── [00mtest_verified_base_registry.py[0m
+│   ├── [00mintegration_test.py[0m
+│   ├── [01;34mload[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mtest_brain_load.py[0m
+│   ├── [01;34mproduction[0m
+│   │   ├── [00m__init__.py[0m
+│   │   ├── [01;34mfailover[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mtest_failover.py[0m
+│   │   ├── [01;34mgpu[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mtest_gpu.py[0m
+│   │   ├── [01;34mload[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mtest_api_load.py[0m
+│   │   ├── [01;34msecurity[0m
+│   │   │   ├── [00m__init__.py[0m
+│   │   │   └── [00mtest_security.py[0m
+│   │   └── [01;34mstress[0m
+│   │       ├── [00m__init__.py[0m
+│   │       └── [00mtest_stress.py[0m
+│   ├── [01;34mself_evolution[0m
+│   │   ├── [00mtest_continuous_learning_loop.py[0m
+│   │   ├── [00mtest_curiosity_engine.py[0m
+│   │   ├── [00mtest_episodic_memory.py[0m
+│   │   └── [00mtest_self_reflection_engine.py[0m
+│   ├── [01;34mstress[0m
+│   │   ├── [00m__init__.py[0m
+│   │   └── [00mtest_brain_stress.py[0m
+│   ├── [00mtest_api.py[0m
+│   ├── [00mtest_basic.py[0m
+│   ├── [00mtest_dataset_manager.py[0m
+│   ├── [00mtest_evaluation_report.json[0m
+│   ├── [00mtest_final_integration.py[0m
+│   ├── [00mtest_health.py[0m
+│   ├── [00mtest_phase65.py[0m
+│   ├── [00mtest_phase6_celery.py[0m
+│   ├── [00mtest_phase6_monitor.py[0m
+│   ├── [00mtest_phase6_priority_queue.py[0m
+│   ├── [00mtest_phase6_redis.py[0m
+│   ├── [00mtest_phase6_retry.py[0m
+│   ├── [00mtest_phase6_scheduler.py[0m
+│   ├── [00mtest_phase7.py[0m
+│   ├── [00mtest_phase8.py[0m
+│   ├── [00mtest_preparation_pipeline.py[0m
+│   ├── [00mtest_single_runtime_path.py[0m
+│   ├── [00mtest_worker.py[0m
+│   └── [01;34munit[0m
+│       ├── [00m__init__.py[0m
+│       ├── [00mtest_article_schema_phase2.py[0m
+│       ├── [00mtest_base_connector.py[0m
+│       ├── [00mtest_base_processor.py[0m
+│       ├── [00mtest_builder.py[0m
+│       ├── [00mtest_channels.py[0m
+│       ├── [00mtest_chunker.py[0m
+│       ├── [00mtest_cleaning_pipeline.py[0m
+│       ├── [00mtest_cli.py[0m
+│       ├── [00mtest_cognitive_layer_complete.py[0m
+│       ├── [00mtest_content_enricher.py[0m
+│       ├── [00mtest_content_filter.py[0m
+│       ├── [00mtest_continuous_learning_pipeline.py[0m
+│       ├── [00mtest_custom_connector.py[0m
+│       ├── [00mtest_data_transformer.py[0m
+│       ├── [00mtest_deduplicator.py[0m
+│       ├── [00mtest_demo_channel.py[0m
+│       ├── [00mtest_demo_storage_integration.py[0m
+│       ├── [00mtest_entity_extractor.py[0m
+│       ├── [00mtest_github_connector.py[0m
+│       ├── [00mtest_html_cleaner.py[0m
+│       ├── [00mtest_ingestion_http.py[0m
+│       ├── [00mtest_keyword_extractor.py[0m
+│       ├── [00mtest_language_filter.py[0m
+│       ├── [00mtest_memory_unification_runtime.py[0m
+│       ├── [00mtest_news_channel.py[0m
+│       ├── [00mtest_newsapi_connector.py[0m
+│       ├── [00mtest_phase1_runtime_contract.py[0m
+│       ├── [00mtest_phase3_channels.py[0m
+│       ├── [00mtest_phase3_connectors.py[0m
+│       ├── [00mtest_phase3_crawlers.py[0m
+│       ├── [00mtest_phase3_scheduler.py[0m
+│       ├── [00mtest_phase3_streams.py[0m
+│       ├── [00mtest_phase4_embeddings.py[0m
+│       ├── [00mtest_phase4_retrieval.py[0m
+│       ├── [00mtest_phase4_vector_store.py[0m
+│       ├── [00mtest_phase5_ai_core.py[0m
+│       ├── [00mtest_pii_filter.py[0m
+│       ├── [00mtest_pipeline_orchestrator.py[0m
+│       ├── [00mtest_pipeline_stages.py[0m
+│       ├── [00mtest_policy_filter.py[0m
+│       ├── [00mtest_quality_scorer.py[0m
+│       ├── [00mtest_reasoning_engine.py[0m
+│       ├── [00mtest_reddit_connector.py[0m
+│       ├── [00mtest_registry.py[0m
+│       ├── [00mtest_requests_fetcher.py[0m
+│       ├── [00mtest_robots_checker.py[0m
+│       ├── [00mtest_rss_parser.py[0m
+│       ├── [00mtest_schemas.py[0m
+│       ├── [00mtest_sitemap_parser.py[0m
+│       ├── [00mtest_spam_detector.py[0m
+│       ├── [00mtest_storage_phase3.py[0m
+│       ├── [00mtest_storage_phase3_part2.py[0m
+│       ├── [00mtest_summarizer.py[0m
+│       ├── [00mtest_text_cleaner.py[0m
+│       ├── [00mtest_text_normalizer.py[0m
+│       ├── [00mtest_tokenizer_wrapper.py[0m
+│       ├── [00mtest_topic_sentiment.py[0m
+│       ├── [00mtest_transformation_pipeline.py[0m
+│       └── [00mtest_utils.py[0m
+├── [00mtrain_hajeen_cloud.py[0m
+├── [00mtrain_rlhf_ppo.py[0m
+└── [01;34mworkers[0m
+    ├── [00m__init__.py[0m
+    ├── [00masync_tasks.py[0m
+    ├── [00mbackpressure.py[0m
+    ├── [00mcelery_app.py[0m
+    ├── [00mcelery_config.py[0m
+    ├── [01;34mdistributed[0m
+    │   ├── [00m__init__.py[0m
+    │   ├── [00mcpu_worker.py[0m
+    │   ├── [00mdistributed_executor.py[0m
+    │   ├── [00mgpu_worker.py[0m
+    │   ├── [00mqueue_router.py[0m
+    │   ├── [00mscheduler_manager.py[0m
+    │   └── [00mworker_monitor.py[0m
+    ├── [00membedding_tasks.py[0m
+    ├── [00mfailure_handler.py[0m
+    ├── [00mpriority_queue.py[0m
+    ├── [00mretry_manager.py[0m
+    └── [01;34mtasks[0m
+        ├── [00m__init__.py[0m
+        ├── [00minference_tasks.py[0m
+        ├── [00mingestion_tasks.py[0m
+        ├── [00mpipeline_tasks.py[0m
+        ├── [00mprocessing_tasks.py[0m
+        └── [00mtest_task.py[0m

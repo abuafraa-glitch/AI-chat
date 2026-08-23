@@ -1,0 +1,575 @@
+=== auth definitions ===
+api/dependencies.py:26:StorageManagerDep = Annotated[StorageManager, Depends(get_storage_manager)]
+api/v1/auth/router.py:27:    tenant_id: str = Field(default="default")
+api/v1/auth/router.py:34:    tenant_id: str = "default"
+api/v1/auth/router.py:58:    tenant_id: str
+api/v1/auth/router.py:70:        "tenant_id": "default",
+api/v1/auth/router.py:88:def _get_jwt_auth():
+api/v1/auth/router.py:110:        "tenant_id": body.tenant_id,
+api/v1/auth/router.py:114:    logger.info("New user registered: %s (tenant=%s)", body.username, body.tenant_id)
+api/v1/auth/router.py:145:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:151:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:163:        tenant_id=user["tenant_id"],
+api/v1/auth/router.py:176:            claims.sub, claims.tenant_id, claims.roles, "refresh"
+api/v1/auth/router.py:184:            tenant_id=claims.tenant_id,
+api/v1/auth/router.py:238:async def get_current_user(request: Request) -> Dict[str, Any]:
+api/v1/auth/router.py:241:    tenant_id = getattr(request.state, "tenant_id", "default")
+api/v1/auth/router.py:247:        "tenant_id": tenant_id,
+api/v1/auth/router.py:259:    tenant_id = getattr(request.state, "tenant_id", "default")
+api/v1/auth/router.py:264:        tenant_id=tenant_id,
+api/v1/auth/router.py:278:        "tenant_id": tenant_id,
+security/api_keys/api_key_manager.py:23:    tenant_id: str
+security/api_keys/api_key_manager.py:42:        tenant_id: str,
+security/api_keys/api_key_manager.py:59:            tenant_id=tenant_id,
+security/api_keys/api_key_manager.py:99:    def revoke_key(self, key_id: str, tenant_id: str) -> bool:
+security/api_keys/api_key_manager.py:101:            "UPDATE api_keys SET is_active = FALSE WHERE key_id = %s AND tenant_id = %s",
+security/api_keys/api_key_manager.py:102:            (key_id, tenant_id),
+security/api_keys/api_key_manager.py:113:               (key_id, name, tenant_id, user_id, scopes, hash,
+security/api_keys/api_key_manager.py:117:                api_key.key_id, api_key.name, api_key.tenant_id,
+security/audit/audit_logger.py:36:    tenant_id: str = ""
+security/audit/audit_logger.py:71:            "event_id", "timestamp", "tenant_id", "user_id", "action",
+security/audit/audit_logger.py:100:        tenant_id: str,
+security/audit/audit_logger.py:110:            tenant_id=tenant_id,
+security/audit/audit_logger.py:129:            action, resource_type, resource_id, user_id, tenant_id, status,
+security/audit/audit_logger.py:136:               (event_id, timestamp, tenant_id, user_id, action,
+security/audit/audit_logger.py:141:                event.event_id, event.timestamp, event.tenant_id, event.user_id,
+security/auth/api_key_manager.py:13:    tenant_id: str
+security/auth/api_key_manager.py:25:            "tenant_id": self.tenant_id,
+security/auth/api_key_manager.py:44:    def generate_key(self, user_id: str, tenant_id: str, roles: List[str], expires_in_seconds: Optional[int] = None, metadata: Optional[Dict[str, str]] = None) -> Tuple[str, APIKey]:
+security/auth/api_key_manager.py:55:            tenant_id=tenant_id,
+security/auth/jwt_auth.py:26:    tenant_id: str
+security/auth/jwt_auth.py:34:class JWTAuthenticator:
+security/auth/jwt_auth.py:50:        tenant_id: str,
+security/auth/jwt_auth.py:58:            "tenant_id": tenant_id,
+security/auth/jwt_auth.py:85:            tenant_id=payload["tenant_id"],
+security/auth/jwt_auth.py:109:        return self.issue_token(claims.sub, claims.tenant_id, claims.roles)
+security/middleware/auth_middleware.py:59:class AuthMiddleware(BaseHTTPMiddleware):
+security/middleware/auth_middleware.py:116:        tenant_id = "default"
+security/middleware/auth_middleware.py:124:                    tenant_id = claims.tenant_id
+security/middleware/auth_middleware.py:127:                    request.state.tenant_id = tenant_id
+security/middleware/auth_middleware.py:132:                        AuditAction.LOGIN_FAILED, "auth", "jwt_validation", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:144:                        AuditAction.LOGIN_FAILED, "auth", "api_key_validation", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:152:                tenant_id = api_key.tenant_id
+security/middleware/auth_middleware.py:155:                request.state.tenant_id = tenant_id
+security/middleware/auth_middleware.py:172:                identifier=user_id, endpoint=endpoint_key, tenant_id=tenant_id
+security/middleware/auth_middleware.py:176:                    AuditAction.RATE_LIMITED, "system", "rate_limiter", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:207:                AuditAction.PERMISSION_DENIED, "auth", "rbac_check", tenant_id, user_id, ip_address=ip,
+security/middleware/auth_middleware.py:225:        response.headers["X-Tenant-ID"] = tenant_id
+security/permissions/rbac.py:84:    tenant_id: str
+security/permissions/rbac.py:99:                self.user_id, self.tenant_id, permission, self.roles,
+security/rate_limit/rate_limiter.py:61:        tenant_id: Optional[str] = None,
+security/rate_limit/rate_limiter.py:67:        if tenant_id:
+security/rate_limit/rate_limiter.py:68:            key_parts.append(tenant_id)
+=== provider definitions ===
+core/llm/base.py:134:class LLMProviderError(LLMError):
+core/llm/base.py:141:class BaseLLMProvider(ABC):
+core/llm/llm_manager.py:103:            self._router.register_provider(name, provider)
+core/llm/provider_registry.py:17:class ProviderRegistry:
+core/llm/providers/hajeen_provider.py:21:class HajeenLLMProvider(BaseLLMProvider):
+core/llm/providers/huggingface_provider.py:23:class HuggingFaceProvider(BaseLLMProvider):
+core/llm/providers/llama_cpp_provider.py:21:class LlamaCppProvider(BaseLLMProvider):
+core/llm/providers/mistral_finetuned_provider.py:38:class MistralFinetunedProvider(BaseLLMProvider):
+core/llm/providers/mock_provider.py:17:class MockProvider(BaseLLMProvider):
+core/llm/providers/ollama_provider.py:22:class OllamaProvider(BaseLLMProvider):
+core/llm/providers/openai_provider.py:19:class OpenAIProvider(BaseLLMProvider):
+brain/model_router.py:101:    def register_provider(self, model_key: str, provider_instance: Any) -> None:
+hajeen_model/inference/base_provider.py:4:class BaseProvider(ABC):
+hajeen_model/inference/hajeen_provider.py:13:class HajeenProvider(BaseProvider):
+hajeen_model/inference/ollama_provider.py:5:class OllamaProvider(BaseProvider):
+tests/integration/test_phase2_runtime_contract.py:22:class VerifiedProvider:
+tests/integration/test_phase2_runtime_contract.py:55:class FailingProvider(VerifiedProvider):
+tests/integration/test_phase2_runtime_contract.py:66:    router.register_provider("hajeen-local", provider or VerifiedProvider())
+tests/integration/test_phase2_runtime_contract.py:266:    router.register_provider("hajeen-local", provider)
+tests/integration/test_phase4_native_streaming.py:9:class ProviderNative:
+tests/integration/test_phase4_native_streaming.py:21:class ProviderInvalid:
+tests/integration/test_phase4_native_streaming.py:28:class ProviderSlow:
+tests/integration/test_phase4_native_streaming.py:50:    router.register_provider("hajeen-local", provider)
+tests/test_phase8.py:18:class _TestOnlyProvider:
+tests/test_phase8.py:66:class TestBaseLLMProvider:
+tests/test_phase8.py:114:class TestProviderRegistry:
+tests/test_single_runtime_path.py:25:class _TestOnlyProvider:
+tests/test_single_runtime_path.py:29:        return {"content": "test provider response"}
+tests/test_single_runtime_path.py:236:        brain.model_router.register_provider("hajeen-local", _TestOnlyProvider())
+tests/unit/test_phase1_runtime_contract.py:12:class TestOnlyProvider:
+tests/unit/test_phase1_runtime_contract.py:20:    router.register_provider("hajeen-local", TestOnlyProvider())
+tests/architecture/test_phase2_runtime_probes.py:36:    router.register_provider("hajeen-local", VerifiedProvider(text="phase2 probe"))
+=== worker context ===
+"""Phase 8.8 — Inference Tasks: مهام Celery للـ AI inference الثقيل."""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import time
+import uuid
+from typing import Any, Dict, List, Optional
+
+from workers.celery_app import app as celery_app
+
+logger = logging.getLogger(__name__)
+
+
+def _run_async(coro):
+    """تشغيل coroutine في Celery worker."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
+
+
+# ── 8.8.1 — Async Inference Task ──────────────────────────────────────────────
+
+@celery_app.task(
+    name="inference.async_infer",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=5,
+    soft_time_limit=120,
+    time_limit=180,
+    queue="inference",
+)
+def async_infer_task(
+    self,
+    messages: List[Dict[str, str]],
+    model: Optional[str] = None,
+    temperature: float = 0.7,
+    max_tokens: int = 1024,
+    session_id: Optional[str] = None,
+    provider: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    مهمة Celery لـ LLM inference غير متزامن.
+
+    مناسب للطلبات الثقيلة التي لا تحتاج نتيجة فورية.
+    """
+    task_id = self.request.id
+    logger.info("Inference task started: %s", task_id)
+    t_start = time.time()
+
+    async def _run():
+        from core.inference_engine.engine import get_inference_engine
+        engine = get_inference_engine()
+        if not engine._initialized:
+            await engine.initialize()
+        return await engine.infer(
+            messages=messages,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            session_id=session_id,
+            provider=provider,
+        )
+
+    try:
+        result = _run_async(_run())
+        elapsed = time.time() - t_start
+
+        logger.info(
+            "Inference task done: %s — tokens=%d latency=%.1fs",
+            task_id, result.total_tokens, elapsed,
+        )
+
+        return {
+            "task_id": task_id,
+            "status": "completed",
+            "response": result.cleaned_content,
+            "model": result.model,
+            "provider": result.provider,
+            "usage": {
+                "prompt_tokens": result.prompt_tokens,
+                "completion_tokens": result.completion_tokens,
+                "total_tokens": result.total_tokens,
+            },
+            "latency_ms": round(result.latency_ms, 2),
+            "elapsed_s": round(elapsed, 2),
+        }
+
+    except Exception as exc:
+        logger.error("Inference task failed %s: %s", task_id, exc)
+        try:
+            self.retry(exc=exc)
+        except self.MaxRetriesExceededError:
+            return {
+                "task_id": task_id,
+                "status": "failed",
+                "error": str(exc),
+            }
+
+
+# ── 8.8.2 — Batch Inference Task ──────────────────────────────────────────────
+
+@celery_app.task(
+    name="inference.batch_infer",
+    bind=True,
+    max_retries=2,
+    soft_time_limit=600,
+    time_limit=720,
+    queue="inference_batch",
+)
+def batch_infer_task(
+    self,
+    requests: List[Dict[str, Any]],
+    model: Optional[str] = None,
+    temperature: float = 0.7,
+    max_tokens: int = 512,
+) -> Dict[str, Any]:
+    """
+    مهمة Celery لـ Batch inference — معالجة عدة طلبات دفعة واحدة.
+    """
+    task_id = self.request.id
+    logger.info("Batch inference started: %s (%d requests)", task_id, len(requests))
+    t_start = time.time()
+
+    async def _run_batch():
+        from core.inference_engine.engine import get_inference_engine
+        engine = get_inference_engine()
+        if not engine._initialized:
+            await engine.initialize()
+
+        tasks = [
+            engine.infer(
+                messages=req.get("messages", []),
+                model=req.get("model", model),
+                temperature=req.get("temperature", temperature),
+                max_tokens=req.get("max_tokens", max_tokens),
+                session_id=req.get("session_id"),
+            )
+            for req in requests
+        ]
+        return await asyncio.gather(*tasks, return_exceptions=True)
+
+    try:
+        results = _run_async(_run_batch())
+        elapsed = time.time() - t_start
+
+        processed_results = []
+        success_count = 0
+        error_count = 0
+
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                error_count += 1
+                processed_results.append({
+                    "index": i,
+                    "status": "error",
+                    "error": str(result),
+                })
+            else:
+                success_count += 1
+                processed_results.append({
+                    "index": i,
+                    "status": "completed",
+                    "response": result.cleaned_content,
+                    "tokens": result.total_tokens,
+                })
+
+        logger.info(
+            "Batch done: %s — success=%d errors=%d elapsed=%.1fs",
+            task_id, success_count, error_count, elapsed,
+        )
+
+        return {
+            "task_id": task_id,
+            "status": "completed",
+            "total": len(requests),
+            "success": success_count,
+            "errors": error_count,
+            "results": processed_results,
+            "elapsed_s": round(elapsed, 2),
+        }
+
+    except Exception as exc:
+        logger.error("Batch inference failed %s: %s", task_id, exc)
+        return {
+            "task_id": task_id,
+            "status": "failed",
+            "error": str(exc),
+        }
+
+
+# ── 8.8.3 — RAG Chat Task ─────────────────────────────────────────────────────
+
+@celery_app.task(
+    name="inference.rag_chat",
+    bind=True,
+    max_retries=2,
+    soft_time_limit=180,
+    queue="inference",
+)
+def rag_chat_task(
+    self,
+    message: str,
+    session_id: Optional[str] = None,
+    language: str = "ar",
+    top_k: int = 5,
+    temperature: float = 0.7,
+    max_tokens: int = 1024,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    مهمة RAG Chat كاملة للمعالجة في الخلفية.
+
+    User Query → RAG Retrieval → Prompt → LLM → Response
+    """
+    task_id = self.request.id
+    logger.info("RAG chat task started: %s query='%s'", task_id, message[:50])
+    t_start = time.time()
+
+    async def _run():
+        from services.chat.chat_service import ChatRequest, get_chat_service
+        service = get_chat_service()
+        if not service._initialized:
+            await service.initialize()
+
+        return await service.chat(ChatRequest(
+            message=message,
+            session_id=session_id,
+            language=language,
+            use_rag=True,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            top_k=top_k,
+        ))
+
+    try:
+        response = _run_async(_run())
+        elapsed = time.time() - t_start
+
+        return {
+            "task_id": task_id,
+            "status": "completed",
+            "response": response.to_dict(),
+            "elapsed_s": round(elapsed, 2),
+        }
+    except Exception as exc:
+        logger.error("RAG chat task failed %s: %s", task_id, exc)
+        try:
+            self.retry(exc=exc)
+        except self.MaxRetriesExceededError:
+            return {"task_id": task_id, "status": "failed", "error": str(exc)}
+
+"""
+GPU Worker — handles GPU-intensive tasks: inference, embedding generation,
+model training, and quantization.
+"""
+from __future__ import annotations
+
+import gc
+import logging
+import os
+import time
+from contextlib import contextmanager
+from typing import Any, Dict, Generator, List, Optional
+
+logger = logging.getLogger(__name__)
+
+try:
+    import torch
+    TORCH_AVAILABLE = True
+    GPU_COUNT = torch.cuda.device_count()
+except ImportError:
+    TORCH_AVAILABLE = False
+    GPU_COUNT = 0
+
+
+class GPUMemoryManager:
+    """Manages GPU memory allocation across tasks."""
+
+    def __init__(self) -> None:
+        self.allocated: Dict[str, Dict[str, Any]] = {}
+        self.device_utilization: Dict[int, float] = {}
+
+    def get_best_device(self, required_memory_gb: float = 4.0) -> int:
+        if not TORCH_AVAILABLE or GPU_COUNT == 0:
+            raise RuntimeError("No GPU available")
+
+        best_device = 0
+        best_free = 0.0
+
+        for device_id in range(GPU_COUNT):
+            props = torch.cuda.get_device_properties(device_id)
+            total = props.total_memory / (1024 ** 3)
+            allocated = torch.cuda.memory_allocated(device_id) / (1024 ** 3)
+            free = total - allocated
+
+            if free >= required_memory_gb and free > best_free:
+                best_free = free
+                best_device = device_id
+
+        if best_free < required_memory_gb:
+            raise RuntimeError(
+                f"Insufficient GPU memory: need {required_memory_gb}GB, "
+                f"best available {best_free:.1f}GB"
+            )
+
+        return best_device
+
+    @contextmanager
+    def reserve_device(
+        self, device_id: int, task_id: str
+    ) -> Generator[int, None, None]:
+        self.allocated[task_id] = {
+            "device_id": device_id,
+            "start_time": time.time(),
+        }
+        try:
+            yield device_id
+        finally:
+            self.allocated.pop(task_id, None)
+            if TORCH_AVAILABLE:
+                with torch.cuda.device(device_id):
+                    torch.cuda.empty_cache()
+            gc.collect()
+
+    def get_memory_stats(self) -> Dict[str, Any]:
+        if not TORCH_AVAILABLE:
+            return {"gpu_available": False}
+
+        stats: Dict[str, Any] = {"gpu_available": True, "devices": []}
+        for device_id in range(GPU_COUNT):
+            props = torch.cuda.get_device_properties(device_id)
+            total = props.total_memory / (1024 ** 3)
+            allocated = torch.cuda.memory_allocated(device_id) / (1024 ** 3)
+            reserved = torch.cuda.memory_reserved(device_id) / (1024 ** 3)
+
+            stats["devices"].append(
+                {
+                    "device_id": device_id,
+                    "name": props.name,
+                    "total_gb": round(total, 2),
+                    "allocated_gb": round(allocated, 2),
+                    "reserved_gb": round(reserved, 2),
+                    "free_gb": round(total - allocated, 2),
+                    "utilization_pct": round((allocated / total) * 100, 1),
+                }
+            )
+        return stats
+
+
+_memory_manager = GPUMemoryManager()
+
+
+class GPUWorker:
+    """Worker that processes GPU-intensive tasks."""
+
+    def __init__(
+        self,
+        worker_id: str,
+        model_cache: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.worker_id = worker_id
+        self.model_cache = model_cache or {}
+        self.memory_manager = _memory_manager
+        self.task_count = 0
+        self.error_count = 0
+
+    def run_inference(
+        self,
+        model_name: str,
+        inputs: List[str],
+        generation_config: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        start = time.perf_counter()
+        config = generation_config or {}
+
+        try:
+            required_gb = config.get("required_memory_gb", 8.0)
+            device_id = self.memory_manager.get_best_device(required_gb)
+
+            with self.memory_manager.reserve_device(
+                device_id, f"{self.worker_id}_{self.task_count}"
+            ):
+                model = self._load_model(model_name, device_id)
+                outputs = self._generate(model, inputs, config, device_id)
+                self.task_count += 1
+
+                return {
+                    "status": "success",
+                    "outputs": outputs,
+                    "model": model_name,
+                    "device": device_id,
+                    "latency_ms": round((time.perf_counter() - start) * 1000, 2),
+                    "batch_size": len(inputs),
+                }
+
+        except Exception as exc:
+            self.error_count += 1
+            logger.exception("GPU inference failed: %s", exc)
+            raise
+
+    def _load_model(self, model_name: str, device_id: int) -> Any:
+        cache_key = f"{model_name}:{device_id}"
+        if cache_key in self.model_cache:
+            return self.model_cache[cache_key]
+
+        logger.info("Loading model %s on device %d", model_name, device_id)
+        # Model loading logic — integrated with core/model/ layer
+        from core.model.loader import ModelLoader
+        loader = ModelLoader()
+        model = loader.load(model_name, device=f"cuda:{device_id}")
+        self.model_cache[cache_key] = model
+        return model
+
+    def _generate(
+        self,
+        model: Any,
+        inputs: List[str],
+        config: Dict[str, Any],
+        device_id: int,
+    ) -> List[str]:
+        max_tokens = config.get("max_tokens", 512)
+        temperature = config.get("temperature", 0.7)
+        top_p = config.get("top_p", 0.9)
+
+        outputs = model.generate(
+            inputs,
+            max_new_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            do_sample=temperature > 0,
+        )
+        return outputs
+
+    def run_embedding(
+        self,
+        texts: List[str],
+        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+    ) -> Dict[str, Any]:
+        start = time.perf_counter()
+        try:
+            device_id = self.memory_manager.get_best_device(required_memory_gb=2.0)
+            with self.memory_manager.reserve_device(
+                device_id, f"embed_{self.task_count}"
+            ):
+                from core.embeddings.generator import EmbeddingGenerator
+                gen = EmbeddingGenerator(model_name=model_name, device=f"cuda:{device_id}")
+                embeddings = gen.encode(texts)
+                self.task_count += 1
+
+                return {
+                    "status": "success",
+                    "embeddings": embeddings,
+                    "model": model_name,
+                    "count": len(texts),
+                    "latency_ms": round((time.perf_counter() - start) * 1000, 2),
+                }
+        except Exception as exc:
+            self.error_count += 1
+            logger.exception("Embedding generation failed: %s", exc)
+            raise
+
+    def health_check(self) -> Dict[str, Any]:
+        return {
+            "worker_id": self.worker_id,
+            "status": "healthy",
+            "task_count": self.task_count,
+            "error_count": self.error_count,
+            "gpu_stats": self.memory_manager.get_memory_stats(),
+            "cached_models": list(self.model_cache.keys()),
+        }

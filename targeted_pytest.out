@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/ubuntu/ai-chat-review
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 28 items
+
+tests/integration/test_verified_base_registry.py ...                     [ 10%]
+tests/test_single_runtime_path.py .........................              [100%]
+
+======================= 28 passed, 3 warnings in 15.50s ========================
