@@ -44,7 +44,7 @@ from .cognitive_layer.reasoning_engine import (
     get_reasoning_engine,
 )
 from .decision_engine import DecisionEngine, get_decision_engine_sync
-from .goal_manager import GoalManager, get_goal_manager
+from .goal_manager import ComplexityLevel, Goal, GoalManager, IntentType, get_goal_manager
 from .task_decomposer import get_task_decomposer
 from .graph_planner import get_graph_planner
 from .multi_model import get_multi_model_collaborator
@@ -60,6 +60,8 @@ from .memory.memory_fabric import MemoryFabric, get_memory_fabric
 from .metrics.model_performance_db import ModelPerformanceDB, get_performance_db
 from .model_router import ModelRouter, get_model_router
 from .policy.policy_engine import PolicyEngine, get_policy_engine
+from .input_cleaning import StreamingOutputCleaner, clean_model_output, clean_user_input
+from .clean_data_store import CleanConversationStore
 from services.agents.agent_orchestrator import AgentOrchestrator
 from services.agents.planner_agent import PlannerAgent
 
@@ -102,6 +104,8 @@ class ExecutionTrace:
     trace_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # الطبقات التي مرّ عليها الطلب
+    input_cleaning: Dict[str, Any] = field(default_factory=dict)
+    output_cleaning: Dict[str, Any] = field(default_factory=dict)
     policy_evaluation: Dict[str, Any] = field(default_factory=dict)
     intent_analysis: Dict[str, Any] = field(default_factory=dict)
     goal_analysis: Dict[str, Any] = field(default_factory=dict)
@@ -121,15 +125,26 @@ class ExecutionTrace:
     layers_passed: List[str] = field(default_factory=list)
 
     def record_layer(self, layer_name: str, data: Dict[str, Any]) -> None:
-        """تسجيل مرور الطلب عبر طبقة معينة."""
+        """تسجيل تنفيذ طبقة مع حالة قابلة للمطابقة عبر request_id."""
         self.layers_passed.append(layer_name)
         setattr(self, layer_name, data)
+        skipped = bool(data.get("skipped", False))
+        degraded = data.get("status") == "degraded"
+        failed = data.get("success") is False or data.get("status") == "failed"
+        status = "skipped" if skipped else ("failed" if failed else ("degraded" if degraded else "success"))
+        logger.info(
+            "BRAIN_LAYER request_id=%s trace_id=%s layer=%s status=%s details=%s",
+            self.request_id, self.trace_id, layer_name, status,
+            {k: v for k, v in data.items() if k not in {"rag_sources", "agent_events"}},
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "trace_id": self.trace_id,
             "request_id": self.request_id,
             "layers_passed": self.layers_passed,
+            "input_cleaning": self.input_cleaning,
+            "output_cleaning": self.output_cleaning,
             "total_latency_ms": round(self.total_latency_ms, 2),
             "policy": self.policy_evaluation,
             "intent": self.intent_analysis,
@@ -199,9 +214,15 @@ class HajeenBrainV3:
 
         # يُحقن عند startup من RAGPipeline الرسمي؛ لا يوجد fallback وهمي
         self.rag_pipeline: Optional[RAGPipeline] = None
+        # RAG enhancement must never block the canonical chat response.
+        self._rag_temporarily_unavailable = False
+        self._rag_timeout_seconds = 4.0
 
         # طبقة السياسات
         self.policy: PolicyEngine = get_policy_engine()
+
+        # طبقة التنظيف الرسمية: تُنفذ قبل الذاكرة والسياسة وأي مزود نموذج.
+        self.clean_data_store = CleanConversationStore()
 
         # طبقات التحليل الإدراكي
         self.intent_analyzer: IntentAnalyzer = get_intent_analyzer()
@@ -345,9 +366,63 @@ class HajeenBrainV3:
         trace = ExecutionTrace(request_id=request_id)
         self._execution_traces[request_id] = trace
 
+        # ── 0. Input Cleaning: الخام يدخل هنا أولاً، ولا يخرج إلى السجل ───
+        try:
+            cleaned_input = clean_user_input(request.user_message)
+            request.user_message = cleaned_input.clean_text
+            try:
+                clean_path = await self.clean_data_store.save_user_message(
+                    request_id=request_id,
+                    session_id=request.session_id,
+                    user_id=request.user_id,
+                    cleaned=cleaned_input,
+                )
+                trace.record_layer("input_cleaning", {
+                    "status": "success",
+                    "raw_sha256": cleaned_input.raw_sha256,
+                    "clean_sha256": cleaned_input.clean_sha256,
+                    "original_length": cleaned_input.original_length,
+                    "cleaned_length": cleaned_input.cleaned_length,
+                    "transformations": list(cleaned_input.transformations),
+                    "raw_text_persisted": False,
+                    "clean_data_path": clean_path,
+                })
+            except Exception as exc:
+                logger.exception("Input cleaning storage failed for request_id=%s", request_id)
+                trace.record_layer("input_cleaning", {
+                    "status": "degraded",
+                    "cleaning_completed": True,
+                    "storage_error": type(exc).__name__,
+                    "raw_sha256": cleaned_input.raw_sha256,
+                    "clean_sha256": cleaned_input.clean_sha256,
+                    "raw_text_persisted": False,
+                })
+        except Exception as exc:
+            logger.warning("Input cleaning rejected request_id=%s: %s", request_id, exc)
+            trace.record_layer("input_cleaning", {
+                "status": "failed",
+                "error": type(exc).__name__,
+                "raw_text_persisted": False,
+            })
+            return BrainResponse(
+                request_id=request_id,
+                session_id=request.session_id,
+                content="تعذر معالجة الرسالة بعد فحص الإدخال. يرجى إرسال نص غير فارغ.",
+                trace=trace,
+                model_used="input-cleaner",
+                models_collaborated=[],
+                quality_score=1.0,
+                policy_decision="rejected_input",
+                used_local_model=True,
+                used_rag=False,
+            )
+
         # ── 1. MemoryFabric: جلب سياق المحادثة (SSOT) ─────────────────
         conversation = self.memory.get_conversation(request.session_id)
-        conversation.add_message("user", request.user_message)
+        # Streaming pre-registers the cleaned user turn before scheduling the
+        # worker so cancellation still preserves the user message.
+        if not request.context.pop("_user_turn_prepared", False):
+            conversation.add_message("user", request.user_message)
         trace.record_layer("memory_operations", {
             "session_id": request.session_id,
             "action": "context_loaded",
@@ -358,6 +433,7 @@ class HajeenBrainV3:
             policy_result = self.policy.evaluate({
                 "prompt": request.user_message,
                 "content": request.user_message,
+                "query": request.user_message,
                 "session_id": request.session_id,
                 "user_id": request.user_id,
             })
@@ -433,8 +509,30 @@ class HajeenBrainV3:
                 "confidence": getattr(goal, "confidence", None),
             })
         except Exception as exc:
-            logger.debug("Goal analysis skipped: %s", exc)
-            trace.record_layer("goal_analysis", {"skipped": True})
+            # محلل LLM اختياري؛ لا يجوز أن يمنع تنفيذ طبقة الهدف أو القرار.
+            # ننشئ هدفاً محلياً صالحاً ونوسم المصدر بوضوح بدلاً من skipped.
+            logger.warning("Goal analysis degraded to deterministic fallback: %s", exc)
+            goal = Goal(
+                goal_id=str(uuid.uuid4()),
+                original_request=request.user_message,
+                final_objective=request.user_message,
+                intent=IntentType.CONVERSATION,
+                complexity=ComplexityLevel.SIMPLE,
+                domain="general",
+                sub_tasks=[],
+                required_tools=[],
+                suitable_models=[request.force_model] if request.force_model else [],
+                confidence=0.5,
+                metadata={"source": "deterministic_fallback", "error": type(exc).__name__},
+            )
+            trace.record_layer("goal_analysis", {
+                "goal_id": goal.goal_id,
+                "final_objective": goal.final_objective,
+                "confidence": goal.confidence,
+                "status": "degraded",
+                "fallback": "deterministic",
+                "error_type": type(exc).__name__,
+            })
 
         # ── 5. Context Analysis ─────────────────────────────────────────
         try:
@@ -491,8 +589,19 @@ class HajeenBrainV3:
                 "agent_selection": getattr(decision, "metadata", {}).get("agent_selection", "unknown"),
             })
         except Exception as exc:
-            logger.debug("Decision skipped: %s", exc)
-            trace.record_layer("decision", {"skipped": True})
+            # القرار يجب أن ينفذ دائماً بعد إنشاء الهدف، مع fallback توليد مباشر.
+            logger.warning("Decision engine degraded to direct-generation fallback: %s", exc)
+            decision = None
+            trace.record_layer("decision", {
+                "decision_id": None,
+                "action": "generate",
+                "model_preference": request.force_model,
+                "use_agent": False,
+                "agent_selection": "ModelRouter",
+                "status": "degraded",
+                "fallback": "direct_generation",
+                "error_type": type(exc).__name__,
+            })
 
         # ── 8. Optional Agent runtime through the central orchestrator ─────
         agent_output = ""
@@ -540,23 +649,52 @@ class HajeenBrainV3:
             rag_context = str(agent_result.context.transient_state.get("rag_context", ""))
             rag_sources = list(agent_result.context.transient_state.get("rag_sources", []))
         elif use_rag:
+            # RAG is an explicit request, so silently continuing as plain chat
+            # would violate the runtime contract and hide a missing pipeline.
             if self.rag_pipeline is None:
-                raise RuntimeError("RAG requested but canonical RAGPipeline is not initialized")
-            rag_response = await self.rag_pipeline.run(RAGRequest(
-                query=request.user_message,
-                top_k=int(request.context.get("top_k", 5)),
-                language=str(request.context.get("language", "ar")),
-                max_context_tokens=2000,
-                retrieval_mode=str(request.context.get("retrieval_mode", "semantic")),
-            ))
-            rag_context = rag_response.formatted.context_used
-            rag_sources = rag_response.formatted.citations
+                trace.record_layer("rag", {"status": "failed", "error_type": "RAGPipelineUnavailable", "fail_closed": True})
+                raise RuntimeError("canonical RAGPipeline is required when use_rag=True")
+            if self._rag_temporarily_unavailable:
+                trace.record_layer("rag", {"status": "failed", "error_type": "RAGTemporarilyUnavailable", "fail_closed": True})
+                raise RuntimeError("canonical RAGPipeline is temporarily unavailable")
+            else:
+                try:
+                    rag_response = await asyncio.wait_for(
+                        self.rag_pipeline.run(RAGRequest(
+                            query=request.user_message,
+                            top_k=int(request.context.get("top_k", 5)),
+                            language=str(request.context.get("language", "ar")),
+                            max_context_tokens=2000,
+                            retrieval_mode=str(request.context.get("retrieval_mode", "semantic")),
+                        )),
+                        timeout=self._rag_timeout_seconds,
+                    )
+                    rag_context = rag_response.formatted.context_used
+                    rag_sources = rag_response.formatted.citations
+                    trace.record_layer("rag", {
+                        "status": "completed",
+                        "sources": len(rag_sources),
+                    })
+                except Exception as exc:
+                    self._rag_temporarily_unavailable = True
+                    logger.warning("RAG failed; continuing without retrieval: %s", exc)
+                    rag_context = ""
+                    rag_sources = []
+                    trace.record_layer("rag", {
+                        "status": "degraded",
+                        "fallback": "chat",
+                        "error_type": type(exc).__name__,
+                    })
 
-        prompt_mode = PromptMode.RAG if use_rag else PromptMode.CHAT
-        if use_rag and self.rag_pipeline is not None and self.rag_pipeline.unified_prompt_builder is not None:
+        # استخدم قالب RAG فقط عندما يوجد سياق مسترجع فعلياً. عند غياب
+        # النتائج، يجب أن تعود الرسالة إلى محادثة عامة حتى لا يجيب النموذج
+        # برسالة «لا توجد إجابة في السياق المتاح» بدلاً من معالجة سؤال المستخدم.
+        has_rag_context = bool(str(rag_context or '').strip()) or bool(rag_sources)
+        effective_prompt_mode = PromptMode.RAG if use_rag and has_rag_context else PromptMode.CHAT
+        if effective_prompt_mode == PromptMode.RAG and self.rag_pipeline is not None and self.rag_pipeline.unified_prompt_builder is not None:
             prompt = self.rag_pipeline.unified_prompt_builder.build(
                 request.user_message,
-                mode=PromptMode.RAG,
+                mode=effective_prompt_mode,
                 history=conversation.get_window()[:-1],
                 context=rag_context,
                 language=str(request.context.get("language", "ar")),
@@ -565,7 +703,7 @@ class HajeenBrainV3:
         else:
             prompt = self.prompt_builder.build(
                 request.user_message,
-                mode=prompt_mode,
+                mode=effective_prompt_mode,
                 history=conversation.get_window()[:-1],
                 context=rag_context,
                 language=str(request.context.get("language", "ar")),
@@ -573,7 +711,7 @@ class HajeenBrainV3:
             )
         trace.record_layer("execution", {
             "prompt_builder": "UnifiedPromptBuilder",
-            "prompt_mode": prompt_mode.value,
+            "prompt_mode": effective_prompt_mode.value,
             "rag_pipeline": "RAGPipeline" if use_rag else None,
             "rag_sources": rag_sources,
             "rag_retrieval_mode": str(request.context.get("retrieval_mode", "semantic")) if use_rag else None,
@@ -585,6 +723,7 @@ class HajeenBrainV3:
                 if queue is None:
                     raise RuntimeError("Streaming queue is not initialized")
                 pieces: List[str] = []
+                output_cleaner = StreamingOutputCleaner()
                 async for chunk in self.model_router.stream(
                     messages=prompt.messages,
                     capability="general",
@@ -594,8 +733,52 @@ class HajeenBrainV3:
                     request_id=request.request_id,
                 ):
                     pieces.append(chunk.delta)
-                    await queue.put(chunk)
-                content = "".join(pieces)
+                    if chunk.provider:
+                        trace.provider = chunk.provider
+                    if chunk.event_type == "delta" and chunk.delta:
+                        clean_delta = output_cleaner.feed(chunk.delta)
+                        if clean_delta:
+                            await queue.put(type(chunk)(
+                                delta=clean_delta,
+                                finish_reason=chunk.finish_reason,
+                                index=chunk.index,
+                                model=chunk.model,
+                                event_type=chunk.event_type,
+                                provider=chunk.provider,
+                                request_id=chunk.request_id,
+                                metadata={**chunk.metadata, "output_cleaned": True},
+                            ))
+                    elif chunk.event_type == "finish":
+                        tail = output_cleaner.finish()
+                        if tail:
+                            await queue.put(type(chunk)(
+                                delta=tail,
+                                finish_reason=None,
+                                index=chunk.index,
+                                model=chunk.model,
+                                event_type="delta",
+                                provider=chunk.provider,
+                                request_id=chunk.request_id,
+                                metadata={**chunk.metadata, "output_cleaned": True, "flush": True},
+                            ))
+                        await queue.put(chunk)
+                    else:
+                        await queue.put(chunk)
+                raw_content = "".join(pieces)
+                cleaned_output = clean_model_output(raw_content)
+                content = cleaned_output.clean_text
+                trace.record_layer("output_cleaning", {
+                    "status": "success",
+                    "raw_sha256": cleaned_output.raw_sha256,
+                    "clean_sha256": cleaned_output.clean_sha256,
+                    "original_length": cleaned_output.original_length,
+                    "cleaned_length": cleaned_output.cleaned_length,
+                    "transformations": list(cleaned_output.transformations),
+                    "raw_text_persisted": False,
+                    "storage_deferred": True,
+                    "streaming": True,
+                })
+                trace.tokens_used = len(content.split())
                 if not content:
                     raise RuntimeError("Native provider stream completed without content")
                 route_result = None
@@ -621,8 +804,20 @@ class HajeenBrainV3:
                 )
                 if not route_result.success:
                     raise RuntimeError(route_result.error or "ModelRouter returned an unsuccessful result")
-                content = route_result.response
+                raw_content = route_result.response
+                cleaned_output = clean_model_output(raw_content)
+                content = cleaned_output.clean_text
                 model_used = route_result.model_id
+                trace.record_layer("output_cleaning", {
+                    "status": "success",
+                    "raw_sha256": cleaned_output.raw_sha256,
+                    "clean_sha256": cleaned_output.clean_sha256,
+                    "original_length": cleaned_output.original_length,
+                    "cleaned_length": cleaned_output.cleaned_length,
+                    "transformations": list(cleaned_output.transformations),
+                    "raw_text_persisted": False,
+                    "streaming": False,
+                })
                 trace.tokens_used = route_result.tokens_used
                 trace.provider = route_result.provider
                 trace.record_layer("execution", {
@@ -653,7 +848,28 @@ class HajeenBrainV3:
             if queue is not None:
                 await queue.put(None)
 
-        # ── 10. MemoryFabric: حفظ الاستجابة (SSOT) ──────────────────────
+        # ── 10. حفظ النسخة المنظفة في التخزين القابل لإعادة الاستخدام ─────
+        try:
+            # cleaned_output أُنشئت مباشرة بعد عودة ModelRouter وقبل أي تخزين.
+            # لا نعيد تنظيفها هنا حتى تبقى raw_sha256 بصمة النص الخام الحقيقي.
+            output_path = await self.clean_data_store.save_model_output(
+                request_id=request_id,
+                session_id=request.session_id,
+                user_id=request.user_id,
+                cleaned=cleaned_output,
+                provider=trace.provider,
+                model_id=model_used,
+            )
+            output_trace = dict(trace.output_cleaning)
+            output_trace.update({"storage_status": "saved", "clean_data_path": output_path})
+            trace.record_layer("output_cleaning", output_trace)
+        except Exception as exc:
+            logger.exception("Model output cleaning storage failed for request_id=%s", request_id)
+            output_trace = dict(trace.output_cleaning)
+            output_trace.update({"status": "degraded", "storage_status": "failed", "storage_error": type(exc).__name__})
+            trace.record_layer("output_cleaning", output_trace)
+
+        # ── 11. MemoryFabric: حفظ الاستجابة المنظفة (SSOT) ───────────────
         conversation.add_message("assistant", content)
         trace.record_layer("reflection", {"stored_in_memory_fabric": True})
 
@@ -679,6 +895,12 @@ class HajeenBrainV3:
             request.stream = True
         queue: asyncio.Queue = asyncio.Queue()
         self._stream_queues[request.request_id] = queue
+        # Register the user turn synchronously before the worker is scheduled.
+        # This guarantees cancellation cannot erase an already submitted turn.
+        cleaned = clean_user_input(request.user_message)
+        request.user_message = cleaned.clean_text
+        self.memory.get_conversation(request.session_id).add_message("user", request.user_message)
+        request.context["_user_turn_prepared"] = True
         task = asyncio.create_task(self.process(request))
         try:
             while True:

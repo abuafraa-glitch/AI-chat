@@ -63,6 +63,8 @@ class ProviderRegistry:
     def auto_register_defaults(cls) -> None:
         defaults = [
             ("core.llm.providers.openai_provider", "OpenAIProvider", "openai", ["gpt", "chatgpt"]),
+            # Groq يستخدم واجهة OpenAI الرسمية، لذلك يعاد استخدام المحول نفسه.
+            ("core.llm.providers.openai_provider", "OpenAIProvider", "groq", ["groq"]),
             ("core.llm.providers.ollama_provider", "OllamaProvider", "ollama", ["local"]),
             ("core.llm.providers.huggingface_provider", "HuggingFaceProvider", "huggingface", ["hf"]),
             ("core.llm.providers.llama_cpp_provider", "LlamaCppProvider", "llama_cpp", ["llama", "gguf"]),

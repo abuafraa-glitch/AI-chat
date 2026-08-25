@@ -34,6 +34,43 @@ def pytest_configure(config):
 
 
 @pytest.fixture(autouse=True)
+def isolate_test_runtime(request, monkeypatch):
+    """Prevent cross-test auth and FastAPI app-state leakage.
+
+    Integration tests may temporarily enable authentication or attach runtime
+    services to the global app.  Restore the test-safe baseline after every
+    test without weakening production middleware.
+    """
+    previous_auth = os.environ.get("ENABLE_AUTH")
+    # The channel workflow contract intentionally runs without auth, while
+    # phase5 boundary tests intentionally exercise auth=true.
+    if request.path.name == "test_api_workflow.py":
+        monkeypatch.setenv("ENABLE_AUTH", "false")
+    app = None
+    previous_state = None
+    try:
+        from api.main import app as imported_app
+        app = imported_app
+        previous_state = dict(vars(app.state))
+    except Exception:
+        pass
+    yield
+    if app is not None and previous_state is not None:
+        for key in list(vars(app.state)):
+            if key not in previous_state:
+                try:
+                    delattr(app.state, key)
+                except AttributeError:
+                    pass
+        for key, value in previous_state.items():
+            setattr(app.state, key, value)
+    if previous_auth is None:
+        os.environ.pop("ENABLE_AUTH", None)
+    else:
+        os.environ["ENABLE_AUTH"] = previous_auth
+
+
+@pytest.fixture(autouse=True)
 def ensure_default_event_loop():
     """Keep legacy synchronous tests compatible with Python 3.12 loop lifecycle."""
     try:

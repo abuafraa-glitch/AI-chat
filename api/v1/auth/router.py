@@ -21,15 +21,17 @@ JWT_SECRET = os.getenv("JWT_SECRET", "hajeen-change-me-in-production-secret-key"
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
+    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
     email: str = Field(..., min_length=5)
     password: str = Field(..., min_length=8)
     tenant_id: str = Field(default="default")
-    roles: List[str] = Field(default=["user"])
+    roles: List[str] = Field(default_factory=lambda: ["user"])
 
 
 class LoginRequest(BaseModel):
-    username: str
+    username: Optional[str] = None
+    email: Optional[str] = None
     password: str
     tenant_id: str = "default"
 
@@ -56,6 +58,7 @@ class TokenResponse(BaseModel):
     user_id: str
     roles: List[str]
     tenant_id: str
+    user: Dict[str, Any]
 
 
 # ── In-memory user store (يُستبدل بـ PostgreSQL في الإنتاج) ──────────────────
@@ -97,13 +100,15 @@ def _get_jwt_auth():
 
 @router.post("/register", summary="تسجيل مستخدم جديد", status_code=201)
 async def register(body: RegisterRequest) -> Dict[str, Any]:
-    if body.username in _USERS:
+    username = (body.username or body.email.split("@", 1)[0]).strip()
+    if username in _USERS:
         raise HTTPException(status_code=400, detail="اسم المستخدم موجود بالفعل")
 
     user_id = f"usr_{uuid.uuid4().hex[:12]}"
-    _USERS[body.username] = {
+    _USERS[username] = {
         "user_id": user_id,
-        "username": body.username,
+        "username": username,
+        "name": body.name or username,
         "email": body.email,
         "password_hash": _hash_password(body.password),
         "roles": body.roles,
@@ -111,12 +116,21 @@ async def register(body: RegisterRequest) -> Dict[str, Any]:
         "active": True,
         "created_at": time.time(),
     }
-    logger.info("New user registered: %s (tenant=%s)", body.username, body.tenant_id)
+    jwt = _get_jwt_auth()
+    access_token = jwt.issue_token(user_id=user_id, tenant_id=body.tenant_id, roles=body.roles, token_type="access")
+    refresh_token = jwt.issue_token(user_id=user_id, tenant_id=body.tenant_id, roles=body.roles, token_type="refresh")
+    logger.info("New user registered: %s (tenant=%s)", username, body.tenant_id)
     return {
         "success": True,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": 3600,
         "user_id": user_id,
-        "username": body.username,
+        "username": username,
         "roles": body.roles,
+        "tenant_id": body.tenant_id,
+        "user": {"id": user_id, "name": body.name or username, "email": body.email, "username": username},
         "message": "تم تسجيل المستخدم بنجاح",
     }
 
@@ -125,7 +139,10 @@ async def register(body: RegisterRequest) -> Dict[str, Any]:
 
 @router.post("/login", response_model=TokenResponse, summary="تسجيل الدخول")
 async def login(body: LoginRequest, request: Request) -> TokenResponse:
-    user = _USERS.get(body.username)
+    identifier = (body.username or body.email or "").strip()
+    user = _USERS.get(identifier)
+    if user is None:
+        user = next((candidate for candidate in _USERS.values() if candidate.get("email") == identifier), None)
     if not user or not user.get("active"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -161,6 +178,7 @@ async def login(body: LoginRequest, request: Request) -> TokenResponse:
         user_id=user["user_id"],
         roles=user["roles"],
         tenant_id=user["tenant_id"],
+        user={"id": user["user_id"], "name": user.get("name", user["username"]), "email": user["email"], "username": user["username"]},
     )
 
 
@@ -181,7 +199,8 @@ async def refresh_token(body: RefreshRequest) -> TokenResponse:
             expires_in=3600,
             user_id=claims.sub,
             roles=claims.roles,
-            tenant_id=claims.tenant_id,
+                tenant_id=claims.tenant_id,
+            user={"id": claims.sub, "name": claims.sub, "email": "", "username": claims.sub},
         )
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))

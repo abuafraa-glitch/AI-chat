@@ -50,8 +50,21 @@ class HajeenLLMProvider(BaseLLMProvider):
         return LLMResponse(content=content, model=self.model_name, provider=self.provider_name, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens, total_tokens=prompt_tokens + completion_tokens, request_id=request.request_id)
 
     async def _stream_implementation(self, request: LLMRequest) -> AsyncGenerator[LLMStreamChunk, None]:
-        raise LLMProviderError("Hajeen checkpoint adapter does not expose native streaming")
-        yield  # pragma: no cover
+        """Expose a safe compatibility stream for the local checkpoint.
+
+        The current Transformers adapter generates in one pass, so this branch
+        emits one complete delta rather than pretending to provide token-native
+        streaming. It still uses the same BrainV3 and ModelRouter contract.
+        """
+        response = await self._complete_implementation(request)
+        yield LLMStreamChunk(
+            delta=response.content,
+            model=self.model_name,
+            provider=self.provider_name,
+            request_id=request.request_id,
+            event_type="delta",
+            metadata={"stream_mode": "buffered-local"},
+        )
 
     async def health_check(self) -> bool:
         try:

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Callable, Optional, Tuple
 
@@ -109,6 +110,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if path in PUBLIC_PATHS or method == "OPTIONS":
             response = await call_next(request)
             return response
+
+        # Test/dev deployments can explicitly disable route authentication.
+        # Production remains protected because the default is enabled.
+        if os.getenv("ENABLE_AUTH", "true").strip().lower() in {"0", "false", "no", "off"}:
+            return await call_next(request)
 
         # ── 2. استخراج التوكن ─────────────────────────────────────────────
         token, token_type = _extract_token(request)

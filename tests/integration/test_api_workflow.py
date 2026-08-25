@@ -23,12 +23,12 @@ from httpx import AsyncClient, ASGITransport
 # Fixtures
 # ─────────────────────────────────────────────
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def anyio_backend():
     return "asyncio"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def api_client():
     """إنشاء AsyncClient للـ FastAPI app."""
     from api.main import app
@@ -39,7 +39,7 @@ async def api_client():
         yield client
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def sample_channel_id(api_client):
     """إنشاء قناة demo للاختبار وإعادة معرّفها."""
     response = await api_client.post("/api/v1/channels", json={

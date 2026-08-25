@@ -142,6 +142,10 @@ async def chat_stream(
         raise HTTPException(status_code=503, detail="HajeenBrainV3 not initialized")
 
     stream_id = str(uuid.uuid4())
+    logger.info(
+        "BRAIN_TRACE_START request_id=%s model=%s use_rag=%s use_agent=%s",
+        stream_id, body.model or "auto", body.use_rag, body.use_agent,
+    )
     brain_request = BrainRequest(
         request_id=stream_id,
         user_message=body.message,
@@ -182,12 +186,24 @@ async def chat_stream(
                 yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
             if not completed:
                 raise RuntimeError("Native stream ended without finish event")
+            logger.info("BRAIN_SSE request_id=%s event=DONE status=success", brain_request.request_id)
             yield "data: [DONE]\n\n"
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            logger.error("Brain stream error: %s", e)
+            logger.error("Brain stream error request_id=%s: %s", brain_request.request_id, e)
+            logger.info("BRAIN_SSE request_id=%s event=ERROR status=failed", brain_request.request_id)
             yield f"data: {json.dumps({'event': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+        finally:
+            trace = brain.get_trace(brain_request.request_id)
+            logger.info(
+                "BRAIN_TRACE_END request_id=%s layers=%s provider=%s tokens=%s latency_ms=%s",
+                brain_request.request_id,
+                ",".join(trace.layers_passed) if trace else "none",
+                trace.provider if trace else "none",
+                trace.tokens_used if trace else 0,
+                round(trace.total_latency_ms, 2) if trace else 0,
+            )
 
     return StreamingResponse(
         event_generator(),

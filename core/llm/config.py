@@ -49,32 +49,32 @@ class LLMSettings:
     @classmethod
     def from_env(cls) -> "LLMSettings":
         """تحميل الإعدادات من متغيرات البيئة."""
-        # فرض المزود المحلي 'hajeen' بغض النظر عن متغيرات البيئة
-        provider = "hajeen"
+        # يسمح بالتبديل محلياً؛ عند وجود Groq يصبح هو الافتراضي للاختبار.
+        provider = os.getenv("LLM_PROVIDER") or ("groq" if os.getenv("GROQ_API_KEY") else "hajeen")
 
-        # اختيار النموذج الافتراضي بناءً على المزود
         default_models = {
+            "groq": "openai/gpt-oss-20b",
             "openai": "gpt-3.5-turbo",
             "huggingface": "microsoft/DialoGPT-medium",
             "ollama": "llama2",
             "llama_cpp": "llama-2-7b.gguf",
         }
-
         model = os.getenv("LLM_MODEL", default_models.get(provider, "hajeen-v1"))
 
-        # API key — يدعم متغيرات متعددة
+        # API key — لا تُكتب القيمة في ملفات المشروع.
         api_key = (
             os.getenv("LLM_API_KEY")
+            or (os.getenv("GROQ_API_KEY") if provider == "groq" else None)
             or os.getenv("OPENAI_API_KEY")
             or os.getenv("HUGGINGFACE_TOKEN")
         )
 
-        api_base = (
-            os.getenv("LLM_API_BASE")
-            or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-            if provider == "ollama"
-            else os.getenv("LLM_API_BASE")
-        )
+        if provider == "groq":
+            api_base = os.getenv("LLM_API_BASE", os.getenv("GROQ_API_BASE", "https://api.groq.com/openai/v1"))
+        elif provider == "ollama":
+            api_base = os.getenv("LLM_API_BASE", os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
+        else:
+            api_base = os.getenv("LLM_API_BASE")
 
         return cls(
             provider=provider,

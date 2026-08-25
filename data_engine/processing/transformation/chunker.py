@@ -131,6 +131,8 @@ def _fixed_split(text: str, chunk_size: int, overlap: int) -> List[str]:
     while start < length:
         end = min(start + chunk_size, length)
         chunks.append(text[start:end])
+        if end >= length:
+            break
         start = end - overlap if overlap < chunk_size else end
 
     return chunks

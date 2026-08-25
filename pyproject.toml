@@ -16,6 +16,7 @@ pythonpath = ["."]
 addopts = "-v"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+asyncio_default_test_loop_scope = "module"
 
 [tool.mypy]
 python_version = "3.11"

@@ -15,6 +15,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from brain.brain_v3 import BrainRequest, BrainResponse, HajeenBrainV3, get_brain_v3
 from brain.memory.unified_interface import get_unified_memory
+from brain.input_cleaning import StreamingOutputCleaner, clean_model_output, clean_user_input
 from core.llm.base import LLMStreamChunk
 
 from .citation_injector import CitationInjector
@@ -107,8 +108,9 @@ class ChatService:
         session_id = request.session_id or str(uuid.uuid4())
 
         if self._inference_engine is not None:
+            cleaned_user = clean_user_input(request.message)
             history = await self._unified_memory.get_context(session_id, max_messages=20)
-            messages = history + [{"role": "user", "content": request.message}]
+            messages = history + [{"role": "user", "content": cleaned_user.clean_text}]
             processed = await self._inference_engine.infer(
                 messages=messages,
                 model=request.model,
@@ -116,10 +118,11 @@ class ChatService:
                 max_tokens=request.max_tokens,
                 session_id=session_id,
             )
-            await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
-            await self._unified_memory.add_message(session_id, "assistant", processed.cleaned_content, {"turn_id": turn_id})
+            cleaned_output = clean_model_output(processed.cleaned_content)
+            await self._unified_memory.add_message(session_id, "user", cleaned_user.clean_text, {**request.metadata, "input_cleaned": True, "raw_sha256": cleaned_user.raw_sha256})
+            await self._unified_memory.add_message(session_id, "assistant", cleaned_output.clean_text, {"turn_id": turn_id, "output_cleaned": True, "raw_sha256": cleaned_output.raw_sha256})
             return ChatResponse(
-                content=processed.cleaned_content,
+                content=cleaned_output.clean_text,
                 session_id=session_id,
                 turn_id=turn_id,
                 model=processed.model,
@@ -196,8 +199,10 @@ class ChatService:
         completed = False
 
         if self._inference_engine is not None:
+            cleaned_user = clean_user_input(request.message)
+            stream_cleaner = StreamingOutputCleaner()
             history = await self._unified_memory.get_context(session_id, max_messages=20)
-            messages = history + [{"role": "user", "content": request.message}]
+            messages = history + [{"role": "user", "content": cleaned_user.clean_text}]
             async for chunk in self._inference_engine.stream_infer(
                 messages=messages,
                 model=request.model,
@@ -209,13 +214,21 @@ class ChatService:
                 if not isinstance(chunk, LLMStreamChunk):
                     raise RuntimeError("InferenceEngine returned a non-native stream chunk")
                 if chunk.event_type == "delta" and chunk.delta:
-                    collected.append(chunk.delta)
-                elif chunk.event_type == "finish":
+                    cleaned_delta = stream_cleaner.push(chunk.delta)
+                    if cleaned_delta:
+                        collected.append(cleaned_delta)
+                        yield LLMStreamChunk(delta=cleaned_delta, index=chunk.index, model=chunk.model, event_type="delta", provider=chunk.provider, request_id=chunk.request_id, metadata=chunk.metadata)
+                elif chunk.event_type == "finish" or chunk.finish_reason:
+                    tail = stream_cleaner.finish()
+                    if tail:
+                        collected.append(tail)
+                        yield LLMStreamChunk(delta=tail, index=chunk.index, model=chunk.model, event_type="delta", provider=chunk.provider, request_id=chunk.request_id, metadata=chunk.metadata)
                     completed = True
-                yield chunk
+                    yield chunk
             if completed:
-                await self._unified_memory.add_message(session_id, "user", request.message, request.metadata)
-                await self._unified_memory.add_message(session_id, "assistant", "".join(collected), {"stream_id": stream_id})
+                await self._unified_memory.add_message(session_id, "user", cleaned_user.clean_text, {**request.metadata, "input_cleaned": True, "raw_sha256": cleaned_user.raw_sha256})
+                final_output = clean_model_output("".join(collected))
+                await self._unified_memory.add_message(session_id, "assistant", final_output.clean_text, {"stream_id": stream_id, "output_cleaned": True, "raw_sha256": final_output.raw_sha256})
             return
 
         brain_request = BrainRequest(

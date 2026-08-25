@@ -79,13 +79,13 @@ class DecisionEngine:
     # قواعد اختيار النموذج بناءً على النية
     MODEL_RULES: Dict[str, Dict[str, Any]] = {
         "code": {
-            "primary": "qwen2.5-coder-7b",
-            "fallback": "openai/gpt-4o",
+            "primary": "groq/openai/gpt-oss-20b",
+            "fallback": None,
             "use_rag": False,
         },
         "arabic": {
-            "primary": "qwen2.5-7b-arabic",
-            "fallback": "openai/gpt-4o",
+            "primary": "groq/openai/gpt-oss-20b",
+            "fallback": None,
             "use_rag": True,
         },
         "training": {
@@ -94,18 +94,18 @@ class DecisionEngine:
             "use_rag": True,
         },
         "rag": {
-            "primary": "ollama/llama3",
-            "fallback": "openai/gpt-4o",
+            "primary": "groq/openai/gpt-oss-20b",
+            "fallback": None,
             "use_rag": True,
         },
         "math": {
-            "primary": "qwen2.5-math-7b",
-            "fallback": "openai/gpt-4o",
+            "primary": "groq/openai/gpt-oss-20b",
+            "fallback": None,
             "use_rag": False,
         },
         "general": {
-            "primary": "ollama/llama3",
-            "fallback": "openai/gpt-4o",
+            "primary": "groq/openai/gpt-oss-20b",
+            "fallback": None,
             "use_rag": False,
         },
     }
@@ -209,9 +209,9 @@ class DecisionEngine:
         self, intent: IntentType, complexity: ComplexityLevel, primary: str
     ) -> List[str]:
         if complexity == ComplexityLevel.ENTERPRISE:
-            models = ["qwen2.5-72b", "openai/gpt-4o", "ollama/llama3"]
+            models = ["groq/openai/gpt-oss-20b"]
         elif complexity == ComplexityLevel.COMPLEX:
-            models = ["qwen2.5-7b", "ollama/llama3"]
+            models = ["groq/openai/gpt-oss-20b"]
         else:
             models = []
         return [m for m in models if m != primary]

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import AsyncGenerator, Optional
 
 from ..base import (
@@ -49,14 +50,17 @@ class OpenAIProvider(BaseLLMProvider):
 
         try:
             import openai
-            response = await self._client.chat.completions.create(
-                model=request.model or self.config.model,
-                messages=request.to_messages_list(),
-                temperature=request.temperature or self.config.temperature,
-                max_tokens=request.max_tokens or self.config.max_tokens,
-                top_p=self.config.top_p,
-                stream=False,
-            )
+            kwargs = {
+                "model": request.model or self.config.model,
+                "messages": request.to_messages_list(),
+                "temperature": request.temperature or self.config.temperature,
+                "max_tokens": request.max_tokens or self.config.max_tokens,
+                "top_p": self.config.top_p,
+                "stream": False,
+            }
+            if self.provider_name == "groq":
+                kwargs["reasoning_effort"] = os.getenv("GROQ_REASONING_EFFORT", "low")
+            response = await self._client.chat.completions.create(**kwargs)
             choice = response.choices[0]
             usage = response.usage
 
@@ -79,13 +83,16 @@ class OpenAIProvider(BaseLLMProvider):
 
         try:
             import openai
-            stream = await self._client.chat.completions.create(
-                model=request.model or self.config.model,
-                messages=request.to_messages_list(),
-                temperature=request.temperature or self.config.temperature,
-                max_tokens=request.max_tokens or self.config.max_tokens,
-                stream=True,
-            )
+            stream_kwargs = {
+                "model": request.model or self.config.model,
+                "messages": request.to_messages_list(),
+                "temperature": request.temperature or self.config.temperature,
+                "max_tokens": request.max_tokens or self.config.max_tokens,
+                "stream": True,
+            }
+            if self.provider_name == "groq":
+                stream_kwargs["reasoning_effort"] = os.getenv("GROQ_REASONING_EFFORT", "low")
+            stream = await self._client.chat.completions.create(**stream_kwargs)
             index = 0
             async for chunk in stream:
                 delta = chunk.choices[0].delta if chunk.choices else None

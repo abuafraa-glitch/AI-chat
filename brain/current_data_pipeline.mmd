@@ -1,0 +1,44 @@
+flowchart TD
+    U[المستخدم<br/>رسالة خام] --> IC[InputCleaning<br/>تطبيع Unicode وإزالة HTML والسكريبتات والتحكم والمسافات]
+    IC --> IS[CleanConversationStore<br/>user_message.json<br/>حفظ النص المنظف + SHA-256<br/>دون raw_text]
+    IC --> M[MemoryFabric<br/>إضافة دور المستخدم المنظف]
+    M --> P[PolicyEngine<br/>prompt/content/query = النص المنظف]
+    P -->|مسموح| I[IntentAnalyzer]
+    P -->|محظور| B[رفض آمن<br/>لا ModelRouter]
+    I --> G[GoalManager]
+    G --> C[ContextAnalyzer]
+    C --> R[ReasoningEngine]
+    R --> D[DecisionEngine]
+    D --> RG{هل use_rag مفعّل؟}
+    RG -->|نعم| RAG[RAGPipeline الرسمي<br/>باستخدام النص المنظف]
+    RG -->|لا| PB[UnifiedPromptBuilder<br/>CHAT]
+    RAG --> PB2[UnifiedPromptBuilder<br/>RAG عند وجود سياق فعلي]
+    PB --> MR[ModelRouter الوحيد]
+    PB2 --> MR
+    MR --> L{النموذج المختار}
+    L -->|Groq| GX[مزود خارجي<br/>إجابة خام من Groq]
+    L -->|Hajeen / Local| LX[مزود محلي<br/>إجابة خام من النموذج المحلي]
+    GX --> OC[OutputCleaning<br/>تنظيف الإجابة الخام بعد اكتمالها]
+    LX --> OC
+    OC --> OS[CleanConversationStore<br/>model_output.json<br/>حفظ النص المنظف + provider/model_id<br/>دون raw_text]
+    OC --> MM[MemoryFabric<br/>حفظ assistant بالنسخة المنظفة]
+    OC --> RESP[Response أو SSE<br/>الناتج المنظف بعد تجميع البث]
+
+    IC -.-> T1[ExecutionTrace<br/>input_cleaning]
+    OC -.-> T2[ExecutionTrace<br/>output_cleaning]
+    MR -.-> T3[BRAIN_LAYER / provider / tokens]
+    RESP -.-> T4[SSE DONE أو ERROR]
+
+    classDef raw fill:#fff3e0,stroke:#e67e22,color:#4e342e;
+    classDef clean fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+    classDef brain fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+    classDef store fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c;
+    classDef provider fill:#fce4ec,stroke:#c2185b,color:#880e4f;
+    classDef trace fill:#eceff1,stroke:#455a64,color:#263238;
+
+    class U,GX,LX raw;
+    class IC,OC clean;
+    class M,P,I,G,C,R,D,RG,RAG,PB,PB2,MR,B,RESP brain;
+    class IS,OS,MM store;
+    class L provider;
+    class T1,T2,T3,T4 trace;

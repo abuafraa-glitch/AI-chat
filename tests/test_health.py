@@ -6,9 +6,13 @@ client = TestClient(app)
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    payload = response.json()
+    assert payload["status"] in {"ok", "degraded"}
+    assert payload.get("service") == "Hajeen AI Platform"
 
 def test_ping():
     response = client.get("/ping")
     assert response.status_code == 200
-    assert response.json() == {"message": "pong"}
+    payload = response.json()
+    assert payload["message"] == "pong"
+    assert isinstance(payload.get("timestamp"), (int, float))

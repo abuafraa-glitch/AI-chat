@@ -67,6 +67,7 @@ DEFAULT_MODELS: Dict[str, ModelConfig] = {
     "ollama/qwen2.5-coder": ModelConfig("qwen2.5-coder:7b", "ollama", "http://localhost:11434", None, ["code"], 32768, 8192, 900, 0.0, 0.85, True),
     "openai/gpt-4o": ModelConfig("gpt-4o", "openai", None, "env:OPENAI_API_KEY", ["general", "code", "math", "analysis", "creative", "rag"], 128000, 4096, 2000, 5.0, 0.97, False),
     "openai/gpt-4o-mini": ModelConfig("gpt-4o-mini", "openai", None, "env:OPENAI_API_KEY", ["general", "code", "math", "analysis", "rag"], 128000, 4096, 800, 0.15, 0.88, False),
+    "groq/openai/gpt-oss-20b": ModelConfig("openai/gpt-oss-20b", "groq", "https://api.groq.com/openai/v1", "env:GROQ_API_KEY", ["arabic", "general", "code", "analysis", "conversation"], 131072, 8192, 450, 0.0, 0.90, False, available=bool(os.getenv("GROQ_API_KEY"))),
     "hajeen-local": ModelConfig(VERIFIED_BASE_MODEL_ID, "local", None, None, ["arabic", "general", "rag"], 32768, 8192, 500, 0.0, 0.90, True),
 }
 
@@ -177,7 +178,12 @@ class ModelRouter:
             provider_cls = ProviderRegistry.get(adapter_name)
             if provider_cls is None:
                 raise RuntimeError(f"No registered provider adapter for {adapter_name!r}")
-            api_key = os.getenv("OPENAI_API_KEY") if cfg.api_key == "env:OPENAI_API_KEY" else cfg.api_key
+            if cfg.api_key == "env:OPENAI_API_KEY":
+                api_key = os.getenv("OPENAI_API_KEY")
+            elif cfg.api_key == "env:GROQ_API_KEY":
+                api_key = os.getenv("GROQ_API_KEY")
+            else:
+                api_key = cfg.api_key
             provider = provider_cls(LLMConfig(provider=adapter_name, model=cfg.model_id, api_key=api_key, api_base=cfg.base_url, max_tokens=cfg.max_tokens))
             await provider.initialize()
             self._provider_registry[key] = provider
@@ -227,7 +233,9 @@ class ModelRouter:
                 last_error = str(exc)
                 self._record_routing(key, capability, (time.perf_counter() - started) * 1000, False)
                 logger.warning("model_router: %s failed closed: %s", key, exc)
-                if forced_key:
+                # A registered provider is an authoritative route. Do not hide
+                # its failure by silently switching to another model.
+                if forced_key or key in self._provider_registry:
                     break
                 key = self.select_model(capability, budget_tokens, force_local=local_preference, exclude=tried)
         return RouteResult(tried[-1] if tried else "none", "none", 0.0, 0, "", False, last_error, {"fail_closed": True, "tried": tried})
@@ -266,7 +274,7 @@ class ModelRouter:
                 if not isinstance(raw_chunk, LLMStreamChunk):
                     raise RuntimeError("Provider returned an invalid stream chunk")
                 sequence += 1
-                event_type = raw_chunk.event_type or ("finish" if raw_chunk.finish_reason else "delta")
+                event_type = "finish" if raw_chunk.finish_reason else (raw_chunk.event_type or "delta")
                 yield LLMStreamChunk(
                     delta=raw_chunk.delta,
                     finish_reason=raw_chunk.finish_reason,

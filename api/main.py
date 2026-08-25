@@ -539,6 +539,14 @@ try:
 except Exception as _e:
     logger.warning("Auth router غير متاح: %s", _e)
 
+# Flutter compatibility routes are local-only adapters for conversations.
+try:
+    from api.v1.compat_router import router as compat_router
+    app.include_router(compat_router, prefix="/api/v1")
+    logger.info("startup: Flutter compatibility router مسجّل ✓")
+except Exception as _e:
+    logger.warning("Auth router غير متاح: %s", _e)
+
 logger.info("Hajeen AI Platform API v1.1.0 — تمّ تسجيل جميع الـ routers")
 
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-"""Channel Builder — إنشاء قنوات حقيقية قابلة للتشغيل."""
 from __future__ import annotations
 
 import logging
@@ -13,36 +12,22 @@ logger = logging.getLogger(__name__)
 
 
 class RSSChannel(BaseChannel):
-    """قناة RSS حقيقية تستخدم RSSParser لجلب المحتوى من مصادر RSS/Atom."""
-
     async def fetch(self, last_fetched_id: str | None = None) -> FetchResult:
         from data_engine.ingestion.crawlers.rss_parser import parse_rss_feed
-
-        url = str(self.config.source.url)
-        logger.info("RSSChannel.fetch: جلب من %s", url)
         try:
-            articles = await parse_rss_feed(
-                url,
-                source_id=self.config.id,
-                default_language=self.config.source.params.get("language", "en"),
-            )
-            logger.info("RSSChannel.fetch: تم جلب %d مقال", len(articles))
+            articles = await parse_rss_feed(str(self.config.source.url), source_id=self.config.id, default_language=self.config.source.params.get("language", "en"))
             return FetchResult(articles=articles, has_more=False)
         except Exception as exc:
-            logger.error("RSSChannel.fetch: خطأ في الجلب — %s", exc)
+            logger.error("RSSChannel.fetch failed: %s", exc)
             return FetchResult(articles=[], has_more=False)
 
     async def validate_source(self) -> bool:
         from data_engine.ingestion.crawlers.rss_parser import validate_rss_feed
-        url = str(self.config.source.url)
-        return await validate_rss_feed(url)
+        return await validate_rss_feed(str(self.config.source.url))
 
 
 class APIChannel(BaseChannel):
-    """قناة API عامة قابلة للتوسعة."""
-
     async def fetch(self, last_fetched_id: str | None = None) -> FetchResult:
-        logger.info("APIChannel.fetch: %s", self.config.name)
         return FetchResult(articles=[], has_more=False)
 
     async def validate_source(self) -> bool:
@@ -50,10 +35,7 @@ class APIChannel(BaseChannel):
 
 
 class PlaceholderChannel(BaseChannel):
-    """قناة وهمية للاختبار والتطوير."""
-
     async def fetch(self, last_fetched_id: str | None = None) -> FetchResult:
-        logger.info("PlaceholderChannel.fetch: %s", self.config.name)
         return FetchResult(articles=[], has_more=False)
 
     async def validate_source(self) -> bool:
@@ -68,44 +50,51 @@ _CHANNEL_TYPE_MAP: Dict[str, Type[BaseChannel]] = {
 }
 
 
-class ChannelBuilder:
-    """مصنع لإنشاء قنوات بناءً على نوع التكوين."""
+BUILTIN_CHANNEL_TYPES = frozenset(_CHANNEL_TYPE_MAP)
 
+
+class ChannelBuilder:
     _channel_types: Dict[str, Type[BaseChannel]] = _CHANNEL_TYPE_MAP
 
     @classmethod
     def register_channel_type(cls, type_name: str, channel_class: Type[BaseChannel]) -> None:
         if not issubclass(channel_class, BaseChannel):
-            raise ChannelException("يجب أن ترث فئة القناة من BaseChannel.")
+            raise ChannelException("Registered channel class must inherit from BaseChannel.")
         cls._channel_types[type_name.lower()] = channel_class
 
     @classmethod
     async def create(cls, channel_type: str, config: ChannelConfig) -> BaseChannel:
-        channel_class = cls._channel_types.get(channel_type.lower())
-        if not channel_class:
-            raise ChannelException(
-                f"نوع القناة غير مدعوم: '{channel_type}'. "
-                f"الأنواع المتاحة: {list(cls._channel_types.keys())}"
-            )
+        key = channel_type.lower()
+        channel_class = cls._channel_types.get(key)
+        if channel_class is None:
+            raise ChannelException(f"Unknown channel type: '{channel_type}'. Available types: {list(cls._channel_types.keys())}")
         await cls.validate_config(config)
-        if channel_type.lower() == "demo":
-            return channel_class(config=config)
         return channel_class(config=config)
 
     @classmethod
     async def create_from_config(cls, config: ChannelConfig) -> BaseChannel:
         if not isinstance(config, ChannelConfig):
-            raise ValidationException("المدخل يجب أن يكون ChannelConfig.")
-        channel_type = config.source.type.lower()
-        return await cls.create(channel_type, config)
+            raise ValidationException("Input must be a ChannelConfig object.")
+        return await cls.create(config.source.type, config)
 
     @classmethod
     async def validate_config(cls, config: ChannelConfig) -> bool:
         if not isinstance(config, ChannelConfig):
-            raise ValidationException("المدخل يجب أن يكون ChannelConfig.")
-        channel_type = config.source.type.lower()
-        if channel_type not in cls._channel_types:
-            raise ValidationException(
-                f"نوع قناة غير مدعوم في التكوين: {config.source.type}"
-            )
+            raise ValidationException("Input must be a ChannelConfig object.")
+        key = config.source.type.lower()
+        if key not in cls._channel_types:
+            raise ValidationException(f"Unsupported channel type in config: {config.source.type}")
+        channel_class = cls._channel_types[key]
+        # Built-in channel construction is configuration-only; network/source
+        # validation belongs to the fetch/health path. Custom registrations may
+        # provide an explicit validation contract used during construction.
+        if key not in BUILTIN_CHANNEL_TYPES:
+            try:
+                valid = await channel_class(config=config).validate_source()
+            except ValidationException as exc:
+                raise ValidationException(f"Channel-specific validation failed for type {key}: {exc}") from exc
+            except Exception as exc:
+                raise ValidationException(f"Channel-specific validation failed for type {key}: {exc}") from exc
+            if valid is False:
+                raise ValidationException(f"Channel-specific validation failed for type {key}")
         return True
