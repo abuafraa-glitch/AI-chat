@@ -10,6 +10,7 @@ enum AIProvider {
   ollama,
   vllm,
   openRouter,
+  groq,
   custom,
 }
 
@@ -38,25 +39,25 @@ class AIModel extends Equatable {
   /// Creates an [AIModel] instance from a JSON map.
   factory AIModel.fromJson(Map<String, dynamic> json) {
     return AIModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String?,
-      version: json['version'] as String,
+      id: (json['id'] ?? json['model_id'] ?? 'unknown').toString(),
+      name: (json['name'] ?? json['model_name'] ?? json['model_id'] ?? 'Hajeen AI').toString(),
+      description: json['description']?.toString(),
+      version: (json['version'] ?? '1.0').toString(),
       provider: AIProvider.values.firstWhere(
-        (e) => e.name == json['provider'],
+        (e) => e.name == (json['provider'] ?? json['provider_name']),
         orElse: () => AIProvider.custom,
       ),
       type: AIModelType.values.firstWhere(
-        (e) => e.name == json['type'],
+        (e) => e.name == (json['type'] ?? (json['is_local'] == true ? 'local' : 'cloud')),
         orElse: () => AIModelType.cloud,
       ),
-      contextWindow: json['contextWindow'] as int,
-      maxOutputTokens: json['maxOutputTokens'] as int?,
+      contextWindow: (json['contextWindow'] ?? json['context_window'] ?? 32768) as int,
+      maxOutputTokens: (json['maxOutputTokens'] ?? json['max_tokens']) as int?,
       capabilities: AIModelCapabilities.fromJson(
-        json['capabilities'] as Map<String, dynamic>,
+        (json['capabilities'] as Map<String, dynamic>?) ?? const <String, dynamic>{},
       ),
-      isAvailable: json['isAvailable'] as bool? ?? true,
-      metadata: json['metadata'] as Map<String, dynamic>? ?? const {},
+      isAvailable: (json['isAvailable'] ?? json['available'] ?? true) as bool,
+      metadata: (json['metadata'] as Map<String, dynamic>?) ?? const <String, dynamic>{},
     );
   }
   final String id;

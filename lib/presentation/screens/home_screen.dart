@@ -22,7 +22,7 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   void _startChat(BuildContext context, String message) async {
-    final modelId = context.read<ModelsCubit>().state.selectedModelId;
+    final modelId = context.read<ModelsCubit>().ensureDefaultSelection();
     if (modelId == null) {
       context.showSnackBar(
         localizedTextRead(

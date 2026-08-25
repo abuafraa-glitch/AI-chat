@@ -1,4 +1,6 @@
 import 'package:ai_chat/core/errors/exceptions.dart';
+import 'dart:convert';
+
 import 'package:ai_chat/core/network/api_consumer.dart';
 import 'package:ai_chat/core/network/endpoints.dart';
 import 'package:ai_chat/core/network/network_response.dart' as net;
@@ -123,9 +125,14 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   Future<List<AIModel>> getModels() async {
     final response = await _apiConsumer.get<List<AIModel>>(
       path: Endpoints.models,
-      fromJson: (json) => (json as List)
-          .map((e) => AIModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      fromJson: (json) {
+        final payload = json as Map<String, dynamic>;
+        final items = payload['models'] ?? payload['data'] ?? const <dynamic>[];
+        return (items as List)
+            .whereType<Map<String, dynamic>>()
+            .map(AIModel.fromJson)
+            .toList(growable: false);
+      },
     );
     return _handleResponse(response);
   }
@@ -207,12 +214,41 @@ class RemoteDataSourceImpl implements RemoteDataSource {
     required String conversationId,
     Map<String, dynamic>? data,
     String? cancelToken,
-  }) {
-    return _apiConsumer.streamRequest(
-      path: Endpoints.streamMessage(conversationId),
-      data: data,
-      cancelToken: cancelToken,
-    );
+  }) async* {
+    try {
+      await for (final event in _apiConsumer.streamRequest(
+        path: Endpoints.streamMessage(conversationId),
+        data: data,
+        cancelToken: cancelToken,
+      )) {
+        final text = event.trim();
+        if (text.isEmpty || text == '[DONE]') continue;
+        try {
+          final decoded = jsonDecode(text);
+          if (decoded is! Map<String, dynamic>) {
+            if (decoded is String && decoded.isNotEmpty) yield decoded;
+            continue;
+          }
+          if (decoded['event'] == 'error') {
+            final message = decoded['error']?.toString() ?? 'حدث خطأ أثناء التوليد';
+            yield '[خطأ: $message]';
+            continue;
+          }
+          final choices = decoded['choices'];
+          if (choices is List && choices.isNotEmpty) {
+            final delta = choices.first['delta'];
+            final content = delta is Map ? delta['content'] : null;
+            if (content is String && content.isNotEmpty) yield content;
+          } else if (decoded['response'] is String) {
+            yield decoded['response'] as String;
+          }
+        } on FormatException {
+          if (!text.startsWith('{') && !text.startsWith('[')) yield text;
+        }
+      }
+    } catch (error) {
+      yield '[خطأ اتصال: $error]';
+    }
   }
 
   @override

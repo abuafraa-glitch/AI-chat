@@ -180,8 +180,18 @@ class AppConfig {
   /// Snapshot of feature flags for the active environment.
   final FeatureFlags featureFlags;
 
-  /// Fully-qualified API root, composed of [apiBaseUrl] and [apiVersion].
-  String get resolvedApiUrl => '$apiBaseUrl/$apiVersion';
+  /// Fully-qualified API root, composed of the canonical `/api` prefix,
+  /// [apiBaseUrl], and [apiVersion].
+  ///
+  /// This normalization prevents a mobile build from silently targeting
+  /// `/v1/...` when the FastAPI gateway is mounted under `/api/v1/...`.
+  String get resolvedApiUrl {
+    final normalizedBase = apiBaseUrl.replaceFirst(RegExp(r'/+$'), '');
+    final apiRoot = normalizedBase.endsWith('/api')
+        ? normalizedBase
+        : '$normalizedBase/api';
+    return '$apiRoot/$apiVersion';
+  }
 
   /// Singleton accessor. Must be initialised via [AppConfig.initialize]
   /// during bootstrap; otherwise a [StateError] is raised to surface

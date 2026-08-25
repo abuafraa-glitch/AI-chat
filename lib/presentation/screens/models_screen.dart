@@ -37,6 +37,8 @@ class ModelsScreen extends StatelessWidget {
         return Icons.memory_outlined;
       case AIProvider.openRouter:
         return Icons.route_outlined;
+      case AIProvider.groq:
+        return Icons.cloud_outlined;
       case AIProvider.custom:
         return Icons.settings_outlined;
     }

@@ -1,37 +1,46 @@
-import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/presentation/blocs/conversations_cubit.dart';
 import 'package:ai_chat/presentation/blocs/data_sources.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
+import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
 import 'package:go_router/go_router.dart';
 
-/// Main application shell rendered by the router for the four primary
-/// tabs.
-///
-/// This widget is the composition root of the tab tree: it provides the
-/// shared feature cubits — AI model catalogue and conversations — to the
-/// whole branch tree, and switches branches through the
-/// [StatefulNavigationShell] handed in by go_router so tab
-/// state is preserved across switches.
-///
-/// Theme and locale cubits are provided at the application root, not
-/// here, so every route (including pushed pages above the shell) can
-/// react to them. Every dependency is resolved from the DI container;
-/// no widget below this point talks to the network or storage directly.
-class MainLayout extends StatelessWidget {
-  /// Creates the [MainLayout] shell for [navigationShell].
+/// Main application shell rendered by the router for the four primary tabs.
+class MainLayout extends StatefulWidget {
+  /// Creates the main shell for [navigationShell].
   const MainLayout({super.key, required this.navigationShell});
 
   /// go_router navigation shell driving the tab branches.
   final StatefulNavigationShell navigationShell;
 
+  @override
+  State<MainLayout> createState() => _MainLayoutState();
+}
+
+class _MainLayoutState extends State<MainLayout> {
+  @override
+  void initState() {
+    super.initState();
+    // MainLayout is created only after the auth guard reports an authenticated
+    // session. Reload here so the initial request carries the new token; the
+    // singleton's earlier unauthenticated request may have returned 401.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final models = sl<ModelsCubit>();
+        if (models.state.models.isEmpty && !models.state.isLoading) {
+          models.loadModels();
+        }
+      }
+    });
+  }
+
   void _onDestinationSelected(int index) {
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: index == widget.navigationShell.currentIndex,
     );
   }
 
@@ -39,9 +48,6 @@ class MainLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: <SingleChildWidget>[
-        // Shared singleton from the DI container — selecting a model here
-        // immediately reflects in the pushed ChatScreen (single source of
-        // truth) and avoids a per-screen state split.
         BlocProvider<ModelsCubit>.value(value: sl<ModelsCubit>()),
         BlocProvider<ConversationsCubit>(
           create: (context) =>
@@ -50,9 +56,9 @@ class MainLayout extends StatelessWidget {
         ),
       ],
       child: Scaffold(
-        body: navigationShell,
+        body: widget.navigationShell,
         bottomNavigationBar: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
+          selectedIndex: widget.navigationShell.currentIndex,
           onDestinationSelected: _onDestinationSelected,
           destinations: <NavigationDestination>[
             NavigationDestination(

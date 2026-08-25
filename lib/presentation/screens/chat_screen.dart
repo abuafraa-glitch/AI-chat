@@ -115,7 +115,7 @@ class _ChatViewState extends State<_ChatView> {
     if (launchModel != null && launchModel.isNotEmpty) {
       return launchModel;
     }
-    return context.read<ModelsCubit>().state.selectedModelId;
+    return context.read<ModelsCubit>().ensureDefaultSelection();
   }
 
   void _send(String content, String modelId) {

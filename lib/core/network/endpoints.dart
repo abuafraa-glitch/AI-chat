@@ -90,11 +90,11 @@ abstract final class Endpoints {
 
   // ── AI Models ─────────────────────────────────────────────────────────────
 
-  /// `GET /models` — list all available AI models.
-  static const String models = ApiPaths.models;
+  /// `GET /ai/models` — list all available AI models.
+  static const String models = '/ai/models';
 
-  /// `GET /models/{id}` — fetch a single model's details.
-  static String model(String id) => '/models/$id';
+  /// `GET /ai/models/{id}` — fetch a single model's details.
+  static String model(String id) => '/ai/models/$id';
 
   // ── Subscriptions ─────────────────────────────────────────────────────────
 

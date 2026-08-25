@@ -41,6 +41,8 @@ class ModelDetailsDialog extends StatelessWidget {
         return 'vLLM';
       case AIProvider.openRouter:
         return 'OpenRouter';
+      case AIProvider.groq:
+        return 'Groq';
       case AIProvider.custom:
         return 'Custom';
     }
