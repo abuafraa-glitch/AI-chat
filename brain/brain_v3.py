@@ -729,7 +729,7 @@ class HajeenBrainV3:
                     capability="general",
                     budget_tokens=request.max_tokens,
                     force_model=request.force_model,
-                    prefer_local=True,
+                    prefer_local=False,
                     request_id=request.request_id,
                 ):
                     pieces.append(chunk.delta)
@@ -799,7 +799,7 @@ class HajeenBrainV3:
                     capability="general",
                     budget_tokens=request.max_tokens,
                     force_model=request.force_model,
-                    prefer_local=True,
+                    prefer_local=False,
                     request_id=request.request_id,
                 )
                 if not route_result.success:

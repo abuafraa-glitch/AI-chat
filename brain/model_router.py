@@ -147,19 +147,25 @@ class ModelRouter:
                 return key
         return None
 
-    def select_model(self, capability: str = "general", budget_tokens: int = 4096, force_local: bool = False, exclude: Optional[List[str]] = None) -> Optional[str]:
+    def select_model(self, capability: str = "general", budget_tokens: int = 4096, force_local: Optional[bool] = None, exclude: Optional[List[str]] = None) -> Optional[str]:
+        """Select an eligible model while honoring an explicit local preference.
+
+        ``None`` preserves the router's configured default; ``False`` is an
+        explicit request to allow external providers such as Groq.
+        """
+        local_preference = self._prefer_local if force_local is None else force_local
         exclude_set = set(exclude or [])
         candidates = [(key, cfg) for key, cfg in self._models.items() if key not in exclude_set and self._registry_eligible(key, cfg) and _score_model(cfg, capability, budget_tokens) != float("-inf")]
         registered = [(key, cfg) for key, cfg in candidates if key in self._provider_registry]
         if registered:
             candidates = registered
-        if force_local or self._prefer_local:
+        if local_preference:
             local = [(key, cfg) for key, cfg in candidates if cfg.is_local]
             if local:
                 candidates = local
         if not candidates:
             return None
-        return max(candidates, key=lambda pair: _score_model(pair[1], capability, budget_tokens, force_local or self._prefer_local))[0]
+        return max(candidates, key=lambda pair: _score_model(pair[1], capability, budget_tokens, local_preference))[0]
 
     async def _get_provider(self, key: str, cfg: ModelConfig) -> Any:
         provider = self._provider_registry.get(key)
