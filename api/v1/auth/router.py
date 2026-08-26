@@ -11,6 +11,11 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from security.auth.api_key_manager import get_api_key_manager
+from api.v1.auth.social import (
+    SocialAuthError,
+    verify_facebook_access_token,
+    verify_google_id_token,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -33,6 +38,11 @@ class LoginRequest(BaseModel):
     username: Optional[str] = None
     email: Optional[str] = None
     password: str
+    tenant_id: str = "default"
+
+
+class SocialLoginRequest(BaseModel):
+    token: str = Field(..., min_length=20, max_length=8192)
     tenant_id: str = "default"
 
 
@@ -94,6 +104,91 @@ def _get_jwt_auth():
     from security.auth.jwt_auth import JWTAuthenticator
     from security.auth.revoked_tokens import get_revoked_token_store
     return JWTAuthenticator(secret=os.getenv("JWT_SECRET", JWT_SECRET), revoked_store=get_revoked_token_store())
+
+
+def _username_for_email(email: str) -> str:
+    base = email.split("@", 1)[0].strip() or "user"
+    username = base[:50]
+    suffix = 1
+    while username in _USERS:
+        suffix += 1
+        suffix_text = str(suffix)
+        username = f"{base[:50-len(suffix_text)-1]}_{suffix_text}"
+    return username
+
+
+def _issue_token_response(user: Dict[str, Any]) -> TokenResponse:
+    jwt = _get_jwt_auth()
+    access_token = jwt.issue_token(
+        user_id=user["user_id"], tenant_id=user["tenant_id"], roles=user["roles"], token_type="access"
+    )
+    refresh_token = jwt.issue_token(
+        user_id=user["user_id"], tenant_id=user["tenant_id"], roles=user["roles"], token_type="refresh"
+    )
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=3600,
+        user_id=user["user_id"],
+        roles=user["roles"],
+        tenant_id=user["tenant_id"],
+        user={
+            "id": user["user_id"],
+            "name": user.get("name", user["username"]),
+            "email": user["email"],
+            "username": user["username"],
+        },
+    )
+
+
+def _upsert_social_user(identity: Dict[str, Any], tenant_id: str) -> Dict[str, Any]:
+    provider = identity["provider"]
+    provider_sub = identity["provider_sub"]
+    email = identity["email"]
+
+    # First match the immutable provider subject. This prevents account takeover
+    # when a provider changes a display name or email address.
+    user = next(
+        (
+            candidate
+            for candidate in _USERS.values()
+            if candidate.get("social_identities", {}).get(provider) == provider_sub
+        ),
+        None,
+    )
+    if user is None:
+        # Linking by email is allowed only after the provider verifier has
+        # established a verified email claim.
+        user = next(
+            (candidate for candidate in _USERS.values() if candidate.get("email", "").lower() == email),
+            None,
+        )
+    if user is None:
+        username = _username_for_email(email)
+        user = {
+            "user_id": f"usr_{uuid.uuid4().hex[:12]}",
+            "username": username,
+            "name": identity["name"],
+            "email": email,
+            "password_hash": "__social_only__",
+            "roles": ["user"],
+            "tenant_id": tenant_id,
+            "active": True,
+            "created_at": time.time(),
+            "social_identities": {},
+        }
+        _USERS[username] = user
+    elif not user.get("active"):
+        raise SocialAuthError("الحساب غير نشط")
+
+    identities = user.setdefault("social_identities", {})
+    existing_subject = identities.get(provider)
+    if existing_subject and existing_subject != provider_sub:
+        raise SocialAuthError("مزود الحساب مرتبط بهوية مختلفة")
+    identities[provider] = provider_sub
+    if not user.get("name"):
+        user["name"] = identity["name"]
+    return user
 
 
 # ── POST /auth/register ───────────────────────────────────────────────────────
@@ -180,6 +275,30 @@ async def login(body: LoginRequest, request: Request) -> TokenResponse:
         tenant_id=user["tenant_id"],
         user={"id": user["user_id"], "name": user.get("name", user["username"]), "email": user["email"], "username": user["username"]},
     )
+
+
+@router.post("/google", response_model=TokenResponse, summary="تسجيل الدخول عبر Google")
+async def google_login(body: SocialLoginRequest) -> TokenResponse:
+    try:
+        identity = await verify_google_id_token(body.token)
+        user = _upsert_social_user(identity, body.tenant_id)
+        logger.info("Google social login succeeded for user_id=%s", user["user_id"])
+        return _issue_token_response(user)
+    except SocialAuthError as exc:
+        logger.warning("Google social login rejected: %s", str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="تعذر التحقق من حساب Google") from exc
+
+
+@router.post("/facebook", response_model=TokenResponse, summary="تسجيل الدخول عبر Facebook")
+async def facebook_login(body: SocialLoginRequest) -> TokenResponse:
+    try:
+        identity = await verify_facebook_access_token(body.token)
+        user = _upsert_social_user(identity, body.tenant_id)
+        logger.info("Facebook social login succeeded for user_id=%s", user["user_id"])
+        return _issue_token_response(user)
+    except SocialAuthError as exc:
+        logger.warning("Facebook social login rejected: %s", str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="تعذر التحقق من حساب Facebook") from exc
 
 
 # ── POST /auth/refresh ────────────────────────────────────────────────────────
