@@ -7,6 +7,8 @@ import 'package:ai_chat/core/utils/jwt_decoder.dart';
 import 'package:ai_chat/data/datasources/local/local_data_source.dart';
 import 'package:ai_chat/data/datasources/remote/remote_data_source.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 /// Drives the authentication lifecycle of the application.
 ///
@@ -42,6 +44,18 @@ final class AuthController extends ChangeNotifier
   final SecureStorageService _secureStorage;
   final LocalStorageService _localStorage;
 
+  static const String _googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+  );
+  static const String _facebookAppId = String.fromEnvironment(
+    'FACEBOOK_APP_ID',
+  );
+  static const String _facebookClientToken = String.fromEnvironment(
+    'FACEBOOK_CLIENT_TOKEN',
+  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  Future<void>? _googleInitialization;
+
   AuthStatus _status = AuthStatus.loading;
   bool _hasCompletedOnboarding = false;
 
@@ -70,7 +84,15 @@ final class AuthController extends ChangeNotifier
   ///   expired JWT → unauthenticated (tokens cleared)
   ///   no / opaque token → unauthenticated (presence-based fallback)
   Future<void> bootstrap() async {
-    final token = await _secureStorage.readAccessToken();
+    String? token;
+    try {
+      token = await _secureStorage.readAccessToken();
+    } on Object {
+      // A corrupt or unavailable Android Keystore entry must not crash the
+      // process on cold start. Treat it as a signed-out session and allow the
+      // user to authenticate again.
+      token = null;
+    }
     _hasCompletedOnboarding =
         _localStorage.getBool(StorageKeys.onboardingCompleted) ?? false;
 
@@ -107,6 +129,63 @@ final class AuthController extends ChangeNotifier
     await _persistSession(result);
     _status = AuthStatus.authenticated;
     notifyListeners();
+  }
+
+  /// Completes server authentication with a provider token.
+  Future<void> signInWithSocial({
+    required String provider,
+    required String token,
+  }) async {
+    final result = await _remote.socialLogin(provider: provider, token: token);
+    await _persistSession(result);
+    _status = AuthStatus.authenticated;
+    notifyListeners();
+  }
+
+  /// Opens Google Sign-In, then exchanges the returned ID token with FastAPI.
+  Future<void> signInWithGoogle() async {
+    if (_googleServerClientId.isEmpty) {
+      throw StateError(
+        'Google authentication configuration is incomplete. '
+        'Provide GOOGLE_SERVER_CLIENT_ID before using Google Login.',
+      );
+    }
+    _googleInitialization ??= _googleSignIn.initialize(
+      serverClientId: _googleServerClientId.isEmpty
+          ? null
+          : _googleServerClientId,
+    );
+    await _googleInitialization;
+
+    final account = await _googleSignIn.authenticate();
+    final token = account.authentication.idToken;
+    if (token == null || token.isEmpty) {
+      throw StateError('Google did not return an ID token.');
+    }
+    await signInWithSocial(provider: 'google', token: token);
+  }
+
+  /// Opens Facebook Login, then exchanges the access token with FastAPI.
+  Future<void> signInWithFacebook() async {
+    if (_facebookAppId.isEmpty || _facebookClientToken.isEmpty) {
+      throw StateError(
+        'Facebook authentication configuration is incomplete. '
+        'Provide FACEBOOK_APP_ID and FACEBOOK_CLIENT_TOKEN at build time.',
+      );
+    }
+    final result = await FacebookAuth.instance.login(
+      permissions: const <String>['email', 'public_profile'],
+    );
+    if (result.status == LoginStatus.cancelled) {
+      throw StateError('Facebook sign-in was cancelled.');
+    }
+    if (result.status != LoginStatus.success || result.accessToken == null) {
+      throw StateError(result.message ?? 'Facebook sign-in failed.');
+    }
+    await signInWithSocial(
+      provider: 'facebook',
+      token: result.accessToken!.tokenString,
+    );
   }
 
   /// Registers a new account and, when the server auto-signs-in,

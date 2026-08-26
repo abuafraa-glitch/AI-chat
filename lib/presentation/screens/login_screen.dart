@@ -30,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  String? _socialLoading;
 
   @override
   void dispose() {
@@ -39,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isLoading || _socialLoading != null) return;
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -51,7 +53,8 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
       // Success: the router re-evaluates the guards and redirects.
-    } on Exception catch (error) {
+    } on Object catch (error, stackTrace) {
+      debugPrint('Credential sign-in failed: $error\n$stackTrace');
       if (!mounted) {
         return;
       }
@@ -65,9 +68,53 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _submitSocial(String provider) async {
+    if (_isLoading || _socialLoading != null) return;
+    setState(() {
+      _socialLoading = provider;
+    });
+    try {
+      final controller = sl<AuthController>();
+      if (provider == 'google') {
+        await controller.signInWithGoogle();
+      } else {
+        await controller.signInWithFacebook();
+      }
+    } on Object catch (error, stackTrace) {
+      debugPrint('$provider sign-in failed: $error\n$stackTrace');
+      if (mounted) {
+        context.showErrorSnackBar(_errorMessage(context, error));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _socialLoading = null;
+        });
+      }
+    }
+  }
+
   String _errorMessage(BuildContext context, Object error) {
     if (error is AppException && error.message.isNotEmpty) {
       return error.message;
+    }
+    if (error is StateError) {
+      final message = error.message.toString();
+      if (message.contains('Google authentication configuration')) {
+        return localizedTextRead(
+          context,
+          'Google Login is not configured in this build.',
+          'تسجيل الدخول عبر Google غير مهيأ في هذه النسخة.',
+        );
+      }
+      if (message.contains('Facebook authentication configuration')) {
+        return localizedTextRead(
+          context,
+          'Facebook Login is not configured in this build.',
+          'تسجيل الدخول عبر Facebook غير مهيأ في هذه النسخة.',
+        );
+      }
+      if (message.isNotEmpty) return message;
     }
     return localizedTextRead(
       context,
@@ -151,10 +198,60 @@ class _LoginScreenState extends State<LoginScreen> {
                 isLoading: _isLoading,
                 fullWidth: true,
               ),
+              AppSpacing.gap4,
+              Row(
+                children: <Widget>[
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      localizedText(
+                        context,
+                        'or continue with',
+                        'أو المتابعة عبر',
+                      ),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              AppSpacing.gap4,
+              OutlinedButton.icon(
+                onPressed: (_isLoading || _socialLoading != null)
+                    ? null
+                    : () => _submitSocial('google'),
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: Text(
+                  _socialLoading == 'google'
+                      ? localizedText(context, 'Connecting…', 'جارٍ الاتصال…')
+                      : localizedText(
+                          context,
+                          'Continue with Google',
+                          'المتابعة عبر Google',
+                        ),
+                ),
+              ),
+              AppSpacing.gap2,
+              OutlinedButton.icon(
+                onPressed: (_isLoading || _socialLoading != null)
+                    ? null
+                    : () => _submitSocial('facebook'),
+                icon: const Icon(Icons.facebook),
+                label: Text(
+                  _socialLoading == 'facebook'
+                      ? localizedText(context, 'Connecting…', 'جارٍ الاتصال…')
+                      : localizedText(
+                          context,
+                          'Continue with Facebook',
+                          'المتابعة عبر Facebook',
+                        ),
+                ),
+              ),
               AppSpacing.gap2,
               TextButton(
                 onPressed: () {
-                  if (!_isLoading) {
+                  if (!_isLoading && _socialLoading == null) {
                     context.pushTo(RouteNames.forgotPassword);
                   }
                 },

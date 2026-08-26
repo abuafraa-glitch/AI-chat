@@ -25,7 +25,6 @@ dependencies:
   # Networking
   dio: ^5.9.0
   connectivity_plus: ^7.0.0
-  internet_connection_checker_plus: ^2.9.0
 
   # Local Storage
   shared_preferences: ^2.5.3
@@ -43,6 +42,8 @@ dependencies:
   # Files & Permissions
   file_picker: ^10.3.2
   permission_handler: ^12.0.1
+  google_sign_in: ^7.1.1
+  flutter_facebook_auth: ^7.1.2
 
 dev_dependencies:
   flutter_test:
