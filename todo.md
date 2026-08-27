@@ -14,3 +14,7 @@
 ## سجل التشخيص
 
 سبب الشاشة الحمراء هو تمرير API_BASE_URL فارغاً أثناء البناء؛ لأن String.fromEnvironment يستبدل defaultValue بقيمة فارغة، فنتج resolvedApiUrl يساوي `/api/v1`، وهو عنوان نسبي غير صالح على Android.
+- [x] تشخيص سبب ظهور No internet connection في تسجيل الدخول والتسجيل رغم اتصال الجهاز
+- [x] تصحيح تصنيف أخطاء المصادقة وعدم تحويل كل أخطاء Dio إلى انقطاع اتصال
+- [x] التحقق من عنوان Backend ومسارات auth على HTTPS من بيئة البناء
+- [x] إضافة اختبارات regression وبناء APK جديد لاختبار Facebook وGoogle وEmail
