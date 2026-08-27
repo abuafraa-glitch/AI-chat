@@ -273,7 +273,11 @@ final class AuthController extends ChangeNotifier
 
   // ── Internal ──────────────────────────────────────────────────────────────
 
-  /// Persists the tokens and user profile returned by the server.
+  /// Persists tokens and establishes a user-specific local cache namespace.
+  ///
+  /// Login responses from social providers can encode `id` as either a string
+  /// or a number. Treating only strings as valid previously left the old
+  /// namespace active, so a later account could read another account's cache.
   Future<void> _persistSession(Map<String, dynamic> result) async {
     final access = result['access_token'];
     final refresh = result['refresh_token'];
@@ -283,16 +287,54 @@ final class AuthController extends ChangeNotifier
     if (refresh is String && refresh.isNotEmpty) {
       await _secureStorage.writeRefreshToken(refresh);
     }
-    final user = result['user'];
-    if (user is Map<String, dynamic>) {
-      await _cacheUser(user);
+
+    Map<String, dynamic>? user;
+    final responseUser = result['user'];
+    if (responseUser is Map<String, dynamic>) {
+      user = responseUser;
+    } else {
+      // Some auth responses return tokens first and expose the profile through
+      // /me. Resolve it before marking the session authenticated.
+      try {
+        user = await _remote.getCurrentUser();
+      } on Object {
+        user = null;
+      }
     }
+
+    final identity = user == null ? null : _identityFromUser(user!);
+    if (identity == null) {
+      await _localDataSource.clearCache();
+      await _localStorage.remove(StorageKeys.currentUserId);
+      throw StateError('Authentication response did not contain a user identity.');
+    }
+
+    final previousIdentity =
+        _localStorage.getString(StorageKeys.currentUserId);
+    if (previousIdentity != identity || previousIdentity == null) {
+      // Clear both the old account namespace and any legacy anonymous cache
+      // before activating the new namespace.
+      await _localDataSource.clearCache();
+    }
+    await _cacheUser(user!);
+  }
+
+  /// Returns a stable namespace identity for a backend user.
+  String? _identityFromUser(Map<String, dynamic> user) {
+    final rawId = user['id'] ?? user['user_id'];
+    if (rawId is String && rawId.trim().isNotEmpty) return rawId.trim();
+    if (rawId is num) return rawId.toString();
+    final email = user['email'];
+    if (email is String && email.trim().isNotEmpty) {
+      return 'email:${email.trim().toLowerCase()}';
+    }
+    return null;
   }
 
   /// Caches the non-sensitive user profile for offline UI rendering.
   Future<void> _cacheUser(Map<String, dynamic> user) async {
-    final id = user['id'];
-    if (id is String && id.isNotEmpty) {
+    final id = _identityFromUser(user);
+    if (id != null) {
       await _localStorage.setString(StorageKeys.currentUserId, id);
     }
     final name = user['name'];

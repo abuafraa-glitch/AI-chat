@@ -46,16 +46,16 @@ base class ProductionConfig extends EnvironmentConfig {
         enableAiModelSelection: true,
         enableWebSocketStreaming: true,
         enableMultiModelSwitching: true,
-        // Backend-dependent or unverified surfaces are disabled in
-        // production until their contracts are confirmed. The route
-        // feature-flag guard redirects these to the chat surface.
+        // These implemented app sections must remain reachable in production.
+        // Disabling them here makes the route guard silently redirect taps to
+        // the chat tab, which is indistinguishable from a broken link.
         enableSubscriptions: false,
         enablePayments: false,
-        enableFileManagement: false,
+        enableFileManagement: true,
         enableSearch: false,
         enableRag: false,
-        enableAgents: false,
-        enableNotifications: false,
+        enableAgents: true,
+        enableNotifications: true,
       ),
     );
   }
