@@ -23,7 +23,10 @@ base class ProductionConfig extends EnvironmentConfig {
       ),
       apiBaseUrl: const String.fromEnvironment(
         'API_BASE_URL',
-        defaultValue: 'https://api.hajeen.ai',
+        // The current mobile backend is exposed through the managed HTTPS proxy.
+        // Release builds can override this with --dart-define=API_BASE_URL.
+        defaultValue:
+            'https://8000-ic0w8tl2cn8qv0tnz27wc-bcfd8328.us4.manus.computer',
       ),
       webSocketUrl: const String.fromEnvironment(
         'WS_BASE_URL',
