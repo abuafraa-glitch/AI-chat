@@ -56,6 +56,9 @@ abstract interface class RemoteDataSource {
   /// Confirms the email address with the emailed verification [code].
   Future<void> verifyEmail({required String email, required String code});
 
+  /// Requests a new verification code for an unverified account.
+  Future<void> resendVerification(String email);
+
   // ── AI Models ─────────────────────────────────────────────────────────────
 
   /// Retrieves all available AI models.

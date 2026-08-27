@@ -17,7 +17,10 @@ import 'package:flutter/material.dart';
 /// [OtpField] and forwards them to [AuthController.verifyEmail].
 class VerifyEmailScreen extends StatefulWidget {
   /// Creates a [VerifyEmailScreen].
-  const VerifyEmailScreen({super.key});
+  const VerifyEmailScreen({super.key, this.initialEmail});
+
+  /// Email supplied by registration, if available.
+  final String? initialEmail;
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
@@ -28,11 +31,41 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final TextEditingController _emailController = TextEditingController();
   String _code = '';
   bool _isLoading = false;
+  bool _isResending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialEmail = widget.initialEmail;
+    if (initialEmail != null && initialEmail.isNotEmpty) {
+      _emailController.text = initialEmail;
+    }
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _resend() async {
+    final email = _emailController.text.trim();
+    if (!Validators.email(email) || _isResending) return;
+    setState(() => _isResending = true);
+    try {
+      await sl<AuthController>().resendVerification(email);
+      if (mounted) {
+        context.showSuccessSnackBar(localizedTextRead(
+          context,
+          'A new code was sent.',
+          'تم إرسال رمز جديد.',
+        ));
+      }
+    } on Exception catch (error) {
+      if (mounted) context.showErrorSnackBar(error is AppException && error.message.isNotEmpty ? error.message : localizedTextRead(context, 'Resend failed.', 'فشل إعادة الإرسال.'));
+    } finally {
+      if (mounted) setState(() => _isResending = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -139,6 +172,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 onPressed: _submit,
                 isLoading: _isLoading,
                 fullWidth: true,
+              ),
+              TextButton(
+                onPressed: _isResending ? null : _resend,
+                child: Text(_isResending
+                    ? localizedText(context, 'Sending…', 'جارٍ الإرسال…')
+                    : localizedText(context, 'Resend code', 'إعادة إرسال الرمز')),
               ),
             ],
           ),

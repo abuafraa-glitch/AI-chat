@@ -137,6 +137,16 @@ class RemoteDataSourceImpl implements RemoteDataSource {
     return _handleResponse(response);
   }
 
+  @override
+  Future<void> resendVerification(String email) async {
+    final response = await _apiConsumer.post<void>(
+      path: Endpoints.resendVerification,
+      data: <String, String>{'email': email},
+      fromJson: (_) {},
+    );
+    return _handleResponse(response);
+  }
+
   // ── AI Models ─────────────────────────────────────────────────────────────
 
   @override

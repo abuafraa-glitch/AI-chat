@@ -189,9 +189,10 @@ final class AuthController extends ChangeNotifier
     );
   }
 
-  /// Registers a new account and, when the server auto-signs-in,
-  /// persists the session.
-  Future<void> signUp({
+  /// Registers a new account. Email registrations remain signed out until
+  /// the verification code is confirmed; legacy/social responses may still
+  /// contain tokens and are persisted normally.
+  Future<String?> signUp({
     required String name,
     required String email,
     required String password,
@@ -201,10 +202,21 @@ final class AuthController extends ChangeNotifier
       email: email,
       password: password,
     );
+    if (result['pending_verification'] == true) {
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      final pendingEmail = result['email'];
+      return pendingEmail is String && pendingEmail.isNotEmpty ? pendingEmail : null;
+    }
     await _persistSession(result);
     _status = AuthStatus.authenticated;
     notifyListeners();
+    return null;
   }
+
+  /// Requests a new verification code for an unverified account.
+  Future<void> resendVerification(String email) =>
+      _remote.resendVerification(email);
 
   /// Signs the user out, clearing the persisted session.
   Future<void> signOut() async {

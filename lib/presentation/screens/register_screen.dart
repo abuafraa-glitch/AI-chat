@@ -6,6 +6,8 @@ import 'package:ai_chat/core/utils/validators.dart';
 import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/loading_button.dart';
 import 'package:ai_chat/core/widgets/inputs/app_text_field.dart';
+import 'package:ai_chat/core/routes/route_names.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ai_chat/presentation/blocs/auth_controller.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
@@ -48,12 +50,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isLoading = true;
     });
     try {
-      await sl<AuthController>().signUp(
+      final pendingEmail = await sl<AuthController>().signUp(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      // Success: the router re-evaluates the guards and redirects.
+      if (!mounted) return;
+      if (pendingEmail != null) {
+        context.go('${RouteNames.verifyEmail}?email=${Uri.encodeComponent(pendingEmail)}');
+      }
     } on Exception catch (error) {
       if (!mounted) {
         return;

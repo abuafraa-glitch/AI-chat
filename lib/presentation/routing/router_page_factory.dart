@@ -56,7 +56,9 @@ final class RouterPageFactory implements AppRouterPageFactory {
       const ResetPasswordScreen();
 
   @override
-  Widget buildVerifyEmailPage(GoRouterState state) => const VerifyEmailScreen();
+  Widget buildVerifyEmailPage(GoRouterState state) => VerifyEmailScreen(
+        initialEmail: state.uri.queryParameters['email'],
+      );
 
   // ── Main shell ────────────────────────────────────────────────────────────
 
