@@ -1,10 +1,15 @@
 """Auth API Routes — تسجيل الدخول والتسجيل وإدارة التوكنات."""
 from __future__ import annotations
 
+import hashlib
+import hmac
 import logging
 import os
+import secrets
+import smtplib
 import time
 import uuid
+from email.message import EmailMessage
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request, status
@@ -48,6 +53,15 @@ class SocialLoginRequest(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class VerifyEmailRequest(BaseModel):
+    email: str = Field(..., min_length=5)
+    code: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
+class ResendVerificationRequest(BaseModel):
+    email: str = Field(..., min_length=5)
 
 
 class RevokeRequest(BaseModel):
@@ -95,7 +109,58 @@ def _hash_password(password: str) -> str:
 def _verify_password(password: str, stored_hash: str) -> bool:
     if stored_hash == "__admin_placeholder__":
         return password == os.getenv("ADMIN_PASSWORD", "HajeenAdmin2024!")
-    return _hash_password(password) == stored_hash
+    return hmac.compare_digest(_hash_password(password), stored_hash)
+
+
+def _hash_verification_code(code: str) -> str:
+    salt = os.getenv("VERIFICATION_CODE_SALT", os.getenv("PASSWORD_SALT", "hajeen-salt-change-me"))
+    return hashlib.sha256(f"{salt}:{code}".encode()).hexdigest()
+
+
+def _new_verification_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def _smtp_configured() -> bool:
+    return all(os.getenv(key) for key in ("SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM_EMAIL"))
+
+
+def _send_verification_email(email: str, code: str) -> None:
+    if not _smtp_configured():
+        raise RuntimeError("SMTP configuration is incomplete")
+    message = EmailMessage()
+    message["Subject"] = "رمز التحقق من البريد الإلكتروني - Hajeen AI"
+    message["From"] = os.environ["SMTP_FROM_EMAIL"]
+    message["To"] = email
+    message.set_content(
+        "مرحباً في Hajeen AI،\\n\\n"
+        f"رمز التحقق الخاص بك هو: {code}\\n"
+        "يظل الرمز صالحاً لمدة 10 دقائق. إذا لم تطلب إنشاء الحساب فتجاهل هذه الرسالة."
+    )
+    host = os.environ["SMTP_HOST"]
+    port = int(os.environ.get("SMTP_PORT", "587"))
+    use_tls = os.getenv("SMTP_USE_TLS", "true").lower() not in {"0", "false", "no"}
+    with smtplib.SMTP(host, port, timeout=15) as smtp:
+        smtp.ehlo()
+        if use_tls:
+            smtp.starttls()
+            smtp.ehlo()
+        smtp.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
+        smtp.send_message(message)
+
+
+def _issue_verification(user: Dict[str, Any]) -> None:
+    code = _new_verification_code()
+    user["verification_code_hash"] = _hash_verification_code(code)
+    user["verification_expires_at"] = time.time() + 600
+    user["verification_attempts"] = 0
+    user["verification_sent_at"] = time.time()
+    _send_verification_email(user["email"], code)
+
+
+def _find_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    normalized = email.strip().lower()
+    return next((candidate for candidate in _USERS.values() if isinstance(candidate.get("email"), str) and candidate["email"].lower() == normalized), None)
 
 
 def _get_jwt_auth():
@@ -198,36 +263,76 @@ async def register(body: RegisterRequest) -> Dict[str, Any]:
     username = (body.username or body.email.split("@", 1)[0]).strip()
     if username in _USERS:
         raise HTTPException(status_code=400, detail="اسم المستخدم موجود بالفعل")
+    if _find_user_by_email(body.email):
+        raise HTTPException(status_code=400, detail="البريد الإلكتروني مستخدم بالفعل")
 
     user_id = f"usr_{uuid.uuid4().hex[:12]}"
-    _USERS[username] = {
+    user = {
         "user_id": user_id,
         "username": username,
         "name": body.name or username,
-        "email": body.email,
+        "email": body.email.strip().lower(),
         "password_hash": _hash_password(body.password),
         "roles": body.roles,
         "tenant_id": body.tenant_id,
-        "active": True,
+        "active": False,
+        "email_verified": False,
         "created_at": time.time(),
     }
-    jwt = _get_jwt_auth()
-    access_token = jwt.issue_token(user_id=user_id, tenant_id=body.tenant_id, roles=body.roles, token_type="access")
-    refresh_token = jwt.issue_token(user_id=user_id, tenant_id=body.tenant_id, roles=body.roles, token_type="refresh")
-    logger.info("New user registered: %s (tenant=%s)", username, body.tenant_id)
+    _USERS[username] = user
+    try:
+        _issue_verification(user)
+    except Exception as exc:
+        _USERS.pop(username, None)
+        logger.exception("Verification email delivery failed for %s", user["email"])
+        raise HTTPException(status_code=503, detail="تعذر إرسال رمز التحقق حالياً") from exc
+
+    logger.info("New pending user registered: %s (tenant=%s)", username, body.tenant_id)
     return {
         "success": True,
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "expires_in": 3600,
+        "pending_verification": True,
         "user_id": user_id,
         "username": username,
-        "roles": body.roles,
-        "tenant_id": body.tenant_id,
-        "user": {"id": user_id, "name": body.name or username, "email": body.email, "username": username},
-        "message": "تم تسجيل المستخدم بنجاح",
+        "email": user["email"],
+        "message": "تم إنشاء الحساب. تحقق من بريدك الإلكتروني لإكمال التسجيل.",
     }
+
+
+@router.post("/verify-email", summary="تأكيد البريد الإلكتروني")
+async def verify_email(body: VerifyEmailRequest) -> Dict[str, Any]:
+    user = _find_user_by_email(body.email)
+    if not user or user.get("email_verified"):
+        raise HTTPException(status_code=400, detail="رمز التحقق غير صالح")
+    if user.get("verification_attempts", 0) >= 5:
+        raise HTTPException(status_code=429, detail="تم تجاوز عدد المحاولات. أعد إرسال رمزاً جديداً.")
+    user["verification_attempts"] = user.get("verification_attempts", 0) + 1
+    if time.time() > user.get("verification_expires_at", 0):
+        raise HTTPException(status_code=400, detail="انتهت صلاحية رمز التحقق")
+    expected = user.get("verification_code_hash", "")
+    if not expected or not hmac.compare_digest(expected, _hash_verification_code(body.code)):
+        raise HTTPException(status_code=400, detail="رمز التحقق غير صحيح")
+    user["email_verified"] = True
+    user["active"] = True
+    user.pop("verification_code_hash", None)
+    user.pop("verification_expires_at", None)
+    user.pop("verification_attempts", None)
+    return {"success": True, "email_verified": True, "message": "تم تأكيد البريد الإلكتروني بنجاح"}
+
+
+@router.post("/resend-verification", summary="إعادة إرسال رمز التحقق")
+async def resend_verification(body: ResendVerificationRequest) -> Dict[str, Any]:
+    user = _find_user_by_email(body.email)
+    if not user or user.get("email_verified"):
+        return {"success": True, "message": "إذا كان الحساب بحاجة إلى تحقق فسيتم إرسال رمز جديد"}
+    last_sent = user.get("verification_sent_at", 0)
+    if time.time() - last_sent < 60:
+        raise HTTPException(status_code=429, detail="انتظر دقيقة قبل طلب رمز جديد")
+    try:
+        _issue_verification(user)
+    except Exception as exc:
+        logger.exception("Verification resend failed for %s", user["email"])
+        raise HTTPException(status_code=503, detail="تعذر إرسال رمز التحقق حالياً") from exc
+    return {"success": True, "message": "تم إرسال رمز تحقق جديد"}
 
 
 # ── POST /auth/login ──────────────────────────────────────────────────────────
@@ -237,12 +342,11 @@ async def login(body: LoginRequest, request: Request) -> TokenResponse:
     identifier = (body.username or body.email or "").strip()
     user = _USERS.get(identifier)
     if user is None:
-        user = next((candidate for candidate in _USERS.values() if candidate.get("email") == identifier), None)
-    if not user or not user.get("active"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="اسم المستخدم أو كلمة المرور غير صحيحة",
-        )
+        user = _find_user_by_email(identifier)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
+    if not user.get("active") or (user.get("password_hash") != "__admin_placeholder__" and not user.get("email_verified")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="تحقق من بريدك الإلكتروني أولاً")
 
     if not _verify_password(body.password, user["password_hash"]):
         logger.warning("Failed login attempt for user: %s", body.username)
