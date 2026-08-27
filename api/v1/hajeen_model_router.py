@@ -251,7 +251,7 @@ async def stream_chat(req: ChatRequest, request: Request):
                     payload = {"event": "finish", "finish_reason": chunk.finish_reason or "stop", "metadata": chunk.metadata}
                     completed = True
                 elif chunk.event_type == "delta":
-                    payload = {"event": "delta", "content": chunk.delta, "index": chunk.sequence}
+                    payload = {"event": "delta", "content": chunk.delta, "index": chunk.index}
                 else:
                     raise RuntimeError(f"Unsupported stream event: {chunk.event_type}")
                 yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
