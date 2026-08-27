@@ -145,6 +145,12 @@ abstract final class ApiPaths {
   /// `/auth/register` — account creation.
   static const String authRegister = '/auth/register';
 
+  /// `/auth/google` — Google ID-token exchange.
+  static const String authGoogle = '/auth/google';
+
+  /// `/auth/facebook` — Facebook access-token exchange.
+  static const String authFacebook = '/auth/facebook';
+
   /// `/auth/refresh` — token refresh.
   static const String authRefresh = '/auth/refresh';
 

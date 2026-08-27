@@ -11,8 +11,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// [LocalStorageService].
 ///
 /// The service configures platform-appropriate encryption options:
-/// - **Android**: `encryptedSharedPreferences: true` (uses Jetpack
-///   Security under the hood, backed by the Android Keystore).
+/// - **Android**: default `AndroidOptions()` for compatibility with the
+///   target Android devices and current flutter_secure_storage implementation.
 /// - **iOS**: `KeychainAccessibility.first_unlock_this_device` so
 ///   that the data is accessible after the first unlock and survives
 ///   app reinstalls when iCloud Keychain is enabled.
@@ -36,7 +36,7 @@ final class SecureStorageService implements TokenProvider {
     : _storage =
           storage ??
           const FlutterSecureStorage(
-            aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            aOptions: AndroidOptions(),
             iOptions: IOSOptions(
               accessibility: KeychainAccessibility.first_unlock_this_device,
             ),

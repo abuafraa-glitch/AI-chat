@@ -61,6 +61,24 @@ class RemoteDataSourceImpl implements RemoteDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> socialLogin({
+    required String provider,
+    required String token,
+  }) async {
+    final path = switch (provider) {
+      'google' => Endpoints.googleLogin,
+      'facebook' => Endpoints.facebookLogin,
+      _ => throw ArgumentError.value(provider, 'provider', 'Unsupported provider'),
+    };
+    final response = await _apiConsumer.post<Map<String, dynamic>>(
+      path: path,
+      data: <String, String>{'token': token},
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+    return _handleResponse(response);
+  }
+
+  @override
   Future<void> logout() async {
     final response = await _apiConsumer.post<void>(
       path: Endpoints.logout,

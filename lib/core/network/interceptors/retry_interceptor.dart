@@ -48,14 +48,16 @@ final class RetryInterceptor extends Interceptor {
       return;
     }
 
+    // Connectivity is advisory only. Android can report a stale or missing
+    // interface while the HTTP stack is already able to reach the backend.
+    // Never turn that plugin false-negative into a failed retry.
     final connected = await _networkInfo.isConnected;
     if (!connected) {
       developer.log(
-        'Retry aborted: device is offline (attempt $attempt).',
+        'Connectivity probe is offline; attempting HTTP retry anyway '
+        '(attempt $attempt).',
         name: _logName,
       );
-      handler.next(err);
-      return;
     }
 
     final delay = _computeBackoff(attempt);

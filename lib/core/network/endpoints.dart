@@ -27,6 +27,12 @@ abstract final class Endpoints {
   /// `POST /auth/register` — create a new user account.
   static const String register = ApiPaths.authRegister;
 
+  /// `POST /auth/google` — exchange a Google ID token.
+  static const String googleLogin = ApiPaths.authGoogle;
+
+  /// `POST /auth/facebook` — exchange a Facebook access token.
+  static const String facebookLogin = ApiPaths.authFacebook;
+
   /// `POST /auth/refresh` — rotate the access token using a refresh token.
   static const String refresh = ApiPaths.authRefresh;
 

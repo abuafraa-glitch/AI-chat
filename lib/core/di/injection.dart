@@ -33,7 +33,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
-import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
 /// Global instance of the GetIt service locator.
 final GetIt sl = GetIt.instance;
@@ -59,7 +58,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<SecureStorageService>(
     () => SecureStorageService(
       storage: const FlutterSecureStorage(
-        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        aOptions: AndroidOptions(),
         iOptions: IOSOptions(
           accessibility: KeychainAccessibility.first_unlock_this_device,
         ),
@@ -75,7 +74,6 @@ Future<void> initDependencies() async {
   sl.registerSingleton<ConnectivityService>(
     ConnectivityService(
       connectivity: Connectivity(),
-      internetConnection: InternetConnection(),
     ),
   );
   await sl<ConnectivityService>().initialise();
@@ -88,7 +86,6 @@ Future<void> initDependencies() async {
   // NetworkInfo: singleton.
   sl.registerLazySingleton<NetworkInfo>(
     () => NetworkInfoImpl(
-      connectionChecker: InternetConnection(),
       connectivity: Connectivity(),
     ),
   );

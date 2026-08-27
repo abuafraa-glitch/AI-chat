@@ -79,8 +79,8 @@ void main() {
       expect(server.hits('/billing'), 1);
     });
 
-    test('offline aborts retries with no extra HTTP attempt', () async {
-      final server = _CountingServer((path, hit) => 503);
+    test('offline probe does not block an HTTP retry', () async {
+      final server = _CountingServer((path, hit) => hit == 1 ? 503 : null);
       await server.start();
       addTearDown(server.stop);
 
@@ -89,10 +89,11 @@ void main() {
         RetryInterceptor(dio: dio, networkInfo: _OfflineNetworkInfo()),
       );
 
-      await expectLater(dio.get('/billing'), throwsA(isA<DioException>()));
+      final response = await dio.get('/billing');
 
-      // First attempt happens, then connectivity check fails → no retry.
-      expect(server.hits('/billing'), 1);
+      // The probe is advisory; the HTTP stack is the source of truth.
+      expect(response.statusCode, 200);
+      expect(server.hits('/billing'), 2);
     });
 
     test(

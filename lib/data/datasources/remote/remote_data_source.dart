@@ -30,6 +30,12 @@ abstract interface class RemoteDataSource {
     required String password,
   });
 
+  /// Exchanges a verified provider token for the Hajeen session.
+  Future<Map<String, dynamic>> socialLogin({
+    required String provider,
+    required String token,
+  });
+
   /// Invalidates the current session on the server.
   Future<void> logout();
 

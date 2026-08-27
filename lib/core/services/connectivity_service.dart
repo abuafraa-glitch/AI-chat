@@ -1,179 +1,76 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+import 'package:flutter/foundation.dart';
 
-/// Describes the current network reachability posture of the device.
-enum ConnectivityStatus {
-  /// The device has an active network interface with confirmed internet
-  /// access.
-  connected,
+/// Describes the current network interface posture of the device.
+enum ConnectivityStatus { connected, noInternet, disconnected }
 
-  /// The device has an active network interface but cannot reach the
-  /// public internet (e.g. captive portal, NAT-only, airplane-mode
-  /// Wi-Fi).
-  noInternet,
-
-  /// The device has no active network interface.
-  disconnected,
-}
-
-/// Monitors network reachability for the Hajeen AI application.
+/// Monitors network interfaces without performing a blocking startup probe.
 ///
-/// [ConnectivityService] combines two independent signals:
-///
-/// 1. **[Connectivity]** (from `connectivity_plus`) — detects a live
-///    network interface (Wi-Fi, mobile, ethernet, VPN, …).
-/// 2. **[InternetConnection]** (from `internet_connection_checker_plus`)
-///    — verifies that the interface can reach the public internet.
-///
-/// This two-level check avoids the common failure mode where a device
-/// reports "connected" on a captive portal or NAT-only network but
-/// cannot actually reach the backend.
-///
-/// ### Usage
-/// ```dart
-/// final service = ConnectivityService();
-/// await service.initialise();
-///
-/// // Snapshot
-/// print(service.isConnected);
-///
-/// // Reactive
-/// service.statusStream.listen((status) { ... });
-///
-/// // Teardown
-/// await service.dispose();
-/// ```
+/// The backend request remains the source of truth for actual reachability;
+/// HTTP timeouts and errors are handled by the network layer.
 final class ConnectivityService {
-  /// Creates a [ConnectivityService].
-  ///
-  /// The [connectivity] and [internetConnection] parameters are exposed
-  /// for dependency injection in tests. Production code should omit
-  /// them; the defaults are used automatically.
-  ConnectivityService({
-    Connectivity? connectivity,
-    InternetConnection? internetConnection,
-  }) : _connectivity = connectivity ?? Connectivity(),
-       _internetConnection = internetConnection ?? InternetConnection();
+  ConnectivityService({Connectivity? connectivity})
+      : _connectivity = connectivity ?? Connectivity();
 
   final Connectivity _connectivity;
-  final InternetConnection _internetConnection;
-
   ConnectivityStatus _status = ConnectivityStatus.disconnected;
-
   final StreamController<ConnectivityStatus> _controller =
       StreamController<ConnectivityStatus>.broadcast();
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
 
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
-  StreamSubscription<InternetStatus>? _internetSubscription;
-
-  // ── Public surface ───────────────────────────────────────────────────────
-
-  /// The most recently resolved connectivity status.
-  ///
-  /// This value is `ConnectivityStatus.disconnected` until
-  /// [initialise] has been awaited at least once.
   ConnectivityStatus get status => _status;
-
-  /// A broadcast [Stream] that emits a new [ConnectivityStatus]
-  /// whenever the network state transitions.
-  ///
-  /// Multiple listeners are supported; all receive the same events.
   Stream<ConnectivityStatus> get statusStream => _controller.stream;
-
-  /// `true` when [status] is [ConnectivityStatus.connected].
   bool get isConnected => _status == ConnectivityStatus.connected;
+  bool get isOffline => !isConnected;
 
-  /// `true` when [status] is [ConnectivityStatus.disconnected] or
-  /// [ConnectivityStatus.noInternet].
-  bool get isOffline => _status != ConnectivityStatus.connected;
-
-  // ── Lifecycle ────────────────────────────────────────────────────────────
-
-  /// Performs an eager connectivity check and begins listening for
-  /// interface and internet-status changes.
-  ///
-  /// Must be awaited during the application bootstrap phase before
-  /// [status] or [statusStream] are consumed.
   Future<void> initialise() async {
-    await _refreshStatus();
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
-      _onInterfaceChanged,
-    );
-    _internetSubscription = _internetConnection.onStatusChange.listen(
-      _onInternetStatusChanged,
-    );
-  }
-
-  /// Cancels all active subscriptions and closes [statusStream].
-  ///
-  /// After this call the service must not be used again; create a new
-  /// instance if connectivity monitoring is needed again.
-  Future<void> dispose() async {
-    await _connectivitySubscription?.cancel();
-    await _internetSubscription?.cancel();
-    await _controller.close();
-  }
-
-  // ── Internal ─────────────────────────────────────────────────────────────
-
-  Future<void> _refreshStatus() async {
-    final results = await _connectivity.checkConnectivity();
-    if (_hasNetworkInterface(results)) {
-      final hasInternet = await _internetConnection.hasInternetAccess;
-      _emit(
-        hasInternet
-            ? ConnectivityStatus.connected
-            : ConnectivityStatus.noInternet,
-      );
-    } else {
-      _emit(ConnectivityStatus.disconnected);
-    }
-  }
-
-  void _onInterfaceChanged(List<ConnectivityResult> results) {
-    if (!_hasNetworkInterface(results)) {
+    // connectivity_plus uses NetworkManager on Linux. Some headless or
+    // minimal Linux environments do not provide that D-Bus service; skip the
+    // advisory plugin there so it can never abort application startup.
+    if (defaultTargetPlatform == TargetPlatform.linux) {
       _emit(ConnectivityStatus.disconnected);
       return;
     }
-    // Interface is up — check actual internet access.
-    _internetConnection.hasInternetAccess.then((hasInternet) {
-      _emit(
-        hasInternet
-            ? ConnectivityStatus.connected
-            : ConnectivityStatus.noInternet,
+    try {
+      final results = await _connectivity
+          .checkConnectivity()
+          .timeout(const Duration(seconds: 2));
+      _emit(_statusFor(results));
+    } catch (_) {
+      // Connectivity is advisory only; never block or abort app startup.
+      _emit(ConnectivityStatus.disconnected);
+    }
+    try {
+      _subscription = _connectivity.onConnectivityChanged.listen(
+        (results) => _emit(_statusFor(results)),
+        onError: (_) {},
       );
-    });
-  }
-
-  void _onInternetStatusChanged(InternetStatus internetStatus) {
-    switch (internetStatus) {
-      case InternetStatus.connected:
-        _emit(ConnectivityStatus.connected);
-      case InternetStatus.disconnected:
-        // Determine whether we still have an interface.
-        _connectivity.checkConnectivity().then((results) {
-          _emit(
-            _hasNetworkInterface(results)
-                ? ConnectivityStatus.noInternet
-                : ConnectivityStatus.disconnected,
-          );
-        });
+    } catch (_) {
+      // The stream is optional and must not prevent the first frame.
     }
   }
 
-  void _emit(ConnectivityStatus newStatus) {
-    if (_status == newStatus) return;
-    _status = newStatus;
-    if (!_controller.isClosed) _controller.add(newStatus);
+  Future<void> dispose() async {
+    await _subscription?.cancel();
+    await _controller.close();
   }
 
-  /// Returns `true` when [results] contains at least one non-none,
-  /// non-bluetooth connectivity type, indicating a usable interface.
-  static bool _hasNetworkInterface(List<ConnectivityResult> results) =>
-      results.any(
-        (r) =>
-            r != ConnectivityResult.none && r != ConnectivityResult.bluetooth,
-      );
+  static ConnectivityStatus _statusFor(List<ConnectivityResult> results) {
+    final hasInterface = results.any(
+      (result) =>
+          result != ConnectivityResult.none &&
+          result != ConnectivityResult.bluetooth,
+    );
+    return hasInterface
+        ? ConnectivityStatus.connected
+        : ConnectivityStatus.disconnected;
+  }
+
+  void _emit(ConnectivityStatus next) {
+    if (_status == next) return;
+    _status = next;
+    if (!_controller.isClosed) _controller.add(next);
+  }
 }
