@@ -7,7 +7,7 @@
         {
             "instruction": "ما هو عاصمة السعودية؟",
             "expected": "الرياض",
-            "response": "Error during inference: OpenAI error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m0r21ww8edk83nyz76pw2mdc` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199620, Requested 1101. Please try again in 5m11.472s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -25,7 +25,7 @@
         {
             "instruction": "كيف حالك؟",
             "expected": "أنا بخير، كيف يمكنني مساعدتك؟",
-            "response": "Error during inference: OpenAI error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m0r21ww8edk83nyz76pw2mdc` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199719, Requested 1099. Please try again in 5m53.376s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -34,7 +34,7 @@
         {
             "instruction": "Translate 'Hello' to Arabic.",
             "expected": "مرحباً",
-            "response": "Error during inference: OpenAI error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m0r21ww8edk83nyz76pw2mdc` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199620, Requested 1102. Please try again in 5m11.904s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -43,7 +43,7 @@
         {
             "instruction": "من هو مؤسس المملكة العربية السعودية؟",
             "expected": "الملك عبد العزيز آل سعود",
-            "response": "Error during inference: OpenAI error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m0r21ww8edk83nyz76pw2mdc` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199618, Requested 1103. Please try again in 5m11.472s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,
@@ -52,7 +52,7 @@
         {
             "instruction": "Who is the current CEO of Google?",
             "expected": "Sundar Pichai",
-            "response": "Error during inference: OpenAI error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m0r21ww8edk83nyz76pw2mdc` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199617, Requested 1103. Please try again in 5m11.039999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}",
+            "response": "Error during inference: 'ProcessedResponse' object has no attribute 'content'",
             "is_correct_accuracy": false,
             "consistency_score": 0.0,
             "response_quality_score": 0.0,

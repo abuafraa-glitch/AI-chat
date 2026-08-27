@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 import base64
+import binascii
 from fastapi.responses import StreamingResponse
 
 from api.v1.ai.router import ChatRequestSchema, chat, chat_stream
@@ -16,6 +17,34 @@ router = APIRouter(tags=["Flutter compatibility"])
 _CONVERSATIONS: Dict[str, Dict[str, Any]] = {}
 _MESSAGES: Dict[str, List[Dict[str, Any]]] = {}
 _FILES: Dict[str, Dict[str, Any]] = {}
+
+
+def _scope(request: Request) -> str:
+    """Return a stable, account-specific scope without storing raw bearer tokens."""
+    authorization = request.headers.get("authorization", "").strip()
+    if not authorization:
+        return "anonymous"
+    token = authorization.split(" ", 1)[1] if " " in authorization else authorization
+    # JWTs can rotate while the account stays the same. Prefer their stable
+    # subject/email claim; opaque tokens fall back to a token-derived scope.
+    parts = token.split(".")
+    if len(parts) == 3:
+        try:
+            payload = parts[1] + ("=" * (-len(parts[1]) % 4))
+            claims = json.loads(base64.urlsafe_b64decode(payload).decode("utf-8"))
+            identity = claims.get("sub") or claims.get("user_id") or claims.get("email")
+            if identity:
+                return f"account:{str(identity).strip().lower()}"
+        except (ValueError, UnicodeDecodeError, json.JSONDecodeError, binascii.Error):
+            pass
+    return f"token:{token}"
+
+
+def _owned_conversation(conversation_id: str, request: Request) -> Dict[str, Any]:
+    item = _CONVERSATIONS.get(conversation_id)
+    if item is None or item.get("metadata", {}).get("scope") != _scope(request):
+        raise HTTPException(404, "المحادثة غير موجودة")
+    return item
 
 
 def _now() -> str:
@@ -37,25 +66,24 @@ def _conversation(conversation_id: str, title: str = "محادثة جديدة") 
 
 
 @router.get("/conversations")
-async def list_conversations() -> List[Dict[str, Any]]:
-    return list(_CONVERSATIONS.values())
+async def list_conversations(request: Request) -> List[Dict[str, Any]]:
+    scope = _scope(request)
+    return [item for item in _CONVERSATIONS.values() if item.get("metadata", {}).get("scope") == scope]
 
 
 @router.post("/conversations")
 async def create_conversation(body: Dict[str, Any], request: Request) -> Dict[str, Any]:
     conversation_id = str(uuid.uuid4())
     item = _conversation(conversation_id, str(body.get("title") or "محادثة جديدة"))
-    item["metadata"]["scope"] = request.headers.get("authorization", "anonymous")
+    item["metadata"]["scope"] = _scope(request)
     _CONVERSATIONS[conversation_id] = item
     _MESSAGES[conversation_id] = []
     return item
 
 
 @router.patch("/conversations/{conversation_id}")
-async def update_conversation(conversation_id: str, body: Dict[str, Any]) -> Dict[str, Any]:
-    item = _CONVERSATIONS.get(conversation_id)
-    if item is None:
-        raise HTTPException(404, "المحادثة غير موجودة")
+async def update_conversation(conversation_id: str, body: Dict[str, Any], request: Request) -> Dict[str, Any]:
+    item = _owned_conversation(conversation_id, request)
     if body.get("title"):
         item["title"] = str(body["title"])
     item["updatedAt"] = _now()
@@ -63,25 +91,22 @@ async def update_conversation(conversation_id: str, body: Dict[str, Any]) -> Dic
 
 
 @router.delete("/conversations/{conversation_id}")
-async def delete_conversation(conversation_id: str) -> Dict[str, Any]:
-    if conversation_id not in _CONVERSATIONS:
-        raise HTTPException(404, "المحادثة غير موجودة")
+async def delete_conversation(conversation_id: str, request: Request) -> Dict[str, Any]:
+    _owned_conversation(conversation_id, request)
     _CONVERSATIONS.pop(conversation_id, None)
     _MESSAGES.pop(conversation_id, None)
     return {"success": True}
 
 
 @router.get("/conversations/{conversation_id}/messages")
-async def list_messages(conversation_id: str) -> List[Dict[str, Any]]:
-    if conversation_id not in _CONVERSATIONS:
-        raise HTTPException(404, "المحادثة غير موجودة")
+async def list_messages(conversation_id: str, request: Request) -> List[Dict[str, Any]]:
+    _owned_conversation(conversation_id, request)
     return _MESSAGES.get(conversation_id, [])
 
 
 @router.post("/conversations/{conversation_id}/messages")
 async def create_message(conversation_id: str, body: Dict[str, Any], request: Request) -> Dict[str, Any]:
-    if conversation_id not in _CONVERSATIONS:
-        raise HTTPException(404, "المحادثة غير موجودة")
+    _owned_conversation(conversation_id, request)
     content = str(body.get("content") or body.get("message") or "").strip()
     attachments = body.get("attachments") if isinstance(body.get("attachments"), list) else []
     if not content and not attachments:
@@ -105,8 +130,7 @@ async def create_message(conversation_id: str, body: Dict[str, Any], request: Re
 @router.post("/conversations/{conversation_id}/messages/stream")
 async def stream_message(conversation_id: str, body: Dict[str, Any], request: Request) -> StreamingResponse:
     """Keep the mobile SSE contract while using the canonical BrainV3 stream."""
-    if conversation_id not in _CONVERSATIONS:
-        raise HTTPException(404, "المحادثة غير موجودة")
+    _owned_conversation(conversation_id, request)
     content = str(body.get("content") or body.get("message") or "").strip()
     attachments = body.get("attachments") if isinstance(body.get("attachments"), list) else []
     if not content and not attachments:
@@ -164,11 +188,22 @@ def _chat_request(content: str, conversation_id: str, body: Dict[str, Any]) -> C
         use_agent=bool(body.get("use_agent", False)),
         temperature=body.get("temperature"),
         max_tokens=body.get("max_tokens"),
-        model=body.get("model"),
+        model=_groq_model(body.get("model") or body.get("modelId")),
         top_k=int(body.get("top_k", 5)),
         retrieval_mode=str(body.get("retrieval_mode") or "semantic"),
         system_prompt=body.get("system_prompt"),
     )
+
+
+def _groq_model(raw_model: Any) -> str:
+    """Normalize mobile model IDs to the configured Groq provider namespace."""
+    raw = str(raw_model or "llama-3.3-70b-versatile").strip()
+    if raw.startswith("groq/"):
+        return raw
+    # Mobile catalogs may expose bare names or an OpenAI-shaped ID. The
+    # provider must remain Groq; only the model name is carried forward.
+    model_name = raw.split("/", 1)[1] if "/" in raw else raw
+    return f"groq/{model_name}"
 
 
 def _touch_conversation(conversation_id: str, content: str, metadata: Dict[str, Any]) -> None:
@@ -220,7 +255,7 @@ async def notifications(request: Request) -> List[Dict[str, Any]]:
 
 @router.get("/files")
 async def list_files(request: Request) -> List[Dict[str, Any]]:
-    scope = request.headers.get("authorization", "anonymous")
+    scope = _scope(request)
     return [item for item in _FILES.values() if item.get("scope") == scope]
 
 
@@ -235,7 +270,7 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[st
         "id": file_id, "name": file.filename or "file",
         "url": f"data:{mime};base64,{base64.b64encode(content).decode()}",
         "size": len(content), "mimeType": mime, "createdAt": _now(),
-        "scope": request.headers.get("authorization", "anonymous"),
+        "scope": _scope(request),
     }
     _FILES[file_id] = item
     return {key: value for key, value in item.items() if key != "scope"}
@@ -244,7 +279,7 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[st
 @router.delete("/files/{file_id}")
 async def delete_file(file_id: str, request: Request) -> Dict[str, Any]:
     item = _FILES.get(file_id)
-    if item is None or item.get("scope") != request.headers.get("authorization", "anonymous"):
+    if item is None or item.get("scope") != _scope(request):
         raise HTTPException(404, "الملف غير موجود")
     _FILES.pop(file_id)
     return {"success": True}
@@ -265,7 +300,7 @@ async def subscription_plans(request: Request) -> List[Dict[str, Any]]:
 async def current_subscription(request: Request) -> Dict[str, Any]:
     return {
         "id": "none",
-        "userId": request.headers.get("authorization", "anonymous"),
+        "userId": _scope(request),
         "planType": "custom",
         "billingCycle": "custom",
         "status": "pending",
