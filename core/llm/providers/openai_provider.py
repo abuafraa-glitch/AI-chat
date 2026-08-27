@@ -38,6 +38,13 @@ class OpenAIProvider(BaseLLMProvider):
                 kwargs["api_key"] = self.config.api_key
             if self.config.api_base:
                 kwargs["base_url"] = self.config.api_base
+            # Reasoning models such as Groq's gpt-oss-20b can spend several
+            # seconds before emitting the first token. The OpenAI SDK default
+            # timeout is too short for a mobile chat request, while the router
+            # already supplies the authoritative operation timeout.
+            if self.provider_name == "groq":
+                kwargs["timeout"] = float(os.getenv("GROQ_HTTP_TIMEOUT_SECONDS", "120"))
+                kwargs["max_retries"] = 1
             self._client = openai.AsyncOpenAI(**kwargs)
             self._initialized = True
             logger.info("OpenAI provider initialized (model=%s)", self.config.model)

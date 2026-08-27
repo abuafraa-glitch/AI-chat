@@ -53,3 +53,24 @@ def test_model_router_resolves_mobile_aliases_to_groq_key():
     router = ModelRouter(prefer_local=False)
     assert router._resolve_key("gpt-4o-mini") == GROQ_RUNTIME_MODEL_KEY
     assert router._resolve_key("openai/gpt-oss-20b") == GROQ_RUNTIME_MODEL_KEY
+
+
+@pytest.mark.asyncio
+async def test_groq_provider_uses_extended_http_timeout(monkeypatch):
+    import openai
+    from core.llm.base import LLMConfig
+    from core.llm.providers.openai_provider import OpenAIProvider
+
+    captured = {}
+
+    class FakeAsyncOpenAI:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr(openai, "AsyncOpenAI", FakeAsyncOpenAI)
+    monkeypatch.delenv("GROQ_HTTP_TIMEOUT_SECONDS", raising=False)
+    provider = OpenAIProvider(LLMConfig(provider="groq", model="openai/gpt-oss-20b", api_key="test", api_base="https://api.groq.com/openai/v1"))
+    await provider.initialize()
+
+    assert captured["timeout"] == 120.0
+    assert captured["max_retries"] == 1
