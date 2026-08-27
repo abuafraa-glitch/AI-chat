@@ -13,6 +13,7 @@ import 'package:ai_chat/presentation/widgets/chat_input_field.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:ai_chat/presentation/widgets/message_bubble.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
@@ -78,6 +79,7 @@ class _ChatViewState extends State<_ChatView> {
   ChatLaunchData? _launchData;
   bool _didLaunch = false;
   int _previousLength = 0;
+  final List<MessageAttachment> _pendingAttachments = <MessageAttachment>[];
 
   @override
   void initState() {
@@ -123,7 +125,9 @@ class _ChatViewState extends State<_ChatView> {
       conversationId: widget.conversationId,
       content: content,
       modelId: modelId,
+      attachments: List<MessageAttachment>.from(_pendingAttachments),
     );
+    _pendingAttachments.clear();
   }
 
   void _onSendPressed(String content) {
@@ -150,6 +154,57 @@ class _ChatViewState extends State<_ChatView> {
       return;
     }
     _send(content, modelId);
+  }
+
+  Future<void> _pickAttachment() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      withData: false,
+      type: FileType.any,
+    );
+    final selected = result?.files.single;
+    if (selected == null || selected.path == null || !mounted) {
+      return;
+    }
+    try {
+      final uploaded = await buildFileRepository().uploadFile(
+        filePath: selected.path!,
+        fileFieldName: 'file',
+      );
+      final mime = uploaded.mimeType ?? 'application/octet-stream';
+      final type = mime.startsWith('image/')
+          ? AttachmentType.image
+          : mime.startsWith('video/')
+          ? AttachmentType.video
+          : mime.startsWith('audio/')
+          ? AttachmentType.audio
+          : AttachmentType.file;
+      setState(() {
+        _pendingAttachments.add(
+          MessageAttachment(
+            id: uploaded.id,
+            name: uploaded.name,
+            type: type,
+            url: uploaded.url ?? '',
+            size: uploaded.size,
+            mimeType: uploaded.mimeType,
+          ),
+        );
+      });
+      context.showSnackBar(
+        localizedTextRead(
+          context,
+          'Attachment ready',
+          'تم تجهيز المرفق للإرسال',
+        ),
+      );
+    } on Exception catch (error) {
+      if (mounted) {
+        context.showErrorSnackBar(
+          '${localizedTextRead(context, 'Upload failed', 'فشل رفع المرفق')}: $error',
+        );
+      }
+    }
   }
 
   Future<void> _copyMessage(String content) async {
@@ -201,6 +256,8 @@ class _ChatViewState extends State<_ChatView> {
           bottomSheet: ChatInputField(
             hintText: localizedText(context, 'Ask anything…', 'اسأل أي شيء…'),
             onSendMessage: _onSendPressed,
+            onAttachFile: _pickAttachment,
+            onUploadImage: _pickAttachment,
           ),
         );
       },

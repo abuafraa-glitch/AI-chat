@@ -2,6 +2,7 @@ import 'package:ai_chat/data/models/message_model.dart';
 import 'package:ai_chat/presentation/widgets/formatters.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 /// Renders a single chat message as a bubble.
 ///
@@ -75,6 +76,38 @@ class MessageBubble extends StatelessWidget {
                       ],
                     ),
                   ),
+                if (message.attachments.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: message.attachments.map((attachment) {
+                        final isImage = attachment.type == AttachmentType.image;
+                        final isDataImage = attachment.url.startsWith(
+                          'data:image/',
+                        );
+                        if (isImage && isDataImage) {
+                          final encoded = attachment.url
+                              .split(',')
+                              .skip(1)
+                              .join(',');
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.memory(
+                              base64Decode(encoded),
+                              width: 180,
+                              height: 140,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  _attachmentChip(theme, attachment),
+                            ),
+                          );
+                        }
+                        return _attachmentChip(theme, attachment);
+                      }).toList(),
+                    ),
+                  ),
                 SelectableText(
                   message.content,
                   style: TextStyle(
@@ -126,6 +159,22 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  static Widget _attachmentChip(ThemeData theme, MessageAttachment attachment) {
+    return Chip(
+      avatar: Icon(
+        attachment.type == AttachmentType.video
+            ? Icons.video_file
+            : Icons.attach_file,
+        size: 18,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+      label: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 180),
+        child: Text(attachment.name, overflow: TextOverflow.ellipsis),
       ),
     );
   }

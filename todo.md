@@ -18,3 +18,18 @@
 - [x] تصحيح تصنيف أخطاء المصادقة وعدم تحويل كل أخطاء Dio إلى انقطاع اتصال
 - [x] التحقق من عنوان Backend ومسارات auth على HTTPS من بيئة البناء
 - [x] إضافة اختبارات regression وبناء APK جديد لاختبار Facebook وGoogle وEmail
+
+## طلب المستخدم الجديد
+
+- [x] ربط قسم الاشتراك بمسار اشتراك فعلي بدلاً من إعادة التوجيه إلى Chat
+- [x] ربط قسم سجل المدفوعات بمسار فعلي بدلاً من إعادة التوجيه إلى Chat
+- [x] إصلاح أخطاء NotFound في Notifications وFiles وAgents
+- [x] إضافة زر اختيار ورفع الصور والملفات والفيديو والأنواع المدعومة في المحادثة
+- [x] ربط المرفقات برسالة المحادثة وإظهار حالة الرفع والفشل
+- [x] استبدال عنوان محادثة جديدة بعنوان مشتق من أول رسالة للمستخدم
+- [x] إضافة اختبارات التكامل والواجهات لهذه التغييرات
+- [x] بناء APK جديد ورفع التعديلات إلى فروع GitHub الصحيحة
+- [x] Add chat attachment selection, upload metadata, and image/file/video rendering
+- [x] Generate meaningful conversation titles from the first user message
+- [x] Add regression tests for attachment payloads and automatic titles
+- [x] Build and validate Hajeen AI Android APK with the feature fixes

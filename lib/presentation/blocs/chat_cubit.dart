@@ -104,6 +104,7 @@ final class ChatCubit extends Cubit<ChatState> {
     required String conversationId,
     required String content,
     required String modelId,
+    List<MessageAttachment> attachments = const <MessageAttachment>[],
   }) async {
     // Cancel any in-flight stream before starting a new one.
     await _cancelActiveStream();
@@ -116,6 +117,7 @@ final class ChatCubit extends Cubit<ChatState> {
       content: content,
       createdAt: now,
       updatedAt: now,
+      attachments: attachments,
     );
     final assistantPlaceholder = MessageModel(
       id: _newId(),
@@ -149,7 +151,11 @@ final class ChatCubit extends Cubit<ChatState> {
     _streamSubscription = _repository
         .streamMessage(
           conversationId: conversationId,
-          data: <String, dynamic>{'content': content, 'modelId': modelId},
+          data: <String, dynamic>{
+            'content': content,
+            'modelId': modelId,
+            'attachments': attachments.map((item) => item.toJson()).toList(),
+          },
           cancelToken: _cancelToken,
         )
         .listen(

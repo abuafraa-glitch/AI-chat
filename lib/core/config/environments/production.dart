@@ -49,8 +49,8 @@ base class ProductionConfig extends EnvironmentConfig {
         // These implemented app sections must remain reachable in production.
         // Disabling them here makes the route guard silently redirect taps to
         // the chat tab, which is indistinguishable from a broken link.
-        enableSubscriptions: false,
-        enablePayments: false,
+        enableSubscriptions: true,
+        enablePayments: true,
         enableFileManagement: true,
         enableSearch: false,
         enableRag: false,
