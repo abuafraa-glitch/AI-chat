@@ -33,3 +33,11 @@
 - [x] Generate meaningful conversation titles from the first user message
 - [x] Add regression tests for attachment payloads and automatic titles
 - [x] Build and validate Hajeen AI Android APK with the feature fixes
+
+## بلاغات اختبار APK بتاريخ 2026-08-27
+
+- [x] تشخيص رسالة No internet connection عند تسجيل الدخول أو إنشاء الحساب بالبريد
+- [x] إصلاح ظهور Google Login is not configured in this build في APK
+- [x] إصلاح ظهور Facebook Login is not configured in this build في APK
+- [x] إضافة اختبارات regression لإعدادات مزودي OAuth وعنوان Backend
+- [x] إعادة بناء APK والتحقق من تسجيل الدخول بالبريد وGoogle وFacebook
