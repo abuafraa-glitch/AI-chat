@@ -186,7 +186,13 @@ class AppConfig {
   /// This normalization prevents a mobile build from silently targeting
   /// `/v1/...` when the FastAPI gateway is mounted under `/api/v1/...`.
   String get resolvedApiUrl {
-    final normalizedBase = apiBaseUrl.replaceFirst(RegExp(r'/+$'), '');
+    final configuredBase = apiBaseUrl.trim();
+    final parsed = Uri.tryParse(configuredBase);
+    final hasValidHttpBase = parsed != null &&
+        (parsed.scheme == 'http' || parsed.scheme == 'https') &&
+        parsed.host.isNotEmpty;
+    final safeBase = hasValidHttpBase ? configuredBase : 'https://api.hajeen.ai';
+    final normalizedBase = safeBase.replaceFirst(RegExp(r'/+$'), '');
     final apiRoot = normalizedBase.endsWith('/api')
         ? normalizedBase
         : '$normalizedBase/api';

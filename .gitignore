@@ -33,6 +33,7 @@ migrate_working_dir/
 .pub/
 build/
 Hajeen-AI-UI-Fix.apk
+Hajeen-AI-BaseUrl-Fix.apk
 coverage/
 
 # Symbolication related
