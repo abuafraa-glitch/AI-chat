@@ -206,7 +206,9 @@ final class AuthController extends ChangeNotifier
       _status = AuthStatus.unauthenticated;
       notifyListeners();
       final pendingEmail = result['email'];
-      return pendingEmail is String && pendingEmail.isNotEmpty ? pendingEmail : null;
+      return pendingEmail is String && pendingEmail.isNotEmpty
+          ? pendingEmail
+          : null;
     }
     await _persistSession(result);
     _status = AuthStatus.authenticated;

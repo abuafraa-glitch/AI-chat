@@ -164,6 +164,45 @@ class _ChatViewState extends State<_ChatView> {
     _send(content, modelId);
   }
 
+  Future<void> _openAttachmentMenu() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.attach_file),
+                title: Text(
+                  localizedTextRead(sheetContext, 'Attach file', 'إرفاق ملف'),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _pickAttachment();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image_outlined),
+                title: Text(
+                  localizedTextRead(
+                    sheetContext,
+                    'Choose image or video',
+                    'اختيار صورة أو فيديو',
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _pickAttachment();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _pickAttachment() async {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: false,
@@ -264,8 +303,7 @@ class _ChatViewState extends State<_ChatView> {
           bottomSheet: ChatInputField(
             hintText: localizedText(context, 'Ask anything…', 'اسأل أي شيء…'),
             onSendMessage: _onSendPressed,
-            onAttachFile: _pickAttachment,
-            onUploadImage: _pickAttachment,
+            onOpenAttachments: _openAttachmentMenu,
           ),
         );
       },

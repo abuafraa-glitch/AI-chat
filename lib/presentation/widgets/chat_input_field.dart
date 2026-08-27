@@ -17,6 +17,7 @@ class ChatInputField extends StatefulWidget {
     this.onAttachFile,
     this.onUploadImage,
     this.onRecordAudio,
+    this.onOpenAttachments,
   });
 
   /// Localized hint shown while the field is empty.
@@ -33,6 +34,9 @@ class ChatInputField extends StatefulWidget {
 
   /// Optional audio-recording action; hides the button when `null`.
   final VoidCallback? onRecordAudio;
+
+  /// Opens the attachment actions menu from the compact plus button.
+  final VoidCallback? onOpenAttachments;
 
   @override
   State<ChatInputField> createState() => _ChatInputFieldState();
@@ -87,77 +91,49 @@ class _ChatInputFieldState extends State<ChatInputField> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (widget.onAttachFile != null ||
-              widget.onUploadImage != null ||
-              widget.onRecordAudio != null)
-            Padding(
-              padding: AppSpacing.bottom3,
-              child: Row(
-                children: <Widget>[
-                  if (widget.onAttachFile != null)
-                    IconButton(
-                      icon: const Icon(Icons.attach_file),
-                      tooltip: localizedText(
-                        context,
-                        'Attach file',
-                        'إرفاق ملف',
-                      ),
-                      onPressed: widget.onAttachFile,
+          Directionality(
+            textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+            child: Row(
+              children: <Widget>[
+                if (widget.onOpenAttachments != null)
+                  IconButton(
+                    icon: const Icon(Icons.add_rounded),
+                    tooltip: localizedText(
+                      context,
+                      'Add attachment',
+                      'إضافة مرفق',
                     ),
-                  if (widget.onUploadImage != null)
-                    IconButton(
-                      icon: const Icon(Icons.image_outlined),
-                      tooltip: localizedText(
-                        context,
-                        'Upload image',
-                        'رفع صورة',
-                      ),
-                      onPressed: widget.onUploadImage,
-                    ),
-                  if (widget.onRecordAudio != null)
-                    IconButton(
-                      icon: const Icon(Icons.mic_none),
-                      tooltip: localizedText(
-                        context,
-                        'Record audio',
-                        'تسجيل صوتي',
-                      ),
-                      onPressed: widget.onRecordAudio,
-                    ),
-                  const Spacer(),
-                ],
-              ),
-            ),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Directionality(
-                  textDirection: isArabic
-                      ? TextDirection.rtl
-                      : TextDirection.ltr,
-                  child: TextField(
-                    controller: _controller,
-                    maxLines: null,
-                    minLines: 1,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      hintText: widget.hintText,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                    onPressed: widget.onOpenAttachments,
+                  ),
+                Expanded(
+                  child: Directionality(
+                    textDirection: isArabic
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                    child: TextField(
+                      controller: _controller,
+                      maxLines: null,
+                      minLines: 1,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: widget.hintText,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              AppSpacing.gap2,
-              IconButton.filled(
-                icon: const Icon(Icons.send_rounded),
-                onPressed: _isComposing ? _sendMessage : null,
-                tooltip: localizedText(context, 'Send', 'إرسال'),
-              ),
-            ],
+                AppSpacing.gap2,
+                IconButton.filled(
+                  icon: const Icon(Icons.send_rounded),
+                  onPressed: _isComposing ? _sendMessage : null,
+                  tooltip: localizedText(context, 'Send', 'إرسال'),
+                ),
+              ],
+            ),
           ),
         ],
       ),
