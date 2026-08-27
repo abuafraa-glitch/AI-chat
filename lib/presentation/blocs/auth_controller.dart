@@ -44,8 +44,12 @@ final class AuthController extends ChangeNotifier
   final SecureStorageService _secureStorage;
   final LocalStorageService _localStorage;
 
+  // Public OAuth client identifier; a dart-define may override it for
+  // staging or another Google Cloud project. It is not a client secret.
   static const String _googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue:
+        '521943549759-vmioh3r9df9qra57att2jgh16gmg1kmt.apps.googleusercontent.com',
   );
   static const String _facebookAppId = String.fromEnvironment(
     'FACEBOOK_APP_ID',
@@ -167,12 +171,9 @@ final class AuthController extends ChangeNotifier
 
   /// Opens Facebook Login, then exchanges the access token with FastAPI.
   Future<void> signInWithFacebook() async {
-    if (_facebookAppId.isEmpty || _facebookClientToken.isEmpty) {
-      throw StateError(
-        'Facebook authentication configuration is incomplete. '
-        'Provide FACEBOOK_APP_ID and FACEBOOK_CLIENT_TOKEN at build time.',
-      );
-    }
+    // The Android Facebook SDK reads the app id and client token from
+    // AndroidManifest resources. Do not reject a valid native configuration
+    // merely because Dart compile-time defines were omitted by a build.
     final result = await FacebookAuth.instance.login(
       permissions: const <String>['email', 'public_profile'],
     );
@@ -306,11 +307,12 @@ final class AuthController extends ChangeNotifier
     if (identity == null) {
       await _localDataSource.clearCache();
       await _localStorage.remove(StorageKeys.currentUserId);
-      throw StateError('Authentication response did not contain a user identity.');
+      throw StateError(
+        'Authentication response did not contain a user identity.',
+      );
     }
 
-    final previousIdentity =
-        _localStorage.getString(StorageKeys.currentUserId);
+    final previousIdentity = _localStorage.getString(StorageKeys.currentUserId);
     if (previousIdentity != identity || previousIdentity == null) {
       // Clear both the old account namespace and any legacy anonymous cache
       // before activating the new namespace.

@@ -2,6 +2,8 @@ import 'package:ai_chat/presentation/blocs/conversations_cubit.dart';
 import 'package:ai_chat/presentation/blocs/data_sources.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
 import 'package:ai_chat/core/di/injection.dart';
+import 'package:ai_chat/core/constants/storage_keys.dart';
+import 'package:ai_chat/core/services/local_storage_service.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,7 +48,12 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    final userNamespace =
+        sl<LocalStorageService>().getString(StorageKeys.currentUserId) ??
+        'anonymous';
+    return KeyedSubtree(
+      key: ValueKey<String>('session-$userNamespace'),
+      child: MultiBlocProvider(
       providers: <SingleChildWidget>[
         BlocProvider<ModelsCubit>.value(value: sl<ModelsCubit>()),
         BlocProvider<ConversationsCubit>(
@@ -82,6 +89,7 @@ class _MainLayoutState extends State<MainLayout> {
               label: localizedText(context, 'Settings', 'الإعدادات'),
             ),
           ],
+        ),
         ),
       ),
     );

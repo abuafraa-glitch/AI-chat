@@ -6,6 +6,7 @@ import 'package:ai_chat/core/widgets/loaders/loading_indicator.dart';
 import 'package:ai_chat/data/models/message_model.dart';
 import 'package:ai_chat/presentation/animations/fade_in_slide.dart';
 import 'package:ai_chat/presentation/blocs/chat_cubit.dart';
+import 'package:ai_chat/presentation/blocs/conversations_cubit.dart';
 import 'package:ai_chat/core/di/injection.dart';
 import 'package:ai_chat/presentation/blocs/data_sources.dart';
 import 'package:ai_chat/presentation/blocs/models_cubit.dart';
@@ -121,12 +122,19 @@ class _ChatViewState extends State<_ChatView> {
   }
 
   void _send(String content, String modelId) {
-    context.read<ChatCubit>().sendMessage(
-      conversationId: widget.conversationId,
-      content: content,
-      modelId: modelId,
-      attachments: List<MessageAttachment>.from(_pendingAttachments),
-    );
+    context
+        .read<ChatCubit>()
+        .sendMessage(
+          conversationId: widget.conversationId,
+          content: content,
+          modelId: modelId,
+          attachments: List<MessageAttachment>.from(_pendingAttachments),
+        )
+        .whenComplete(() {
+          if (mounted) {
+            context.read<ConversationsCubit>().loadConversations();
+          }
+        });
     _pendingAttachments.clear();
   }
 

@@ -95,6 +95,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String _errorMessage(BuildContext context, Object error) {
+    if (error is NetworkException && error.metadata?['offline'] == true) {
+      return localizedTextRead(
+        context,
+        'No internet connection. Turn on Wi-Fi or mobile data and try again.',
+        'لا يوجد اتصال بالإنترنت. فعّل Wi-Fi أو بيانات الهاتف ثم حاول مرة أخرى.',
+      );
+    }
+    if (error is ServerException && error.metadata?['statusCode'] == 502) {
+      return localizedTextRead(
+        context,
+        'The Hajeen server gateway is temporarily unavailable. Check your connection and try again.',
+        'بوابة خادم هجين غير متاحة مؤقتاً. تحقق من الاتصال ثم حاول مرة أخرى.',
+      );
+    }
     if (error is AppException && error.message.isNotEmpty) {
       return error.message;
     }

@@ -249,8 +249,7 @@ class RemoteDataSourceImpl implements RemoteDataSource {
           }
           if (decoded['event'] == 'error') {
             final message = decoded['error']?.toString() ?? 'حدث خطأ أثناء التوليد';
-            yield '[خطأ: $message]';
-            continue;
+            throw StateError(message);
           }
           final choices = decoded['choices'];
           if (choices is List && choices.isNotEmpty) {
@@ -265,7 +264,9 @@ class RemoteDataSourceImpl implements RemoteDataSource {
         }
       }
     } catch (error) {
-      yield '[خطأ اتصال: $error]';
+      // Propagate transport/provider failures so ChatCubit can mark the
+      // request failed instead of rendering an error payload as assistant text.
+      rethrow;
     }
   }
 
@@ -434,7 +435,10 @@ class RemoteDataSourceImpl implements RemoteDataSource {
     final message = exception.message;
 
     return switch (exception) {
-      net.NoConnectionException() => NetworkException(message: message),
+      net.NoConnectionException() => NetworkException(
+        message: message,
+        metadata: const <String, dynamic>{'offline': true},
+      ),
       net.RequestTimeoutException() => TimeoutException(message: message),
       net.UnauthorizedException() => UnauthorizedException(message: message),
       net.ForbiddenException() => ForbiddenException(message: message),
@@ -442,7 +446,10 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       net.UnprocessableEntityException() ||
       net.BadRequestException() => ValidationException(message: message),
       net.RateLimitException() => RateLimitException(message: message),
-      net.ServerException() => ServerException(message: message),
+      net.ServerException(:final statusCode) => ServerException(
+        message: message,
+        metadata: <String, dynamic>{'statusCode': statusCode},
+      ),
       net.RequestCancelledException() => NetworkException(message: message),
       _ => UnknownException(message: message),
     };
