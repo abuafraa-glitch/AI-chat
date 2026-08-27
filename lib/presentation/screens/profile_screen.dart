@@ -8,17 +8,18 @@ import 'package:ai_chat/core/widgets/app_scaffold.dart';
 import 'package:ai_chat/core/widgets/buttons/app_button.dart';
 import 'package:ai_chat/core/widgets/dialogs/confirmation_dialog.dart';
 import 'package:ai_chat/presentation/blocs/auth_controller.dart';
+import 'package:ai_chat/presentation/blocs/data_sources.dart';
+import 'package:ai_chat/presentation/blocs/subscriptions_cubit.dart';
+import 'package:ai_chat/presentation/widgets/formatters.dart';
 import 'package:ai_chat/presentation/widgets/localized_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Profile tab.
 ///
-/// Renders the cached user profile and exposes account and feature
-/// navigation. Signing out is a real action routed through
-/// [AuthController] — the router guard then redirects to the login
-/// screen.
+/// The profile owns workspace shortcuts and displays the current subscription
+/// status. Notifications and payment history live only in Settings.
 class ProfileScreen extends StatelessWidget {
-  /// Creates a [ProfileScreen].
   const ProfileScreen({super.key});
 
   String _initialsOf(String name) {
@@ -53,7 +54,6 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final storage = sl<LocalStorageService>();
     final displayName =
         storage.getString(StorageKeys.currentUserDisplayName) ??
@@ -62,99 +62,164 @@ class ProfileScreen extends StatelessWidget {
         storage.getString(StorageKeys.currentUserEmail) ??
         AppValues.defaultEmail;
 
-    return AppScaffold(
-      appBar: AppBar(
-        title: Text(localizedText(context, 'Profile', 'الملف الشخصي')),
+    return BlocProvider<SubscriptionsCubit>(
+      create: (_) =>
+          SubscriptionsCubit(repository: buildSubscriptionRepository())..load(),
+      child: AppScaffold(
+        appBar: AppBar(
+          title: Text(localizedText(context, 'Profile', 'الملف الشخصي')),
+        ),
+        body: _ProfileBody(
+          displayName: displayName,
+          email: email,
+          initials: _initialsOf(displayName),
+          confirmSignOut: () => _confirmSignOut(context),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: <Widget>[
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: <Widget>[
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor: theme.colorScheme.primary,
-                      child: Text(
-                        _initialsOf(displayName),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: theme.colorScheme.onPrimary,
-                        ),
+    );
+  }
+}
+
+class _ProfileBody extends StatelessWidget {
+  const _ProfileBody({
+    required this.displayName,
+    required this.email,
+    required this.initials,
+    required this.confirmSignOut,
+  });
+
+  final String displayName;
+  final String email;
+  final String initials;
+  final Future<void> Function() confirmSignOut;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final subscriptionState = context.watch<SubscriptionsCubit>().state;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: <Widget>[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: <Widget>[
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: theme.colorScheme.primary,
+                    child: Text(
+                      initials,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: theme.colorScheme.onPrimary,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(displayName, style: theme.textTheme.titleLarge),
-                          const SizedBox(height: 4),
-                          Text(
-                            email,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(displayName, style: theme.textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            _ProfileSection(
-              title: localizedText(context, 'Workspace', 'مساحة العمل'),
-              children: <Widget>[
-                _ProfileTile(
-                  icon: Icons.notifications_outlined,
-                  title: localizedText(context, 'Notifications', 'الإشعارات'),
-                  onTap: () => context.goToNotifications(),
-                ),
-                _ProfileTile(
-                  icon: Icons.folder_outlined,
-                  title: localizedText(context, 'Files', 'الملفات'),
-                  onTap: () => context.pushTo(RouteNames.files),
-                ),
-                _ProfileTile(
-                  icon: Icons.smart_toy_outlined,
-                  title: localizedText(context, 'Agents', 'الوكلاء'),
-                  onTap: () => context.pushTo(RouteNames.agents),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _ProfileSection(
-              title: localizedText(context, 'Billing', 'الفواتير'),
-              children: <Widget>[
-                _ProfileTile(
-                  icon: Icons.card_membership_outlined,
-                  title: localizedText(context, 'Subscription', 'الاشتراك'),
-                  onTap: () => context.pushTo(RouteNames.subscriptions),
-                ),
-                _ProfileTile(
-                  icon: Icons.receipt_outlined,
-                  title: localizedText(
-                    context,
-                    'Payment history',
-                    'سجل المدفوعات',
-                  ),
-                  onTap: () => context.pushTo(RouteNames.payments),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            AppButton(
-              text: localizedText(context, 'Sign out', 'تسجيل الخروج'),
-              onPressed: () => _confirmSignOut(context),
-              type: AppButtonType.destructive,
-              fullWidth: true,
-            ),
-          ],
+          ),
+          const SizedBox(height: 24),
+          _ProfileSection(
+            title: localizedText(context, 'Workspace', 'مساحة العمل'),
+            children: <Widget>[
+              _ProfileTile(
+                icon: Icons.folder_outlined,
+                title: localizedText(context, 'Files', 'الملفات'),
+                onTap: () => context.pushTo(RouteNames.files),
+              ),
+              _ProfileTile(
+                icon: Icons.smart_toy_outlined,
+                title: localizedText(context, 'Agents', 'الوكلاء'),
+                onTap: () => context.pushTo(RouteNames.agents),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _ProfileSection(
+            title: localizedText(context, 'Subscription', 'الاشتراك'),
+            children: <Widget>[
+              _CurrentSubscriptionTile(state: subscriptionState),
+            ],
+          ),
+          const SizedBox(height: 24),
+          AppButton(
+            text: localizedText(context, 'Sign out', 'تسجيل الخروج'),
+            onPressed: confirmSignOut,
+            type: AppButtonType.destructive,
+            fullWidth: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CurrentSubscriptionTile extends StatelessWidget {
+  const _CurrentSubscriptionTile({required this.state});
+
+  final SubscriptionsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isLoading && state.currentSubscription == null) {
+      return ListTile(
+        leading: const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
+        title: Text(localizedText(context, 'Loading...', 'جارٍ التحميل...')),
+      );
+    }
+
+    final subscription = state.currentSubscription;
+    if (subscription == null) {
+      return ListTile(
+        leading: const Icon(Icons.card_membership_outlined),
+        title: Text(
+          localizedText(
+            context,
+            'No active subscription',
+            'لا يوجد اشتراك نشط',
+          ),
+        ),
+        subtitle: Text(
+          localizedText(
+            context,
+            'Your current subscription status appears here',
+            'تظهر حالة اشتراكك الحالية هنا',
+          ),
+        ),
+      );
+    }
+
+    final endDate = subscription.endDate;
+    return ListTile(
+      leading: const Icon(Icons.card_membership_outlined),
+      title: Text(subscription.planType.name),
+      subtitle: Text(
+        endDate == null
+            ? subscription.status.name
+            : '${subscription.status.name} · ${localizedText(context, 'Until', 'حتى')} ${formatAppDate(endDate)}',
       ),
     );
   }

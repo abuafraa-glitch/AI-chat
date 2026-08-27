@@ -35,7 +35,11 @@ class SettingsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             _SettingsSection(
-              title: localizedText(context, 'Appearance', 'المظهر'),
+              title: localizedText(
+                context,
+                'General settings',
+                'الإعدادات العامة',
+              ),
               children: <Widget>[
                 SwitchListTile(
                   secondary: Icon(
@@ -99,7 +103,11 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _SettingsSection(
-              title: localizedText(context, 'Subscription', 'الاشتراك'),
+              title: localizedText(
+                context,
+                'Subscription & Billing',
+                'الاشتراك والفوترة',
+              ),
               children: <Widget>[
                 _SettingsTile(
                   icon: Icons.card_membership_outlined,
@@ -114,8 +122,8 @@ class SettingsScreen extends StatelessWidget {
                   icon: Icons.receipt_outlined,
                   title: localizedText(
                     context,
-                    'Billing History',
-                    'سجل الفواتير',
+                    'Billing / Payment History',
+                    'سجل الفواتير/المدفوعات',
                   ),
                   onTap: () => context.pushTo(RouteNames.payments),
                 ),
