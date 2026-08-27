@@ -126,12 +126,15 @@ def _smtp_configured() -> bool:
 
 
 def _send_verification_email(email: str, code: str) -> None:
+    recipient = email.strip().lower()
+    if "@" not in recipient:
+        raise ValueError("Invalid recipient email")
     if not _smtp_configured():
         raise RuntimeError("SMTP configuration is incomplete")
     message = EmailMessage()
     message["Subject"] = "رمز التحقق من البريد الإلكتروني - Hajeen AI"
     message["From"] = os.environ["SMTP_FROM_EMAIL"]
-    message["To"] = email
+    message["To"] = recipient
     message.set_content(
         "مرحباً في Hajeen AI،\\n\\n"
         f"رمز التحقق الخاص بك هو: {code}\\n"
@@ -146,7 +149,13 @@ def _send_verification_email(email: str, code: str) -> None:
             smtp.starttls()
             smtp.ehlo()
         smtp.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
-        smtp.send_message(message)
+        # Pass the envelope recipient explicitly; this prevents a configured
+        # SMTP default/alias from becoming the verification recipient.
+        smtp.send_message(
+            message,
+            from_addr=os.environ["SMTP_FROM_EMAIL"],
+            to_addrs=[recipient],
+        )
 
 
 def _issue_verification(user: Dict[str, Any]) -> None:
@@ -239,6 +248,7 @@ def _upsert_social_user(identity: Dict[str, Any], tenant_id: str) -> Dict[str, A
             "roles": ["user"],
             "tenant_id": tenant_id,
             "active": True,
+            "email_verified": bool(identity.get("email_verified")),
             "created_at": time.time(),
             "social_identities": {},
         }
@@ -251,6 +261,9 @@ def _upsert_social_user(identity: Dict[str, Any], tenant_id: str) -> Dict[str, A
     if existing_subject and existing_subject != provider_sub:
         raise SocialAuthError("مزود الحساب مرتبط بهوية مختلفة")
     identities[provider] = provider_sub
+    if identity.get("email_verified"):
+        user["email_verified"] = True
+        user["active"] = True
     if not user.get("name"):
         user["name"] = identity["name"]
     return user

@@ -79,3 +79,31 @@ def test_resend_verification_is_public_and_throttled(monkeypatch) -> None:
     throttled = client.post("/api/v1/auth/resend-verification", json={"email": email})
     assert throttled.status_code == 429
     auth_router._USERS.pop("otp-resend", None)
+
+
+def test_registration_normalizes_recipient_and_never_uses_admin_email(monkeypatch) -> None:
+    sent: list[tuple[str, str]] = []
+    monkeypatch.setattr(auth_router, "_send_verification_email", lambda email, code: sent.append((email, code)))
+    username = "otp-recipient-user"
+    email = "  recipient@example.com "
+    auth_router._USERS.pop(username, None)
+
+    response = client.post(
+        "/api/v1/auth/register",
+        json={"name": "Recipient User", "email": email, "password": "secret123", "username": username},
+    )
+    assert response.status_code == 201
+    assert sent == [("recipient@example.com", sent[0][1])]
+    assert sent[0][0] != os.environ["SMTP_FROM_EMAIL"]
+    auth_router._USERS.pop(username, None)
+
+
+def test_resend_unknown_email_does_not_send_otp(monkeypatch) -> None:
+    sent: list[tuple[str, str]] = []
+    monkeypatch.setattr(auth_router, "_send_verification_email", lambda email, code: sent.append((email, code)))
+    response = client.post(
+        "/api/v1/auth/resend-verification",
+        json={"email": "does-not-exist@example.com"},
+    )
+    assert response.status_code == 200
+    assert sent == []
