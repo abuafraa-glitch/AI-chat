@@ -61,6 +61,21 @@ class RouteResult:
         return int(self.metadata.get("completion_tokens", self.tokens_used))
 
 
+GROQ_RUNTIME_MODEL_KEY = "groq/openai/gpt-oss-20b"
+MODEL_ALIASES: Dict[str, str] = {
+    "gpt-4o-mini": GROQ_RUNTIME_MODEL_KEY,
+    "openai/gpt-4o-mini": GROQ_RUNTIME_MODEL_KEY,
+    "gpt-4o": GROQ_RUNTIME_MODEL_KEY,
+    "openai/gpt-4o": GROQ_RUNTIME_MODEL_KEY,
+    "gpt-oss-20b": GROQ_RUNTIME_MODEL_KEY,
+    "openai/gpt-oss-20b": GROQ_RUNTIME_MODEL_KEY,
+    "groq/gpt-oss-20b": GROQ_RUNTIME_MODEL_KEY,
+    "groq/openai/gpt-oss-20b": GROQ_RUNTIME_MODEL_KEY,
+    "llama-3.3-70b-versatile": GROQ_RUNTIME_MODEL_KEY,
+    "groq/llama-3.3-70b-versatile": GROQ_RUNTIME_MODEL_KEY,
+}
+
+
 DEFAULT_MODELS: Dict[str, ModelConfig] = {
     "ollama/llama3": ModelConfig("llama3", "ollama", "http://localhost:11434", None, ["general", "rag", "conversation"], 8192, 4096, 800, 0.0, 0.78, True),
     "ollama/qwen2.5": ModelConfig("qwen2.5:7b", "ollama", "http://localhost:11434", None, ["arabic", "general", "code", "rag"], 32768, 8192, 1000, 0.0, 0.82, True),
@@ -138,6 +153,10 @@ class ModelRouter:
         return any(item.get("status") in {ModelArtifactStatus.STAGING.value, ModelArtifactStatus.PRODUCTION.value} for item in related)
 
     def _resolve_key(self, identifier: str) -> Optional[str]:
+        normalized = str(identifier).strip().lower()
+        alias = MODEL_ALIASES.get(normalized)
+        if alias in self._models:
+            return alias
         if identifier == "hajeen-v1" and "hajeen-local" in self._models:
             return "hajeen-local"
         if identifier in self._models:

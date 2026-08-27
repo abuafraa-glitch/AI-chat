@@ -37,3 +37,19 @@ async def test_model_stream_endpoint_relays_delta_and_finish_events():
     assert '"event": "finish"' in body
     assert "[DONE]" in body
     assert '"event": "error"' not in body
+
+
+def test_mobile_model_ids_normalize_to_registered_groq_key():
+    from api.v1.compat_router import GROQ_RUNTIME_MODEL, _groq_model
+
+    assert _groq_model("gpt-4o-mini") == GROQ_RUNTIME_MODEL
+    assert _groq_model("openai/gpt-oss-20b") == GROQ_RUNTIME_MODEL
+    assert _groq_model(None) == GROQ_RUNTIME_MODEL
+
+
+def test_model_router_resolves_mobile_aliases_to_groq_key():
+    from brain.model_router import GROQ_RUNTIME_MODEL_KEY, ModelRouter
+
+    router = ModelRouter(prefer_local=False)
+    assert router._resolve_key("gpt-4o-mini") == GROQ_RUNTIME_MODEL_KEY
+    assert router._resolve_key("openai/gpt-oss-20b") == GROQ_RUNTIME_MODEL_KEY

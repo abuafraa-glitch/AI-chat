@@ -195,15 +195,32 @@ def _chat_request(content: str, conversation_id: str, body: Dict[str, Any]) -> C
     )
 
 
+GROQ_RUNTIME_MODEL = "groq/openai/gpt-oss-20b"
+
+
 def _groq_model(raw_model: Any) -> str:
-    """Normalize mobile model IDs to the configured Groq provider namespace."""
-    raw = str(raw_model or "llama-3.3-70b-versatile").strip()
-    if raw.startswith("groq/"):
-        return raw
-    # Mobile catalogs may expose bare names or an OpenAI-shaped ID. The
-    # provider must remain Groq; only the model name is carried forward.
-    model_name = raw.split("/", 1)[1] if "/" in raw else raw
-    return f"groq/{model_name}"
+    """Normalize mobile/catalog IDs to a model key registered by ModelRouter.
+
+    The Flutter catalogue can expose a display/provider ID (for example
+    ``gpt-4o-mini`` or ``openai/gpt-oss-20b``), while the backend registry has
+    one authoritative Groq key. Mapping aliases here prevents a provider name
+    from being mistaken for an independently available OpenAI runtime.
+    """
+    raw = str(raw_model or "").strip().lower()
+    aliases = {
+        "": GROQ_RUNTIME_MODEL,
+        "gpt-4o-mini": GROQ_RUNTIME_MODEL,
+        "openai/gpt-4o-mini": GROQ_RUNTIME_MODEL,
+        "gpt-4o": GROQ_RUNTIME_MODEL,
+        "openai/gpt-4o": GROQ_RUNTIME_MODEL,
+        "gpt-oss-20b": GROQ_RUNTIME_MODEL,
+        "openai/gpt-oss-20b": GROQ_RUNTIME_MODEL,
+        "groq/gpt-oss-20b": GROQ_RUNTIME_MODEL,
+        "groq/openai/gpt-oss-20b": GROQ_RUNTIME_MODEL,
+        "llama-3.3-70b-versatile": GROQ_RUNTIME_MODEL,
+        "groq/llama-3.3-70b-versatile": GROQ_RUNTIME_MODEL,
+    }
+    return aliases.get(raw, GROQ_RUNTIME_MODEL if raw.startswith(("openai/", "groq/")) else GROQ_RUNTIME_MODEL)
 
 
 def _touch_conversation(conversation_id: str, content: str, metadata: Dict[str, Any]) -> None:
