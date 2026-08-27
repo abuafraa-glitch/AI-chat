@@ -107,3 +107,29 @@ def test_resend_unknown_email_does_not_send_otp(monkeypatch) -> None:
     )
     assert response.status_code == 200
     assert sent == []
+
+
+def test_email_login_rejects_social_only_account_without_otp(monkeypatch) -> None:
+    username = "social-only-email"
+    email = "social-only@example.com"
+    auth_router._USERS[username] = {
+        "user_id": "usr_social_only",
+        "username": username,
+        "name": "Social Only",
+        "email": email,
+        "password_hash": "__social_only__",
+        "roles": ["user"],
+        "tenant_id": "default",
+        "active": True,
+        "email_verified": True,
+        "social_identities": {"google": "google-subject"},
+    }
+
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "secret123"},
+    )
+
+    assert response.status_code == 401
+    assert "Google" in response.json()["message"]
+    auth_router._USERS.pop(username, None)

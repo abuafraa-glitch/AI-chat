@@ -357,7 +357,20 @@ async def login(body: LoginRequest, request: Request) -> TokenResponse:
     if user is None:
         user = _find_user_by_email(identifier)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="اسم المستخدم أو كلمة المرور غير صحيحة",
+        )
+
+    # Social-only accounts do not have a password credential. Do not route
+    # them through email verification or leave the client waiting; the user
+    # must use the provider that created the account.
+    if user.get("password_hash") == "__social_only__":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="هذا الحساب مرتبط بتسجيل الدخول عبر Google أو Facebook",
+        )
+
     if not user.get("active") or (user.get("password_hash") != "__admin_placeholder__" and not user.get("email_verified")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="تحقق من بريدك الإلكتروني أولاً")
 
