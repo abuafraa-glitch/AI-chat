@@ -299,11 +299,19 @@ class _ChatViewState extends State<_ChatView> {
               localizedText(context, 'Hajeen AI Chat', 'محادثة هاجين'),
             ),
           ),
-          body: _buildBody(context, state),
-          bottomSheet: ChatInputField(
-            hintText: localizedText(context, 'Ask anything…', 'اسأل أي شيء…'),
-            onSendMessage: _onSendPressed,
-            onOpenAttachments: _openAttachmentMenu,
+          body: Column(
+            children: <Widget>[
+              Expanded(child: _buildBody(context, state)),
+              ChatInputField(
+                hintText: localizedText(
+                  context,
+                  'Ask anything…',
+                  'اسأل أي شيء…',
+                ),
+                onSendMessage: _onSendPressed,
+                onOpenAttachments: _openAttachmentMenu,
+              ),
+            ],
           ),
         );
       },
@@ -329,7 +337,7 @@ class _ChatViewState extends State<_ChatView> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       itemCount: state.messages.length,
       itemBuilder: (context, index) {
         final message = state.messages[index];
