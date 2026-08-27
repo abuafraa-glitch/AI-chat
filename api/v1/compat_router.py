@@ -6,7 +6,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+import base64
 from fastapi.responses import StreamingResponse
 
 from api.v1.ai.router import ChatRequestSchema, chat, chat_stream
@@ -14,6 +15,7 @@ from api.v1.ai.router import ChatRequestSchema, chat, chat_stream
 router = APIRouter(tags=["Flutter compatibility"])
 _CONVERSATIONS: Dict[str, Dict[str, Any]] = {}
 _MESSAGES: Dict[str, List[Dict[str, Any]]] = {}
+_FILES: Dict[str, Dict[str, Any]] = {}
 
 
 def _now() -> str:
@@ -40,9 +42,10 @@ async def list_conversations() -> List[Dict[str, Any]]:
 
 
 @router.post("/conversations")
-async def create_conversation(body: Dict[str, Any]) -> Dict[str, Any]:
+async def create_conversation(body: Dict[str, Any], request: Request) -> Dict[str, Any]:
     conversation_id = str(uuid.uuid4())
     item = _conversation(conversation_id, str(body.get("title") or "محادثة جديدة"))
+    item["metadata"]["scope"] = request.headers.get("authorization", "anonymous")
     _CONVERSATIONS[conversation_id] = item
     _MESSAGES[conversation_id] = []
     return item
@@ -80,9 +83,13 @@ async def create_message(conversation_id: str, body: Dict[str, Any], request: Re
     if conversation_id not in _CONVERSATIONS:
         raise HTTPException(404, "المحادثة غير موجودة")
     content = str(body.get("content") or body.get("message") or "").strip()
-    if not content:
-        raise HTTPException(422, "نص الرسالة مطلوب")
-    _MESSAGES[conversation_id].append(_message(conversation_id, "user", content))
+    attachments = body.get("attachments") if isinstance(body.get("attachments"), list) else []
+    if not content and not attachments:
+        raise HTTPException(422, "نص الرسالة أو المرفق مطلوب")
+    _MESSAGES[conversation_id].append(_message(conversation_id, "user", content, attachments=attachments))
+    item = _CONVERSATIONS[conversation_id]
+    if item["title"] == "محادثة جديدة":
+        item["title"] = _title_from_message(content, attachments)
     result = await chat(_chat_request(content, conversation_id, body), request)
     assistant = _message(
         conversation_id,
@@ -101,9 +108,13 @@ async def stream_message(conversation_id: str, body: Dict[str, Any], request: Re
     if conversation_id not in _CONVERSATIONS:
         raise HTTPException(404, "المحادثة غير موجودة")
     content = str(body.get("content") or body.get("message") or "").strip()
-    if not content:
-        raise HTTPException(422, "نص الرسالة مطلوب")
-    _MESSAGES[conversation_id].append(_message(conversation_id, "user", content))
+    attachments = body.get("attachments") if isinstance(body.get("attachments"), list) else []
+    if not content and not attachments:
+        raise HTTPException(422, "نص الرسالة أو المرفق مطلوب")
+    _MESSAGES[conversation_id].append(_message(conversation_id, "user", content, attachments=attachments))
+    item = _CONVERSATIONS[conversation_id]
+    if item["title"] == "محادثة جديدة":
+        item["title"] = _title_from_message(content, attachments)
     canonical = await chat_stream(_chat_request(content, conversation_id, body), request)
     return StreamingResponse(
         _mobile_events(conversation_id, canonical),
@@ -170,7 +181,15 @@ def _touch_conversation(conversation_id: str, content: str, metadata: Dict[str, 
         item.setdefault("metadata", {})["provider"] = metadata["provider"]
 
 
-def _message(conversation_id: str, role: str, content: str, metadata: Dict[str, Any] | None = None) -> Dict[str, Any]:
+def _title_from_message(content: str, attachments: List[Dict[str, Any]]) -> str:
+    clean = " ".join(content.split())
+    if clean:
+        return clean[:60] + ("…" if len(clean) > 60 else "")
+    name = attachments[0].get("name") if attachments and isinstance(attachments[0], dict) else None
+    return f"مرفق: {name}" if name else "محادثة مرفقة"
+
+
+def _message(conversation_id: str, role: str, content: str, metadata: Dict[str, Any] | None = None, attachments: List[Dict[str, Any]] | None = None) -> Dict[str, Any]:
     timestamp = _now()
     return {
         "id": str(uuid.uuid4()),
@@ -180,7 +199,7 @@ def _message(conversation_id: str, role: str, content: str, metadata: Dict[str, 
         "createdAt": timestamp,
         "updatedAt": timestamp,
         "status": "sent",
-        "attachments": [],
+        "attachments": attachments or [],
         "toolCalls": [],
         "citations": [],
         "tokenUsage": None,
@@ -191,3 +210,94 @@ def _message(conversation_id: str, role: str, content: str, metadata: Dict[str, 
         "reactions": [],
         "parentMessageId": None,
     }
+
+
+# Mobile feature endpoints: valid empty collections are preferable to client-side 404s
+@router.get("/notifications")
+async def notifications(request: Request) -> List[Dict[str, Any]]:
+    return []
+
+
+@router.get("/files")
+async def list_files(request: Request) -> List[Dict[str, Any]]:
+    scope = request.headers.get("authorization", "anonymous")
+    return [item for item in _FILES.values() if item.get("scope") == scope]
+
+
+@router.post("/files")
+async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
+    content = await file.read()
+    if len(content) > 25 * 1024 * 1024:
+        raise HTTPException(413, "حجم الملف يتجاوز 25 ميجابايت")
+    mime = file.content_type or "application/octet-stream"
+    file_id = str(uuid.uuid4())
+    item = {
+        "id": file_id, "name": file.filename or "file",
+        "url": f"data:{mime};base64,{base64.b64encode(content).decode()}",
+        "size": len(content), "mimeType": mime, "createdAt": _now(),
+        "scope": request.headers.get("authorization", "anonymous"),
+    }
+    _FILES[file_id] = item
+    return {key: value for key, value in item.items() if key != "scope"}
+
+
+@router.delete("/files/{file_id}")
+async def delete_file(file_id: str, request: Request) -> Dict[str, Any]:
+    item = _FILES.get(file_id)
+    if item is None or item.get("scope") != request.headers.get("authorization", "anonymous"):
+        raise HTTPException(404, "الملف غير موجود")
+    _FILES.pop(file_id)
+    return {"success": True}
+
+
+@router.get("/agents")
+async def agents(request: Request) -> List[Dict[str, Any]]:
+    return []
+
+
+@router.get("/subscriptions")
+@router.get("/subscriptions/plans")
+async def subscription_plans(request: Request) -> List[Dict[str, Any]]:
+    return []
+
+
+@router.get("/subscriptions/current")
+async def current_subscription(request: Request) -> Dict[str, Any]:
+    return {
+        "id": "none",
+        "userId": request.headers.get("authorization", "anonymous"),
+        "planType": "custom",
+        "billingCycle": "custom",
+        "status": "pending",
+        "startDate": _now(),
+        "endDate": None,
+        "price": 0,
+        "currency": "USD",
+        "features": {},
+        "metadata": {"active": False},
+    }
+
+
+@router.post("/subscriptions/{subscription_id}/cancel")
+async def cancel_subscription(subscription_id: str, request: Request) -> Dict[str, Any]:
+    return {"success": True, "id": subscription_id, "status": "cancelled"}
+
+
+@router.get("/payments/history")
+async def payment_history(request: Request) -> List[Dict[str, Any]]:
+    return []
+
+
+@router.get("/payments/{payment_id}")
+async def payment(payment_id: str, request: Request) -> Dict[str, Any]:
+    raise HTTPException(404, "عملية الدفع غير موجودة")
+
+
+@router.patch("/notifications/{notification_id}")
+async def mark_notification(notification_id: str, body: Dict[str, Any], request: Request) -> Dict[str, Any]:
+    return {"id": notification_id, "read": True}
+
+
+@router.post("/notifications/read-all")
+async def mark_all_notifications_read(request: Request) -> Dict[str, Any]:
+    return {"success": True}
