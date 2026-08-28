@@ -15,6 +15,9 @@ os.environ["ENABLE_AUTH"] = "true"
 from fastapi.testclient import TestClient
 
 from api.main import app
+from api.v1.auth.models import AuthIdentity, AuthUser
+from api.v1.auth.router import db_context
+from api.v1.auth.store import hash_password
 
 
 client = TestClient(app, raise_server_exceptions=False)
@@ -35,6 +38,13 @@ def test_invalid_token_is_denied() -> None:
 
 
 def test_authenticated_login_and_principal_context() -> None:
+    with db_context() as db:
+        user = db.query(AuthUser).filter(AuthUser.username == "admin").first()
+        if user is None:
+            user = AuthUser(username="admin", name="Admin", email="admin@test.local", password_hash=hash_password("HajeenAdmin2024!"), roles=["superadmin"], tenant_id="default", active=True, email_verified=True)
+            db.add(user)
+            db.flush()
+            db.add(AuthIdentity(user_id=user.user_id, provider="email", provider_sub="admin@test.local", email=user.email))
     login = client.post(
         "/api/v1/auth/login",
         json={"username": "admin", "password": "HajeenAdmin2024!"},
