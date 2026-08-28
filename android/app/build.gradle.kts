@@ -81,6 +81,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
 // AGP 8.9.1 exposes checkReleaseManifest with an unset internal provider;
 // the same failure reproduces in a clean Flutter 3.35.2 template. The real
 // manifest merge remains enforced by processReleaseManifest.
