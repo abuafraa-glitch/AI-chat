@@ -116,8 +116,8 @@ class RemoteDataSourceImpl implements RemoteDataSource {
       path: Endpoints.resetPassword,
       data: <String, String>{
         'email': email,
-        'token': token,
-        'password': password,
+        'code': token,
+        'new_password': password,
       },
       fromJson: (_) {},
     );
